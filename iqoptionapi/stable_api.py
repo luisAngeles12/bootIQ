@@ -303,17 +303,40 @@ class IQ_Option:
 
     def __get_digital_open(self):
         # for digital options
-        digital_data = self.get_digital_underlying_list_data()["underlying"]
-        for digital in digital_data:
-            name = digital["underlying"]
-            schedule = digital["schedule"]
-            self.OPEN_TIME["digital"][name]["open"] = False
-            for schedule_time in schedule:
-                start = schedule_time["open"]
-                end = schedule_time["close"]
-                if start < time.time() < end:
-                    self.OPEN_TIME["digital"][name]["open"] = True
+        try:
+            data = self.get_digital_underlying_list_data()
 
+            if not data:
+                return
+
+            if "underlying" not in data:
+                return
+
+            digital_data = data["underlying"]
+
+            for digital in digital_data:
+
+                try:
+                    name = digital["underlying"]
+                    schedule = digital["schedule"]
+
+                    if name not in self.OPEN_TIME["digital"]:
+                        continue
+
+                    self.OPEN_TIME["digital"][name]["open"] = False
+
+                    for schedule_time in schedule:
+                        start = schedule_time["open"]
+                        end = schedule_time["close"]
+
+                        if start < time.time() < end:
+                            self.OPEN_TIME["digital"][name]["open"] = True
+
+                except Exception:
+                    continue
+
+        except Exception:
+            return
     def __get_other_open(self):
         # Crypto and etc pairs
         instrument_list = ["cfd", "forex", "crypto"]
@@ -759,22 +782,18 @@ class IQ_Option:
         self.api.listinfodata.delete(id_number)
         return listinfodata_dict["win"]
 
-    def check_win_v2(self, id_number, polling_time):
-        while True:
-            check, data = self.get_betinfo(id_number)
-            win = data["result"]["data"][str(id_number)]["win"]
-            if check and win != "":
-                try:
+    def get_optioninfo_v2(self, limit, timeout=10):
+        self.api.get_options_v2_data = None
+        self.api.get_options_v2(limit, "binary,turbo")
 
-                    return data["result"]["data"][str(id_number)]["profit"] - data["result"]["data"][str(id_number)][
-                        "deposit"]
-                except:
-                    pass
-            time.sleep(polling_time)
+        inicio = time.time()
 
-        # Function by kkagill ( https://github.com/Lu-Yi-Hsun/iqoptionapi/issues/196 | https://github.com/kkagill )
-        # Function only work with Options!
+        while self.api.get_options_v2_data is None:
+            if time.time() - inicio > timeout:
+                return None
+            time.sleep(0.1)
 
+        return self.api.get_options_v2_data
     def check_win_v4(self, id_number):
         while True:
             try:
@@ -785,16 +804,68 @@ class IQ_Option:
         x = self.api.socket_option_closed[id_number]
         return x['msg']['win'], (0 if x['msg']['win'] == 'equal' else float(x['msg']['sum']) * -1 if x['msg']['win'] == 'loose' else float(x['msg']['win_amount']) - float(x['msg']['sum']))
 
-    def check_win_v3(self, id_number):
-        while True:
-            result = self.get_optioninfo_v2(10)
-            if result['msg']['closed_options'][0]['id'][0] == id_number and result['msg']['closed_options'][0]['id'][0] != None:
-                return result['msg']['closed_options'][0]['win'], (result['msg']['closed_options'][0]['win_amount'] - result['msg']['closed_options'][0]['amount'] if result['msg']['closed_options'][0]['win'] != 'equal' else 0)
-                break
+    def check_win_v3(self, id_number, timeout=45):
+        inicio = time.time()
+        id_number = int(id_number)
+
+        while time.time() - inicio < timeout:
+            try:
+                # Método 1: socket de operaciones cerradas
+                try:
+                    data = self.api.socket_option_closed.get(id_number)
+
+                    if data:
+                        msg = data.get("msg", {})
+                        win = msg.get("win")
+
+                        if win == "equal":
+                            return 0
+
+                        amount = float(msg.get("sum", 0))
+                        win_amount = float(msg.get("win_amount", 0))
+
+                        if win == "loose":
+                            return -amount
+
+                        return round(win_amount - amount, 2)
+                except Exception:
+                    pass
+
+                # Método 2: historial de opciones cerradas
+                result = self.get_optioninfo_v2(50, timeout=10)
+
+                if result:
+                    msg = result.get("msg", {})
+                    closed_options = msg.get("closed_options", [])
+
+                    for op in closed_options:
+                        try:
+                            op_id = op.get("id")
+
+                            if isinstance(op_id, list):
+                                op_id = op_id[0]
+
+                            op_id = int(op_id)
+
+                            if op_id == id_number:
+                                win = op.get("win")
+                                amount = float(op.get("amount", 0))
+                                win_amount = float(op.get("win_amount", 0))
+
+                                if win == "equal":
+                                    return 0
+
+                                return round(win_amount - amount, 2)
+
+                        except Exception:
+                            continue
+
+            except Exception as e:
+                print("Error check_win_v3 interno:", e)
+
             time.sleep(1)
 
-    # -------------------get infomation only for binary option------------------------
-
+        return None
     def get_betinfo(self, id_number):
         # INPUT:int
         while True:
@@ -827,13 +898,6 @@ class IQ_Option:
 
         return self.api.api_game_getoptions_result
 
-    def get_optioninfo_v2(self, limit):
-        self.api.get_options_v2_data = None
-        self.api.get_options_v2(limit, "binary,turbo")
-        while self.api.get_options_v2_data == None:
-            pass
-
-        return self.api.get_options_v2_data
 
     # __________________________BUY__________________________
 
