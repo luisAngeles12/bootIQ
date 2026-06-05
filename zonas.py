@@ -234,3 +234,100 @@ def entrada_pullback(direccion, price, ema21, soporte, resistencia, vol, patron,
         if (cerca_ema or cerca_resistencia) and (patron == -1 or rechazo == -1):
             return True
     return False
+
+
+def validar_interaccion_soporte_resistencia(
+    direccion,
+    opens,
+    closes,
+    highs,
+    lows,
+    soporte,
+    resistencia,
+    vol,
+    puntaje=0,
+    patron="",
+    tipo_mercado="INDEFINIDO",
+    calidad_mercado="NORMAL"
+):
+    try:
+        if len(closes) < 6:
+            return True, "zonas: velas insuficientes, no bloquear"
+
+        price = closes[-1]
+
+        if vol <= 0:
+            vol = abs(price) * 0.0001
+
+        o = opens[-1]
+        c = closes[-1]
+        h = highs[-1]
+        l = lows[-1]
+
+        rango = h - l
+        cuerpo = abs(c - o)
+
+        if rango <= 0:
+            return True, "zonas: rango inválido, no bloquear"
+
+        mecha_sup = h - max(o, c)
+        mecha_inf = min(o, c) - l
+
+        distancia_soporte = abs(price - soporte)
+        distancia_resistencia = abs(resistencia - price)
+
+        cerca_soporte = distancia_soporte <= vol * 1.0
+        cerca_resistencia = distancia_resistencia <= vol * 1.0
+
+        ruptura_resistencia = c > resistencia + vol * 0.35
+        ruptura_soporte = c < soporte - vol * 0.35
+
+        falsa_ruptura_resistencia = (
+            h > resistencia + vol * 0.30
+            and c < resistencia
+            and mecha_sup >= cuerpo * 1.2
+        )
+
+        falsa_ruptura_soporte = (
+            l < soporte - vol * 0.30
+            and c > soporte
+            and mecha_inf >= cuerpo * 1.2
+        )
+
+        patron_texto = str(patron).lower()
+
+        if direccion == "call":
+            if cerca_resistencia and not ruptura_resistencia:
+                if falsa_ruptura_resistencia:
+                    return False, "CALL bloqueado: falsa ruptura bajista en resistencia"
+
+                if calidad_mercado in ["SUCIO", "CAOTICO"] and puntaje < 21:
+                    return False, "CALL bloqueado: resistencia cerca en mercado sucio sin puntaje suficiente"
+
+                if "pullback" in patron_texto and puntaje < 20:
+                    return False, "CALL pullback bloqueado cerca de resistencia"
+
+                return True, "CALL permitido con cautela: resistencia cerca"
+
+            return True, "CALL permitido: zona sin conflicto fuerte"
+
+        if direccion == "put":
+            if cerca_soporte and not ruptura_soporte:
+                if falsa_ruptura_soporte:
+                    return False, "PUT bloqueado: falsa ruptura alcista en soporte"
+
+                if calidad_mercado in ["SUCIO", "CAOTICO"] and puntaje < 21:
+                    return False, "PUT bloqueado: soporte cerca en mercado sucio sin puntaje suficiente"
+
+                if "pullback" in patron_texto and puntaje < 20:
+                    return False, "PUT pullback bloqueado cerca de soporte"
+
+                return True, "PUT permitido con cautela: soporte cerca"
+
+            return True, "PUT permitido: zona sin conflicto fuerte"
+
+        return True, "zonas: dirección no reconocida"
+
+    except Exception as e:
+        print("Error validando interacción de zonas:", e)
+        return True, "zonas: error, no bloquear"

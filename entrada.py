@@ -87,7 +87,6 @@ def validar_vela_exacta_entrada(activo, direccion):
         c = float(actual["close"])
         h = float(actual["max"])
         l = float(actual["min"])
-
         ac = float(anterior["close"])
 
         rango = h - l
@@ -97,49 +96,42 @@ def validar_vela_exacta_entrada(activo, direccion):
             return False, "rango inválido"
 
         fuerza = cuerpo / rango
-
-        cerca_high = (h - c) <= rango * 0.10
-        cerca_low = (c - l) <= rango * 0.10
-
-        vela_verde = c > o
-        vela_roja = c < o
+        posicion = (c - l) / rango
 
         mecha_sup = h - max(o, c)
         mecha_inf = min(o, c) - l
 
-        if fuerza < 0.12:
+        vela_verde = c > o
+        vela_roja = c < o
+
+        if fuerza < 0.06:
             return False, "vela débil o indecisa"
 
         if direccion == "call":
-            if not vela_verde:
-                return False, "vela exacta no alcista"
+            if vela_roja and not (mecha_inf >= cuerpo * 1.2 and posicion >= 0.35):
+                return False, "CALL sin recuperación compradora"
 
-            if cerca_high and fuerza >= 0.72:
-                return False, "call tarde cerca del máximo"
+            if posicion >= 0.96 and fuerza >= 0.58:
+                return False, "CALL tarde cerca del máximo"
 
-            if mecha_sup >= cuerpo * 3.0 and fuerza < 0.35:
+            if mecha_sup >= cuerpo * 3.0 and fuerza < 0.32:
                 return False, "absorción vendedora fuerte"
 
-            if c < ac and fuerza < 0.24:
-                return False, "call sin recuperación suficiente"
+            return True, "vela exacta CALL válida"
 
-        elif direccion == "put":
-            if not vela_roja:
-                return False, "vela exacta no bajista"
+        if direccion == "put":
+            if vela_verde and not (mecha_sup >= cuerpo * 1.2 and posicion <= 0.65):
+                return False, "PUT sin rechazo vendedor"
 
-            if cerca_low and fuerza >= 0.72:
-                return False, "put tarde cerca del mínimo"
+            if posicion <= 0.04 and fuerza >= 0.58:
+                return False, "PUT tarde cerca del mínimo"
 
-            if mecha_inf >= cuerpo * 3.0 and fuerza < 0.35:
+            if mecha_inf >= cuerpo * 3.0 and fuerza < 0.32:
                 return False, "absorción compradora fuerte"
 
-            if c > ac and fuerza < 0.24:
-                return False, "put sin presión suficiente"
+            return True, "vela exacta PUT válida"
 
-        else:
-            return False, "dirección inválida"
-
-        return True, "vela exacta válida"
+        return False, "dirección inválida"
 
     except Exception as e:
         print("Error validando vela exacta:", activo, e)
@@ -233,6 +225,9 @@ def decidir_entrada(activo, direccion, candles, precio_referencia):
     try:
         candles = sorted(candles, key=lambda x: x["from"])
 
+        if len(candles) < 4:
+            return "esperar", "velas insuficientes"
+
         vela_actual = candles[-1]
         vela_anterior = candles[-2]
 
@@ -241,9 +236,10 @@ def decidir_entrada(activo, direccion, candles, precio_referencia):
         h = float(vela_actual["max"])
         l = float(vela_actual["min"])
 
-        cierre_anterior = float(vela_anterior["close"])
-        high_anterior = float(vela_anterior["max"])
-        low_anterior = float(vela_anterior["min"])
+        ao = float(vela_anterior["open"])
+        ac = float(vela_anterior["close"])
+        ah = float(vela_anterior["max"])
+        al = float(vela_anterior["min"])
 
         rango = h - l
         cuerpo = abs(c - o)
@@ -256,20 +252,25 @@ def decidir_entrada(activo, direccion, candles, precio_referencia):
         mecha_superior = h - max(o, c)
         mecha_inferior = min(o, c) - l
 
-        cerca_high = (h - c) <= rango * 0.10
-        cerca_low = (c - l) <= rango * 0.10
+        posicion = (c - l) / rango
+        cerca_high = posicion >= 0.88
+        cerca_low = posicion <= 0.12
+
+        vela_verde = c > o
+        vela_roja = c < o
 
         segundo = segundo_actual()
 
         if precio_referencia is not None:
             movimiento = abs(c - precio_referencia)
 
-            if movimiento > rango * 1.35:
+            if movimiento > rango * 1.20:
                 return "cancelar", "precio se alejó demasiado"
 
-        if segundo > 35:
+        if segundo > 36:
             return "cancelar", "se pasó la ventana segura"
 
+        # Evitar entrar en vela ya explotada.
         if fuerza > 0.82 and segundo > 14:
             return "cancelar", "vela demasiado corrida"
 
@@ -277,51 +278,47 @@ def decidir_entrada(activo, direccion, candles, precio_referencia):
         # CALL
         # =========================
         if direccion == "call":
+            rechazo_comprador = (
+                mecha_inferior >= cuerpo * 1.2
+                and posicion >= 0.42
+                and fuerza >= 0.14
+            )
 
-            if c <= o:
-                return "esperar", "vela actual aún no confirma call"
-
-            if cerca_high and fuerza >= 0.60:
-                return "esperar", "call cerca del máximo, esperar retroceso"
-
-            retroceso_sano = (
-                mecha_inferior >= cuerpo * 0.55
+            recuperacion = (
+                c > ac
+                and posicion >= 0.40
                 and fuerza >= 0.14
                 and not cerca_high
             )
 
-            continuacion_sana = (
-                c > cierre_anterior
-                and 0.14 <= fuerza <= 0.78
-                and not cerca_high
-            )
-
-            ruptura_temprana = (
-                c > high_anterior
-                and 0.14 <= fuerza <= 0.78
+            ruptura_controlada = (
+                c > ah
+                and fuerza <= 0.72
                 and segundo <= 28
                 and not cerca_high
             )
 
-            confirmacion_media = (
-                c > o
-                and c > cierre_anterior
-                and 0.14 <= fuerza <= 0.78
-                and segundo <= 35
-                and not cerca_high
+            continuacion_sana = (
+                vela_verde
+                and c > ac
+                and 0.16 <= fuerza <= 0.72
+                and posicion < 0.84
             )
 
-            if retroceso_sano:
-                return "entrar", "CALL por retroceso sano"
+            if cerca_high and fuerza >= 0.55:
+                return "esperar", "CALL alto en vela, esperar retroceso"
 
-            if ruptura_temprana:
-                return "entrar", "CALL por ruptura temprana"
+            if rechazo_comprador:
+                return "entrar", "CALL por rechazo comprador confirmado"
+
+            if ruptura_controlada:
+                return "entrar", "CALL por ruptura controlada"
 
             if continuacion_sana:
                 return "entrar", "CALL por continuación sana"
 
-            if confirmacion_media:
-                return "entrar", "CALL por confirmación de vela"
+            if recuperacion:
+                return "entrar", "CALL por recuperación"
 
             return "esperar", "CALL sin confirmación suficiente"
 
@@ -329,51 +326,47 @@ def decidir_entrada(activo, direccion, candles, precio_referencia):
         # PUT
         # =========================
         if direccion == "put":
+            rechazo_vendedor = (
+                mecha_superior >= cuerpo * 1.2
+                and posicion <= 0.58
+                and fuerza >= 0.14
+            )
 
-            if c >= o:
-                return "esperar", "vela actual aún no confirma put"
-
-            if cerca_low and fuerza >= 0.60:
-                return "esperar", "put cerca del mínimo, esperar retroceso"
-
-            retroceso_sano = (
-                mecha_superior >= cuerpo * 0.55
+            recuperacion_bajista = (
+                c < ac
+                and posicion <= 0.60
                 and fuerza >= 0.14
                 and not cerca_low
             )
 
-            continuacion_sana = (
-                c < cierre_anterior
-                and 0.14 <= fuerza <= 0.78
-                and not cerca_low
-            )
-
-            ruptura_temprana = (
-                c < low_anterior
-                and 0.14 <= fuerza <= 0.78
+            ruptura_controlada = (
+                c < al
+                and fuerza <= 0.72
                 and segundo <= 28
                 and not cerca_low
             )
 
-            confirmacion_media = (
-                c < o
-                and c < cierre_anterior
-                and 0.14 <= fuerza <= 0.78
-                and segundo <= 35
-                and not cerca_low
+            continuacion_sana = (
+                vela_roja
+                and c < ac
+                and 0.16 <= fuerza <= 0.72
+                and posicion > 0.16
             )
 
-            if retroceso_sano:
-                return "entrar", "PUT por retroceso sano"
+            if cerca_low and fuerza >= 0.55:
+                return "esperar", "PUT bajo en vela, esperar retroceso"
 
-            if ruptura_temprana:
-                return "entrar", "PUT por ruptura temprana"
+            if rechazo_vendedor:
+                return "entrar", "PUT por rechazo vendedor confirmado"
+
+            if ruptura_controlada:
+                return "entrar", "PUT por ruptura controlada"
 
             if continuacion_sana:
                 return "entrar", "PUT por continuación sana"
 
-            if confirmacion_media:
-                return "entrar", "PUT por confirmación de vela"
+            if recuperacion_bajista:
+                return "entrar", "PUT por recuperación bajista"
 
             return "esperar", "PUT sin confirmación suficiente"
 
@@ -629,6 +622,10 @@ def procesar_senales_pendientes(abrir_operacion):
 def validar_punto_entrada_en_vela(direccion, candles):
     try:
         candles = sorted(candles, key=lambda x: x["from"])
+
+        if len(candles) < 4:
+            return False, "velas insuficientes"
+
         actual = candles[-1]
 
         o = float(actual["open"])
@@ -637,32 +634,49 @@ def validar_punto_entrada_en_vela(direccion, candles):
         l = float(actual["min"])
 
         rango = h - l
-
         if rango <= 0:
             return False, "rango inválido"
 
-        posicion = (c - l) / rango
         cuerpo = abs(c - o)
         fuerza = cuerpo / rango
+        posicion = (c - l) / rango
+
+        mecha_sup = h - max(o, c)
+        mecha_inf = min(o, c) - l
+
+        vela_verde = c > o
+        vela_roja = c < o
+
+        if fuerza < 0.06:
+            return False, "vela sin cuerpo suficiente"
 
         if direccion == "call":
-            if posicion >= 0.86 and fuerza >= 0.45:
+            if posicion >= 0.96 and fuerza >= 0.58:
                 return False, "CALL bloqueado: precio demasiado arriba"
 
-            if c < o and posicion < 0.32:
-                return False, "CALL bloqueado: vela roja sin recuperación"
+            if vela_roja:
+                if not (mecha_inf >= cuerpo * 1.15 and posicion >= 0.34):
+                    return False, "CALL bloqueado: vela roja sin recuperación real"
 
-        elif direccion == "put":
-            if posicion <= 0.14 and fuerza >= 0.45:
+            if mecha_sup >= cuerpo * 3.0 and fuerza < 0.32:
+                return False, "CALL bloqueado: absorción vendedora"
+
+            return True, "punto CALL válido"
+
+        if direccion == "put":
+            if posicion <= 0.04 and fuerza >= 0.58:
                 return False, "PUT bloqueado: precio demasiado abajo"
 
-            if c > o and posicion > 0.68:
-                return False, "PUT bloqueado: vela verde sin presión vendedora"
+            if vela_verde:
+                if not (mecha_sup >= cuerpo * 1.15 and posicion <= 0.66):
+                    return False, "PUT bloqueado: vela verde sin rechazo real"
 
-        else:
-            return False, "dirección inválida"
+            if mecha_inf >= cuerpo * 3.0 and fuerza < 0.32:
+                return False, "PUT bloqueado: absorción compradora"
 
-        return True, "punto de entrada válido"
+            return True, "punto PUT válido"
+
+        return False, "dirección inválida"
 
     except Exception as e:
         print("Error validando punto de entrada:", e)

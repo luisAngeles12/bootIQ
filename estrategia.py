@@ -2035,7 +2035,29 @@ def analizar_activo(activo):
             razon_validacion_mercado
         )
         return None
+    ok_zona_sr, razon_zona_sr = validar_interaccion_soporte_resistencia(
+        senal["direccion"],
+        ctx["opens"],
+        ctx["closes"],
+        ctx["highs"],
+        ctx["lows"],
+        ctx["soporte"],
+        ctx["resistencia"],
+        ctx["vol"],
+        senal.get("puntaje", 0),
+        senal.get("patron", ""),
+        ctx.get("tipo_mercado", "INDEFINIDO"),
+        ctx.get("calidad_mercado", "NORMAL")
+    )
 
+    if not ok_zona_sr:
+        print(
+            senal["direccion"].upper(),
+            "bloqueado por soporte/resistencia:",
+            activo,
+            razon_zona_sr
+        )
+        return None
     bloqueada_contraria, razon_contraria = vela_contraria_reciente(
         ctx,
         senal["direccion"]
@@ -2105,6 +2127,8 @@ def analizar_activo(activo):
         + str(ctx.get("score_mercado", 0))
         + ", VALIDACIÓN MERCADO: "
         + razon_validacion_mercado
+        + ", ZONA SR: "
+        + razon_zona_sr
     )
 
     senal["precio_zona"] = precio_zona
