@@ -7,6 +7,7 @@ from zonas import *
 from mercado import obtener_velas
 import time
 import estado
+from contexto_mercado import detectar_tipo_mercado, validar_estrategia_por_mercado, diagnostico_calidad_mercado
 
 def contexto_operacion(direccion, tendencia, estructura, patron, rechazo, zona_call, zona_put, rsi, extension):
     if direccion == "call":
@@ -1410,6 +1411,9 @@ def motor_estrategias_profesional(ctx):
     activo = ctx["activo"]
     rsi = ctx["rsi"]
 
+    tipo_mercado = ctx.get("tipo_mercado", "INDEFINIDO")
+    razon_mercado = ctx.get("razon_mercado", "")
+
     estrategias_malas = estrategias_bloqueables()
     activos_malos = activos_bloqueables()
 
@@ -1954,16 +1958,82 @@ def motor_estrategias_profesional(ctx):
         reverse=True
     )
 
-    return señales[0]
+    mejor_senal = señales[0]
+
+    mejor_senal["tipo_mercado"] = tipo_mercado
+    mejor_senal["razon_mercado"] = razon_mercado
+    # mejor_senal["razon"] = (
+    #     mejor_senal["razon"]
+    #     + ", MERCADO: "
+    #     + tipo_mercado
+    #     + " - "
+    #     + razon_mercado
+    # )
+
+    return mejor_senal
 def analizar_activo(activo):
     ctx = leer_contexto_grafico(activo)
 
     if ctx is None:
         return None
 
+    # =========================
+    # FASE 1: LECTURA DEL MERCADO
+    # =========================
+    try:
+        candles_contexto = []
+
+        for i in range(len(ctx["closes"])):
+            candles_contexto.append({
+                "from": i,
+                "open": ctx["opens"][i],
+                "close": ctx["closes"][i],
+                "max": ctx["highs"][i],
+                "min": ctx["lows"][i]
+            })
+
+        tipo_mercado, razon_mercado = detectar_tipo_mercado(candles_contexto)
+        diagnostico = diagnostico_calidad_mercado(candles_contexto)
+
+        ctx["tipo_mercado"] = tipo_mercado
+        ctx["razon_mercado"] = razon_mercado
+        ctx["calidad_mercado"] = diagnostico.get("calidad", "SIN_DATOS")
+        ctx["score_mercado"] = diagnostico.get("score", 0)
+        ctx["detalle_calidad_mercado"] = diagnostico
+
+        print(
+            "MERCADO:",
+            activo,
+            "| tipo:", tipo_mercado,
+            "| calidad:", ctx["calidad_mercado"],
+            "| score:", ctx["score_mercado"],
+            "| razón:", razon_mercado
+        )
+
+    except Exception as e:
+        ctx["tipo_mercado"] = "INDEFINIDO"
+        ctx["razon_mercado"] = "error leyendo mercado: " + str(e)
+        ctx["calidad_mercado"] = "SIN_DATOS"
+        ctx["score_mercado"] = 0
+        ctx["detalle_calidad_mercado"] = {}
+
     senal = motor_estrategias_profesional(ctx)
 
     if senal is None:
+        return None
+
+    ok_mercado, razon_validacion_mercado = validar_estrategia_por_mercado(
+        senal,
+        ctx
+    )
+
+    if not ok_mercado:
+        print(
+            senal["direccion"].upper(),
+            "bloqueado por contexto de mercado:",
+            activo,
+            razon_validacion_mercado
+        )
         return None
 
     bloqueada_contraria, razon_contraria = vela_contraria_reciente(
@@ -2021,92 +2091,41 @@ def analizar_activo(activo):
         )
         return None
 
-    senal["razon"] = senal["razon"] + ", " + razon_ubicacion
-    senal["precio_zona"] = precio_zona
-    senal["vol"] = ctx["vol"]
-
-    return senal
-    ctx = leer_contexto_grafico(activo)
-
-    if ctx is None:
-        return None
-
-    senal = motor_estrategias_profesional(ctx)
-
-    if senal is None:
-        return None
-
-    bloqueada_contraria, razon_contraria = vela_contraria_reciente(
-        ctx,
-        senal["direccion"]
+    senal["razon"] = (
+        senal["razon"]
+        + ", "
+        + razon_ubicacion
+        + ", MERCADO: "
+        + ctx.get("tipo_mercado", "INDEFINIDO")
+        + " - "
+        + ctx.get("razon_mercado", "")
+        + ", CALIDAD MERCADO: "
+        + ctx.get("calidad_mercado", "SIN_DATOS")
+        + " score "
+        + str(ctx.get("score_mercado", 0))
+        + ", VALIDACIÓN MERCADO: "
+        + razon_validacion_mercado
     )
 
-    if bloqueada_contraria:
-        print(
-            senal["direccion"].upper(),
-            "bloqueado por vela contraria reciente:",
-            activo,
-            razon_contraria
-        )
-        return None
+    senal["precio_zona"] = precio_zona
+    senal["vol"] = ctx["vol"]
+    senal["tipo_mercado"] = ctx.get("tipo_mercado", "INDEFINIDO")
+    senal["razon_mercado"] = ctx.get("razon_mercado", "")
+    senal["calidad_mercado"] = ctx.get("calidad_mercado", "SIN_DATOS")
+    senal["score_mercado"] = ctx.get("score_mercado", 0)
 
-    # lo demás sigue igual...
-    ctx = leer_contexto_grafico(activo)
-
-    if ctx is None:
-        return None
-
-    senal = motor_estrategias_profesional(ctx)
-
-    if senal is None:
-        return None
-
-    # =========================
-    # Memoria de zona operada
-    # =========================
-    if senal["direccion"] == "call":
-        precio_zona = ctx["soporte"]
-    else:
-        precio_zona = ctx["resistencia"]
-
-    bloqueada, razon_zona = zona_ya_operada(
+    print(
+        "CONTEXTO FINAL:",
         activo,
         senal["direccion"],
-        precio_zona,
-        ctx["vol"]
+        senal["patron"],
+        "| MERCADO:",
+        senal.get("tipo_mercado"),
+        "-",
+        senal.get("razon_mercado"),
+        "| CALIDAD:",
+        senal.get("calidad_mercado"),
+        senal.get("score_mercado")
     )
-
-    if bloqueada:
-        print(
-            senal["direccion"].upper(),
-            "bloqueado por zona operada:",
-            activo,
-            razon_zona
-        )
-        return None
-
-    ok_ubicacion, razon_ubicacion = filtro_fatiga_y_ubicacion(
-        senal["direccion"],
-        ctx["opens"],
-        ctx["closes"],
-        ctx["highs"],
-        ctx["lows"],
-        ctx["soporte"],
-        ctx["resistencia"],
-        ctx["vol"]
-    )
-
-    if not ok_ubicacion:
-        print(
-            senal["direccion"].upper(),
-            "bloqueado por ubicación/fatiga:",
-            activo,
-            razon_ubicacion
-        )
-        return None
-
-    senal["razon"] = senal["razon"] + ", " + razon_ubicacion
-    senal["precio_zona"] = precio_zona
-    senal["vol"] = ctx["vol"]
 
     return senal
