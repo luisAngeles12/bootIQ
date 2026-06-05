@@ -296,12 +296,26 @@ def validar_interaccion_soporte_resistencia(
 
         patron_texto = str(patron).lower()
 
+        # =========================
+        # BLOQUEO DEFENSIVO EN MERCADO CAÓTICO
+        # =========================
+        if calidad_mercado == "CAOTICO":
+
+            if direccion == "call" and cerca_resistencia and not ruptura_resistencia:
+                return False, "CALL bloqueado: mercado caótico y resistencia cerca"
+
+            if direccion == "put" and cerca_soporte and not ruptura_soporte:
+                return False, "PUT bloqueado: mercado caótico y soporte cerca"
+
+        # =========================
+        # CALL / SUBIDA
+        # =========================
         if direccion == "call":
             if cerca_resistencia and not ruptura_resistencia:
                 if falsa_ruptura_resistencia:
                     return False, "CALL bloqueado: falsa ruptura bajista en resistencia"
 
-                if calidad_mercado in ["SUCIO", "CAOTICO"] and puntaje < 21:
+                if calidad_mercado == "SUCIO" and puntaje < 21:
                     return False, "CALL bloqueado: resistencia cerca en mercado sucio sin puntaje suficiente"
 
                 if "pullback" in patron_texto and puntaje < 20:
@@ -311,12 +325,15 @@ def validar_interaccion_soporte_resistencia(
 
             return True, "CALL permitido: zona sin conflicto fuerte"
 
+        # =========================
+        # PUT / BAJADA
+        # =========================
         if direccion == "put":
             if cerca_soporte and not ruptura_soporte:
                 if falsa_ruptura_soporte:
                     return False, "PUT bloqueado: falsa ruptura alcista en soporte"
 
-                if calidad_mercado in ["SUCIO", "CAOTICO"] and puntaje < 21:
+                if calidad_mercado == "SUCIO" and puntaje < 21:
                     return False, "PUT bloqueado: soporte cerca en mercado sucio sin puntaje suficiente"
 
                 if "pullback" in patron_texto and puntaje < 20:

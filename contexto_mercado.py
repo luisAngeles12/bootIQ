@@ -142,7 +142,10 @@ def validar_estrategia_por_mercado(senal, ctx):
         return False, "señal vacía"
 
     tipo_mercado = ctx.get("tipo_mercado", "INDEFINIDO")
+    calidad_mercado = ctx.get("calidad_mercado", "NORMAL")
+
     patron = senal.get("patron", "")
+    patron_texto = str(patron).lower()
     direccion = senal.get("direccion", "")
     puntaje = senal.get("puntaje", 0)
 
@@ -153,18 +156,51 @@ def validar_estrategia_por_mercado(senal, ctx):
     liquidity_sweep = ctx.get("liquidity_sweep", 0)
 
     # =========================
+    # MERCADO CAÓTICO
+    # =========================
+    if calidad_mercado == "CAOTICO":
+
+        # Los pullbacks fueron los que más fallaron en mercado caótico.
+        if "pullback" in patron_texto:
+            return False, "mercado caótico: pullback bloqueado"
+
+        # En caótico no permitimos operaciones contra tendencia.
+        if tipo_mercado == "TENDENCIA_ALCISTA" and direccion == "put":
+            return False, "mercado caótico: PUT contra tendencia bloqueado"
+
+        if tipo_mercado == "TENDENCIA_BAJISTA" and direccion == "call":
+            return False, "mercado caótico: CALL contra tendencia bloqueado"
+
+        # Solo señales premium en mercado caótico.
+        if puntaje >= 24 and (
+            "liquidity sweep" in patron_texto
+            or "rechazo" in patron_texto
+            or "choch" in patron_texto
+        ):
+            return True, "mercado caótico: señal premium permitida"
+
+        return False, "mercado caótico: señal no premium bloqueada"
+
+    # =========================
     # MERCADO EN RANGO
     # =========================
     if tipo_mercado == "RANGO":
 
-        # En rango NO queremos pullback.
-        # El pullback funciona mejor en tendencia, no en lateralidad.
-        if "pullback" in patron:
+        # En rango el pullback se permite solo si viene apoyado por zona/rechazo.
+        if "pullback" in patron_texto:
+            if puntaje >= 21 and (
+                cerca_soporte
+                or cerca_resistencia
+                or rechazo != 0
+                or liquidity_sweep != 0
+            ):
+                return True, "pullback permitido en rango con zona/rechazo"
+
             return False, "pullback bloqueado en mercado en rango"
 
         # CHOCH en rango solo si tiene confirmación fuerte.
-        if "CHOCH" in patron:
-            if puntaje >= 21 and (
+        if "choch" in patron_texto:
+            if puntaje >= 20 and (
                 cerca_soporte
                 or cerca_resistencia
                 or rechazo != 0
@@ -193,11 +229,9 @@ def validar_estrategia_por_mercado(senal, ctx):
     # =========================
     if tipo_mercado == "TENDENCIA_ALCISTA":
 
-        # A favor de tendencia
         if direccion == "call":
             return True, "CALL permitido a favor de tendencia alcista"
 
-        # Contra tendencia solo con agotamiento real
         if direccion == "put":
             if (
                 cerca_resistencia
@@ -217,11 +251,9 @@ def validar_estrategia_por_mercado(senal, ctx):
     # =========================
     if tipo_mercado == "TENDENCIA_BAJISTA":
 
-        # A favor de tendencia
         if direccion == "put":
             return True, "PUT permitido a favor de tendencia bajista"
 
-        # Contra tendencia solo con agotamiento real
         if direccion == "call":
             if (
                 cerca_soporte
@@ -247,8 +279,8 @@ def validar_estrategia_por_mercado(senal, ctx):
     # =========================
     if tipo_mercado == "EXPANSION":
         if puntaje >= 23 and (
-            "liquidity sweep" in patron
-            or "rechazo" in patron
+            "liquidity sweep" in patron_texto
+            or "rechazo" in patron_texto
             or rechazo != 0
         ):
             return True, "señal premium permitida en expansión"
@@ -260,8 +292,8 @@ def validar_estrategia_por_mercado(senal, ctx):
     # =========================
     if tipo_mercado == "INDEFINIDO":
         if puntaje >= 21 and (
-            "liquidity sweep" in patron
-            or "rechazo" in patron
+            "liquidity sweep" in patron_texto
+            or "rechazo" in patron_texto
             or rechazo != 0
             or cerca_soporte
             or cerca_resistencia
@@ -271,8 +303,8 @@ def validar_estrategia_por_mercado(senal, ctx):
         return False, "mercado indefinido: señal débil bloqueada"
 
     return True, "mercado permitido"
- 
 def diagnostico_calidad_mercado(candles):
+    
     try:
         if not candles or len(candles) < 20:
             return {
