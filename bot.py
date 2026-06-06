@@ -14,7 +14,11 @@ def main():
     conectar()
     asegurar_historial_csv()
     cargar_operaciones_pendientes()
+
     ronda_estadisticas = 0
+    operaciones_desde_resumen_mercado = 0
+    ultima_impresion_estado = 0
+
     while True:
         revisar_operaciones_abiertas()
         procesar_senales_pendientes(abrir_operacion)
@@ -31,13 +35,26 @@ def main():
         balance_actual = estado.Iq.get_balance()
         ganancia_neta = balance_actual - estado.balance_inicial
 
-        print("\nBalance actual:", balance_actual)
-        print("Ganancia neta:", round(ganancia_neta, 2))
-        print("Operaciones abiertas:", len(estado.operaciones_abiertas))
+        ahora = time.time()
+
+        # Imprime balance solo cada 20 segundos para no llenar la terminal.
+        if ahora - ultima_impresion_estado >= 20:
+            print(
+                "\nBalance:",
+                round(balance_actual, 2),
+                "| Neto:",
+                round(ganancia_neta, 2),
+                "| Abiertas:",
+                len(estado.operaciones_abiertas)
+            )
+            ultima_impresion_estado = ahora
+
         ronda_estadisticas += 1
+
         if ronda_estadisticas >= MOSTRAR_ESTADISTICAS_CADA_RONDAS:
             imprimir_estadisticas()
             ronda_estadisticas = 0
+
         if ganancia_neta <= STOP_LOSS:
             print("Stop loss alcanzado. Bot detenido.")
             break
@@ -48,7 +65,7 @@ def main():
 
         segundo = segundo_actual()
 
-        # Torneo: analizamos casi toda la vela para no perder oportunidades.
+        # Ventana de búsqueda de entrada.
         if not (0 <= segundo <= 24):
             time.sleep(0.25)
             continue
@@ -58,12 +75,22 @@ def main():
             time.sleep(0.25)
             continue
 
-        print("\nAnalizando mercado para torneo...")
-
         activos = obtener_activos()
-        print("Activos compatibles:", len(activos))
-
         senales = []
+        bloqueos_importantes = []
+
+        resumen_mercado = {
+            "TENDENCIA_ALCISTA": 0,
+            "TENDENCIA_BAJISTA": 0,
+            "RANGO": 0,
+            "COMPRESION": 0,
+            "EXPANSION": 0,
+            "INDEFINIDO": 0,
+            "LIMPIO": 0,
+            "NORMAL": 0,
+            "SUCIO": 0,
+            "CAOTICO": 0
+        }
 
         for item in activos:
             try:
@@ -79,64 +106,91 @@ def main():
                     senal["tipo"] = tipo
                     senales.append(senal)
 
+                    tipo_m = senal.get("tipo_mercado")
+                    calidad_m = senal.get("calidad_mercado")
+
+                    if tipo_m in resumen_mercado:
+                        resumen_mercado[tipo_m] += 1
+
+                    if calidad_m in resumen_mercado:
+                        resumen_mercado[calidad_m] += 1
+
             except Exception as e:
-                print("Error analizando", item, e)
+                bloqueos_importantes.append("Error analizando " + str(item) + ": " + str(e))
 
-        print("Señales preparadas:", len(senales))
+        if senales:
+            print("\nSeñales preparadas:", len(senales))
 
-        if not senales:
-            time.sleep(0.25)
-            continue
-
-        senales = sorted(
-            senales,
-            key=lambda x: (
-                x.get("prioridad", 0),
-                x["puntaje"]
-            ),
-            reverse=True
-        )
-
-        for s in senales[:10]:
-            print(
-                s["activo"],
-                s["tipo"],
-                s["direccion"],
-                "puntaje:",
-                s["puntaje"],
-                "| calidad:",
-                s.get("calidad", "N/A"),
-                "| prioridad:",
-                s.get("prioridad", 0),
-                "| patrón:",
-                s["patron"],
-                "| RSI:",
-                s["rsi"]
+            senales = sorted(
+                senales,
+                key=lambda x: (
+                    x.get("prioridad", 0),
+                    x["puntaje"]
+                ),
+                reverse=True
             )
+
+            for s in senales[:5]:
+                print(
+                    s["activo"],
+                    s["tipo"],
+                    s["direccion"],
+                    "| puntaje:",
+                    s["puntaje"],
+                    "| calidad:",
+                    s.get("calidad", "N/A"),
+                    "| patrón:",
+                    s["patron"],
+                    "| RSI:",
+                    s["rsi"],
+                    "| mercado:",
+                    s.get("tipo_mercado", "N/A"),
+                    "| calidad mercado:",
+                    s.get("calidad_mercado", "N/A")
+                )
 
         abiertas_ahora = 0
 
         for senal in senales:
             if len(estado.operaciones_abiertas) >= MAX_OPERACIONES_ABIERTAS:
                 break
-        
+
             if any(op["activo"] == senal["activo"] for op in estado.operaciones_abiertas):
                 continue
-        
-            # Para mantener calidad: operar solo señales buenas.
+
             if senal.get("prioridad", 0) < 3:
                 continue
-        
+
             if entrada_rapida_disponible(senal):
                 if abrir_operacion(senal):
                     abiertas_ahora += 1
+                    operaciones_desde_resumen_mercado += 1
             else:
                 guardar_senal_pendiente(senal)
+
             time.sleep(0.02)
 
-        print("Operaciones abiertas en esta ronda:", abiertas_ahora)
+        if abiertas_ahora > 0:
+            print("Operaciones abiertas en esta ronda:", abiertas_ahora)
+
+        # Resumen de mercado cada 5 operaciones abiertas por el bot.
+        if operaciones_desde_resumen_mercado >= 5:
+            print("\n===== RESUMEN DE MERCADO CADA 5 OPERACIONES =====")
+            print(
+                "Tendencias:",
+                "ALCISTA", resumen_mercado["TENDENCIA_ALCISTA"],
+                "| BAJISTA", resumen_mercado["TENDENCIA_BAJISTA"],
+                "| RANGO", resumen_mercado["RANGO"]
+            )
+            print(
+                "Calidad:",
+                "LIMPIO", resumen_mercado["LIMPIO"],
+                "| NORMAL", resumen_mercado["NORMAL"],
+                "| SUCIO", resumen_mercado["SUCIO"],
+                "| CAOTICO", resumen_mercado["CAOTICO"]
+            )
+            operaciones_desde_resumen_mercado = 0
+
         time.sleep(0.25)
-
-
 if __name__ == "__main__":
     main()

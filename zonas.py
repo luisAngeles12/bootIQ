@@ -297,10 +297,9 @@ def validar_interaccion_soporte_resistencia(
         patron_texto = str(patron).lower()
 
         # =========================
-        # BLOQUEO DEFENSIVO EN MERCADO CAÓTICO
+        # CAÓTICO: bloqueo fuerte solo contra zonas peligrosas
         # =========================
         if calidad_mercado == "CAOTICO":
-
             if direccion == "call" and cerca_resistencia and not ruptura_resistencia:
                 return False, "CALL bloqueado: mercado caótico y resistencia cerca"
 
@@ -315,10 +314,11 @@ def validar_interaccion_soporte_resistencia(
                 if falsa_ruptura_resistencia:
                     return False, "CALL bloqueado: falsa ruptura bajista en resistencia"
 
-                if calidad_mercado == "SUCIO" and puntaje < 21:
-                    return False, "CALL bloqueado: resistencia cerca en mercado sucio sin puntaje suficiente"
+                # Antes estaba muy duro con SUCIO. Ahora solo bloquea puntajes flojos.
+                if calidad_mercado == "SUCIO" and puntaje < 18:
+                    return False, "CALL bloqueado: resistencia cerca en mercado sucio con puntaje bajo"
 
-                if "pullback" in patron_texto and puntaje < 20:
+                if "pullback" in patron_texto and puntaje < 19:
                     return False, "CALL pullback bloqueado cerca de resistencia"
 
                 return True, "CALL permitido con cautela: resistencia cerca"
@@ -333,10 +333,11 @@ def validar_interaccion_soporte_resistencia(
                 if falsa_ruptura_soporte:
                     return False, "PUT bloqueado: falsa ruptura alcista en soporte"
 
-                if calidad_mercado == "SUCIO" and puntaje < 21:
-                    return False, "PUT bloqueado: soporte cerca en mercado sucio sin puntaje suficiente"
+                # Antes estaba muy duro con SUCIO. Ahora solo bloquea puntajes flojos.
+                if calidad_mercado == "SUCIO" and puntaje < 18:
+                    return False, "PUT bloqueado: soporte cerca en mercado sucio con puntaje bajo"
 
-                if "pullback" in patron_texto and puntaje < 20:
+                if "pullback" in patron_texto and puntaje < 19:
                     return False, "PUT pullback bloqueado cerca de soporte"
 
                 return True, "PUT permitido con cautela: soporte cerca"

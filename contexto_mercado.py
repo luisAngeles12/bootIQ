@@ -143,6 +143,11 @@ def validar_estrategia_por_mercado(senal, ctx):
 
     tipo_mercado = ctx.get("tipo_mercado", "INDEFINIDO")
     calidad_mercado = ctx.get("calidad_mercado", "NORMAL")
+    score_mercado = ctx.get("score_mercado", 0)
+
+    estado_tendencia = ctx.get("estado_tendencia", "INDEFINIDA")
+    fuerza_tendencia = ctx.get("fuerza_tendencia", 0)
+    direccion_tendencia = ctx.get("direccion_tendencia", "INDEFINIDA")
 
     patron = senal.get("patron", "")
     patron_texto = str(patron).lower()
@@ -155,50 +160,106 @@ def validar_estrategia_por_mercado(senal, ctx):
     patron_vela = ctx.get("patron", 0)
     liquidity_sweep = ctx.get("liquidity_sweep", 0)
 
+    direccion_senal = "ALCISTA" if direccion == "call" else "BAJISTA"
+
+    a_favor_tendencia = direccion_senal == direccion_tendencia
+    contra_tendencia = (
+        direccion_tendencia in ["ALCISTA", "BAJISTA"]
+        and direccion_senal != direccion_tendencia
+    )
+
+    tendencia_fuerte = "FUERTE" in estado_tendencia
+    tendencia_normal = "NORMAL" in estado_tendencia
+    tendencia_debil = "DEBIL" in estado_tendencia
+    tendencia_agotada = "AGOTADA" in estado_tendencia
+
     # =========================
     # MERCADO CAÓTICO
     # =========================
     if calidad_mercado == "CAOTICO":
+        if contra_tendencia and not tendencia_agotada:
+            return False, "caótico: contra tendencia bloqueada sin agotamiento"
 
-        # Los pullbacks fueron los que más fallaron en mercado caótico.
-        if "pullback" in patron_texto:
-            return False, "mercado caótico: pullback bloqueado"
-
-        # En caótico no permitimos operaciones contra tendencia.
-        if tipo_mercado == "TENDENCIA_ALCISTA" and direccion == "put":
-            return False, "mercado caótico: PUT contra tendencia bloqueado"
-
-        if tipo_mercado == "TENDENCIA_BAJISTA" and direccion == "call":
-            return False, "mercado caótico: CALL contra tendencia bloqueado"
-
-        # Solo señales premium en mercado caótico.
         if puntaje >= 24 and (
             "liquidity sweep" in patron_texto
             or "rechazo" in patron_texto
             or "choch" in patron_texto
+            or rechazo != 0
+            or liquidity_sweep != 0
         ):
-            return True, "mercado caótico: señal premium permitida"
+            return True, "caótico: señal premium permitida"
 
-        return False, "mercado caótico: señal no premium bloqueada"
+        return False, "caótico: señal no premium bloqueada"
+
+    # =========================
+    # TENDENCIA FUERTE
+    # =========================
+    if tendencia_fuerte:
+        if a_favor_tendencia:
+            if puntaje >= 17:
+                return True, "a favor de tendencia fuerte"
+            return False, "tendencia fuerte: señal débil"
+
+        if contra_tendencia:
+            if tendencia_agotada and puntaje >= 23 and (
+                cerca_soporte
+                or cerca_resistencia
+                or rechazo != 0
+                or liquidity_sweep != 0
+            ):
+                return True, "contra tendencia permitida por agotamiento fuerte"
+
+            return False, "contra tendencia bloqueada: tendencia fuerte activa"
+
+    # =========================
+    # TENDENCIA NORMAL
+    # =========================
+    if tendencia_normal:
+        if a_favor_tendencia:
+            if puntaje >= 17:
+                return True, "a favor de tendencia normal"
+            return False, "tendencia normal: señal débil"
+
+        if contra_tendencia:
+            if puntaje >= 23 and (
+                cerca_soporte
+                or cerca_resistencia
+                or rechazo != 0
+                or liquidity_sweep != 0
+                or "rechazo" in patron_texto
+            ):
+                return True, "contra tendencia permitida por agotamiento/zona"
+
+            return False, "contra tendencia bloqueada en tendencia normal"
+
+    # =========================
+    # TENDENCIA DÉBIL / AGOTADA
+    # =========================
+    if tendencia_debil or tendencia_agotada:
+        if "liquidity sweep" in patron_texto and puntaje >= 20:
+            return True, "sweep permitido en tendencia débil/agotada"
+
+        if "rechazo" in patron_texto and puntaje >= 18:
+            return True, "rechazo permitido en tendencia débil/agotada"
+
+        if "choch" in patron_texto and puntaje >= 20:
+            return True, "CHOCH permitido en tendencia débil/agotada"
+
+        if a_favor_tendencia and puntaje >= 19:
+            return True, "señal a favor permitida en tendencia débil"
+
+        return False, "tendencia débil/agotada: señal sin confirmación"
 
     # =========================
     # MERCADO EN RANGO
     # =========================
     if tipo_mercado == "RANGO":
 
-        # En rango el pullback se permite solo si viene apoyado por zona/rechazo.
-        if "pullback" in patron_texto:
-            if puntaje >= 21 and (
-                cerca_soporte
-                or cerca_resistencia
-                or rechazo != 0
-                or liquidity_sweep != 0
-            ):
-                return True, "pullback permitido en rango con zona/rechazo"
+        if "liquidity sweep" in patron_texto:
+            if puntaje >= 20:
+                return True, "liquidity sweep permitido en rango"
+            return False, "liquidity sweep débil bloqueado en rango"
 
-            return False, "pullback bloqueado en mercado en rango"
-
-        # CHOCH en rango solo si tiene confirmación fuerte.
         if "choch" in patron_texto:
             if puntaje >= 20 and (
                 cerca_soporte
@@ -206,73 +267,45 @@ def validar_estrategia_por_mercado(senal, ctx):
                 or rechazo != 0
                 or liquidity_sweep != 0
             ):
-                return True, "CHOCH permitido en rango por zona/rechazo fuerte"
+                return True, "CHOCH permitido en rango con zona/rechazo"
 
-            return False, "CHOCH bloqueado en mercado en rango"
+            return False, "CHOCH bloqueado en rango sin confirmación"
 
-        # CALL en rango: solo abajo del rango o con rechazo/liquidez.
+        if "pullback" in patron_texto:
+            if puntaje >= 21 and (
+                cerca_soporte
+                or cerca_resistencia
+                or rechazo != 0
+                or score_mercado >= 55
+            ):
+                return True, "pullback permitido en rango con contexto"
+
+            return False, "pullback bloqueado en rango sin contexto"
+
         if direccion == "call":
-            if cerca_soporte or rechazo == 1 or liquidity_sweep == 1:
+            if cerca_soporte or rechazo == 1 or liquidity_sweep == 1 or puntaje >= 22:
                 return True, "CALL permitido en rango por soporte/rechazo/liquidez"
 
-            return False, "CALL bloqueado en rango: no está abajo del rango"
+            return False, "CALL bloqueado en rango sin ventaja"
 
-        # PUT en rango: solo arriba del rango o con rechazo/liquidez.
         if direccion == "put":
-            if cerca_resistencia or rechazo == -1 or liquidity_sweep == -1:
+            if cerca_resistencia or rechazo == -1 or liquidity_sweep == -1 or puntaje >= 22:
                 return True, "PUT permitido en rango por resistencia/rechazo/liquidez"
 
-            return False, "PUT bloqueado en rango: no está arriba del rango"
-
-    # =========================
-    # TENDENCIA ALCISTA
-    # =========================
-    if tipo_mercado == "TENDENCIA_ALCISTA":
-
-        if direccion == "call":
-            return True, "CALL permitido a favor de tendencia alcista"
-
-        if direccion == "put":
-            if (
-                cerca_resistencia
-                and rechazo == -1
-                and (
-                    patron_vela == -1
-                    or liquidity_sweep == -1
-                    or puntaje >= 21
-                )
-            ):
-                return True, "PUT contra tendencia permitido por agotamiento alcista"
-
-            return False, "PUT bloqueado contra tendencia alcista sin agotamiento"
-
-    # =========================
-    # TENDENCIA BAJISTA
-    # =========================
-    if tipo_mercado == "TENDENCIA_BAJISTA":
-
-        if direccion == "put":
-            return True, "PUT permitido a favor de tendencia bajista"
-
-        if direccion == "call":
-            if (
-                cerca_soporte
-                and rechazo == 1
-                and (
-                    patron_vela == 1
-                    or liquidity_sweep == 1
-                    or puntaje >= 21
-                )
-            ):
-                return True, "CALL contra tendencia permitido por agotamiento bajista"
-
-            return False, "CALL bloqueado contra tendencia bajista sin agotamiento"
+            return False, "PUT bloqueado en rango sin ventaja"
 
     # =========================
     # COMPRESIÓN
     # =========================
     if tipo_mercado == "COMPRESION":
-        return False, "mercado en compresión: esperar ruptura"
+        if puntaje >= 22 and (
+            "liquidity sweep" in patron_texto
+            or "rechazo" in patron_texto
+            or rechazo != 0
+        ):
+            return True, "señal fuerte permitida en compresión"
+
+        return False, "mercado en compresión: esperar señal fuerte"
 
     # =========================
     # EXPANSIÓN
@@ -413,4 +446,192 @@ def diagnostico_calidad_mercado(candles):
             "calidad": "ERROR",
             "score": 0,
             "razon": str(e)
+        }
+    
+def diagnostico_tendencia_avanzada(candles):
+    try:
+        if not candles or len(candles) < 20:
+            return {
+                "estado_tendencia": "SIN_DATOS",
+                "fuerza_tendencia": 0,
+                "direccion_tendencia": "INDEFINIDA",
+                "razon_tendencia": "velas insuficientes"
+            }
+
+        candles = sorted(candles, key=lambda x: x["from"])
+        ultimas = candles[-20:]
+
+        closes = [float(c["close"]) for c in ultimas]
+        highs = [float(c["max"]) for c in ultimas]
+        lows = [float(c["min"]) for c in ultimas]
+        opens = [float(c["open"]) for c in ultimas]
+
+        maximo = max(highs)
+        minimo = min(lows)
+        rango_total = maximo - minimo
+
+        if rango_total <= 0:
+            return {
+                "estado_tendencia": "INDEFINIDA",
+                "fuerza_tendencia": 0,
+                "direccion_tendencia": "INDEFINIDA",
+                "razon_tendencia": "rango inválido"
+            }
+
+        avance = closes[-1] - closes[0]
+        fuerza_base = abs(avance) / rango_total
+
+        cierres_alcistas = 0
+        cierres_bajistas = 0
+
+        for i in range(1, len(closes)):
+            if closes[i] > closes[i - 1]:
+                cierres_alcistas += 1
+            elif closes[i] < closes[i - 1]:
+                cierres_bajistas += 1
+
+        maximos_crecientes = 0
+        minimos_crecientes = 0
+        maximos_decrecientes = 0
+        minimos_decrecientes = 0
+
+        for i in range(1, len(highs)):
+            if highs[i] > highs[i - 1]:
+                maximos_crecientes += 1
+            elif highs[i] < highs[i - 1]:
+                maximos_decrecientes += 1
+
+            if lows[i] > lows[i - 1]:
+                minimos_crecientes += 1
+            elif lows[i] < lows[i - 1]:
+                minimos_decrecientes += 1
+
+        cuerpos = []
+        mechas_contra = 0
+
+        for i in range(len(ultimas)):
+            o = opens[i]
+            c = closes[i]
+            h = highs[i]
+            l = lows[i]
+
+            rango = h - l
+            cuerpo = abs(c - o)
+
+            if rango <= 0:
+                continue
+
+            cuerpos.append(cuerpo / rango)
+
+            if avance > 0:
+                mecha_sup = h - max(o, c)
+                if mecha_sup >= cuerpo * 1.8:
+                    mechas_contra += 1
+
+            if avance < 0:
+                mecha_inf = min(o, c) - l
+                if mecha_inf >= cuerpo * 1.8:
+                    mechas_contra += 1
+
+        cuerpo_promedio = sum(cuerpos) / len(cuerpos) if cuerpos else 0
+
+        # =========================
+        # Dirección principal
+        # =========================
+        if avance > 0:
+            direccion = "ALCISTA"
+            puntos_direccion = cierres_alcistas + maximos_crecientes + minimos_crecientes
+        elif avance < 0:
+            direccion = "BAJISTA"
+            puntos_direccion = cierres_bajistas + maximos_decrecientes + minimos_decrecientes
+        else:
+            direccion = "INDEFINIDA"
+            puntos_direccion = 0
+
+        fuerza = 0
+        fuerza += fuerza_base * 45
+        fuerza += min(puntos_direccion, 38)
+        fuerza += cuerpo_promedio * 17
+
+        # Penalización por mechas contrarias.
+        fuerza -= mechas_contra * 4
+
+        if fuerza < 0:
+            fuerza = 0
+
+        if fuerza > 100:
+            fuerza = 100
+
+        fuerza = round(fuerza, 2)
+
+        # =========================
+        # Agotamiento
+        # =========================
+        ultimas_5 = ultimas[-5:]
+        mechas_agotamiento = 0
+        velas_debilitadas = 0
+
+        for cdl in ultimas_5:
+            o = float(cdl["open"])
+            c = float(cdl["close"])
+            h = float(cdl["max"])
+            l = float(cdl["min"])
+
+            rango = h - l
+            cuerpo = abs(c - o)
+
+            if rango <= 0:
+                continue
+
+            if cuerpo <= rango * 0.28:
+                velas_debilitadas += 1
+
+            if direccion == "ALCISTA":
+                mecha_sup = h - max(o, c)
+                if mecha_sup >= cuerpo * 1.8:
+                    mechas_agotamiento += 1
+
+            if direccion == "BAJISTA":
+                mecha_inf = min(o, c) - l
+                if mecha_inf >= cuerpo * 1.8:
+                    mechas_agotamiento += 1
+
+        agotada = mechas_agotamiento >= 3 or velas_debilitadas >= 4
+
+        if direccion == "INDEFINIDA":
+            estado = "INDEFINIDA"
+            razon = "sin avance direccional claro"
+        elif agotada and fuerza >= 45:
+            estado = direccion + "_AGOTADA"
+            razon = "tendencia con señales de agotamiento"
+        elif fuerza >= 70:
+            estado = direccion + "_FUERTE"
+            razon = "tendencia fuerte con avance claro"
+        elif fuerza >= 50:
+            estado = direccion + "_NORMAL"
+            razon = "tendencia operable"
+        elif fuerza >= 35:
+            estado = direccion + "_DEBIL"
+            razon = "tendencia débil o con poco avance"
+        else:
+            estado = "INDEFINIDA"
+            razon = "tendencia demasiado débil"
+
+        return {
+            "estado_tendencia": estado,
+            "fuerza_tendencia": fuerza,
+            "direccion_tendencia": direccion,
+            "razon_tendencia": razon,
+            "mechas_agotamiento": mechas_agotamiento,
+            "velas_debilitadas": velas_debilitadas,
+            "fuerza_base": round(fuerza_base, 2),
+            "cuerpo_promedio": round(cuerpo_promedio, 2)
+        }
+
+    except Exception as e:
+        return {
+            "estado_tendencia": "ERROR",
+            "fuerza_tendencia": 0,
+            "direccion_tendencia": "INDEFINIDA",
+            "razon_tendencia": "error tendencia avanzada: " + str(e)
         }

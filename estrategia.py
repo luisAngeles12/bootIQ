@@ -7,7 +7,7 @@ from zonas import *
 from mercado import obtener_velas
 import time
 import estado
-from contexto_mercado import detectar_tipo_mercado, validar_estrategia_por_mercado, diagnostico_calidad_mercado
+from contexto_mercado import detectar_tipo_mercado, validar_estrategia_por_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
 
 def contexto_operacion(direccion, tendencia, estructura, patron, rechazo, zona_call, zona_put, rsi, extension):
     if direccion == "call":
@@ -1992,14 +1992,21 @@ def analizar_activo(activo):
                 "min": ctx["lows"][i]
             })
 
-        tipo_mercado, razon_mercado = detectar_tipo_mercado(candles_contexto)
-        diagnostico = diagnostico_calidad_mercado(candles_contexto)
-
-        ctx["tipo_mercado"] = tipo_mercado
-        ctx["razon_mercado"] = razon_mercado
-        ctx["calidad_mercado"] = diagnostico.get("calidad", "SIN_DATOS")
-        ctx["score_mercado"] = diagnostico.get("score", 0)
-        ctx["detalle_calidad_mercado"] = diagnostico
+            tipo_mercado, razon_mercado = detectar_tipo_mercado(candles_contexto)
+            diagnostico = diagnostico_calidad_mercado(candles_contexto)
+            diagnostico_tendencia = diagnostico_tendencia_avanzada(candles_contexto)
+            
+            ctx["tipo_mercado"] = tipo_mercado
+            ctx["razon_mercado"] = razon_mercado
+            ctx["calidad_mercado"] = diagnostico.get("calidad", "SIN_DATOS")
+            ctx["score_mercado"] = diagnostico.get("score", 0)
+            ctx["detalle_calidad_mercado"] = diagnostico
+            
+            ctx["estado_tendencia"] = diagnostico_tendencia.get("estado_tendencia", "INDEFINIDA")
+            ctx["fuerza_tendencia"] = diagnostico_tendencia.get("fuerza_tendencia", 0)
+            ctx["direccion_tendencia"] = diagnostico_tendencia.get("direccion_tendencia", "INDEFINIDA")
+            ctx["razon_tendencia"] = diagnostico_tendencia.get("razon_tendencia", "")
+            ctx["detalle_tendencia"] = diagnostico_tendencia
 
         print(
             "MERCADO:",
@@ -2121,11 +2128,15 @@ def analizar_activo(activo):
         + ctx.get("tipo_mercado", "INDEFINIDO")
         + " - "
         + ctx.get("razon_mercado", "")
-        + ", CALIDAD MERCADO: "
-        + ctx.get("calidad_mercado", "SIN_DATOS")
-        + " score "
-        + str(ctx.get("score_mercado", 0))
-        + ", VALIDACIÓN MERCADO: "
+       + ", CALIDAD MERCADO: "
+       + ctx.get("calidad_mercado", "SIN_DATOS")
+       + " score "
+       + str(ctx.get("score_mercado", 0))
+       + ", TENDENCIA AVANZADA: "
+       + ctx.get("estado_tendencia", "INDEFINIDA")
+       + " fuerza "
+       + str(ctx.get("fuerza_tendencia", 0))
+       + ", VALIDACIÓN MERCADO: "
         + razon_validacion_mercado
         + ", ZONA SR: "
         + razon_zona_sr
