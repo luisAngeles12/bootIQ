@@ -127,3 +127,168 @@ def patron_price_action_avanzado(opens, closes, highs, lows):
         return 0, "sin patrón", 0
     patrones = sorted(patrones, key=lambda x: x[2], reverse=True)
     return patrones[0]
+
+def diagnostico_accion_precio_zona(
+    direccion,
+    opens,
+    closes,
+    highs,
+    lows,
+    soporte,
+    resistencia,
+    vol
+):
+    try:
+        if len(closes) < 5:
+            return {
+                "accion": "SIN_DATOS",
+                "permite": True,
+                "razon": "acción precio: velas insuficientes"
+            }
+
+        if vol <= 0:
+            vol = abs(closes[-1]) * 0.0001
+
+        o = opens[-1]
+        c = closes[-1]
+        h = highs[-1]
+        l = lows[-1]
+
+        o_prev = opens[-2]
+        c_prev = closes[-2]
+
+        rango = h - l
+        cuerpo = abs(c - o)
+
+        if rango <= 0:
+            return {
+                "accion": "RANGO_INVALIDO",
+                "permite": True,
+                "razon": "acción precio: rango inválido"
+            }
+
+        mecha_sup = h - max(o, c)
+        mecha_inf = min(o, c) - l
+
+        margen = vol * 0.30
+
+        cerca_resistencia = abs(resistencia - c) <= vol * 1.20
+        cerca_soporte = abs(c - soporte) <= vol * 1.20
+
+        ruptura_alcista = c > resistencia + margen
+        ruptura_bajista = c < soporte - margen
+
+        rechazo_vendedor = (
+            cerca_resistencia
+            and mecha_sup >= cuerpo * 1.3
+            and c < o
+        )
+
+        rechazo_comprador = (
+            cerca_soporte
+            and mecha_inf >= cuerpo * 1.3
+            and c > o
+        )
+
+        falsa_ruptura_alcista = (
+            h > resistencia + margen
+            and c < resistencia
+            and mecha_sup >= cuerpo * 1.2
+        )
+
+        falsa_ruptura_bajista = (
+            l < soporte - margen
+            and c > soporte
+            and mecha_inf >= cuerpo * 1.2
+        )
+
+        # =========================
+        # CALL
+        # =========================
+        if direccion == "call":
+
+            if falsa_ruptura_alcista:
+                return {
+                    "accion": "FALSA_RUPTURA_RESISTENCIA",
+                    "permite": False,
+                    "razon": "acción precio: falsa ruptura alcista en resistencia"
+                }
+
+            if ruptura_alcista:
+                return {
+                    "accion": "RUPTURA_ALCISTA_CONFIRMADA",
+                    "permite": True,
+                    "razon": "acción precio: resistencia rota con cierre encima"
+                }
+
+            if cerca_resistencia:
+                return {
+                    "accion": "CALL_RESISTENCIA_CERCA_SIN_RUPTURA",
+                    "permite": True,
+                    "razon": "acción precio: CALL con resistencia cerca sin ruptura confirmada"
+                }
+
+            if rechazo_comprador:
+                return {
+                    "accion": "RECHAZO_COMPRADOR_SOPORTE",
+                    "permite": True,
+                    "razon": "acción precio: rechazo comprador en soporte"
+                }
+
+            return {
+                "accion": "CALL_ZONA_NEUTRA",
+                "permite": True,
+                "razon": "acción precio: CALL sin conflicto fuerte de zona"
+            }
+
+        # =========================
+        # PUT
+        # =========================
+        if direccion == "put":
+
+            if falsa_ruptura_bajista:
+                return {
+                    "accion": "FALSA_RUPTURA_SOPORTE",
+                    "permite": False,
+                    "razon": "acción precio: falsa ruptura bajista en soporte"
+                }
+
+            if ruptura_bajista:
+                return {
+                    "accion": "RUPTURA_BAJISTA_CONFIRMADA",
+                    "permite": True,
+                    "razon": "acción precio: soporte roto con cierre debajo"
+                }
+
+            if cerca_soporte:
+                return {
+                    "accion": "PUT_SOPORTE_CERCA_SIN_RUPTURA",
+                    "permite": True,
+                    "razon": "acción precio: PUT con soporte cerca sin ruptura confirmada"
+                }
+
+            if rechazo_vendedor:
+                return {
+                    "accion": "RECHAZO_VENDEDOR_RESISTENCIA",
+                    "permite": True,
+                    "razon": "acción precio: rechazo vendedor en resistencia"
+                }
+
+            return {
+                "accion": "PUT_ZONA_NEUTRA",
+                "permite": True,
+                "razon": "acción precio: PUT sin conflicto fuerte de zona"
+            }
+
+        return {
+            "accion": "DIRECCION_INVALIDA",
+            "permite": True,
+            "razon": "acción precio: dirección inválida"
+        }
+
+    except Exception as e:
+        return {
+            "accion": "ERROR",
+            "permite": True,
+            "razon": "acción precio: error " + str(e)
+        }

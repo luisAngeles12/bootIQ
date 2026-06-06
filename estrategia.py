@@ -1713,7 +1713,7 @@ def motor_estrategias_profesional(ctx):
         )
 
     # =========================
-    # 9. PULLBACK A EMA ALCISTA
+    # 9. PULLBACK A EMA ALCISTA MEJORADO
     # =========================
     if (
         ctx["entrada_pullback_call"]
@@ -1724,33 +1724,55 @@ def motor_estrategias_profesional(ctx):
         and not ctx["cerca_resistencia"]
     ):
         puntaje = 14
+    
         razones = [
             "ESTRATEGIA: pullback alcista a EMA/zona",
             "EMA favorece compra",
             "pullback válido para compra",
             "RSI: " + str(round(rsi, 2))
         ]
-
+    
         if ctx["tendencia"] == 1:
             puntaje += 2
             razones.append("tendencia alcista")
-
+    
         if ctx["estructura"] == 1:
             puntaje += 2
             razones.append("estructura alcista")
-
+    
+        # NUEVO
+        estado_tendencia = ctx.get("estado_tendencia", "INDEFINIDA")
+    
+        if estado_tendencia == "ALCISTA_NORMAL":
+            puntaje += 2
+            razones.append("tendencia avanzada alcista normal")
+    
+        elif estado_tendencia == "ALCISTA_FUERTE":
+            puntaje += 3
+            razones.append("tendencia avanzada alcista fuerte")
+    
+        elif estado_tendencia == "ALCISTA_DEBIL":
+            puntaje -= 1
+            razones.append("tendencia avanzada alcista débil")
+    
         if ctx["patron"] == 1:
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
-
+    
         if ctx["rechazo"] == 1:
             puntaje += 2
             razones.append(ctx["nombre_rechazo"])
-
+    
         señales.append(
-            crear_senal_profesional(activo, "call", "pullback alcista a EMA", puntaje, rsi, razones)
+            crear_senal_profesional(
+                activo,
+                "call",
+                "pullback alcista a EMA",
+                puntaje,
+                rsi,
+                razones
+            )
         )
-
     # =========================
     # 10. PULLBACK A EMA BAJISTA MEJORADO
     # =========================
@@ -1799,7 +1821,16 @@ def motor_estrategias_profesional(ctx):
         if ctx["rechazo"] == -1:
             puntaje += 2
             razones.append(ctx["nombre_rechazo"])
+        estado_tendencia = ctx.get("estado_tendencia", "INDEFINIDA")
 
+        if estado_tendencia == "BAJISTA_NORMAL":
+            puntaje += 2
+        
+        elif estado_tendencia == "BAJISTA_FUERTE":
+            puntaje += 3
+        
+        elif estado_tendencia == "BAJISTA_DEBIL":
+             puntaje -= 1
         señales.append(
             crear_senal_profesional(activo, "put", "pullback bajista a EMA", puntaje, rsi, razones)
         )
@@ -1992,30 +2023,21 @@ def analizar_activo(activo):
                 "min": ctx["lows"][i]
             })
 
-            tipo_mercado, razon_mercado = detectar_tipo_mercado(candles_contexto)
-            diagnostico = diagnostico_calidad_mercado(candles_contexto)
-            diagnostico_tendencia = diagnostico_tendencia_avanzada(candles_contexto)
-            
-            ctx["tipo_mercado"] = tipo_mercado
-            ctx["razon_mercado"] = razon_mercado
-            ctx["calidad_mercado"] = diagnostico.get("calidad", "SIN_DATOS")
-            ctx["score_mercado"] = diagnostico.get("score", 0)
-            ctx["detalle_calidad_mercado"] = diagnostico
-            
-            ctx["estado_tendencia"] = diagnostico_tendencia.get("estado_tendencia", "INDEFINIDA")
-            ctx["fuerza_tendencia"] = diagnostico_tendencia.get("fuerza_tendencia", 0)
-            ctx["direccion_tendencia"] = diagnostico_tendencia.get("direccion_tendencia", "INDEFINIDA")
-            ctx["razon_tendencia"] = diagnostico_tendencia.get("razon_tendencia", "")
-            ctx["detalle_tendencia"] = diagnostico_tendencia
+        tipo_mercado, razon_mercado = detectar_tipo_mercado(candles_contexto)
+        diagnostico = diagnostico_calidad_mercado(candles_contexto)
+        diagnostico_tendencia = diagnostico_tendencia_avanzada(candles_contexto)
 
-        print(
-            "MERCADO:",
-            activo,
-            "| tipo:", tipo_mercado,
-            "| calidad:", ctx["calidad_mercado"],
-            "| score:", ctx["score_mercado"],
-            "| razón:", razon_mercado
-        )
+        ctx["tipo_mercado"] = tipo_mercado
+        ctx["razon_mercado"] = razon_mercado
+        ctx["calidad_mercado"] = diagnostico.get("calidad", "SIN_DATOS")
+        ctx["score_mercado"] = diagnostico.get("score", 0)
+        ctx["detalle_calidad_mercado"] = diagnostico
+
+        ctx["estado_tendencia"] = diagnostico_tendencia.get("estado_tendencia", "INDEFINIDA")
+        ctx["fuerza_tendencia"] = diagnostico_tendencia.get("fuerza_tendencia", 0)
+        ctx["direccion_tendencia"] = diagnostico_tendencia.get("direccion_tendencia", "INDEFINIDA")
+        ctx["razon_tendencia"] = diagnostico_tendencia.get("razon_tendencia", "")
+        ctx["detalle_tendencia"] = diagnostico_tendencia
 
     except Exception as e:
         ctx["tipo_mercado"] = "INDEFINIDO"
@@ -2023,6 +2045,10 @@ def analizar_activo(activo):
         ctx["calidad_mercado"] = "SIN_DATOS"
         ctx["score_mercado"] = 0
         ctx["detalle_calidad_mercado"] = {}
+        ctx["estado_tendencia"] = "INDEFINIDA"
+        ctx["fuerza_tendencia"] = 0
+        ctx["direccion_tendencia"] = "INDEFINIDA"
+        ctx["razon_tendencia"] = "error leyendo tendencia"
 
     senal = motor_estrategias_profesional(ctx)
 
@@ -2042,6 +2068,7 @@ def analizar_activo(activo):
             razon_validacion_mercado
         )
         return None
+
     ok_zona_sr, razon_zona_sr = validar_interaccion_soporte_resistencia(
         senal["direccion"],
         ctx["opens"],
@@ -2065,6 +2092,25 @@ def analizar_activo(activo):
             razon_zona_sr
         )
         return None
+
+    # =========================
+    # FASE 3.1: DIAGNÓSTICO ACCIÓN DEL PRECIO
+    # OJO: por ahora NO bloquea, solo registra.
+    # =========================
+    diagnostico_pa = diagnostico_accion_precio_zona(
+        senal["direccion"],
+        ctx["opens"],
+        ctx["closes"],
+        ctx["highs"],
+        ctx["lows"],
+        ctx["soporte"],
+        ctx["resistencia"],
+        ctx["vol"]
+    )
+
+    senal["accion_precio"] = diagnostico_pa.get("accion", "SIN_DATOS")
+    senal["razon_accion_precio"] = diagnostico_pa.get("razon", "")
+
     bloqueada_contraria, razon_contraria = vela_contraria_reciente(
         ctx,
         senal["direccion"]
@@ -2128,26 +2174,33 @@ def analizar_activo(activo):
         + ctx.get("tipo_mercado", "INDEFINIDO")
         + " - "
         + ctx.get("razon_mercado", "")
-       + ", CALIDAD MERCADO: "
-       + ctx.get("calidad_mercado", "SIN_DATOS")
-       + " score "
-       + str(ctx.get("score_mercado", 0))
-       + ", TENDENCIA AVANZADA: "
-       + ctx.get("estado_tendencia", "INDEFINIDA")
-       + " fuerza "
-       + str(ctx.get("fuerza_tendencia", 0))
-       + ", VALIDACIÓN MERCADO: "
+        + ", CALIDAD MERCADO: "
+        + ctx.get("calidad_mercado", "SIN_DATOS")
+        + " score "
+        + str(ctx.get("score_mercado", 0))
+        + ", TENDENCIA AVANZADA: "
+        + ctx.get("estado_tendencia", "INDEFINIDA")
+        + " fuerza "
+        + str(ctx.get("fuerza_tendencia", 0))
+        + ", VALIDACIÓN MERCADO: "
         + razon_validacion_mercado
         + ", ZONA SR: "
         + razon_zona_sr
+        + ", ACCION PRECIO: "
+        + senal.get("razon_accion_precio", "")
     )
 
     senal["precio_zona"] = precio_zona
     senal["vol"] = ctx["vol"]
+
     senal["tipo_mercado"] = ctx.get("tipo_mercado", "INDEFINIDO")
     senal["razon_mercado"] = ctx.get("razon_mercado", "")
     senal["calidad_mercado"] = ctx.get("calidad_mercado", "SIN_DATOS")
     senal["score_mercado"] = ctx.get("score_mercado", 0)
+
+    senal["estado_tendencia"] = ctx.get("estado_tendencia", "INDEFINIDA")
+    senal["fuerza_tendencia"] = ctx.get("fuerza_tendencia", 0)
+    senal["direccion_tendencia"] = ctx.get("direccion_tendencia", "INDEFINIDA")
 
     print(
         "CONTEXTO FINAL:",
@@ -2156,11 +2209,14 @@ def analizar_activo(activo):
         senal["patron"],
         "| MERCADO:",
         senal.get("tipo_mercado"),
-        "-",
-        senal.get("razon_mercado"),
         "| CALIDAD:",
         senal.get("calidad_mercado"),
-        senal.get("score_mercado")
+        senal.get("score_mercado"),
+        "| TENDENCIA:",
+        senal.get("estado_tendencia"),
+        senal.get("fuerza_tendencia"),
+        "| ACCION:",
+        senal.get("accion_precio")
     )
 
     return senal
