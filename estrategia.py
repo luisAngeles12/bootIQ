@@ -1713,7 +1713,7 @@ def motor_estrategias_profesional(ctx):
         )
 
     # =========================
-    # 9. PULLBACK A EMA ALCISTA MEJORADO
+    # 9. PULLBACK A EMA ALCISTA
     # =========================
     if (
         ctx["entrada_pullback_call"]
@@ -1724,55 +1724,33 @@ def motor_estrategias_profesional(ctx):
         and not ctx["cerca_resistencia"]
     ):
         puntaje = 14
-    
         razones = [
             "ESTRATEGIA: pullback alcista a EMA/zona",
             "EMA favorece compra",
             "pullback válido para compra",
             "RSI: " + str(round(rsi, 2))
         ]
-    
+
         if ctx["tendencia"] == 1:
             puntaje += 2
             razones.append("tendencia alcista")
-    
+
         if ctx["estructura"] == 1:
             puntaje += 2
             razones.append("estructura alcista")
-    
-        # NUEVO
-        estado_tendencia = ctx.get("estado_tendencia", "INDEFINIDA")
-    
-        if estado_tendencia == "ALCISTA_NORMAL":
-            puntaje += 2
-            razones.append("tendencia avanzada alcista normal")
-    
-        elif estado_tendencia == "ALCISTA_FUERTE":
-            puntaje += 3
-            razones.append("tendencia avanzada alcista fuerte")
-    
-        elif estado_tendencia == "ALCISTA_DEBIL":
-            puntaje -= 1
-            razones.append("tendencia avanzada alcista débil")
-    
+
         if ctx["patron"] == 1:
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
-    
+
         if ctx["rechazo"] == 1:
             puntaje += 2
             razones.append(ctx["nombre_rechazo"])
-    
+
         señales.append(
-            crear_senal_profesional(
-                activo,
-                "call",
-                "pullback alcista a EMA",
-                puntaje,
-                rsi,
-                razones
-            )
+            crear_senal_profesional(activo, "call", "pullback alcista a EMA", puntaje, rsi, razones)
         )
+
     # =========================
     # 10. PULLBACK A EMA BAJISTA MEJORADO
     # =========================
@@ -1821,16 +1799,7 @@ def motor_estrategias_profesional(ctx):
         if ctx["rechazo"] == -1:
             puntaje += 2
             razones.append(ctx["nombre_rechazo"])
-        estado_tendencia = ctx.get("estado_tendencia", "INDEFINIDA")
 
-        if estado_tendencia == "BAJISTA_NORMAL":
-            puntaje += 2
-        
-        elif estado_tendencia == "BAJISTA_FUERTE":
-            puntaje += 3
-        
-        elif estado_tendencia == "BAJISTA_DEBIL":
-             puntaje -= 1
         señales.append(
             crear_senal_profesional(activo, "put", "pullback bajista a EMA", puntaje, rsi, razones)
         )

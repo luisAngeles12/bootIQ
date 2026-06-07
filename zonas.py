@@ -276,8 +276,8 @@ def validar_interaccion_soporte_resistencia(
         distancia_soporte = abs(price - soporte)
         distancia_resistencia = abs(resistencia - price)
 
-        cerca_soporte = distancia_soporte <= vol * 1.0
-        cerca_resistencia = distancia_resistencia <= vol * 1.0
+        cerca_soporte = distancia_soporte <= vol * 1.35
+        cerca_resistencia = distancia_resistencia <= vol * 1.35
 
         ruptura_resistencia = c > resistencia + vol * 0.35
         ruptura_soporte = c < soporte - vol * 0.35
@@ -295,16 +295,7 @@ def validar_interaccion_soporte_resistencia(
         )
 
         patron_texto = str(patron).lower()
-
-        # =========================
-        # CAÓTICO: bloqueo fuerte solo contra zonas peligrosas
-        # =========================
-        if calidad_mercado == "CAOTICO":
-            if direccion == "call" and cerca_resistencia and not ruptura_resistencia:
-                return False, "CALL bloqueado: mercado caótico y resistencia cerca"
-
-            if direccion == "put" and cerca_soporte and not ruptura_soporte:
-                return False, "PUT bloqueado: mercado caótico y soporte cerca"
+        mercado_delicado = tipo_mercado == "RANGO" or calidad_mercado in ["SUCIO", "CAOTICO"]
 
         # =========================
         # CALL / SUBIDA
@@ -314,12 +305,14 @@ def validar_interaccion_soporte_resistencia(
                 if falsa_ruptura_resistencia:
                     return False, "CALL bloqueado: falsa ruptura bajista en resistencia"
 
-                # Antes estaba muy duro con SUCIO. Ahora solo bloquea puntajes flojos.
-                if calidad_mercado == "SUCIO" and puntaje < 18:
-                    return False, "CALL bloqueado: resistencia cerca en mercado sucio con puntaje bajo"
+                if mercado_delicado and puntaje <= 18:
+                    return False, "CALL bloqueado: resistencia cerca sin ruptura en mercado delicado"
 
-                if "pullback" in patron_texto and puntaje < 19:
+                if "pullback" in patron_texto:
                     return False, "CALL pullback bloqueado cerca de resistencia"
+
+                if "choch" in patron_texto and mercado_delicado and puntaje < 20:
+                    return False, "CALL CHOCH bloqueado cerca de resistencia con puntaje bajo"
 
                 return True, "CALL permitido con cautela: resistencia cerca"
 
@@ -333,12 +326,14 @@ def validar_interaccion_soporte_resistencia(
                 if falsa_ruptura_soporte:
                     return False, "PUT bloqueado: falsa ruptura alcista en soporte"
 
-                # Antes estaba muy duro con SUCIO. Ahora solo bloquea puntajes flojos.
-                if calidad_mercado == "SUCIO" and puntaje < 18:
-                    return False, "PUT bloqueado: soporte cerca en mercado sucio con puntaje bajo"
+                if mercado_delicado and puntaje <= 18:
+                    return False, "PUT bloqueado: soporte cerca sin ruptura en mercado delicado"
 
-                if "pullback" in patron_texto and puntaje < 19:
+                if "pullback" in patron_texto:
                     return False, "PUT pullback bloqueado cerca de soporte"
+
+                if "choch" in patron_texto and mercado_delicado and puntaje < 20:
+                    return False, "PUT CHOCH bloqueado cerca de soporte con puntaje bajo"
 
                 return True, "PUT permitido con cautela: soporte cerca"
 
