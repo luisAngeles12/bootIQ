@@ -222,6 +222,112 @@ def breakout_retest(opens, closes, highs, lows, zona, tipo="resistencia"):
             return -1, "breakout retest bajista"
     return 0, "sin breakout retest"
 
+def confirmar_ruptura_zona(
+    direccion,
+    opens,
+    closes,
+    highs,
+    lows,
+    soporte,
+    resistencia,
+    vol
+):
+    try:
+        if len(closes) < 5:
+            return {
+                "confirmada": False,
+                "tipo": "SIN_DATOS",
+                "razon": "ruptura: velas insuficientes"
+            }
+
+        price = closes[-1]
+
+        if vol <= 0:
+            vol = abs(price) * 0.0001
+
+        o = opens[-1]
+        c = closes[-1]
+        h = highs[-1]
+        l = lows[-1]
+
+        rango = h - l
+        cuerpo = abs(c - o)
+
+        if rango <= 0:
+            return {
+                "confirmada": False,
+                "tipo": "RANGO_INVALIDO",
+                "razon": "ruptura: rango inválido"
+            }
+
+        mecha_sup = h - max(o, c)
+        mecha_inf = min(o, c) - l
+        cuerpo_fuerte = cuerpo >= rango * 0.42
+
+        if direccion == "call":
+            rompio = h > resistencia + vol * 0.25
+            cerro_encima = c > resistencia + vol * 0.20
+            vela_alcista = c > o
+            mecha_aceptable = mecha_sup <= cuerpo * 1.4
+
+            if rompio and cerro_encima and vela_alcista and cuerpo_fuerte and mecha_aceptable:
+                return {
+                    "confirmada": True,
+                    "tipo": "RUPTURA_RESISTENCIA_CONFIRMADA",
+                    "razon": "ruptura real: resistencia rota con cierre fuerte encima"
+                }
+
+            if rompio and not cerro_encima:
+                return {
+                    "confirmada": False,
+                    "tipo": "FALSA_RUPTURA_RESISTENCIA",
+                    "razon": "falsa ruptura: perforó resistencia pero no confirmó cierre"
+                }
+
+            return {
+                "confirmada": False,
+                "tipo": "SIN_RUPTURA_RESISTENCIA",
+                "razon": "sin ruptura confirmada de resistencia"
+            }
+
+        if direccion == "put":
+            rompio = l < soporte - vol * 0.25
+            cerro_debajo = c < soporte - vol * 0.20
+            vela_bajista = c < o
+            mecha_aceptable = mecha_inf <= cuerpo * 1.4
+
+            if rompio and cerro_debajo and vela_bajista and cuerpo_fuerte and mecha_aceptable:
+                return {
+                    "confirmada": True,
+                    "tipo": "RUPTURA_SOPORTE_CONFIRMADA",
+                    "razon": "ruptura real: soporte roto con cierre fuerte debajo"
+                }
+
+            if rompio and not cerro_debajo:
+                return {
+                    "confirmada": False,
+                    "tipo": "FALSA_RUPTURA_SOPORTE",
+                    "razon": "falsa ruptura: perforó soporte pero no confirmó cierre"
+                }
+
+            return {
+                "confirmada": False,
+                "tipo": "SIN_RUPTURA_SOPORTE",
+                "razon": "sin ruptura confirmada de soporte"
+            }
+
+        return {
+            "confirmada": False,
+            "tipo": "DIRECCION_INVALIDA",
+            "razon": "ruptura: dirección inválida"
+        }
+
+    except Exception as e:
+        return {
+            "confirmada": False,
+            "tipo": "ERROR",
+            "razon": "error confirmando ruptura: " + str(e)
+        }
 
 def entrada_pullback(direccion, price, ema21, soporte, resistencia, vol, patron, rechazo):
     cerca_ema = abs(price - ema21) <= vol * 1.2

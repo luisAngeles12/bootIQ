@@ -2079,7 +2079,20 @@ def analizar_activo(activo):
 
     senal["accion_precio"] = diagnostico_pa.get("accion", "SIN_DATOS")
     senal["razon_accion_precio"] = diagnostico_pa.get("razon", "")
+    ruptura = confirmar_ruptura_zona(
+        senal["direccion"],
+        ctx["opens"],
+        ctx["closes"],
+        ctx["highs"],
+        ctx["lows"],
+        ctx["soporte"],
+        ctx["resistencia"],
+        ctx["vol"]
+    )
 
+    senal["ruptura_confirmada"] = ruptura.get("confirmada", False)
+    senal["tipo_ruptura"] = ruptura.get("tipo", "SIN_DATOS")
+    senal["razon_ruptura"] = ruptura.get("razon", "")
     bloqueada_contraria, razon_contraria = vela_contraria_reciente(
         ctx,
         senal["direccion"]
@@ -2157,6 +2170,8 @@ def analizar_activo(activo):
         + razon_zona_sr
         + ", ACCION PRECIO: "
         + senal.get("razon_accion_precio", "")
+        + ", RUPTURA: "
+        + senal.get("razon_ruptura", "")
     )
 
     senal["precio_zona"] = precio_zona
