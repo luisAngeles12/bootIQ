@@ -354,7 +354,9 @@ def validar_interaccion_soporte_resistencia(
     puntaje=0,
     patron="",
     tipo_mercado="INDEFINIDO",
-    calidad_mercado="NORMAL"
+    calidad_mercado="NORMAL",
+    ruptura_confirmada=False,
+    tipo_ruptura="SIN_DATOS"
 ):
     try:
         if len(closes) < 6:
@@ -401,7 +403,21 @@ def validar_interaccion_soporte_resistencia(
         )
 
         patron_texto = str(patron).lower()
-        mercado_delicado = tipo_mercado == "RANGO" or calidad_mercado in ["SUCIO", "CAOTICO"]
+        mercado_delicado = (
+            tipo_mercado == "RANGO"
+            or calidad_mercado in ["SUCIO", "CAOTICO"]
+        )
+
+        # =========================
+        # EXCEPCIÓN FASE 3B
+        # =========================
+        if direccion == "call":
+            if ruptura_confirmada and tipo_ruptura == "RUPTURA_RESISTENCIA_CONFIRMADA":
+                return True, "CALL permitido: ruptura confirmada de resistencia"
+
+        if direccion == "put":
+            if ruptura_confirmada and tipo_ruptura == "RUPTURA_SOPORTE_CONFIRMADA":
+                return True, "PUT permitido: ruptura confirmada de soporte"
 
         # =========================
         # CALL / SUBIDA
@@ -414,7 +430,7 @@ def validar_interaccion_soporte_resistencia(
                 if mercado_delicado and puntaje <= 18:
                     return False, "CALL bloqueado: resistencia cerca sin ruptura en mercado delicado"
 
-                if "pullback" in patron_texto:
+                if "pullback" in patron_texto and puntaje < 21:
                     return False, "CALL pullback bloqueado cerca de resistencia"
 
                 if "choch" in patron_texto and mercado_delicado and puntaje < 20:
@@ -435,7 +451,7 @@ def validar_interaccion_soporte_resistencia(
                 if mercado_delicado and puntaje <= 18:
                     return False, "PUT bloqueado: soporte cerca sin ruptura en mercado delicado"
 
-                if "pullback" in patron_texto:
+                if "pullback" in patron_texto and puntaje < 21:
                     return False, "PUT pullback bloqueado cerca de soporte"
 
                 if "choch" in patron_texto and mercado_delicado and puntaje < 20:

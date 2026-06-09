@@ -2007,7 +2007,13 @@ def analizar_activo(activo):
         ctx["direccion_tendencia"] = diagnostico_tendencia.get("direccion_tendencia", "INDEFINIDA")
         ctx["razon_tendencia"] = diagnostico_tendencia.get("razon_tendencia", "")
         ctx["detalle_tendencia"] = diagnostico_tendencia
-
+        estado.snapshot_mercados[activo] = {
+          "tipo": ctx.get("tipo_mercado", "INDEFINIDO"),
+          "calidad": ctx.get("calidad_mercado", "SIN_DATOS"),
+          "score": ctx.get("score_mercado", 0),
+          "tendencia": ctx.get("estado_tendencia", "INDEFINIDA"),
+          "fuerza": ctx.get("fuerza_tendencia", 0)
+        }
     except Exception as e:
         ctx["tipo_mercado"] = "INDEFINIDO"
         ctx["razon_mercado"] = "error leyendo mercado: " + str(e)
@@ -2018,6 +2024,28 @@ def analizar_activo(activo):
         ctx["fuerza_tendencia"] = 0
         ctx["direccion_tendencia"] = "INDEFINIDA"
         ctx["razon_tendencia"] = "error leyendo tendencia"
+
+    # ====================================
+    # FILTRO DE MERCADO EN TIEMPO REAL
+    # Si el activo ya no está bueno,
+    # sacarlo temporalmente del análisis.
+    # ====================================
+
+    calidad = ctx.get("calidad_mercado", "SIN_DATOS")
+    score = ctx.get("score_mercado", 0)
+    tendencia_estado = ctx.get("estado_tendencia", "INDEFINIDA")
+
+    if calidad not in ["LIMPIO", "NORMAL"]:
+        estado.cooldown_activos[activo] = time.time() + 600
+        return None
+
+    if score < 55:
+        estado.cooldown_activos[activo] = time.time() + 600
+        return None
+
+    if tendencia_estado == "INDEFINIDA":
+        estado.cooldown_activos[activo] = time.time() + 600
+        return None
 
     senal = motor_estrategias_profesional(ctx)
 
@@ -2050,7 +2078,9 @@ def analizar_activo(activo):
         senal.get("puntaje", 0),
         senal.get("patron", ""),
         ctx.get("tipo_mercado", "INDEFINIDO"),
-        ctx.get("calidad_mercado", "NORMAL")
+        ctx.get("calidad_mercado", "NORMAL"),
+        senal.get("ruptura_confirmada", False),
+        senal.get("tipo_ruptura", "SIN_DATOS")
     )
 
     if not ok_zona_sr:

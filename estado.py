@@ -12,3 +12,5 @@ ultima_actualizacion_activos = 0
 # Memoria de zonas operadas
 zonas_operadas = {}
 senales_pendientes = []
+ultimo_reporte_mercados = 0
+snapshot_mercados = {}

@@ -19,6 +19,13 @@ def main():
     operaciones_desde_resumen_mercado = 0
     ultima_impresion_estado = 0
 
+    # Nuevo: reporte general de mercados cada 5 minutos.
+    if not hasattr(estado, "ultimo_reporte_mercados"):
+        estado.ultimo_reporte_mercados = 0
+
+    if not hasattr(estado, "snapshot_mercados"):
+        estado.snapshot_mercados = {}
+
     while True:
         revisar_operaciones_abiertas()
         procesar_senales_pendientes(abrir_operacion)
@@ -36,6 +43,34 @@ def main():
         ganancia_neta = balance_actual - estado.balance_inicial
 
         ahora = time.time()
+
+        # ==========================================
+        # REPORTE GENERAL DE MERCADOS CADA 5 MIN
+        # ==========================================
+        if ahora - estado.ultimo_reporte_mercados >= 300:
+            if estado.snapshot_mercados:
+                print("\n" + "=" * 80)
+                print("REPORTE GENERAL DE MERCADOS")
+                print("=" * 80)
+
+                for activo, info in sorted(estado.snapshot_mercados.items()):
+                    print(
+                        activo,
+                        "|",
+                        info.get("tipo", "INDEFINIDO"),
+                        "|",
+                        info.get("calidad", "SIN_DATOS"),
+                        "| score:",
+                        info.get("score", 0),
+                        "|",
+                        info.get("tendencia", "INDEFINIDA"),
+                        "| fuerza:",
+                        round(info.get("fuerza", 0), 2)
+                    )
+
+                print("=" * 80 + "\n")
+
+            estado.ultimo_reporte_mercados = ahora
 
         # Imprime balance solo cada 20 segundos para no llenar la terminal.
         if ahora - ultima_impresion_estado >= 20:
@@ -76,6 +111,11 @@ def main():
             continue
 
         activos = obtener_activos()
+        
+        # Limpiar snapshot para que el reporte solo muestre
+        # los mercados reales analizados en esta ronda.
+        estado.snapshot_mercados = {}
+        
         senales = []
         bloqueos_importantes = []
 
@@ -116,7 +156,9 @@ def main():
                         resumen_mercado[calidad_m] += 1
 
             except Exception as e:
-                bloqueos_importantes.append("Error analizando " + str(item) + ": " + str(e))
+                bloqueos_importantes.append(
+                    "Error analizando " + str(item) + ": " + str(e)
+                )
 
         if senales:
             print("\nSeñales preparadas:", len(senales))
