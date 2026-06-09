@@ -14,3 +14,5 @@ zonas_operadas = {}
 senales_pendientes = []
 ultimo_reporte_mercados = 0
 snapshot_mercados = {}
+
+cooldown_estrategias = {}

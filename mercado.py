@@ -6,7 +6,7 @@ from utils import activo_en_cooldown
 from conexion import reconectar_iq
 from contexto_mercado import detectar_tipo_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
 
-MAX_ACTIVOS_ANALIZAR =40
+MAX_ACTIVOS_ANALIZAR =20
 MIN_SCORE_ACTIVO = 65
 
 

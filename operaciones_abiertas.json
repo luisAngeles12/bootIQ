@@ -1,14 +1,1 @@
-[
-  {
-    "order_id": "13958204656",
-    "activo": "EURJPY-OTC",
-    "tipo": "turbo",
-    "direccion": "call",
-    "puntaje": 20,
-    "patron": "liquidity sweep alcista",
-    "rsi": 38.26,
-    "razon": "ESTRATEGIA: liquidity sweep alcista, liquidity sweep alcista: barrida de mínimos, barrida de mínimos con recuperación confirmada, RSI: 38.26, recuperación en zona de soporte, calidad A+, memoria permite operación, ubicación válida",
-    "hora_apertura": 1780573393.0026433,
-    "balance_antes": 7446.22
-  }
-]
+[]

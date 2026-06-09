@@ -199,3 +199,33 @@ def ajustar_por_memoria(activo, patron, puntaje):
     if perdidas_recientes_activo(activo, 2):
         puntaje -= 2
     return puntaje
+def perdidas_consecutivas_activo(activo, cantidad=3):
+    df = cargar_historial()
+
+    if df is None:
+        return False
+
+    df = df[df["activo"] == activo]
+
+    if len(df) < cantidad:
+        return False
+
+    ultimas = df.tail(cantidad)
+
+    return all(ultimas["resultado"] < 0)
+
+
+def perdidas_consecutivas_patron(patron, cantidad=3):
+    df = cargar_historial()
+
+    if df is None:
+        return False
+
+    df = df[df["patron"] == patron]
+
+    if len(df) < cantidad:
+        return False
+
+    ultimas = df.tail(cantidad)
+
+    return all(ultimas["resultado"] < 0)

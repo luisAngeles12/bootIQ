@@ -731,15 +731,21 @@ def entrada_rapida_disponible(senal):
         cerca_high = (h - c) <= rango * 0.08
         cerca_low = (c - l) <= rango * 0.08
 
-        if fuerza >= 0.78 and segundo > 18:
+        senal_premium = (
+             senal.get("puntaje", 0) >= 21
+             and senal.get("calidad") == "A+"
+             and senal.get("calidad_mercado") in ["LIMPIO", "NORMAL"]
+        )
+        
+        if fuerza >= 0.78 and segundo > 18 and not senal_premium:
             print("Entrada rápida cancelada:", activo, "vela corrida | fuerza:", round(fuerza, 2))
             return False
 
-        if direccion == "call" and cerca_high and fuerza >= 0.68:
+        if direccion == "call" and cerca_high and fuerza >= 0.68 and not senal_premium:
             print("Entrada rápida cancelada:", activo, "CALL cerca del máximo")
             return False
 
-        if direccion == "put" and cerca_low and fuerza >= 0.68:
+        if direccion == "put" and cerca_low and fuerza >= 0.68 and not senal_premium:
             print("Entrada rápida cancelada:", activo, "PUT cerca del mínimo")
             return False
 

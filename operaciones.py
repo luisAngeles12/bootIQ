@@ -9,7 +9,9 @@ from historial import (
     guardar_operaciones_pendientes,
     asegurar_historial_csv,
     guardar_historial,
-    actualizar_historial_cierre
+    actualizar_historial_cierre,
+    perdidas_consecutivas_activo,
+    perdidas_consecutivas_patron
 )
 from estrategia import registrar_zona_operada
 
@@ -206,7 +208,17 @@ def revisar_operaciones_abiertas():
                 op["order_id"],
                 resultado
             )
-
+            if resultado < 0:
+                if perdidas_consecutivas_activo(op["activo"], 3):
+                    estado.cooldown_activos[op["activo"]] = time.time() + 1800
+                    print("ACTIVO BLOQUEADO 30 MIN POR 3 PÉRDIDAS:", op["activo"])
+            
+                if not hasattr(estado, "cooldown_estrategias"):
+                    estado.cooldown_estrategias = {}
+            
+                if perdidas_consecutivas_patron(op["patron"], 3):
+                    estado.cooldown_estrategias[op["patron"]] = time.time() + 1800
+                    print("ESTRATEGIA BLOQUEADA 30 MIN POR 3 PÉRDIDAS:", op["patron"])
             print(
                 "OPERACIÓN CERRADA:",
                 op["activo"],

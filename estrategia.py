@@ -8,6 +8,7 @@ from mercado import obtener_velas
 import time
 import estado
 from contexto_mercado import detectar_tipo_mercado, validar_estrategia_por_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
+from utils import estrategia_en_cooldown
 
 def contexto_operacion(direccion, tendencia, estructura, patron, rechazo, zona_call, zona_put, rsi, extension):
     if direccion == "call":
@@ -2051,7 +2052,14 @@ def analizar_activo(activo):
 
     if senal is None:
         return None
-
+    if estrategia_en_cooldown(senal.get("patron", "")):
+        print(
+            senal["direccion"].upper(),
+            "bloqueado por cooldown de estrategia:",
+            activo,
+            senal.get("patron", "")
+        )
+        return None
     ok_mercado, razon_validacion_mercado = validar_estrategia_por_mercado(
         senal,
         ctx
