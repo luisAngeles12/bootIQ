@@ -1,7 +1,7 @@
 import time
 import estado
 from config import MOSTRAR_ESTADISTICAS_CADA_RONDAS, STOP_LOSS, STOP_WIN, MAX_OPERACIONES_ABIERTAS
-from utils import segundo_actual
+from utils import segundo_actual,registrar_bloqueo, imprimir_resumen_ronda, reiniciar_metricas_ronda
 from conexion import conectar
 from historial import asegurar_historial_csv, cargar_operaciones_pendientes
 from mercado import obtener_activos
@@ -102,16 +102,19 @@ def main():
 
         # Ventana de búsqueda de entrada.
         if not (0 <= segundo <= 24):
+            imprimir_resumen_ronda()
             time.sleep(0.25)
             continue
 
         if len(estado.operaciones_abiertas) >= MAX_OPERACIONES_ABIERTAS:
             revisar_operaciones_abiertas()
+            imprimir_resumen_ronda()
             time.sleep(0.25)
             continue
 
         activos = obtener_activos()
-        
+        reiniciar_metricas_ronda()
+        estado.metricas_ronda["mercados_analizados"] = len(activos)
         # Limpiar snapshot para que el reporte solo muestre
         # los mercados reales analizados en esta ronda.
         estado.snapshot_mercados = {}
@@ -143,9 +146,10 @@ def main():
                 senal = analizar_activo(activo)
 
                 if senal is not None:
+                    estado.metricas_ronda["senales_detectadas"] += 1
                     senal["tipo"] = tipo
                     senales.append(senal)
-
+                    estado.metricas_ronda["senales_aprobadas"] += 1
                     tipo_m = senal.get("tipo_mercado")
                     calidad_m = senal.get("calidad_mercado")
 
@@ -205,6 +209,7 @@ def main():
 
             if entrada_rapida_disponible(senal):
                 if abrir_operacion(senal):
+                    estado.metricas_ronda["entradas_abiertas"] += 1
                     abiertas_ahora += 1
                     operaciones_desde_resumen_mercado += 1
             else:
@@ -232,7 +237,7 @@ def main():
                 "| CAOTICO", resumen_mercado["CAOTICO"]
             )
             operaciones_desde_resumen_mercado = 0
-
+            imprimir_resumen_ronda()
         time.sleep(0.25)
 if __name__ == "__main__":
     main()

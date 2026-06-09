@@ -8,7 +8,7 @@ from mercado import obtener_velas
 import time
 import estado
 from contexto_mercado import detectar_tipo_mercado, validar_estrategia_por_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
-from utils import estrategia_en_cooldown
+from utils import estrategia_en_cooldown,registrar_bloqueo
 
 def contexto_operacion(direccion, tendencia, estructura, patron, rechazo, zona_call, zona_put, rsi, extension):
     if direccion == "call":
@@ -2008,13 +2008,15 @@ def analizar_activo(activo):
         ctx["direccion_tendencia"] = diagnostico_tendencia.get("direccion_tendencia", "INDEFINIDA")
         ctx["razon_tendencia"] = diagnostico_tendencia.get("razon_tendencia", "")
         ctx["detalle_tendencia"] = diagnostico_tendencia
+
         estado.snapshot_mercados[activo] = {
-          "tipo": ctx.get("tipo_mercado", "INDEFINIDO"),
-          "calidad": ctx.get("calidad_mercado", "SIN_DATOS"),
-          "score": ctx.get("score_mercado", 0),
-          "tendencia": ctx.get("estado_tendencia", "INDEFINIDA"),
-          "fuerza": ctx.get("fuerza_tendencia", 0)
+            "tipo": ctx.get("tipo_mercado", "INDEFINIDO"),
+            "calidad": ctx.get("calidad_mercado", "SIN_DATOS"),
+            "score": ctx.get("score_mercado", 0),
+            "tendencia": ctx.get("estado_tendencia", "INDEFINIDA"),
+            "fuerza": ctx.get("fuerza_tendencia", 0)
         }
+
     except Exception as e:
         ctx["tipo_mercado"] = "INDEFINIDO"
         ctx["razon_mercado"] = "error leyendo mercado: " + str(e)
@@ -2031,7 +2033,6 @@ def analizar_activo(activo):
     # Si el activo ya no está bueno,
     # sacarlo temporalmente del análisis.
     # ====================================
-
     calidad = ctx.get("calidad_mercado", "SIN_DATOS")
     score = ctx.get("score_mercado", 0)
     tendencia_estado = ctx.get("estado_tendencia", "INDEFINIDA")
@@ -2040,7 +2041,11 @@ def analizar_activo(activo):
         estado.cooldown_activos[activo] = time.time() + 600
         return None
 
-    if score < 55:
+    if score < 58:
+        estado.cooldown_activos[activo] = time.time() + 600
+        return None
+
+    if "DEBIL" in tendencia_estado:
         estado.cooldown_activos[activo] = time.time() + 600
         return None
 
@@ -2052,6 +2057,7 @@ def analizar_activo(activo):
 
     if senal is None:
         return None
+
     if estrategia_en_cooldown(senal.get("patron", "")):
         print(
             senal["direccion"].upper(),
@@ -2060,6 +2066,7 @@ def analizar_activo(activo):
             senal.get("patron", "")
         )
         return None
+
     ok_mercado, razon_validacion_mercado = validar_estrategia_por_mercado(
         senal,
         ctx
@@ -2073,6 +2080,26 @@ def analizar_activo(activo):
             razon_validacion_mercado
         )
         return None
+
+    # =========================
+    # FASE 3B: RUPTURA ANTES DE SOPORTE/RESISTENCIA
+    # IMPORTANTE:
+    # Esto debe calcularse antes de validar zonas.
+    # =========================
+    ruptura = confirmar_ruptura_zona(
+        senal["direccion"],
+        ctx["opens"],
+        ctx["closes"],
+        ctx["highs"],
+        ctx["lows"],
+        ctx["soporte"],
+        ctx["resistencia"],
+        ctx["vol"]
+    )
+
+    senal["ruptura_confirmada"] = ruptura.get("confirmada", False)
+    senal["tipo_ruptura"] = ruptura.get("tipo", "SIN_DATOS")
+    senal["razon_ruptura"] = ruptura.get("razon", "")
 
     ok_zona_sr, razon_zona_sr = validar_interaccion_soporte_resistencia(
         senal["direccion"],
@@ -2117,20 +2144,7 @@ def analizar_activo(activo):
 
     senal["accion_precio"] = diagnostico_pa.get("accion", "SIN_DATOS")
     senal["razon_accion_precio"] = diagnostico_pa.get("razon", "")
-    ruptura = confirmar_ruptura_zona(
-        senal["direccion"],
-        ctx["opens"],
-        ctx["closes"],
-        ctx["highs"],
-        ctx["lows"],
-        ctx["soporte"],
-        ctx["resistencia"],
-        ctx["vol"]
-    )
 
-    senal["ruptura_confirmada"] = ruptura.get("confirmada", False)
-    senal["tipo_ruptura"] = ruptura.get("tipo", "SIN_DATOS")
-    senal["razon_ruptura"] = ruptura.get("razon", "")
     bloqueada_contraria, razon_contraria = vela_contraria_reciente(
         ctx,
         senal["direccion"]

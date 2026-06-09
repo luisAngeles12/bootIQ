@@ -43,3 +43,51 @@ def estrategia_en_cooldown(patron):
         return False
 
     return True
+
+def registrar_bloqueo(motivo):
+    import estado
+
+    if not hasattr(estado, "metricas_ronda"):
+        estado.metricas_ronda = {
+            "mercados_analizados": 0,
+            "senales_detectadas": 0,
+            "senales_aprobadas": 0,
+            "entradas_abiertas": 0,
+            "bloqueos": {}
+        }
+
+    if motivo not in estado.metricas_ronda["bloqueos"]:
+        estado.metricas_ronda["bloqueos"][motivo] = 0
+
+    estado.metricas_ronda["bloqueos"][motivo] += 1
+
+
+def imprimir_resumen_ronda():
+    import estado
+
+    print("\n===== RESUMEN DE RONDA =====")
+    print("Mercados analizados:", estado.metricas_ronda.get("mercados_analizados", 0))
+    print("Señales detectadas:", estado.metricas_ronda.get("senales_detectadas", 0))
+    print("Señales aprobadas:", estado.metricas_ronda.get("senales_aprobadas", 0))
+    print("Entradas abiertas:", estado.metricas_ronda.get("entradas_abiertas", 0))
+
+    bloqueos = estado.metricas_ronda.get("bloqueos", {})
+
+    if bloqueos:
+        print("Bloqueos principales:")
+        for motivo, total in sorted(bloqueos.items(), key=lambda x: x[1], reverse=True):
+            print("-", motivo + ":", total)
+
+    print("============================\n")
+
+
+def reiniciar_metricas_ronda():
+    import estado
+
+    estado.metricas_ronda = {
+        "mercados_analizados": 0,
+        "senales_detectadas": 0,
+        "senales_aprobadas": 0,
+        "entradas_abiertas": 0,
+        "bloqueos": {}
+    }

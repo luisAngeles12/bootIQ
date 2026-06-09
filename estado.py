@@ -16,3 +16,10 @@ ultimo_reporte_mercados = 0
 snapshot_mercados = {}
 
 cooldown_estrategias = {}
+metricas_ronda = {
+    "mercados_analizados": 0,
+    "senales_detectadas": 0,
+    "senales_aprobadas": 0,
+    "entradas_abiertas": 0,
+    "bloqueos": {}
+}
