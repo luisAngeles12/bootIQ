@@ -199,16 +199,16 @@ def validar_estrategia_por_mercado(senal, ctx):
     if "choch" in patron:
 
         if "choch alcista" in patron and direccion == "call":
-            if cerca_resistencia and puntaje < 21:
-                return False, "CHOCH CALL bloqueado: resistencia cerca requiere puntaje >= 21"
+            if cerca_resistencia and puntaje < 20:
+                return False, "CHOCH CALL bloqueado: resistencia cerca requiere puntaje >= 20"
 
         if "choch bajista" in patron and direccion == "put":
-            if cerca_soporte and puntaje < 21:
-                return False, "CHOCH PUT bloqueado: soporte cerca requiere puntaje >= 21"
+            if cerca_soporte and puntaje < 20:
+                return False, "CHOCH PUT bloqueado: soporte cerca requiere puntaje >= 20"
 
         if mercado_delicado:
-            if puntaje < 20:
-                return False, "CHOCH bloqueado: mercado delicado requiere mínimo 20"
+            if puntaje < 18:
+                return False, "CHOCH bloqueado: mercado delicado requiere mínimo 18"
 
             if calidad_mercado == "SUCIO" and puntaje < 21:
                 return False, "CHOCH bloqueado: mercado sucio requiere mínimo 21"

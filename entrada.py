@@ -204,7 +204,7 @@ def validar_microestructura_entrada(
         # =========================
         if direccion == "put":
 
-            if bajistas >= 2 and fuerza_promedio >= 0.28:
+            if bajistas >= 2 and fuerza_promedio >= 0.22:
 
                 if (
                     ultima["mecha_inf"] >= ultima["cuerpo"] * 2.8
@@ -776,7 +776,7 @@ def entrada_rapida_disponible(senal):
             [x["min"] for x in candles]
         )
 
-        if not ok_micro:
+        if not ok_micro and not senal_premium:
             print("Entrada rápida bloqueada:", activo, razon_micro)
             return False
 

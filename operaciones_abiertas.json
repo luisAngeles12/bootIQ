@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "order_id": "13977030094",
+    "activo": "DASHUSD-OTC",
+    "tipo": "turbo",
+    "direccion": "call",
+    "puntaje": 18,
+    "patron": "CHOCH alcista",
+    "rsi": 58.15,
+    "razon": "ESTRATEGIA: CHOCH alcista, CHOCH alcista: rompe estructura superior, EMA favorece compra, RSI: 58.15, CHOCH apoyado en soporte, calidad A, memoria permite operación, ubicación válida, MERCADO: TENDENCIA_ALCISTA - precio con avance alcista predominante, CALIDAD MERCADO: LIMPIO score 77, TENDENCIA AVANZADA: ALCISTA_NORMAL fuerza 50.78, VALIDACIÓN MERCADO: CHOCH permitido a favor de tendencia, ZONA SR: CALL permitido con cautela: resistencia cerca, ACCION PRECIO: acción precio: CALL con resistencia cerca sin ruptura confirmada, RUPTURA: sin ruptura confirmada de resistencia",
+    "hora_apertura": 1781103849.7217777,
+    "balance_antes": 1219.49
+  },
+  {
+    "order_id": "13977096992",
+    "activo": "USDARS-OTC",
+    "tipo": "turbo",
+    "direccion": "call",
+    "puntaje": 18,
+    "patron": "reacción compradora en soporte",
+    "rsi": 57.58,
+    "razon": "ESTRATEGIA: reacción compradora en soporte, CALL válido por reacción en soporte, precio reaccionando en soporte, RSI: 57.58, calidad A+, memoria permite operación, ubicación válida, MERCADO: TENDENCIA_ALCISTA - precio con avance alcista predominante, CALIDAD MERCADO: NORMAL score 70, TENDENCIA AVANZADA: ALCISTA_DEBIL fuerza 45.42, VALIDACIÓN MERCADO: CALL permitido a favor de tendencia alcista, ZONA SR: CALL permitido con cautela: resistencia cerca, ACCION PRECIO: acción precio: CALL con resistencia cerca sin ruptura confirmada, RUPTURA: sin ruptura confirmada de resistencia",
+    "hora_apertura": 1781105431.080127,
+    "balance_antes": 1199.49
+  }
+]

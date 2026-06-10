@@ -1515,7 +1515,98 @@ def motor_estrategias_profesional(ctx):
                 razones
             )
         )
-
+    # =========================
+    # REACCIÓN DIRECTA EN SOPORTE
+    # =========================
+    call_reaccion, razon_call_reaccion = evaluar_reaccion_en_zona(
+        "call",
+        ctx["opens"],
+        ctx["closes"],
+        ctx["highs"],
+        ctx["lows"],
+        ctx["soporte"],
+        ctx["resistencia"],
+        ctx["vol"]
+    )
+    
+    if call_reaccion and ctx["patron"] != -1 and 32 <= rsi <= 58:
+        puntaje = 18
+        razones = [
+            "ESTRATEGIA: reacción compradora en soporte",
+            razon_call_reaccion,
+            "precio reaccionando en soporte",
+            "RSI: " + str(round(rsi, 2))
+        ]
+    
+        if ctx["rechazo"] == 1:
+            puntaje += 2
+            razones.append(ctx["nombre_rechazo"])
+    
+        if ctx["patron"] == 1:
+            puntaje += ctx["puntos_patron_vela"]
+            razones.append(ctx["nombre_patron"])
+    
+        if ctx["liquidity_sweep"] == 1:
+            puntaje += 2
+            razones.append(ctx["nombre_liquidity_sweep"])
+    
+        senales.append(
+            crear_senal_profesional(
+                activo,
+                "call",
+                "reacción compradora en soporte",
+                puntaje,
+                rsi,
+                razones
+            )
+        )
+    
+    
+    # =========================
+    # REACCIÓN DIRECTA EN RESISTENCIA
+    # =========================
+    put_reaccion, razon_put_reaccion = evaluar_reaccion_en_zona(
+        "put",
+        ctx["opens"],
+        ctx["closes"],
+        ctx["highs"],
+        ctx["lows"],
+        ctx["soporte"],
+        ctx["resistencia"],
+        ctx["vol"]
+    )
+    
+    if put_reaccion and ctx["patron"] != 1 and 42 <= rsi <= 68:
+        puntaje = 18
+        razones = [
+            "ESTRATEGIA: reacción vendedora en resistencia",
+            razon_put_reaccion,
+            "precio reaccionando en resistencia",
+            "RSI: " + str(round(rsi, 2))
+        ]
+    
+        if ctx["rechazo"] == -1:
+            puntaje += 2
+            razones.append(ctx["nombre_rechazo"])
+    
+        if ctx["patron"] == -1:
+            puntaje += ctx["puntos_patron_vela"]
+            razones.append(ctx["nombre_patron"])
+    
+        if ctx["liquidity_sweep"] == -1:
+            puntaje += 2
+            razones.append(ctx["nombre_liquidity_sweep"])
+    
+        senales.append(
+            crear_senal_profesional(
+                activo,
+                "put",
+                "reacción vendedora en resistencia",
+                puntaje,
+                rsi,
+                razones
+            )
+        )
     # =========================
     # 3. CHOCH ALCISTA
     # =========================
@@ -1976,24 +2067,24 @@ def analizar_activo(activo):
             razon_put_reaccion
         )
 
-    if contraria is not None:
-        contraria["tipo_mercado"] = ctx.get("tipo_mercado", "INDEFINIDO")
-        contraria["razon_mercado"] = ctx.get("razon_mercado", "")
-        contraria["calidad_mercado"] = ctx.get("calidad_mercado", "SIN_DATOS")
-        contraria["score_mercado"] = ctx.get("score_mercado", 0)
-        contraria["estado_tendencia"] = ctx.get("estado_tendencia", "INDEFINIDA")
-        contraria["fuerza_tendencia"] = ctx.get("fuerza_tendencia", 0)
-        contraria["direccion_tendencia"] = ctx.get("direccion_tendencia", "INDEFINIDA")
-        contraria["accion_precio"] = "OPERACION_CONTRARIA_EN_ZONA"
-        contraria["ruptura_confirmada"] = False
-        contraria["tipo_ruptura"] = "REACCION_EN_ZONA"
-        contraria["razon_ruptura"] = razon_zona_sr
-        contraria["precio_zona"] = ctx["soporte"] if contraria["direccion"] == "call" else ctx["resistencia"]
-        contraria["vol"] = ctx["vol"]
+        if contraria is not None:
+            contraria["tipo_mercado"] = ctx.get("tipo_mercado", "INDEFINIDO")
+            contraria["razon_mercado"] = ctx.get("razon_mercado", "")
+            contraria["calidad_mercado"] = ctx.get("calidad_mercado", "SIN_DATOS")
+            contraria["score_mercado"] = ctx.get("score_mercado", 0)
+            contraria["estado_tendencia"] = ctx.get("estado_tendencia", "INDEFINIDA")
+            contraria["fuerza_tendencia"] = ctx.get("fuerza_tendencia", 0)
+            contraria["direccion_tendencia"] = ctx.get("direccion_tendencia", "INDEFINIDA")
+            contraria["accion_precio"] = "OPERACION_CONTRARIA_EN_ZONA"
+            contraria["ruptura_confirmada"] = False
+            contraria["tipo_ruptura"] = "REACCION_EN_ZONA"
+            contraria["razon_ruptura"] = razon_zona_sr
+            contraria["precio_zona"] = ctx["soporte"] if contraria["direccion"] == "call" else ctx["resistencia"]
+            contraria["vol"] = ctx["vol"]
+    
+            return contraria
 
-        return contraria
-
-    return None
+        return None
 
     # =========================
     # FASE 3.1: DIAGNÓSTICO ACCIÓN DEL PRECIO
