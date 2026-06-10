@@ -117,9 +117,8 @@ def evaluar_estabilidad_activo(asset, tipo):
             return None
 
         # Evitar tendencias débiles.
-        if "DEBIL" in estado_tendencia:
-            return None
-
+        if "DEBIL" in estado_tendencia and score < 68:
+           return None
         # Evitar agotamiento como filtro inicial.
         # Si está agotada, puede servir para contra tendencia,
         # pero no para elegir los mejores activos base.

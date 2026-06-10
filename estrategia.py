@@ -922,7 +922,9 @@ def clasificar_senal_profesional(puntaje, razones, estrategia, rsi):
     if puntaje >= 18:
         calidad = "A+"
         prioridad = 4
-
+        if "choch" in estrategia and puntaje < 21:
+          calidad = "A"
+          prioridad = 3
     elif puntaje >= 14:
         calidad = "A"
         prioridad = 3
@@ -1407,13 +1409,10 @@ def vela_contraria_reciente(ctx, direccion):
         print("Error vela contraria reciente:", e)
         return False, "error vela contraria reciente"
 def motor_estrategias_profesional(ctx):
-    señales = []
+    senales = []
 
     activo = ctx["activo"]
     rsi = ctx["rsi"]
-
-    tipo_mercado = ctx.get("tipo_mercado", "INDEFINIDO")
-    razon_mercado = ctx.get("razon_mercado", "")
 
     estrategias_malas = estrategias_bloqueables()
     activos_malos = activos_bloqueables()
@@ -1422,7 +1421,7 @@ def motor_estrategias_profesional(ctx):
         return None
 
     # =========================
-    # 1. LIQUIDITY SWEEP ALCISTA MEJORADO
+    # 1. LIQUIDITY SWEEP ALCISTA
     # =========================
     if (
         ctx["liquidity_sweep"] == 1
@@ -1458,8 +1457,15 @@ def motor_estrategias_profesional(ctx):
             puntaje += 2
             razones.append(ctx["nombre_choch"])
 
-        señales.append(
-            crear_senal_profesional(activo, "call", "liquidity sweep alcista", puntaje, rsi, razones)
+        senales.append(
+            crear_senal_profesional(
+                activo,
+                "call",
+                "liquidity sweep alcista",
+                puntaje,
+                rsi,
+                razones
+            )
         )
 
     # =========================
@@ -1499,26 +1505,26 @@ def motor_estrategias_profesional(ctx):
             puntaje += 2
             razones.append(ctx["nombre_choch"])
 
-        señales.append(
-            crear_senal_profesional(activo, "put", "liquidity sweep bajista", puntaje, rsi, razones)
+        senales.append(
+            crear_senal_profesional(
+                activo,
+                "put",
+                "liquidity sweep bajista",
+                puntaje,
+                rsi,
+                razones
+            )
         )
 
     # =========================
-    # 3. CHOCH ALCISTA MEJORADO
+    # 3. CHOCH ALCISTA
     # =========================
     if (
         ctx["choch"] == 1
-        and ctx["patron"] != -1
         and ctx["ema_alcista"]
-        and 38 <= rsi <= 62
-        and (
-            ctx["rechazo"] == 1
-            or ctx["patron"] == 1
-            or ctx["cerca_soporte"]
-            or ctx["liquidity_sweep"] == 1
-        )
+        and 42 <= rsi <= 64
     ):
-        puntaje = 17
+        puntaje = 16
         razones = [
             "ESTRATEGIA: CHOCH alcista",
             ctx["nombre_choch"],
@@ -1526,6 +1532,10 @@ def motor_estrategias_profesional(ctx):
             "RSI: " + str(round(rsi, 2))
         ]
 
+        if ctx["cerca_soporte"]:
+            puntaje += 2
+            razones.append("CHOCH apoyado en soporte")
+
         if ctx["rechazo"] == 1:
             puntaje += 2
             razones.append(ctx["nombre_rechazo"])
@@ -1534,34 +1544,26 @@ def motor_estrategias_profesional(ctx):
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
 
-        if ctx["cerca_soporte"]:
-            puntaje += 1
-            razones.append("CHOCH apoyado en soporte")
-
-        if ctx["liquidity_sweep"] == 1:
-            puntaje += 2
-            razones.append("CHOCH con liquidity sweep alcista")
-
-        señales.append(
-            crear_senal_profesional(activo, "call", "CHOCH alcista", puntaje, rsi, razones)
+        senales.append(
+            crear_senal_profesional(
+                activo,
+                "call",
+                "CHOCH alcista",
+                puntaje,
+                rsi,
+                razones
+            )
         )
 
     # =========================
-    # 4. CHOCH BAJISTA MEJORADO
+    # 4. CHOCH BAJISTA
     # =========================
     if (
         ctx["choch"] == -1
-        and ctx["patron"] != 1
         and ctx["ema_bajista"]
-        and 38 <= rsi <= 62
-        and (
-            ctx["rechazo"] == -1
-            or ctx["patron"] == -1
-            or ctx["cerca_resistencia"]
-            or ctx["liquidity_sweep"] == -1
-        )
+        and 36 <= rsi <= 58
     ):
-        puntaje = 17
+        puntaje = 16
         razones = [
             "ESTRATEGIA: CHOCH bajista",
             ctx["nombre_choch"],
@@ -1569,327 +1571,112 @@ def motor_estrategias_profesional(ctx):
             "RSI: " + str(round(rsi, 2))
         ]
 
-        if ctx["rechazo"] == -1:
-            puntaje += 2
-            razones.append(ctx["nombre_rechazo"])
-
-        if ctx["patron"] == -1:
-            puntaje += ctx["puntos_patron_vela"]
-            razones.append(ctx["nombre_patron"])
-
         if ctx["cerca_resistencia"]:
-            puntaje += 1
+            puntaje += 2
             razones.append("CHOCH apoyado en resistencia")
 
-        if ctx["liquidity_sweep"] == -1:
-            puntaje += 2
-            razones.append("CHOCH con liquidity sweep bajista")
-
-        señales.append(
-            crear_senal_profesional(activo, "put", "CHOCH bajista", puntaje, rsi, razones)
-        )
-
-    # =========================
-    # 5. FALSA RUPTURA ALCISTA
-    # =========================
-    if (
-        ctx["falsa_call"] == 1
-        and ctx["patron"] != -1
-        and rsi <= 64
-    ):
-        puntaje = 18
-        razones = [
-            "ESTRATEGIA: falsa ruptura alcista",
-            ctx["nombre_falsa_call"],
-            "recuperación de soporte",
-            "RSI: " + str(round(rsi, 2))
-        ]
-
-        if ctx["rechazo"] == 1:
-            puntaje += 2
-            razones.append(ctx["nombre_rechazo"])
-
-        if ctx["call_reaccion"]:
-            puntaje += 2
-            razones.append(ctx["razon_call_reaccion"])
-
-        if ctx["patron"] == 1:
-            puntaje += ctx["puntos_patron_vela"]
-            razones.append(ctx["nombre_patron"])
-
-        señales.append(
-            crear_senal_profesional(activo, "call", "falsa ruptura alcista", puntaje, rsi, razones)
-        )
-
-    # =========================
-    # 6. FALSA RUPTURA BAJISTA
-    # =========================
-    if (
-        ctx["falsa_put"] == -1
-        and ctx["patron"] != 1
-        and rsi >= 36
-    ):
-        puntaje = 18
-        razones = [
-            "ESTRATEGIA: falsa ruptura bajista",
-            ctx["nombre_falsa_put"],
-            "rechazo de resistencia",
-            "RSI: " + str(round(rsi, 2))
-        ]
-
         if ctx["rechazo"] == -1:
             puntaje += 2
             razones.append(ctx["nombre_rechazo"])
 
-        if ctx["put_reaccion"]:
-            puntaje += 2
-            razones.append(ctx["razon_put_reaccion"])
-
         if ctx["patron"] == -1:
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
 
-        señales.append(
-            crear_senal_profesional(activo, "put", "falsa ruptura bajista", puntaje, rsi, razones)
+        senales.append(
+            crear_senal_profesional(
+                activo,
+                "put",
+                "CHOCH bajista",
+                puntaje,
+                rsi,
+                razones
+            )
         )
 
     # =========================
-    # 7. BREAKOUT RETEST ALCISTA
-    # =========================
-    if (
-        ctx["br_call"] == 1
-        and ctx["ema_alcista"]
-        and ctx["tendencia"] >= 0
-        and not ctx["cerca_resistencia"]
-        and rsi <= 64
-    ):
-        puntaje = 17
-        razones = [
-            "ESTRATEGIA: breakout retest alcista",
-            ctx["nombre_br_call"],
-            "EMA favorece compra",
-            "RSI: " + str(round(rsi, 2))
-        ]
-
-        if ctx["estructura"] == 1:
-            puntaje += 2
-            razones.append("estructura alcista")
-
-        if ctx["patron"] == 1:
-            puntaje += ctx["puntos_patron_vela"]
-            razones.append(ctx["nombre_patron"])
-
-        señales.append(
-            crear_senal_profesional(activo, "call", "breakout retest alcista", puntaje, rsi, razones)
-        )
-
-    # =========================
-    # 8. BREAKOUT RETEST BAJISTA
-    # =========================
-    if (
-        ctx["br_put"] == -1
-        and ctx["ema_bajista"]
-        and ctx["tendencia"] <= 0
-        and not ctx["cerca_soporte"]
-        and rsi >= 36
-    ):
-        puntaje = 17
-        razones = [
-            "ESTRATEGIA: breakout retest bajista",
-            ctx["nombre_br_put"],
-            "EMA favorece venta",
-            "RSI: " + str(round(rsi, 2))
-        ]
-
-        if ctx["estructura"] == -1:
-            puntaje += 2
-            razones.append("estructura bajista")
-
-        if ctx["patron"] == -1:
-            puntaje += ctx["puntos_patron_vela"]
-            razones.append(ctx["nombre_patron"])
-
-        señales.append(
-            crear_senal_profesional(activo, "put", "breakout retest bajista", puntaje, rsi, razones)
-        )
-
-    # =========================
-    # 9. PULLBACK A EMA ALCISTA
+    # 5. PULLBACK ALCISTA A EMA
     # =========================
     if (
         ctx["entrada_pullback_call"]
         and ctx["ema_alcista"]
-        and ctx["tendencia"] >= 0
-        and ctx["estructura"] >= 0
-        and 36 <= rsi <= 62
-        and not ctx["cerca_resistencia"]
+        and ctx["patron"] != -1
+        and 38 <= rsi <= 58
     ):
         puntaje = 14
         razones = [
-            "ESTRATEGIA: pullback alcista a EMA/zona",
+            "ESTRATEGIA: pullback alcista a EMA",
+            "pullback alcista válido",
             "EMA favorece compra",
-            "pullback válido para compra",
             "RSI: " + str(round(rsi, 2))
         ]
-
-        if ctx["tendencia"] == 1:
-            puntaje += 2
-            razones.append("tendencia alcista")
-
-        if ctx["estructura"] == 1:
-            puntaje += 2
-            razones.append("estructura alcista")
-
-        if ctx["patron"] == 1:
-            puntaje += ctx["puntos_patron_vela"]
-            razones.append(ctx["nombre_patron"])
 
         if ctx["rechazo"] == 1:
             puntaje += 2
             razones.append(ctx["nombre_rechazo"])
 
-        señales.append(
-            crear_senal_profesional(activo, "call", "pullback alcista a EMA", puntaje, rsi, razones)
+        if ctx["patron"] == 1:
+            puntaje += ctx["puntos_patron_vela"]
+            razones.append(ctx["nombre_patron"])
+
+        senales.append(
+            crear_senal_profesional(
+                activo,
+                "call",
+                "pullback alcista a EMA",
+                puntaje,
+                rsi,
+                razones
+            )
         )
 
     # =========================
-    # 10. PULLBACK A EMA BAJISTA MEJORADO
+    # 6. PULLBACK BAJISTA A EMA
     # =========================
     if (
         ctx["entrada_pullback_put"]
         and ctx["ema_bajista"]
-        and ctx["tendencia"] <= 0
-        and ctx["estructura"] <= 0
-        and 38 <= rsi <= 64
-        and not ctx["cerca_soporte"]
-        and (
-            (
-                ctx["rechazo"] == -1
-                and ctx["patron"] == -1
-            )
-            or (
-                ctx["rechazo"] == -1
-                and ctx["cerca_resistencia"]
-            )
-        )
+        and ctx["patron"] != 1
+        and 42 <= rsi <= 62
     ):
         puntaje = 14
         razones = [
-            "ESTRATEGIA: pullback bajista a EMA/zona",
+            "ESTRATEGIA: pullback bajista a EMA",
+            "pullback bajista válido",
             "EMA favorece venta",
-            "pullback bajista confirmado",
             "RSI: " + str(round(rsi, 2))
         ]
-
-        if ctx["tendencia"] == -1:
-            puntaje += 2
-            razones.append("tendencia bajista")
-
-        if ctx["estructura"] == -1:
-            puntaje += 2
-            razones.append("estructura bajista")
-
-        if ctx["cerca_resistencia"]:
-            puntaje += 1
-            razones.append("pullback cerca de resistencia")
-
-        if ctx["patron"] == -1:
-            puntaje += ctx["puntos_patron_vela"]
-            razones.append(ctx["nombre_patron"])
 
         if ctx["rechazo"] == -1:
             puntaje += 2
             razones.append(ctx["nombre_rechazo"])
 
-        señales.append(
-            crear_senal_profesional(activo, "put", "pullback bajista a EMA", puntaje, rsi, razones)
-        )
-
-    # =========================
-    # 11. RECHAZO COMPRADOR EN SOPORTE
-    # =========================
-    if (
-        ctx["cerca_soporte"]
-        and ctx["rechazo"] == 1
-        and ctx["patron"] != -1
-        and 30 <= rsi <= 55
-    ):
-        puntaje = 9
-        razones = [
-            "ESTRATEGIA: rechazo comprador en soporte",
-            ctx["nombre_rechazo"],
-            "zona soporte activa",
-            "RSI válido para compra: " + str(round(rsi, 2))
-        ]
-
-        if ctx["call_reaccion"]:
-            puntaje += 2
-            razones.append(ctx["razon_call_reaccion"])
-
-        if ctx["triple_soporte"]:
-            puntaje += 2
-            razones.append("triple rechazo en soporte")
-
-        if ctx["patron"] == 1:
-            puntaje += ctx["puntos_patron_vela"]
-            razones.append(ctx["nombre_patron"])
-
-        if ctx["ema_alcista"]:
-            puntaje += 1
-            razones.append("EMA favorece compra")
-
-        señales.append(
-            crear_senal_profesional(activo, "call", "rechazo comprador en soporte", puntaje, rsi, razones)
-        )
-
-    # =========================
-    # 12. RECHAZO VENDEDOR EN RESISTENCIA
-    # =========================
-    if (
-        ctx["cerca_resistencia"]
-        and ctx["rechazo"] == -1
-        and ctx["patron"] != 1
-        and 45 <= rsi <= 70
-    ):
-        puntaje = 9
-        razones = [
-            "ESTRATEGIA: rechazo vendedor en resistencia",
-            ctx["nombre_rechazo"],
-            "zona resistencia activa",
-            "RSI válido para venta: " + str(round(rsi, 2))
-        ]
-
-        if ctx["put_reaccion"]:
-            puntaje += 2
-            razones.append(ctx["razon_put_reaccion"])
-
-        if ctx["triple_resistencia"]:
-            puntaje += 2
-            razones.append("triple rechazo en resistencia")
-
         if ctx["patron"] == -1:
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
 
-        if ctx["ema_bajista"]:
-            puntaje += 1
-            razones.append("EMA favorece venta")
-
-        señales.append(
-            crear_senal_profesional(activo, "put", "rechazo vendedor en resistencia", puntaje, rsi, razones)
+        senales.append(
+            crear_senal_profesional(
+                activo,
+                "put",
+                "pullback bajista a EMA",
+                puntaje,
+                rsi,
+                razones
+            )
         )
 
     # =========================
-    # 13. CONTINUACIÓN ALCISTA
+    # 7. CONTINUACIÓN ALCISTA CON TENDENCIA
+    # Ahora NO entra si el puntaje queda bajo.
     # =========================
     if (
         ctx["tendencia"] == 1
         and ctx["estructura"] == 1
         and ctx["ema_alcista"]
         and ctx["micro"] == 1
-        and not ctx["cerca_resistencia"]
-        and 42 <= rsi <= 60
-        and ctx["fuerza_ultima"] <= 0.70
+        and 45 <= rsi <= 62
+        and ctx["patron"] != -1
     ):
         puntaje = 11
         razones = [
@@ -1901,25 +1688,39 @@ def motor_estrategias_profesional(ctx):
             "RSI: " + str(round(rsi, 2))
         ]
 
+        if ctx["rechazo"] == 1:
+            puntaje += 2
+            razones.append(ctx["nombre_rechazo"])
+
         if ctx["patron"] == 1:
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
 
-        señales.append(
-            crear_senal_profesional(activo, "call", "continuación alcista con tendencia", puntaje, rsi, razones)
-        )
+        # CAMBIO IMPORTANTE:
+        # Continuación débil no se envía al sistema.
+        if puntaje >= 15:
+            senales.append(
+                crear_senal_profesional(
+                    activo,
+                    "call",
+                    "continuación alcista con tendencia",
+                    puntaje,
+                    rsi,
+                    razones
+                )
+            )
 
     # =========================
-    # 14. CONTINUACIÓN BAJISTA
+    # 8. CONTINUACIÓN BAJISTA CON TENDENCIA
+    # Ahora NO entra si el puntaje queda bajo.
     # =========================
     if (
         ctx["tendencia"] == -1
         and ctx["estructura"] == -1
         and ctx["ema_bajista"]
         and ctx["micro"] == -1
-        and not ctx["cerca_soporte"]
-        and 40 <= rsi <= 58
-        and ctx["fuerza_ultima"] <= 0.70
+        and 38 <= rsi <= 55
+        and ctx["patron"] != 1
     ):
         puntaje = 11
         razones = [
@@ -1931,27 +1732,36 @@ def motor_estrategias_profesional(ctx):
             "RSI: " + str(round(rsi, 2))
         ]
 
+        if ctx["rechazo"] == -1:
+            puntaje += 2
+            razones.append(ctx["nombre_rechazo"])
+
         if ctx["patron"] == -1:
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
 
-        señales.append(
-            crear_senal_profesional(activo, "put", "continuación bajista con tendencia", puntaje, rsi, razones)
-        )
+        # CAMBIO IMPORTANTE:
+        # Continuación débil no se envía al sistema.
+        if puntaje >= 15:
+            senales.append(
+                crear_senal_profesional(
+                    activo,
+                    "put",
+                    "continuación bajista con tendencia",
+                    puntaje,
+                    rsi,
+                    razones
+                )
+            )
 
-    # =========================
-    # FILTRO FINAL
-    # =========================
-    señales = [
-        s for s in señales
-        if s is not None and s.get("patron") not in estrategias_malas
-    ]
+    # Quitar señales nulas
+    senales = [s for s in senales if s is not None]
 
-    if not señales:
+    if not senales:
         return None
 
-    señales = sorted(
-        señales,
+    senales = sorted(
+        senales,
         key=lambda x: (
             x.get("prioridad", 0),
             x.get("puntaje", 0)
@@ -1959,19 +1769,7 @@ def motor_estrategias_profesional(ctx):
         reverse=True
     )
 
-    mejor_senal = señales[0]
-
-    mejor_senal["tipo_mercado"] = tipo_mercado
-    mejor_senal["razon_mercado"] = razon_mercado
-    # mejor_senal["razon"] = (
-    #     mejor_senal["razon"]
-    #     + ", MERCADO: "
-    #     + tipo_mercado
-    #     + " - "
-    #     + razon_mercado
-    # )
-
-    return mejor_senal
+    return senales[0]
 def analizar_activo(activo):
     ctx = leer_contexto_grafico(activo)
 
@@ -2045,7 +1843,7 @@ def analizar_activo(activo):
         estado.cooldown_activos[activo] = time.time() + 600
         return None
 
-    if "DEBIL" in tendencia_estado:
+    if "DEBIL" in tendencia_estado and score < 68:
         estado.cooldown_activos[activo] = time.time() + 600
         return None
 
@@ -2125,7 +1923,77 @@ def analizar_activo(activo):
             activo,
             razon_zona_sr
         )
-        return None
+    
+        call_reaccion, razon_call_reaccion = evaluar_reaccion_en_zona(
+            "call",
+            ctx["opens"],
+            ctx["closes"],
+            ctx["highs"],
+            ctx["lows"],
+            ctx["soporte"],
+            ctx["resistencia"],
+            ctx["vol"]
+        )
+    
+        put_reaccion, razon_put_reaccion = evaluar_reaccion_en_zona(
+            "put",
+            ctx["opens"],
+            ctx["closes"],
+            ctx["highs"],
+            ctx["lows"],
+            ctx["soporte"],
+            ctx["resistencia"],
+            ctx["vol"]
+        )
+    
+        contraria = intentar_operacion_contraria_en_zona(
+            activo,
+            senal["direccion"],
+            razon_zona_sr,
+            18 if senal["direccion"] == "put" else senal.get("puntaje", 0),
+            18 if senal["direccion"] == "call" else senal.get("puntaje", 0),
+            [
+                "CALL por reacción en soporte",
+                "reacción compradora en soporte",
+                "RSI: " + str(round(senal.get("rsi", 0), 2))
+            ],
+            [
+                "PUT por reacción en resistencia",
+                "reacción vendedora en resistencia",
+                "RSI: " + str(round(senal.get("rsi", 0), 2))
+            ],
+            senal.get("rsi", 0),
+            ctx.get("rechazo", 0),
+            ctx.get("patron", 0),
+            ctx.get("micro", 0),
+            ctx.get("triple_soporte", False),
+            ctx.get("triple_resistencia", False),
+            ctx.get("cerca_banda_inferior", False),
+            ctx.get("cerca_banda_superior", False),
+            call_reaccion,
+            razon_call_reaccion,
+            put_reaccion,
+            razon_put_reaccion
+        )
+
+    if contraria is not None:
+        contraria["tipo_mercado"] = ctx.get("tipo_mercado", "INDEFINIDO")
+        contraria["razon_mercado"] = ctx.get("razon_mercado", "")
+        contraria["calidad_mercado"] = ctx.get("calidad_mercado", "SIN_DATOS")
+        contraria["score_mercado"] = ctx.get("score_mercado", 0)
+        contraria["estado_tendencia"] = ctx.get("estado_tendencia", "INDEFINIDA")
+        contraria["fuerza_tendencia"] = ctx.get("fuerza_tendencia", 0)
+        contraria["direccion_tendencia"] = ctx.get("direccion_tendencia", "INDEFINIDA")
+        contraria["accion_precio"] = "OPERACION_CONTRARIA_EN_ZONA"
+        contraria["ruptura_confirmada"] = False
+        contraria["tipo_ruptura"] = "REACCION_EN_ZONA"
+        contraria["razon_ruptura"] = razon_zona_sr
+        contraria["precio_zona"] = ctx["soporte"] if contraria["direccion"] == "call" else ctx["resistencia"]
+        contraria["vol"] = ctx["vol"]
+
+        return contraria
+
+    return None
 
     # =========================
     # FASE 3.1: DIAGNÓSTICO ACCIÓN DEL PRECIO
