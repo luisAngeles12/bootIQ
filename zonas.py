@@ -351,118 +351,78 @@ def validar_interaccion_soporte_resistencia(
     soporte,
     resistencia,
     vol,
-    puntaje=0,
-    patron="",
-    tipo_mercado="INDEFINIDO",
-    calidad_mercado="NORMAL",
+    puntaje,
+    patron,
+    tipo_mercado,
+    calidad_mercado,
     ruptura_confirmada=False,
     tipo_ruptura="SIN_DATOS"
 ):
     try:
-        if len(closes) < 6:
-            return True, "zonas: velas insuficientes, no bloquear"
-
-        price = closes[-1]
+        precio = closes[-1]
 
         if vol <= 0:
-            vol = abs(price) * 0.0001
+            vol = abs(precio) * 0.0001
 
-        o = opens[-1]
-        c = closes[-1]
-        h = highs[-1]
-        l = lows[-1]
+        distancia_soporte = abs(precio - soporte)
+        distancia_resistencia = abs(resistencia - precio)
 
-        rango = h - l
-        cuerpo = abs(c - o)
+        cerca_soporte = distancia_soporte <= vol * 1.15
+        cerca_resistencia = distancia_resistencia <= vol * 1.15
 
-        if rango <= 0:
-            return True, "zonas: rango inválido, no bloquear"
+        patron_txt = str(patron).lower()
+        tipo_ruptura_txt = str(tipo_ruptura).lower()
 
-        mecha_sup = h - max(o, c)
-        mecha_inf = min(o, c) - l
-
-        distancia_soporte = abs(price - soporte)
-        distancia_resistencia = abs(resistencia - price)
-
-        cerca_soporte = distancia_soporte <= vol * 1.35
-        cerca_resistencia = distancia_resistencia <= vol * 1.35
-
-        ruptura_resistencia = c > resistencia + vol * 0.35
-        ruptura_soporte = c < soporte - vol * 0.35
-
-        falsa_ruptura_resistencia = (
-            h > resistencia + vol * 0.30
-            and c < resistencia
-            and mecha_sup >= cuerpo * 1.2
-        )
-
-        falsa_ruptura_soporte = (
-            l < soporte - vol * 0.30
-            and c > soporte
-            and mecha_inf >= cuerpo * 1.2
-        )
-
-        patron_texto = str(patron).lower()
         mercado_delicado = (
-            tipo_mercado == "RANGO"
+            tipo_mercado in ["RANGO", "COMPRESION", "EXPANSION", "INDEFINIDO"]
             or calidad_mercado in ["SUCIO", "CAOTICO"]
         )
 
-        # =========================
-        # EXCEPCIÓN FASE 3B
-        # =========================
-        if direccion == "call":
-            if ruptura_confirmada and tipo_ruptura == "RUPTURA_RESISTENCIA_CONFIRMADA":
-                return True, "CALL permitido: ruptura confirmada de resistencia"
-
-        if direccion == "put":
-            if ruptura_confirmada and tipo_ruptura == "RUPTURA_SOPORTE_CONFIRMADA":
-                return True, "PUT permitido: ruptura confirmada de soporte"
+        es_retest = (
+            "retest" in patron_txt
+            or "breakout" in patron_txt
+            or "ruptura" in patron_txt
+            or "retest" in tipo_ruptura_txt
+            or "ruptura" in tipo_ruptura_txt
+        )
 
         # =========================
-        # CALL / SUBIDA
+        # CALL cerca de resistencia
         # =========================
-        if direccion == "call":
-            if cerca_resistencia and not ruptura_resistencia:
-                if falsa_ruptura_resistencia:
-                    return False, "CALL bloqueado: falsa ruptura bajista en resistencia"
+        if direccion == "call" and cerca_resistencia:
+            if ruptura_confirmada or es_retest:
+                return True, "CALL permitido: resistencia rota/retest confirmado"
 
-                if mercado_delicado and puntaje <= 18:
-                    return False, "CALL bloqueado: resistencia cerca sin ruptura en mercado delicado"
-
-                if "pullback" in patron_texto and puntaje < 21:
-                    return False, "CALL pullback bloqueado cerca de resistencia"
-
-                if "choch" in patron_texto and mercado_delicado and puntaje < 20:
-                    return False, "CALL CHOCH bloqueado cerca de resistencia con puntaje bajo"
-
-                return True, "CALL permitido con cautela: resistencia cerca"
-
-            return True, "CALL permitido: zona sin conflicto fuerte"
+            return False, "CALL bloqueado: resistencia cerca sin ruptura confirmada"
 
         # =========================
-        # PUT / BAJADA
+        # PUT cerca de soporte
         # =========================
-        if direccion == "put":
-            if cerca_soporte and not ruptura_soporte:
-                if falsa_ruptura_soporte:
-                    return False, "PUT bloqueado: falsa ruptura alcista en soporte"
+        if direccion == "put" and cerca_soporte:
+            if ruptura_confirmada or es_retest:
+                return True, "PUT permitido: soporte roto/retest confirmado"
 
-                if mercado_delicado and puntaje <= 18:
-                    return False, "PUT bloqueado: soporte cerca sin ruptura en mercado delicado"
+            return False, "PUT bloqueado: soporte cerca sin ruptura confirmada"
 
-                if "pullback" in patron_texto and puntaje < 21:
-                    return False, "PUT pullback bloqueado cerca de soporte"
+        # =========================
+        # CALL cerca de soporte
+        # =========================
+        if direccion == "call" and cerca_soporte:
+            return True, "CALL permitido: cerca de soporte"
 
-                if "choch" in patron_texto and mercado_delicado and puntaje < 20:
-                    return False, "PUT CHOCH bloqueado cerca de soporte con puntaje bajo"
+        # =========================
+        # PUT cerca de resistencia
+        # =========================
+        if direccion == "put" and cerca_resistencia:
+            return True, "PUT permitido: cerca de resistencia"
 
-                return True, "PUT permitido con cautela: soporte cerca"
+        # =========================
+        # Mercado delicado
+        # =========================
+        if mercado_delicado and puntaje < 20:
+            return False, "zona bloqueada: mercado delicado requiere mejor confirmación"
 
-            return True, "PUT permitido: zona sin conflicto fuerte"
-
-        return True, "zonas: dirección no reconocida"
+        return True, "zona válida"
 
     except Exception as e:
-        print("Error validando interacción de zonas:", e)
-        return True, "zonas: error, no bloquear"
+        return False, "error validando soporte/resistencia: " + str(e)

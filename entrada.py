@@ -524,6 +524,14 @@ def procesar_senales_pendientes(abrir_operacion):
         try:
             activo = senal["activo"]
             direccion = senal["direccion"]
+            patron = str(senal.get("patron", "")).lower()
+            accion_precio = str(senal.get("accion_precio", "")).upper()
+            puntaje = senal.get("puntaje", 0)
+            calidad = senal.get("calidad", "")
+            tipo_mercado = senal.get("tipo_mercado", "INDEFINIDO")
+            calidad_mercado = senal.get("calidad_mercado", "SIN_DATOS")
+            tipo_ruptura = str(senal.get("tipo_ruptura", "SIN_DATOS")).lower()
+            ruptura_confirmada = senal.get("ruptura_confirmada", False)
 
             if len(estado.operaciones_abiertas) >= MAX_OPERACIONES_ABIERTAS:
                 restantes.append(senal)
@@ -536,7 +544,7 @@ def procesar_senales_pendientes(abrir_operacion):
                 restantes.append(senal)
                 continue
 
-            if vela_actual - senal["vela_detectada"] > 6:
+            if vela_actual - senal["vela_detectada"] > 4:
                 print("SEÑAL PENDIENTE EXPIRADA:", activo)
                 continue
 
@@ -581,6 +589,53 @@ def procesar_senales_pendientes(abrir_operacion):
                 restantes.append(senal)
                 continue
 
+            # =========================
+            # BLOQUEO ESPECIAL POR ZONA CONTRARIA
+            # =========================
+            zona_contraria_peligrosa = False
+
+            if direccion == "call" and "CALL_RESISTENCIA_CERCA_SIN_RUPTURA" in accion_precio:
+                zona_contraria_peligrosa = True
+
+            if direccion == "put" and "PUT_SOPORTE_CERCA_SIN_RUPTURA" in accion_precio:
+                zona_contraria_peligrosa = True
+
+            es_breakout_retest = (
+                "breakout" in patron
+                or "retest" in patron
+                or "ruptura" in patron
+                or "breakout" in tipo_ruptura
+                or "retest" in tipo_ruptura
+                or ruptura_confirmada
+            )
+
+            if zona_contraria_peligrosa and not es_breakout_retest:
+                confirmacion_fuerte = (
+                    "rechazo" in razon.lower()
+                    or "ruptura" in razon.lower()
+                    or "recuperación" in razon.lower()
+                    or "recuperacion" in razon.lower()
+                )
+
+                if not confirmacion_fuerte:
+                    print(
+                        "SEÑAL PENDIENTE BLOQUEADA:",
+                        activo,
+                        "zona contraria cerca sin ruptura/retest real"
+                    )
+                    continue
+
+            # =========================
+            # Evitar que una pendiente peligrosa confirme solo por continuación.
+            # =========================
+            if zona_contraria_peligrosa and "continuación sana" in razon.lower():
+                print(
+                    "SEÑAL PENDIENTE BLOQUEADA:",
+                    activo,
+                    "continuación sana no válida contra zona cercana"
+                )
+                continue
+
             ok_vela, razon_vela = validar_vela_exacta_entrada(
                 activo,
                 direccion
@@ -598,7 +653,13 @@ def procesar_senales_pendientes(abrir_operacion):
                 [x["min"] for x in candles]
             )
 
-            if not ok_micro:
+            senal_premium = (
+                puntaje >= 22
+                and calidad == "A+"
+                and calidad_mercado in ["LIMPIO", "NORMAL"]
+            )
+
+            if not ok_micro and not senal_premium:
                 print("SEÑAL PENDIENTE BLOQUEADA:", activo, razon_micro)
                 continue
 
@@ -607,7 +668,11 @@ def procesar_senales_pendientes(abrir_operacion):
                 activo,
                 direccion,
                 "|",
-                razon
+                razon,
+                "| vela:",
+                razon_vela,
+                "| micro:",
+                razon_micro
             )
 
             if abrir_operacion(senal):

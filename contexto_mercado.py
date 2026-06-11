@@ -171,75 +171,74 @@ def validar_estrategia_por_mercado(senal, ctx):
         or tendencia_indefinida
     )
 
+    confirmacion_fuerte = (
+        rechazo != 0
+        or patron_vela != 0
+        or liquidity_sweep != 0
+        or puntaje >= 23
+    )
+
+    agotamiento_real_call = (
+        direccion == "call"
+        and cerca_soporte
+        and (
+            rechazo == 1
+            or patron_vela == 1
+            or liquidity_sweep == 1
+            or tendencia_agotada
+        )
+    )
+
+    agotamiento_real_put = (
+        direccion == "put"
+        and cerca_resistencia
+        and (
+            rechazo == -1
+            or patron_vela == -1
+            or liquidity_sweep == -1
+            or tendencia_agotada
+        )
+    )
+
+    agotamiento_real = agotamiento_real_call or agotamiento_real_put
+
     # =========================
     # MERCADO CAÓTICO
     # =========================
     if calidad_mercado == "CAOTICO":
-        if (
-            puntaje >= 24
-            and (
-                "liquidity sweep" in patron
-                or "rechazo" in patron
-                or rechazo != 0
-                or liquidity_sweep != 0
-            )
-        ):
-            return True, "mercado caótico: señal premium permitida"
+        if puntaje >= 25 and agotamiento_real:
+            return True, "mercado caótico: solo señal premium con agotamiento real"
 
-        return False, "mercado caótico: señal no premium bloqueada"
+        return False, "mercado caótico: señal bloqueada"
 
     # =========================
     # CHOCH
-    # CAMBIO:
-    # CHOCH cerca de resistencia/soporte necesita más puntaje.
-    # Evita entradas tipo:
-    # CALL + resistencia cerca + sin ruptura
-    # PUT + soporte cerca + sin ruptura
     # =========================
     if "choch" in patron:
 
         if "choch alcista" in patron and direccion == "call":
-            if cerca_resistencia and puntaje < 20:
-                return False, "CHOCH CALL bloqueado: resistencia cerca requiere puntaje >= 20"
+            if cerca_resistencia and puntaje < 22:
+                return False, "CHOCH CALL bloqueado: resistencia cerca requiere ruptura/retest o puntaje >= 22"
 
         if "choch bajista" in patron and direccion == "put":
-            if cerca_soporte and puntaje < 20:
-                return False, "CHOCH PUT bloqueado: soporte cerca requiere puntaje >= 20"
+            if cerca_soporte and puntaje < 22:
+                return False, "CHOCH PUT bloqueado: soporte cerca requiere ruptura/retest o puntaje >= 22"
 
-        if mercado_delicado:
-            if puntaje < 18:
-                return False, "CHOCH bloqueado: mercado delicado requiere mínimo 18"
+        if a_favor:
+            if mercado_delicado and puntaje < 20:
+                return False, "CHOCH bloqueado: mercado delicado requiere mínimo 20"
 
-            if calidad_mercado == "SUCIO" and puntaje < 21:
-                return False, "CHOCH bloqueado: mercado sucio requiere mínimo 21"
+            if puntaje >= 18 and confirmacion_fuerte:
+                return True, "CHOCH permitido a favor de tendencia con confirmación"
 
-            if (
-                direccion == "call"
-                and cerca_resistencia
-                and rechazo != 1
-                and liquidity_sweep != 1
-                and puntaje < 22
-            ):
-                return False, "CHOCH CALL bloqueado: resistencia cerca sin reacción compradora"
+            return False, "CHOCH bloqueado: sin confirmación fuerte"
 
-            if (
-                direccion == "put"
-                and cerca_soporte
-                and rechazo != -1
-                and liquidity_sweep != -1
-                and puntaje < 22
-            ):
-                return False, "CHOCH PUT bloqueado: soporte cerca sin reacción vendedora"
+        # CHOCH contra tendencia
+        if not a_favor:
+            if puntaje >= 23 and agotamiento_real:
+                return True, "CHOCH contra tendencia permitido por agotamiento real"
 
-            return True, "CHOCH permitido en mercado delicado con confirmación"
-
-        if a_favor and puntaje >= 18:
-            return True, "CHOCH permitido a favor de tendencia"
-
-        if not a_favor and puntaje >= 23 and (rechazo != 0 or liquidity_sweep != 0):
-            return True, "CHOCH contra tendencia permitido por confirmación fuerte"
-
-        return False, "CHOCH bloqueado: sin contexto suficiente"
+            return False, "CHOCH contra tendencia bloqueado"
 
     # =========================
     # PULLBACK
@@ -248,7 +247,7 @@ def validar_estrategia_por_mercado(senal, ctx):
         if calidad_mercado == "CAOTICO":
             return False, "pullback bloqueado en mercado caótico"
 
-        if a_favor and puntaje >= 18:
+        if a_favor and puntaje >= 16:
             return True, "pullback permitido a favor de tendencia"
 
         if mercado_delicado and puntaje >= 21 and rechazo != 0:
@@ -257,29 +256,34 @@ def validar_estrategia_por_mercado(senal, ctx):
         return False, "pullback fuera de contexto"
 
     # =========================
+    # BREAKOUT + RETEST
+    # =========================
+    if "breakout" in patron or "retest" in patron:
+        if puntaje >= 20:
+            return True, "breakout/retest permitido"
+
+        return False, "breakout/retest bloqueado: puntaje bajo"
+
+    # =========================
     # LIQUIDITY SWEEP
-    # Se deja más flexible porque es tu mejor estrategia.
     # =========================
     if "liquidity sweep" in patron:
-        if mercado_delicado:
-            if puntaje < 21:
+        if a_favor:
+            if mercado_delicado and puntaje < 21:
                 return False, "sweep bloqueado: mercado delicado requiere mínimo 21"
 
-            if calidad_mercado == "SUCIO" and puntaje < 21:
-                return False, "sweep bloqueado: mercado sucio requiere mínimo 21"
+            if puntaje >= 20 and confirmacion_fuerte:
+                return True, "sweep permitido a favor de tendencia"
 
-            if tendencia_debil and not tendencia_agotada and not a_favor and puntaje < 23:
-                return False, "sweep contra tendencia bloqueado: tendencia débil no agotada"
+            return False, "sweep bloqueado: sin confirmación fuerte"
 
-            return True, "sweep permitido con confirmación suficiente"
+        # Sweep contra tendencia:
+        # Solo permitir si hay agotamiento real.
+        if not a_favor:
+            if puntaje >= 24 and agotamiento_real:
+                return True, "sweep contra tendencia permitido por agotamiento real"
 
-        if a_favor and puntaje >= 19:
-            return True, "sweep permitido a favor de tendencia"
-
-        if puntaje >= 22 and (rechazo != 0 or liquidity_sweep != 0):
-            return True, "sweep permitido por rechazo/liquidez"
-
-        return False, "sweep bloqueado: sin ventaja suficiente"
+            return False, "sweep contra tendencia bloqueado: sin agotamiento real"
 
     # =========================
     # TENDENCIA ALCISTA
@@ -289,18 +293,10 @@ def validar_estrategia_por_mercado(senal, ctx):
             return True, "CALL permitido a favor de tendencia alcista"
 
         if direccion == "put":
-            if (
-                cerca_resistencia
-                and rechazo == -1
-                and (
-                    patron_vela == -1
-                    or liquidity_sweep == -1
-                    or puntaje >= 23
-                )
-            ):
+            if puntaje >= 24 and agotamiento_real_put:
                 return True, "PUT contra tendencia permitido por agotamiento alcista"
 
-            return False, "PUT bloqueado contra tendencia alcista sin agotamiento"
+            return False, "PUT bloqueado contra tendencia alcista"
 
     # =========================
     # TENDENCIA BAJISTA
@@ -310,18 +306,10 @@ def validar_estrategia_por_mercado(senal, ctx):
             return True, "PUT permitido a favor de tendencia bajista"
 
         if direccion == "call":
-            if (
-                cerca_soporte
-                and rechazo == 1
-                and (
-                    patron_vela == 1
-                    or liquidity_sweep == 1
-                    or puntaje >= 23
-                )
-            ):
+            if puntaje >= 24 and agotamiento_real_call:
                 return True, "CALL contra tendencia permitido por agotamiento bajista"
 
-            return False, "CALL bloqueado contra tendencia bajista sin agotamiento"
+            return False, "CALL bloqueado contra tendencia bajista"
 
     # =========================
     # COMPRESIÓN
@@ -333,14 +321,7 @@ def validar_estrategia_por_mercado(senal, ctx):
     # EXPANSIÓN
     # =========================
     if tipo_mercado == "EXPANSION":
-        if (
-            puntaje >= 23
-            and (
-                "liquidity sweep" in patron
-                or "rechazo" in patron
-                or rechazo != 0
-            )
-        ):
+        if puntaje >= 24 and confirmacion_fuerte:
             return True, "señal premium permitida en expansión"
 
         return False, "mercado en expansión: evitar perseguir precio"
@@ -349,17 +330,10 @@ def validar_estrategia_por_mercado(senal, ctx):
     # INDEFINIDO
     # =========================
     if tipo_mercado == "INDEFINIDO":
-        if (
-            puntaje >= 21
-            and (
-                "liquidity sweep" in patron
-                or "rechazo" in patron
-                or rechazo != 0
-            )
-        ):
+        if puntaje >= 23 and confirmacion_fuerte:
             return True, "señal fuerte permitida en indefinido"
 
-        return False, "mercado indefinido: señal débil bloqueada"
+        return False, "mercado indefinido: señal bloqueada"
 
     return True, "mercado permitido"
 def diagnostico_calidad_mercado(candles):
