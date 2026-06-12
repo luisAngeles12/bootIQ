@@ -1435,6 +1435,7 @@ def leer_contexto_grafico(activo):
     }
 
     return ctx
+
 def vela_contraria_reciente(ctx, direccion):
     try:
         opens = ctx["opens"]
@@ -1500,6 +1501,57 @@ def vela_contraria_reciente(ctx, direccion):
     except Exception as e:
         print("Error vela contraria reciente:", e)
         return False, "error vela contraria reciente"
+def peso_estrategia_profesional(patron):
+    patron = str(patron).lower()
+
+    if "breakout" in patron or "retest" in patron:
+        return 110
+
+    if "pullback" in patron and "ema" in patron:
+        return 100
+
+    if "choch" in patron:
+        return 95
+
+    if "continuación" in patron or "continuacion" in patron:
+        return 90
+
+    if "reacción" in patron or "reaccion" in patron:
+        return 80
+
+    if "liquidity sweep" in patron:
+        return 70
+
+    return 50
+
+
+def score_final_senal_profesional(senal):
+    patron = str(senal.get("patron", "")).lower()
+
+    peso = peso_estrategia_profesional(patron)
+    puntaje = senal.get("puntaje", 0)
+    prioridad = senal.get("prioridad", 0)
+
+    score = peso + (puntaje * 2) + (prioridad * 5)
+
+    # Penalizar sweeps porque en tu historial reciente
+    # están entrando demasiado contra tendencia.
+    if "liquidity sweep" in patron:
+        score -= 15
+
+    # Penalizar reacciones en rango si no son muy fuertes.
+    if "reacción" in patron or "reaccion" in patron:
+        if puntaje < 22:
+            score -= 10
+
+    # Premiar señales realmente premium.
+    if puntaje >= 23:
+        score += 8
+
+    if senal.get("calidad") == "A+":
+        score += 6
+
+    return score
 def motor_estrategias_profesional(ctx):
     senales = []
 
@@ -2042,14 +2094,34 @@ def motor_estrategias_profesional(ctx):
     if not senales:
         return None
 
+    for s in senales:
+        s["score_final"] = score_final_senal_profesional(s)
+
     senales = sorted(
         senales,
         key=lambda x: (
+            x.get("score_final", 0),
             x.get("prioridad", 0),
             x.get("puntaje", 0)
         ),
         reverse=True
     )
+
+    print("RANKING DE SEÑALES:")
+    for s in senales[:5]:
+        print(
+            s.get("activo", activo),
+            "|",
+            s.get("direccion"),
+            "|",
+            s.get("patron"),
+            "| puntaje:",
+            s.get("puntaje"),
+            "| prioridad:",
+            s.get("prioridad"),
+            "| score final:",
+            s.get("score_final")
+        )
 
     return senales[0]
 def analizar_activo(activo):
