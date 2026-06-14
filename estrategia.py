@@ -760,128 +760,115 @@ def intentar_operacion_contraria_en_zona(
     razon_put_reaccion
 ):
     try:
-        texto = razon_bloqueo.lower()
+        texto = str(razon_bloqueo).lower()
 
-        # Si CALL fue bloqueado cerca de resistencia,
-        # buscamos PUT desde resistencia.
-        if direccion_bloqueada == "call" and "cerca de resistencia" in texto:
-
-            if not put_reaccion:
-                return None
-
-            if not (
-                rechazo == -1
-                or patron == -1
-                or micro == -1
-                or triple_resistencia
-                or cerca_banda_superior
-            ):
-                return None
-
-            razones = razones_put.copy()
-            razones.append("inversión inteligente: CALL bloqueado en resistencia")
-            razones.append(razon_put_reaccion)
-
-            puntaje = max(puntaje_put, PUNTAJE_MINIMO + 2)
-
-            calidad, prioridad = clasificar_senal(
-                puntaje,
-                razones,
-                rsi
+        bloqueo_call_resistencia = (
+            direccion_bloqueada == "call"
+            and (
+                "resistencia cerca" in texto
+                or "cerca de resistencia" in texto
             )
+        )
 
-            if prioridad <= 0:
+        bloqueo_put_soporte = (
+            direccion_bloqueada == "put"
+            and (
+                "soporte cerca" in texto
+                or "cerca de soporte" in texto
+            )
+        )
+
+        # CALL bloqueado en resistencia -> buscar PUT.
+        if bloqueo_call_resistencia:
+            confirmaciones = 0
+            razones = razones_put.copy()
+
+            if put_reaccion:
+                confirmaciones += 2
+                razones.append(razon_put_reaccion)
+
+            if rechazo == -1:
+                confirmaciones += 1
+                razones.append("rechazo vendedor confirmado")
+
+            if patron == -1:
+                confirmaciones += 1
+                razones.append("patrón bajista confirmado")
+
+            if micro == -1:
+                confirmaciones += 1
+                razones.append("micro tendencia bajista")
+
+            if triple_resistencia:
+                confirmaciones += 1
+                razones.append("triple rechazo en resistencia")
+
+            if cerca_banda_superior:
+                confirmaciones += 1
+                razones.append("precio en banda superior")
+
+            if confirmaciones < 2:
                 return None
 
-            permitido, razon_memoria = memoria_operativa(
+            puntaje = max(puntaje_put, 18) + confirmaciones
+
+            return crear_senal_profesional(
                 activo,
                 "put",
-                razones[0] if razones else "PUT por reacción en resistencia"
-            )
-
-            if not permitido:
-                print("PUT contrario bloqueado por memoria:", activo, razon_memoria)
-                return None
-
-            razones.append("calidad " + calidad)
-            razones.append(razon_memoria)
-
-            print("PUT contrario aprobado por resistencia:", activo)
-
-            return {
-                "activo": activo,
-                "direccion": "put",
-                "puntaje": puntaje,
-                "patron": razones[0] if razones else "PUT por reacción en resistencia",
-                "rsi": round(rsi, 2),
-                "razon": ", ".join(razones),
-                "calidad": calidad,
-                "prioridad": prioridad
-            }
-
-        # Si PUT fue bloqueado cerca de soporte,
-        # buscamos CALL desde soporte.
-        if direccion_bloqueada == "put" and "cerca de soporte" in texto:
-
-            if not call_reaccion:
-                return None
-
-            if not (
-                rechazo == 1
-                or patron == 1
-                or micro == 1
-                or triple_soporte
-                or cerca_banda_inferior
-            ):
-                return None
-
-            razones = razones_call.copy()
-            razones.append("inversión inteligente: PUT bloqueado en soporte")
-            razones.append(razon_call_reaccion)
-
-            puntaje = max(puntaje_call, PUNTAJE_MINIMO + 2)
-
-            calidad, prioridad = clasificar_senal(
+                "reacción vendedora en resistencia",
                 puntaje,
-                razones,
-                rsi
+                rsi,
+                razones
             )
 
-            if prioridad <= 0:
+        # PUT bloqueado en soporte -> buscar CALL.
+        if bloqueo_put_soporte:
+            confirmaciones = 0
+            razones = razones_call.copy()
+
+            if call_reaccion:
+                confirmaciones += 2
+                razones.append(razon_call_reaccion)
+
+            if rechazo == 1:
+                confirmaciones += 1
+                razones.append("rechazo comprador confirmado")
+
+            if patron == 1:
+                confirmaciones += 1
+                razones.append("patrón alcista confirmado")
+
+            if micro == 1:
+                confirmaciones += 1
+                razones.append("micro tendencia alcista")
+
+            if triple_soporte:
+                confirmaciones += 1
+                razones.append("triple rechazo en soporte")
+
+            if cerca_banda_inferior:
+                confirmaciones += 1
+                razones.append("precio en banda inferior")
+
+            if confirmaciones < 2:
                 return None
 
-            permitido, razon_memoria = memoria_operativa(
+            puntaje = max(puntaje_call, 18) + confirmaciones
+
+            return crear_senal_profesional(
                 activo,
                 "call",
-                razones[0] if razones else "CALL por reacción en soporte"
+                "reacción compradora en soporte",
+                puntaje,
+                rsi,
+                razones
             )
-
-            if not permitido:
-                print("CALL contrario bloqueado por memoria:", activo, razon_memoria)
-                return None
-
-            razones.append("calidad " + calidad)
-            razones.append(razon_memoria)
-
-            print("CALL contrario aprobado por soporte:", activo)
-
-            return {
-                "activo": activo,
-                "direccion": "call",
-                "puntaje": puntaje,
-                "patron": razones[0] if razones else "CALL por reacción en soporte",
-                "rsi": round(rsi, 2),
-                "razon": ", ".join(razones),
-                "calidad": calidad,
-                "prioridad": prioridad
-            }
 
         return None
 
     except Exception as e:
         print("Error intentando operación contraria:", activo, e)
         return None
-
 def clave_zona(activo, direccion, precio_zona, vol):
     try:
         if vol <= 0:
@@ -1534,17 +1521,36 @@ def score_final_senal_profesional(senal):
 
     score = peso + (puntaje * 2) + (prioridad * 5)
 
-    # Penalizar sweeps porque en tu historial reciente
-    # están entrando demasiado contra tendencia.
-    if "liquidity sweep" in patron:
-        score -= 15
+    # Premiar lo que viene funcionando mejor.
+    if "choch alcista" in patron:
+        score += 14
 
-    # Penalizar reacciones en rango si no son muy fuertes.
+    if "pullback bajista" in patron:
+        score += 12
+
+    if "continuación bajista" in patron or "continuacion bajista" in patron:
+        score += 10
+
+    if "continuación alcista" in patron or "continuacion alcista" in patron:
+        score += 8
+
+    # Bajar, NO bloquear, lo que está drenando el neto.
+    if "liquidity sweep alcista" in patron:
+        score -= 18
+
+    if "liquidity sweep bajista" in patron:
+        score -= 22
+
+    if "pullback alcista" in patron:
+        score -= 8
+
+    # Reacciones solo suben si son realmente premium.
     if "reacción" in patron or "reaccion" in patron:
-        if puntaje < 22:
-            score -= 10
+        if puntaje >= 22:
+            score += 6
+        else:
+            score -= 6
 
-    # Premiar señales realmente premium.
     if puntaje >= 23:
         score += 8
 
@@ -2123,7 +2129,7 @@ def motor_estrategias_profesional(ctx):
             s.get("score_final")
         )
 
-    return senales[0]
+    return senales
 def analizar_activo(activo):
     ctx = leer_contexto_grafico(activo)
 
@@ -2180,11 +2186,9 @@ def analizar_activo(activo):
         ctx["direccion_tendencia"] = "INDEFINIDA"
         ctx["razon_tendencia"] = "error leyendo tendencia"
 
-    # ====================================
-    # FILTRO DE MERCADO EN TIEMPO REAL
-    # Si el activo ya no está bueno,
-    # sacarlo temporalmente del análisis.
-    # ====================================
+    # =========================
+    # FILTRO GENERAL DE MERCADO
+    # =========================
     calidad = ctx.get("calidad_mercado", "SIN_DATOS")
     score = ctx.get("score_mercado", 0)
     tendencia_estado = ctx.get("estado_tendencia", "INDEFINIDA")
@@ -2205,81 +2209,56 @@ def analizar_activo(activo):
         estado.cooldown_activos[activo] = time.time() + 600
         return None
 
-    senal = motor_estrategias_profesional(ctx)
+    # =========================
+    # MOTOR DE ESTRATEGIAS
+    # Ahora debe devolver LISTA de señales.
+    # =========================
+    senales = motor_estrategias_profesional(ctx)
 
-    if senal is None:
+    if not senales:
         return None
 
-    if estrategia_en_cooldown(senal.get("patron", "")):
-        print(
-            senal["direccion"].upper(),
-            "bloqueado por cooldown de estrategia:",
-            activo,
-            senal.get("patron", "")
-        )
-        return None
-
-    ok_mercado, razon_validacion_mercado = validar_estrategia_por_mercado(
-        senal,
-        ctx
-    )
-
-    if not ok_mercado:
-        print(
-            senal["direccion"].upper(),
-            "bloqueado por contexto de mercado:",
-            activo,
-            razon_validacion_mercado
-        )
-        return None
+    # Seguridad por si alguna versión vieja devuelve dict.
+    if isinstance(senales, dict):
+        senales = [senales]
 
     # =========================
-    # FASE 3B: RUPTURA ANTES DE SOPORTE/RESISTENCIA
-    # IMPORTANTE:
-    # Esto debe calcularse antes de validar zonas.
+    # PROBAR SEÑALES UNA POR UNA
+    # Si una falla, prueba la siguiente.
     # =========================
-    ruptura = confirmar_ruptura_zona(
-        senal["direccion"],
-        ctx["opens"],
-        ctx["closes"],
-        ctx["highs"],
-        ctx["lows"],
-        ctx["soporte"],
-        ctx["resistencia"],
-        ctx["vol"]
-    )
+    for senal in senales:
 
-    senal["ruptura_confirmada"] = ruptura.get("confirmada", False)
-    senal["tipo_ruptura"] = ruptura.get("tipo", "SIN_DATOS")
-    senal["razon_ruptura"] = ruptura.get("razon", "")
+        if senal is None:
+            continue
 
-    ok_zona_sr, razon_zona_sr = validar_interaccion_soporte_resistencia(
-        senal["direccion"],
-        ctx["opens"],
-        ctx["closes"],
-        ctx["highs"],
-        ctx["lows"],
-        ctx["soporte"],
-        ctx["resistencia"],
-        ctx["vol"],
-        senal.get("puntaje", 0),
-        senal.get("patron", ""),
-        ctx.get("tipo_mercado", "INDEFINIDO"),
-        ctx.get("calidad_mercado", "NORMAL"),
-        senal.get("ruptura_confirmada", False),
-        senal.get("tipo_ruptura", "SIN_DATOS")
-    )
+        if estrategia_en_cooldown(senal.get("patron", "")):
+            print(
+                senal["direccion"].upper(),
+                "bloqueado por cooldown de estrategia:",
+                activo,
+                senal.get("patron", "")
+            )
+            continue
 
-    if not ok_zona_sr:
-        print(
-            senal["direccion"].upper(),
-            "bloqueado por soporte/resistencia:",
-            activo,
-            razon_zona_sr
+        ok_mercado, razon_validacion_mercado = validar_estrategia_por_mercado(
+            senal,
+            ctx
         )
-    
-        call_reaccion, razon_call_reaccion = evaluar_reaccion_en_zona(
-            "call",
+
+        if not ok_mercado:
+            print(
+                senal["direccion"].upper(),
+                "bloqueado por contexto de mercado:",
+                activo,
+                razon_validacion_mercado
+            )
+            continue
+
+        # =========================
+        # RUPTURA ANTES DE SOPORTE/RESISTENCIA
+        # =========================
+        ruptura = confirmar_ruptura_zona(
+            senal["direccion"],
             ctx["opens"],
             ctx["closes"],
             ctx["highs"],
@@ -2288,9 +2267,132 @@ def analizar_activo(activo):
             ctx["resistencia"],
             ctx["vol"]
         )
-    
-        put_reaccion, razon_put_reaccion = evaluar_reaccion_en_zona(
-            "put",
+
+        senal["ruptura_confirmada"] = ruptura.get("confirmada", False)
+        senal["tipo_ruptura"] = ruptura.get("tipo", "SIN_DATOS")
+        senal["razon_ruptura"] = ruptura.get("razon", "")
+
+        ok_zona_sr, razon_zona_sr = validar_interaccion_soporte_resistencia(
+            senal["direccion"],
+            ctx["opens"],
+            ctx["closes"],
+            ctx["highs"],
+            ctx["lows"],
+            ctx["soporte"],
+            ctx["resistencia"],
+            ctx["vol"],
+            senal.get("puntaje", 0),
+            senal.get("patron", ""),
+            ctx.get("tipo_mercado", "INDEFINIDO"),
+            ctx.get("calidad_mercado", "NORMAL"),
+            senal.get("ruptura_confirmada", False),
+            senal.get("tipo_ruptura", "SIN_DATOS")
+        )
+
+        if not ok_zona_sr:
+            print(
+                senal["direccion"].upper(),
+                "bloqueado por soporte/resistencia:",
+                activo,
+                razon_zona_sr
+            )
+
+            call_reaccion, razon_call_reaccion = evaluar_reaccion_en_zona(
+                "call",
+                ctx["opens"],
+                ctx["closes"],
+                ctx["highs"],
+                ctx["lows"],
+                ctx["soporte"],
+                ctx["resistencia"],
+                ctx["vol"]
+            )
+
+            put_reaccion, razon_put_reaccion = evaluar_reaccion_en_zona(
+                "put",
+                ctx["opens"],
+                ctx["closes"],
+                ctx["highs"],
+                ctx["lows"],
+                ctx["soporte"],
+                ctx["resistencia"],
+                ctx["vol"]
+            )
+
+            contraria = intentar_operacion_contraria_en_zona(
+                activo,
+                senal["direccion"],
+                razon_zona_sr,
+                18 if senal["direccion"] == "put" else senal.get("puntaje", 0),
+                18 if senal["direccion"] == "call" else senal.get("puntaje", 0),
+                [
+                    "CALL por reacción en soporte",
+                    "reacción compradora en soporte",
+                    "RSI: " + str(round(senal.get("rsi", 0), 2))
+                ],
+                [
+                    "PUT por reacción en resistencia",
+                    "reacción vendedora en resistencia",
+                    "RSI: " + str(round(senal.get("rsi", 0), 2))
+                ],
+                senal.get("rsi", 0),
+                ctx.get("rechazo", 0),
+                ctx.get("patron", 0),
+                ctx.get("micro", 0),
+                ctx.get("triple_soporte", False),
+                ctx.get("triple_resistencia", False),
+                ctx.get("cerca_banda_inferior", False),
+                ctx.get("cerca_banda_superior", False),
+                call_reaccion,
+                razon_call_reaccion,
+                put_reaccion,
+                razon_put_reaccion
+            )
+
+            if contraria is not None:
+                contraria["tipo_mercado"] = ctx.get("tipo_mercado", "INDEFINIDO")
+                contraria["razon_mercado"] = ctx.get("razon_mercado", "")
+                contraria["calidad_mercado"] = ctx.get("calidad_mercado", "SIN_DATOS")
+                contraria["score_mercado"] = ctx.get("score_mercado", 0)
+                contraria["estado_tendencia"] = ctx.get("estado_tendencia", "INDEFINIDA")
+                contraria["fuerza_tendencia"] = ctx.get("fuerza_tendencia", 0)
+                contraria["direccion_tendencia"] = ctx.get("direccion_tendencia", "INDEFINIDA")
+                contraria["accion_precio"] = "OPERACION_CONTRARIA_EN_ZONA"
+                contraria["ruptura_confirmada"] = False
+                contraria["tipo_ruptura"] = "REACCION_EN_ZONA"
+                contraria["razon_ruptura"] = razon_zona_sr
+                contraria["precio_zona"] = ctx["soporte"] if contraria["direccion"] == "call" else ctx["resistencia"]
+                contraria["vol"] = ctx["vol"]
+
+                print(
+                    "CONTEXTO FINAL:",
+                    activo,
+                    contraria["direccion"],
+                    contraria["patron"],
+                    "| MERCADO:",
+                    contraria.get("tipo_mercado"),
+                    "| CALIDAD:",
+                    contraria.get("calidad_mercado"),
+                    contraria.get("score_mercado"),
+                    "| TENDENCIA:",
+                    contraria.get("estado_tendencia"),
+                    contraria.get("fuerza_tendencia"),
+                    "| ACCION:",
+                    contraria.get("accion_precio")
+                )
+
+                return contraria
+
+            # No descarta el activo todavía.
+            # Prueba la siguiente señal del ranking.
+            continue
+
+        # =========================
+        # DIAGNÓSTICO ACCIÓN DEL PRECIO
+        # Por ahora NO bloquea, solo registra.
+        # =========================
+        diagnostico_pa = diagnostico_accion_precio_zona(
+            senal["direccion"],
             ctx["opens"],
             ctx["closes"],
             ctx["highs"],
@@ -2299,182 +2401,121 @@ def analizar_activo(activo):
             ctx["resistencia"],
             ctx["vol"]
         )
-    
-        contraria = intentar_operacion_contraria_en_zona(
+
+        senal["accion_precio"] = diagnostico_pa.get("accion", "SIN_DATOS")
+        senal["razon_accion_precio"] = diagnostico_pa.get("razon", "")
+
+        bloqueada_contraria, razon_contraria = vela_contraria_reciente(
+            ctx,
+            senal["direccion"]
+        )
+
+        if bloqueada_contraria:
+            print(
+                senal["direccion"].upper(),
+                "bloqueado por vela contraria reciente:",
+                activo,
+                razon_contraria
+            )
+            continue
+
+        if senal["direccion"] == "call":
+            precio_zona = ctx["soporte"]
+        else:
+            precio_zona = ctx["resistencia"]
+
+        bloqueada, razon_zona = zona_ya_operada(
             activo,
             senal["direccion"],
-            razon_zona_sr,
-            18 if senal["direccion"] == "put" else senal.get("puntaje", 0),
-            18 if senal["direccion"] == "call" else senal.get("puntaje", 0),
-            [
-                "CALL por reacción en soporte",
-                "reacción compradora en soporte",
-                "RSI: " + str(round(senal.get("rsi", 0), 2))
-            ],
-            [
-                "PUT por reacción en resistencia",
-                "reacción vendedora en resistencia",
-                "RSI: " + str(round(senal.get("rsi", 0), 2))
-            ],
-            senal.get("rsi", 0),
-            ctx.get("rechazo", 0),
-            ctx.get("patron", 0),
-            ctx.get("micro", 0),
-            ctx.get("triple_soporte", False),
-            ctx.get("triple_resistencia", False),
-            ctx.get("cerca_banda_inferior", False),
-            ctx.get("cerca_banda_superior", False),
-            call_reaccion,
-            razon_call_reaccion,
-            put_reaccion,
-            razon_put_reaccion
+            precio_zona,
+            ctx["vol"]
         )
 
-        if contraria is not None:
-            contraria["tipo_mercado"] = ctx.get("tipo_mercado", "INDEFINIDO")
-            contraria["razon_mercado"] = ctx.get("razon_mercado", "")
-            contraria["calidad_mercado"] = ctx.get("calidad_mercado", "SIN_DATOS")
-            contraria["score_mercado"] = ctx.get("score_mercado", 0)
-            contraria["estado_tendencia"] = ctx.get("estado_tendencia", "INDEFINIDA")
-            contraria["fuerza_tendencia"] = ctx.get("fuerza_tendencia", 0)
-            contraria["direccion_tendencia"] = ctx.get("direccion_tendencia", "INDEFINIDA")
-            contraria["accion_precio"] = "OPERACION_CONTRARIA_EN_ZONA"
-            contraria["ruptura_confirmada"] = False
-            contraria["tipo_ruptura"] = "REACCION_EN_ZONA"
-            contraria["razon_ruptura"] = razon_zona_sr
-            contraria["precio_zona"] = ctx["soporte"] if contraria["direccion"] == "call" else ctx["resistencia"]
-            contraria["vol"] = ctx["vol"]
-    
-            return contraria
+        if bloqueada:
+            print(
+                senal["direccion"].upper(),
+                "bloqueado por zona operada:",
+                activo,
+                razon_zona
+            )
+            continue
 
-        return None
+        ok_ubicacion, razon_ubicacion = filtro_fatiga_y_ubicacion(
+            senal["direccion"],
+            ctx["opens"],
+            ctx["closes"],
+            ctx["highs"],
+            ctx["lows"],
+            ctx["soporte"],
+            ctx["resistencia"],
+            ctx["vol"]
+        )
 
-    # =========================
-    # FASE 3.1: DIAGNÓSTICO ACCIÓN DEL PRECIO
-    # OJO: por ahora NO bloquea, solo registra.
-    # =========================
-    diagnostico_pa = diagnostico_accion_precio_zona(
-        senal["direccion"],
-        ctx["opens"],
-        ctx["closes"],
-        ctx["highs"],
-        ctx["lows"],
-        ctx["soporte"],
-        ctx["resistencia"],
-        ctx["vol"]
-    )
+        if not ok_ubicacion:
+            print(
+                senal["direccion"].upper(),
+                "bloqueado por ubicación/fatiga:",
+                activo,
+                razon_ubicacion
+            )
+            continue
 
-    senal["accion_precio"] = diagnostico_pa.get("accion", "SIN_DATOS")
-    senal["razon_accion_precio"] = diagnostico_pa.get("razon", "")
+        senal["razon"] = (
+            senal["razon"]
+            + ", "
+            + razon_ubicacion
+            + ", MERCADO: "
+            + ctx.get("tipo_mercado", "INDEFINIDO")
+            + " - "
+            + ctx.get("razon_mercado", "")
+            + ", CALIDAD MERCADO: "
+            + ctx.get("calidad_mercado", "SIN_DATOS")
+            + " score "
+            + str(ctx.get("score_mercado", 0))
+            + ", TENDENCIA AVANZADA: "
+            + ctx.get("estado_tendencia", "INDEFINIDA")
+            + " fuerza "
+            + str(ctx.get("fuerza_tendencia", 0))
+            + ", VALIDACIÓN MERCADO: "
+            + razon_validacion_mercado
+            + ", ZONA SR: "
+            + razon_zona_sr
+            + ", ACCION PRECIO: "
+            + senal.get("razon_accion_precio", "")
+            + ", RUPTURA: "
+            + senal.get("razon_ruptura", "")
+        )
 
-    bloqueada_contraria, razon_contraria = vela_contraria_reciente(
-        ctx,
-        senal["direccion"]
-    )
+        senal["precio_zona"] = precio_zona
+        senal["vol"] = ctx["vol"]
 
-    if bloqueada_contraria:
+        senal["tipo_mercado"] = ctx.get("tipo_mercado", "INDEFINIDO")
+        senal["razon_mercado"] = ctx.get("razon_mercado", "")
+        senal["calidad_mercado"] = ctx.get("calidad_mercado", "SIN_DATOS")
+        senal["score_mercado"] = ctx.get("score_mercado", 0)
+
+        senal["estado_tendencia"] = ctx.get("estado_tendencia", "INDEFINIDA")
+        senal["fuerza_tendencia"] = ctx.get("fuerza_tendencia", 0)
+        senal["direccion_tendencia"] = ctx.get("direccion_tendencia", "INDEFINIDA")
+
         print(
-            senal["direccion"].upper(),
-            "bloqueado por vela contraria reciente:",
+            "CONTEXTO FINAL:",
             activo,
-            razon_contraria
+            senal["direccion"],
+            senal["patron"],
+            "| MERCADO:",
+            senal.get("tipo_mercado"),
+            "| CALIDAD:",
+            senal.get("calidad_mercado"),
+            senal.get("score_mercado"),
+            "| TENDENCIA:",
+            senal.get("estado_tendencia"),
+            senal.get("fuerza_tendencia"),
+            "| ACCION:",
+            senal.get("accion_precio")
         )
-        return None
 
-    if senal["direccion"] == "call":
-        precio_zona = ctx["soporte"]
-    else:
-        precio_zona = ctx["resistencia"]
+        return senal
 
-    bloqueada, razon_zona = zona_ya_operada(
-        activo,
-        senal["direccion"],
-        precio_zona,
-        ctx["vol"]
-    )
-
-    if bloqueada:
-        print(
-            senal["direccion"].upper(),
-            "bloqueado por zona operada:",
-            activo,
-            razon_zona
-        )
-        return None
-
-    ok_ubicacion, razon_ubicacion = filtro_fatiga_y_ubicacion(
-        senal["direccion"],
-        ctx["opens"],
-        ctx["closes"],
-        ctx["highs"],
-        ctx["lows"],
-        ctx["soporte"],
-        ctx["resistencia"],
-        ctx["vol"]
-    )
-
-    if not ok_ubicacion:
-        print(
-            senal["direccion"].upper(),
-            "bloqueado por ubicación/fatiga:",
-            activo,
-            razon_ubicacion
-        )
-        return None
-
-    senal["razon"] = (
-        senal["razon"]
-        + ", "
-        + razon_ubicacion
-        + ", MERCADO: "
-        + ctx.get("tipo_mercado", "INDEFINIDO")
-        + " - "
-        + ctx.get("razon_mercado", "")
-        + ", CALIDAD MERCADO: "
-        + ctx.get("calidad_mercado", "SIN_DATOS")
-        + " score "
-        + str(ctx.get("score_mercado", 0))
-        + ", TENDENCIA AVANZADA: "
-        + ctx.get("estado_tendencia", "INDEFINIDA")
-        + " fuerza "
-        + str(ctx.get("fuerza_tendencia", 0))
-        + ", VALIDACIÓN MERCADO: "
-        + razon_validacion_mercado
-        + ", ZONA SR: "
-        + razon_zona_sr
-        + ", ACCION PRECIO: "
-        + senal.get("razon_accion_precio", "")
-        + ", RUPTURA: "
-        + senal.get("razon_ruptura", "")
-    )
-
-    senal["precio_zona"] = precio_zona
-    senal["vol"] = ctx["vol"]
-
-    senal["tipo_mercado"] = ctx.get("tipo_mercado", "INDEFINIDO")
-    senal["razon_mercado"] = ctx.get("razon_mercado", "")
-    senal["calidad_mercado"] = ctx.get("calidad_mercado", "SIN_DATOS")
-    senal["score_mercado"] = ctx.get("score_mercado", 0)
-
-    senal["estado_tendencia"] = ctx.get("estado_tendencia", "INDEFINIDA")
-    senal["fuerza_tendencia"] = ctx.get("fuerza_tendencia", 0)
-    senal["direccion_tendencia"] = ctx.get("direccion_tendencia", "INDEFINIDA")
-
-    print(
-        "CONTEXTO FINAL:",
-        activo,
-        senal["direccion"],
-        senal["patron"],
-        "| MERCADO:",
-        senal.get("tipo_mercado"),
-        "| CALIDAD:",
-        senal.get("calidad_mercado"),
-        senal.get("score_mercado"),
-        "| TENDENCIA:",
-        senal.get("estado_tendencia"),
-        senal.get("fuerza_tendencia"),
-        "| ACCION:",
-        senal.get("accion_precio")
-    )
-
-    return senal
+    # Si ninguna señal pasó, no opera.
+    return None

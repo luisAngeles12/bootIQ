@@ -149,6 +149,7 @@ def validar_estrategia_por_mercado(senal, ctx):
 
     estado_tendencia = ctx.get("estado_tendencia", "INDEFINIDA")
     direccion_tendencia = ctx.get("direccion_tendencia", "INDEFINIDA")
+    fuerza_tendencia = ctx.get("fuerza_tendencia", 0)
 
     cerca_soporte = ctx.get("cerca_soporte", False)
     cerca_resistencia = ctx.get("cerca_resistencia", False)
@@ -161,12 +162,17 @@ def validar_estrategia_por_mercado(senal, ctx):
     a_favor = direccion_senal == direccion_tendencia
 
     tendencia_debil = "DEBIL" in estado_tendencia
+    tendencia_fuerte = "FUERTE" in estado_tendencia
+    tendencia_normal = "NORMAL" in estado_tendencia
     tendencia_indefinida = estado_tendencia == "INDEFINIDA"
     tendencia_agotada = "AGOTADA" in estado_tendencia
 
+    mercado_rango = tipo_mercado == "RANGO"
+    mercado_tendencia = tipo_mercado in ["TENDENCIA_ALCISTA", "TENDENCIA_BAJISTA"]
+
     mercado_delicado = (
-        tipo_mercado == "RANGO"
-        or calidad_mercado == "SUCIO"
+        tipo_mercado in ["RANGO", "COMPRESION", "EXPANSION", "INDEFINIDO"]
+        or calidad_mercado in ["SUCIO", "CAOTICO"]
         or tendencia_debil
         or tendencia_indefinida
     )
@@ -176,6 +182,14 @@ def validar_estrategia_por_mercado(senal, ctx):
         or patron_vela != 0
         or liquidity_sweep != 0
         or puntaje >= 23
+        or (
+            puntaje >= 20
+            and a_favor
+            and (
+                tendencia_fuerte
+                or calidad_mercado == "LIMPIO"
+            )
+        )
     )
 
     agotamiento_real_call = (
@@ -212,29 +226,49 @@ def validar_estrategia_por_mercado(senal, ctx):
         return False, "mercado caótico: señal bloqueada"
 
     # =========================
+    # REACCIÓN EN ZONA
+    # En rango vale más.
+    # Contra tendencia fuerte requiere mejor confirmación.
+    # =========================
+    if "reacción" in patron or "reaccion" in patron:
+        if mercado_rango and puntaje >= 17:
+            return True, "reacción permitida en rango: zona manda"
+
+        if a_favor and puntaje >= 16:
+            return True, "reacción permitida a favor de contexto"
+
+        if not a_favor:
+            if tendencia_fuerte and fuerza_tendencia >= 70 and puntaje < 22:
+                return False, "reacción contra tendencia fuerte bloqueada: requiere puntaje >= 22"
+
+            if agotamiento_real and puntaje >= 18:
+                return True, "reacción contra tendencia permitida por agotamiento real"
+
+            return False, "reacción contra tendencia bloqueada: sin agotamiento real"
+
+    # =========================
     # CHOCH
+    # No bloqueamos por soporte/resistencia aquí.
+    # Eso se decide en zonas.py.
     # =========================
     if "choch" in patron:
 
-        if "choch alcista" in patron and direccion == "call":
-            if cerca_resistencia and puntaje < 22:
-                return False, "CHOCH CALL bloqueado: resistencia cerca requiere ruptura/retest o puntaje >= 22"
-
-        if "choch bajista" in patron and direccion == "put":
-            if cerca_soporte and puntaje < 22:
-                return False, "CHOCH PUT bloqueado: soporte cerca requiere ruptura/retest o puntaje >= 22"
-
         if a_favor:
-            if mercado_delicado and puntaje < 20:
-                return False, "CHOCH bloqueado: mercado delicado requiere mínimo 20"
+            if mercado_delicado and puntaje < 18:
+                return False, "CHOCH bloqueado: mercado delicado requiere mínimo 18"
+
+            if puntaje >= 20 and (tendencia_fuerte or calidad_mercado == "LIMPIO"):
+                return True, "CHOCH permitido a favor de tendencia fuerte"
 
             if puntaje >= 18 and confirmacion_fuerte:
                 return True, "CHOCH permitido a favor de tendencia con confirmación"
 
-            return False, "CHOCH bloqueado: sin confirmación fuerte"
+            return False, "CHOCH bloqueado: sin confirmación suficiente"
 
-        # CHOCH contra tendencia
         if not a_favor:
+            if mercado_rango and puntaje >= 22 and confirmacion_fuerte:
+                return True, "CHOCH en rango permitido con confirmación"
+
             if puntaje >= 23 and agotamiento_real:
                 return True, "CHOCH contra tendencia permitido por agotamiento real"
 
@@ -242,13 +276,20 @@ def validar_estrategia_por_mercado(senal, ctx):
 
     # =========================
     # PULLBACK
+    # Mejor en tendencia. En rango necesita zona/rechazo.
     # =========================
     if "pullback" in patron:
         if calidad_mercado == "CAOTICO":
             return False, "pullback bloqueado en mercado caótico"
 
-        if a_favor and puntaje >= 16:
+        if mercado_tendencia and a_favor and puntaje >= 16:
             return True, "pullback permitido a favor de tendencia"
+
+        if mercado_rango:
+            if puntaje >= 18 and (rechazo != 0 or patron_vela != 0):
+                return True, "pullback en rango permitido con rechazo/patrón"
+
+            return False, "pullback en rango bloqueado: necesita reacción"
 
         if mercado_delicado and puntaje >= 21 and rechazo != 0:
             return True, "pullback permitido en mercado delicado con rechazo"
@@ -259,26 +300,31 @@ def validar_estrategia_por_mercado(senal, ctx):
     # BREAKOUT + RETEST
     # =========================
     if "breakout" in patron or "retest" in patron:
-        if puntaje >= 20:
+        if puntaje >= 18:
             return True, "breakout/retest permitido"
 
         return False, "breakout/retest bloqueado: puntaje bajo"
 
     # =========================
     # LIQUIDITY SWEEP
+    # En rango puede ser bueno. En contra de tendencia exige agotamiento.
     # =========================
     if "liquidity sweep" in patron:
+        if mercado_rango:
+            if puntaje >= 21 and confirmacion_fuerte:
+                return True, "sweep permitido en rango con confirmación"
+
+            return False, "sweep en rango bloqueado: falta confirmación"
+
         if a_favor:
-            if mercado_delicado and puntaje < 21:
-                return False, "sweep bloqueado: mercado delicado requiere mínimo 21"
+            if mercado_delicado and puntaje < 20:
+                return False, "sweep bloqueado: mercado delicado requiere mínimo 20"
 
             if puntaje >= 20 and confirmacion_fuerte:
                 return True, "sweep permitido a favor de tendencia"
 
             return False, "sweep bloqueado: sin confirmación fuerte"
 
-        # Sweep contra tendencia:
-        # Solo permitir si hay agotamiento real.
         if not a_favor:
             if puntaje >= 24 and agotamiento_real:
                 return True, "sweep contra tendencia permitido por agotamiento real"
@@ -315,6 +361,10 @@ def validar_estrategia_por_mercado(senal, ctx):
     # COMPRESIÓN
     # =========================
     if tipo_mercado == "COMPRESION":
+        if "breakout" in patron or "retest" in patron:
+            if puntaje >= 18:
+                return True, "compresión: ruptura/retest permitido"
+
         return False, "mercado en compresión: esperar ruptura"
 
     # =========================
