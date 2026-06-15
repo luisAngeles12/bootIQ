@@ -164,7 +164,6 @@ def main():
                 senal = analizar_activo(activo)
 
                 if senal is not None:
-                    estado.metricas_ronda["senales_detectadas"] += 1
                     senal["tipo"] = tipo
                     senales.append(senal)
                     estado.metricas_ronda["senales_aprobadas"] += 1

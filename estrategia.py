@@ -1518,43 +1518,57 @@ def score_final_senal_profesional(senal):
     peso = peso_estrategia_profesional(patron)
     puntaje = senal.get("puntaje", 0)
     prioridad = senal.get("prioridad", 0)
+    calidad = senal.get("calidad", "")
 
     score = peso + (puntaje * 2) + (prioridad * 5)
 
-    # Premiar lo que viene funcionando mejor.
+    # =========================
+    # PREMIAR LO RENTABLE
+    # =========================
+    if "pullback bajista" in patron:
+        score += 18
+
+    if "continuación bajista" in patron or "continuacion bajista" in patron:
+        score += 18
+
     if "choch alcista" in patron:
         score += 14
 
-    if "pullback bajista" in patron:
-        score += 12
-
-    if "continuación bajista" in patron or "continuacion bajista" in patron:
-        score += 10
-
     if "continuación alcista" in patron or "continuacion alcista" in patron:
-        score += 8
+        score += 4
 
-    # Bajar, NO bloquear, lo que está drenando el neto.
-    if "liquidity sweep alcista" in patron:
-        score -= 18
-
-    if "liquidity sweep bajista" in patron:
+    # =========================
+    # BAJAR LO QUE ESTÁ DRENANDO
+    # NO bloquear, solo bajar prioridad.
+    # =========================
+    if "pullback alcista" in patron:
         score -= 22
 
-    if "pullback alcista" in patron:
-        score -= 8
+    if "liquidity sweep bajista" in patron:
+        score -= 28
 
-    # Reacciones solo suben si son realmente premium.
-    if "reacción" in patron or "reaccion" in patron:
-        if puntaje >= 22:
-            score += 6
-        else:
-            score -= 6
+    if "liquidity sweep alcista" in patron:
+        score -= 14
 
-    if puntaje >= 23:
+    if "choch bajista" in patron:
+        score -= 14
+
+    if "reacción vendedora" in patron or "reaccion vendedora" in patron:
+        score -= 18
+
+    if "reacción compradora" in patron or "reaccion compradora" in patron:
+        score -= 6
+
+    # =========================
+    # CALIDAD Y PUNTAJE
+    # =========================
+    if calidad == "A+":
         score += 8
 
-    if senal.get("calidad") == "A+":
+    if puntaje >= 23:
+        score += 10
+
+    if puntaje >= 25:
         score += 6
 
     return score
@@ -2096,10 +2110,15 @@ def motor_estrategias_profesional(ctx):
 
     # Quitar señales nulas
     senales = [s for s in senales if s is not None]
-
+    
     if not senales:
         return None
-
+    
+    try:
+        estado.metricas_ronda["senales_detectadas"] += len(senales)
+    except Exception:
+        pass
+    
     for s in senales:
         s["score_final"] = score_final_senal_profesional(s)
 
