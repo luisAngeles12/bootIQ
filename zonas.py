@@ -221,16 +221,6 @@ def breakout_retest(opens, closes, highs, lows, zona, tipo="resistencia"):
         if cierre_anterior < precio_zona - tolerancia and abs(high_actual - precio_zona) <= tolerancia and cierre_actual < precio_zona:
             return -1, "breakout retest bajista"
     return 0, "sin breakout retest"
-def _precio_zona(zona):
-    if isinstance(zona, dict):
-        return zona.get("precio", 0)
-    return zona
-
-
-def _tolerancia_zona(zona, vol):
-    if isinstance(zona, dict):
-        return zona.get("tolerancia", vol)
-    return vol
 
 def confirmar_ruptura_zona(
     direccion,
@@ -255,9 +245,6 @@ def confirmar_ruptura_zona(
         if vol <= 0:
             vol = abs(price) * 0.0001
 
-        soporte_precio = _precio_zona(soporte)
-        resistencia_precio = _precio_zona(resistencia)
-
         o = opens[-1]
         c = closes[-1]
         h = highs[-1]
@@ -275,14 +262,13 @@ def confirmar_ruptura_zona(
 
         mecha_sup = h - max(o, c)
         mecha_inf = min(o, c) - l
-
-        cuerpo_fuerte = cuerpo >= rango * 0.38
+        cuerpo_fuerte = cuerpo >= rango * 0.42
 
         if direccion == "call":
-            rompio = h > resistencia_precio + vol * 0.25
-            cerro_encima = c > resistencia_precio + vol * 0.18
+            rompio = h > resistencia + vol * 0.25
+            cerro_encima = c > resistencia + vol * 0.20
             vela_alcista = c > o
-            mecha_aceptable = mecha_sup <= max(cuerpo * 1.6, vol * 0.20)
+            mecha_aceptable = mecha_sup <= cuerpo * 1.4
 
             if rompio and cerro_encima and vela_alcista and cuerpo_fuerte and mecha_aceptable:
                 return {
@@ -305,10 +291,10 @@ def confirmar_ruptura_zona(
             }
 
         if direccion == "put":
-            rompio = l < soporte_precio - vol * 0.25
-            cerro_debajo = c < soporte_precio - vol * 0.18
+            rompio = l < soporte - vol * 0.25
+            cerro_debajo = c < soporte - vol * 0.20
             vela_bajista = c < o
-            mecha_aceptable = mecha_inf <= max(cuerpo * 1.6, vol * 0.20)
+            mecha_aceptable = mecha_inf <= cuerpo * 1.4
 
             if rompio and cerro_debajo and vela_bajista and cuerpo_fuerte and mecha_aceptable:
                 return {
@@ -342,6 +328,7 @@ def confirmar_ruptura_zona(
             "tipo": "ERROR",
             "razon": "error confirmando ruptura: " + str(e)
         }
+
 def entrada_pullback(direccion, price, ema21, soporte, resistencia, vol, patron, rechazo):
     cerca_ema = abs(price - ema21) <= vol * 1.2
     if direccion == "call":
@@ -377,60 +364,34 @@ def validar_interaccion_soporte_resistencia(
         if vol <= 0:
             vol = abs(precio) * 0.0001
 
-        soporte_precio = _precio_zona(soporte)
-        resistencia_precio = _precio_zona(resistencia)
+        distancia_soporte = abs(precio - soporte)
+        distancia_resistencia = abs(resistencia - precio)
 
-        distancia_soporte = abs(precio - soporte_precio)
-        distancia_resistencia = abs(resistencia_precio - precio)
+        cerca_soporte = distancia_soporte <= vol * 1.15
+        cerca_resistencia = distancia_resistencia <= vol * 1.15
 
         patron_txt = str(patron).lower()
         tipo_ruptura_txt = str(tipo_ruptura).lower()
 
-        es_rango = tipo_mercado in ["RANGO", "COMPRESION", "INDEFINIDO"]
-        es_tendencia_alcista = tipo_mercado == "TENDENCIA_ALCISTA"
-        es_tendencia_bajista = tipo_mercado == "TENDENCIA_BAJISTA"
-
-        multiplicador_zona = 1.30 if es_rango else 1.10
-
-        cerca_soporte = distancia_soporte <= vol * multiplicador_zona
-        cerca_resistencia = distancia_resistencia <= vol * multiplicador_zona
-
-        ruptura_real_resistencia = (
-            ruptura_confirmada is True
-            and tipo_ruptura_txt == "ruptura_resistencia_confirmada"
+        mercado_delicado = (
+            tipo_mercado in ["RANGO", "COMPRESION", "EXPANSION", "INDEFINIDO"]
+            or calidad_mercado in ["SUCIO", "CAOTICO"]
         )
 
-        ruptura_real_soporte = (
-            ruptura_confirmada is True
-            and tipo_ruptura_txt == "ruptura_soporte_confirmada"
-        )
-
-        es_retest_alcista = (
-            "breakout" in patron_txt
-            or "retest" in patron_txt
-            or tipo_ruptura_txt == "breakout_retest_alcista"
-        )
-
-        es_retest_bajista = (
-            "breakout" in patron_txt
-            or "retest" in patron_txt
-            or tipo_ruptura_txt == "breakout_retest_bajista"
+        es_retest = (
+            "retest" in patron_txt
+            or "breakout" in patron_txt
+            or "ruptura" in patron_txt
+            or "retest" in tipo_ruptura_txt
+            or "ruptura" in tipo_ruptura_txt
         )
 
         # =========================
         # CALL cerca de resistencia
         # =========================
         if direccion == "call" and cerca_resistencia:
-            if ruptura_real_resistencia or es_retest_alcista:
-                return True, "CALL permitido: resistencia rota/retest real confirmado"
-
-            # Permiso flexible: tendencia alcista presionando resistencia.
-            if (
-                es_tendencia_alcista
-                and calidad_mercado in ["LIMPIO", "NORMAL"]
-                and puntaje >= 20
-            ):
-                return True, "CALL permitido con cautela: tendencia alcista presiona resistencia"
+            if ruptura_confirmada or es_retest:
+                return True, "CALL permitido: resistencia rota/retest confirmado"
 
             return False, "CALL bloqueado: resistencia cerca sin ruptura confirmada"
 
@@ -438,31 +399,28 @@ def validar_interaccion_soporte_resistencia(
         # PUT cerca de soporte
         # =========================
         if direccion == "put" and cerca_soporte:
-            if ruptura_real_soporte or es_retest_bajista:
-                return True, "PUT permitido: soporte roto/retest real confirmado"
-
-            # Permiso flexible: tendencia bajista presionando soporte.
-            if (
-                es_tendencia_bajista
-                and calidad_mercado in ["LIMPIO", "NORMAL"]
-                and puntaje >= 18
-            ):
-                return True, "PUT permitido con cautela: tendencia bajista presiona soporte"
+            if ruptura_confirmada or es_retest:
+                return True, "PUT permitido: soporte roto/retest confirmado"
 
             return False, "PUT bloqueado: soporte cerca sin ruptura confirmada"
 
+        # =========================
+        # CALL cerca de soporte
+        # =========================
         if direccion == "call" and cerca_soporte:
-            return True, "CALL permitido: reacción/zona favorable cerca de soporte"
+            return True, "CALL permitido: cerca de soporte"
 
+        # =========================
+        # PUT cerca de resistencia
+        # =========================
         if direccion == "put" and cerca_resistencia:
-            return True, "PUT permitido: reacción/zona favorable cerca de resistencia"
+            return True, "PUT permitido: cerca de resistencia"
 
-        if (
-            tipo_mercado in ["COMPRESION", "INDEFINIDO"]
-            or calidad_mercado in ["SUCIO", "CAOTICO"]
-        ):
-            if puntaje < 16:
-                return False, "zona bloqueada: mercado delicado con puntaje bajo"
+        # =========================
+        # Mercado delicado
+        # =========================
+        if mercado_delicado and puntaje < 20:
+            return False, "zona bloqueada: mercado delicado requiere mejor confirmación"
 
         return True, "zona válida"
 
