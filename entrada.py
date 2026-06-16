@@ -524,9 +524,14 @@ def procesar_senales_pendientes(abrir_operacion):
         try:
             activo = senal["activo"]
             direccion = senal["direccion"]
+            patron = str(senal.get("patron", "")).lower()
+            accion_precio = str(senal.get("accion_precio", "")).upper()
             puntaje = senal.get("puntaje", 0)
             calidad = senal.get("calidad", "")
+            tipo_mercado = senal.get("tipo_mercado", "INDEFINIDO")
             calidad_mercado = senal.get("calidad_mercado", "SIN_DATOS")
+            tipo_ruptura = str(senal.get("tipo_ruptura", "SIN_DATOS")).lower()
+            ruptura_confirmada = senal.get("ruptura_confirmada", False)
 
             if len(estado.operaciones_abiertas) >= MAX_OPERACIONES_ABIERTAS:
                 restantes.append(senal)
@@ -583,6 +588,69 @@ def procesar_senales_pendientes(abrir_operacion):
             if decision != "entrar":
                 restantes.append(senal)
                 continue
+
+            # =========================
+            # ZONA CONTRARIA EN PENDIENTES
+            # Flexible: no mata señales buenas a favor de tendencia.
+            # =========================
+            zona_contraria_peligrosa = False
+            
+            if direccion == "call" and "CALL_RESISTENCIA_CERCA_SIN_RUPTURA" in accion_precio:
+                zona_contraria_peligrosa = True
+            
+            if direccion == "put" and "PUT_SOPORTE_CERCA_SIN_RUPTURA" in accion_precio:
+                zona_contraria_peligrosa = True
+            
+            es_breakout_retest = (
+                "breakout" in patron
+                or "retest" in patron
+                or tipo_ruptura in [
+                    "ruptura_resistencia_confirmada",
+                    "ruptura_soporte_confirmada",
+                    "breakout_retest_alcista",
+                    "breakout_retest_bajista"
+                ]
+                or ruptura_confirmada is True
+            )
+            
+            mercado_a_favor = (
+                (direccion == "call" and tipo_mercado == "TENDENCIA_ALCISTA")
+                or (direccion == "put" and tipo_mercado == "TENDENCIA_BAJISTA")
+            )
+            
+            senal_fuerte_a_favor = (
+                mercado_a_favor
+                and calidad_mercado in ["LIMPIO", "NORMAL"]
+                and puntaje >= 18
+            )
+            
+            confirmacion_fuerte = (
+                "rechazo" in razon.lower()
+                or "ruptura" in razon.lower()
+                or "recuperación" in razon.lower()
+                or "recuperacion" in razon.lower()
+                or "continuación sana" in razon.lower()
+                or "continuacion sana" in razon.lower()
+            )
+            
+            if zona_contraria_peligrosa and not es_breakout_retest:
+                if not senal_fuerte_a_favor and not confirmacion_fuerte:
+                    print(
+                        "SEÑAL PENDIENTE BLOQUEADA:",
+                        activo,
+                        "zona contraria cerca sin confirmación suficiente"
+                    )
+                    continue
+            # =========================
+            # Evitar que una pendiente peligrosa confirme solo por continuación.
+            # =========================
+            # if zona_contraria_peligrosa and "continuación sana" in razon.lower():
+            #     print(
+            #         "SEÑAL PENDIENTE BLOQUEADA:",
+            #         activo,
+            #         "continuación sana no válida contra zona cercana"
+            #     )
+            #     continue
 
             ok_vela, razon_vela = validar_vela_exacta_entrada(
                 activo,

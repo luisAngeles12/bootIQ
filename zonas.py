@@ -387,6 +387,8 @@ def validar_interaccion_soporte_resistencia(
         tipo_ruptura_txt = str(tipo_ruptura).lower()
 
         es_rango = tipo_mercado in ["RANGO", "COMPRESION", "INDEFINIDO"]
+        es_tendencia_alcista = tipo_mercado == "TENDENCIA_ALCISTA"
+        es_tendencia_bajista = tipo_mercado == "TENDENCIA_BAJISTA"
 
         multiplicador_zona = 1.30 if es_rango else 1.10
 
@@ -422,6 +424,14 @@ def validar_interaccion_soporte_resistencia(
             if ruptura_real_resistencia or es_retest_alcista:
                 return True, "CALL permitido: resistencia rota/retest real confirmado"
 
+            # Permiso flexible: tendencia alcista presionando resistencia.
+            if (
+                es_tendencia_alcista
+                and calidad_mercado in ["LIMPIO", "NORMAL"]
+                and puntaje >= 20
+            ):
+                return True, "CALL permitido con cautela: tendencia alcista presiona resistencia"
+
             return False, "CALL bloqueado: resistencia cerca sin ruptura confirmada"
 
         # =========================
@@ -431,17 +441,19 @@ def validar_interaccion_soporte_resistencia(
             if ruptura_real_soporte or es_retest_bajista:
                 return True, "PUT permitido: soporte roto/retest real confirmado"
 
+            # Permiso flexible: tendencia bajista presionando soporte.
+            if (
+                es_tendencia_bajista
+                and calidad_mercado in ["LIMPIO", "NORMAL"]
+                and puntaje >= 18
+            ):
+                return True, "PUT permitido con cautela: tendencia bajista presiona soporte"
+
             return False, "PUT bloqueado: soporte cerca sin ruptura confirmada"
 
-        # =========================
-        # CALL cerca de soporte
-        # =========================
         if direccion == "call" and cerca_soporte:
             return True, "CALL permitido: reacción/zona favorable cerca de soporte"
 
-        # =========================
-        # PUT cerca de resistencia
-        # =========================
         if direccion == "put" and cerca_resistencia:
             return True, "PUT permitido: reacción/zona favorable cerca de resistencia"
 

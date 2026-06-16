@@ -238,24 +238,14 @@ def validar_estrategia_por_mercado(senal, ctx):
             return True, "reacción permitida a favor de contexto"
 
         if not a_favor:
-            reaccion_en_zona_correcta = (
-                (direccion == "call" and cerca_soporte)
-                or (direccion == "put" and cerca_resistencia)
-            )
-        
-            if tendencia_fuerte and fuerza_tendencia >= 70:
-                if puntaje >= 23 and reaccion_en_zona_correcta and confirmacion_fuerte:
-                    return True, "reacción contra tendencia fuerte permitida: zona correcta y confirmación"
-        
-                return False, "reacción contra tendencia fuerte bloqueada: falta zona/confirmación"
-        
-            if puntaje >= 21 and reaccion_en_zona_correcta and confirmacion_fuerte:
-                return True, "reacción contra tendencia permitida: zona correcta"
-        
+            if tendencia_fuerte and fuerza_tendencia >= 70 and puntaje < 22:
+                return False, "reacción contra tendencia fuerte bloqueada: requiere puntaje >= 22"
+
             if agotamiento_real and puntaje >= 18:
                 return True, "reacción contra tendencia permitida por agotamiento real"
-        
-            return False, "reacción contra tendencia bloqueada: sin zona válida"
+
+            return False, "reacción contra tendencia bloqueada: sin agotamiento real"
+
     # =========================
     # CHOCH
     # No bloqueamos por soporte/resistencia aquí.
@@ -279,7 +269,7 @@ def validar_estrategia_por_mercado(senal, ctx):
             if mercado_rango and puntaje >= 22 and confirmacion_fuerte:
                 return True, "CHOCH en rango permitido con confirmación"
 
-            if puntaje >= 23 and (agotamiento_real or cerca_soporte or cerca_resistencia):
+            if puntaje >= 23 and agotamiento_real:
                 return True, "CHOCH contra tendencia permitido por agotamiento real"
 
             return False, "CHOCH contra tendencia bloqueado"
@@ -336,15 +326,11 @@ def validar_estrategia_por_mercado(senal, ctx):
             return False, "sweep bloqueado: sin confirmación fuerte"
 
         if not a_favor:
-            sweep_en_zona_correcta = (
-                (direccion == "call" and cerca_soporte)
-                or (direccion == "put" and cerca_resistencia)
-            )
-        
-            if puntaje >= 24 and (agotamiento_real or sweep_en_zona_correcta) and confirmacion_fuerte:
-                return True, "sweep contra tendencia permitido: zona correcta y confirmación"
-        
-            return False, "sweep contra tendencia bloqueado: sin zona/agotamiento real"
+            if puntaje >= 24 and agotamiento_real:
+                return True, "sweep contra tendencia permitido por agotamiento real"
+
+            return False, "sweep contra tendencia bloqueado: sin agotamiento real"
+
     # =========================
     # TENDENCIA ALCISTA
     # =========================
