@@ -328,7 +328,143 @@ def confirmar_ruptura_zona(
             "tipo": "ERROR",
             "razon": "error confirmando ruptura: " + str(e)
         }
+def resolver_zona_pendiente(
+    direccion,
+    opens,
+    closes,
+    highs,
+    lows,
+    soporte,
+    resistencia,
+    vol
+):
+    try:
+        ruptura = confirmar_ruptura_zona(
+            direccion,
+            opens,
+            closes,
+            highs,
+            lows,
+            soporte,
+            resistencia,
+            vol
+        )
 
+        if ruptura.get("confirmada", False):
+            return {
+                "estado": "OPERAR",
+                "tipo": ruptura.get("tipo", "RUPTURA_CONFIRMADA"),
+                "razon": ruptura.get("razon", "ruptura confirmada")
+            }
+
+        if len(closes) < 3:
+            return {
+                "estado": "ESPERAR",
+                "tipo": "SIN_DATOS",
+                "razon": "zona pendiente: velas insuficientes"
+            }
+
+        price = closes[-1]
+
+        if vol <= 0:
+            vol = abs(price) * 0.0001
+
+        o = opens[-1]
+        c = closes[-1]
+        h = highs[-1]
+        l = lows[-1]
+
+        rango = h - l
+        cuerpo = abs(c - o)
+
+        if rango <= 0:
+            return {
+                "estado": "ESPERAR",
+                "tipo": "RANGO_INVALIDO",
+                "razon": "zona pendiente: rango inválido"
+            }
+
+        mecha_sup = h - max(o, c)
+        mecha_inf = min(o, c) - l
+
+        cerca_resistencia = abs(resistencia - c) <= vol * 1.20
+        cerca_soporte = abs(c - soporte) <= vol * 1.20
+
+        vela_roja = c < o
+        vela_verde = c > o
+
+        rechazo_vendedor = (
+            cerca_resistencia
+            and vela_roja
+            and mecha_sup >= cuerpo * 1.6
+            and cuerpo >= rango * 0.18
+        )
+
+        rechazo_comprador = (
+            cerca_soporte
+            and vela_verde
+            and mecha_inf >= cuerpo * 1.6
+            and cuerpo >= rango * 0.18
+        )
+
+        falsa_resistencia = falsa_ruptura(
+            opens,
+            closes,
+            highs,
+            lows,
+            resistencia,
+            "resistencia"
+        )
+
+        falsa_soporte = falsa_ruptura(
+            opens,
+            closes,
+            highs,
+            lows,
+            soporte,
+            "soporte"
+        )
+
+        if direccion == "call":
+            if rechazo_vendedor or falsa_resistencia[0] == -1:
+                return {
+                    "estado": "CANCELAR",
+                    "tipo": "RECHAZO_RESISTENCIA",
+                    "razon": "CALL cancelado: rechazo vendedor en resistencia"
+                }
+
+            return {
+                "estado": "ESPERAR",
+                "tipo": ruptura.get("tipo", "SIN_RUPTURA_RESISTENCIA"),
+                "razon": ruptura.get("razon", "esperando ruptura de resistencia")
+            }
+
+        if direccion == "put":
+            if rechazo_comprador or falsa_soporte[0] == 1:
+                return {
+                    "estado": "CANCELAR",
+                    "tipo": "RECHAZO_SOPORTE",
+                    "razon": "PUT cancelado: rechazo comprador en soporte"
+                }
+
+            return {
+                "estado": "ESPERAR",
+                "tipo": ruptura.get("tipo", "SIN_RUPTURA_SOPORTE"),
+                "razon": ruptura.get("razon", "esperando ruptura de soporte")
+            }
+
+        return {
+            "estado": "CANCELAR",
+            "tipo": "DIRECCION_INVALIDA",
+            "razon": "zona pendiente: dirección inválida"
+        }
+
+    except Exception as e:
+        return {
+            "estado": "ESPERAR",
+            "tipo": "ERROR",
+            "razon": "error resolviendo zona pendiente: " + str(e)
+        }
 def entrada_pullback(direccion, price, ema21, soporte, resistencia, vol, patron, rechazo):
     cerca_ema = abs(price - ema21) <= vol * 1.2
     if direccion == "call":
@@ -379,11 +515,12 @@ def validar_interaccion_soporte_resistencia(
         )
 
         es_retest = (
-            "retest" in patron_txt
-            or "breakout" in patron_txt
-            or "ruptura" in patron_txt
-            or "retest" in tipo_ruptura_txt
-            or "ruptura" in tipo_ruptura_txt
+            "breakout" in patron_txt
+            or "retest" in patron_txt
+            or tipo_ruptura in [
+                "RUPTURA_RESISTENCIA_CONFIRMADA",
+                "RUPTURA_SOPORTE_CONFIRMADA"
+            ]
         )
 
         # =========================
@@ -392,16 +529,55 @@ def validar_interaccion_soporte_resistencia(
         if direccion == "call" and cerca_resistencia:
             if ruptura_confirmada or es_retest:
                 return True, "CALL permitido: resistencia rota/retest confirmado"
-
+        
+            if (
+                "continuación alcista" in patron_txt
+                and tipo_mercado == "TENDENCIA_ALCISTA"
+                and calidad_mercado in ["LIMPIO", "NORMAL"]
+                and puntaje >= 14
+            ):
+                return True, "CALL permitido: continuación alcista cerca de resistencia con tendencia válida"
+        
+            # if (
+            #     "choch alcista" in patron_txt
+            #     and tipo_mercado == "TENDENCIA_ALCISTA"
+            #     and calidad_mercado in ["LIMPIO", "NORMAL"]
+            #     and puntaje >= 20
+            # ):
+            #     return True, "CALL permitido: CHOCH alcista fuerte cerca de resistencia"
+        
             return False, "CALL bloqueado: resistencia cerca sin ruptura confirmada"
-
         # =========================
         # PUT cerca de soporte
         # =========================
         if direccion == "put" and cerca_soporte:
             if ruptura_confirmada or es_retest:
                 return True, "PUT permitido: soporte roto/retest confirmado"
-
+        
+            if (
+                "continuación bajista" in patron_txt
+                and tipo_mercado == "TENDENCIA_BAJISTA"
+                and calidad_mercado in ["LIMPIO", "NORMAL"]
+                and puntaje >= 14
+            ):
+                return True, "PUT permitido: continuación bajista cerca de soporte con tendencia válida"
+        
+            if (
+                "pullback bajista" in patron_txt
+                and tipo_mercado == "TENDENCIA_BAJISTA"
+                and calidad_mercado in ["LIMPIO", "NORMAL"]
+                and puntaje >= 16
+            ):
+                return True, "PUT permitido: pullback bajista fuerte cerca de soporte"
+        
+            # if (
+            #     "choch bajista" in patron_txt
+            #     and tipo_mercado == "TENDENCIA_BAJISTA"
+            #     and calidad_mercado in ["LIMPIO", "NORMAL"]
+            #     and puntaje >= 20
+            # ):
+            #     return True, "PUT permitido: CHOCH bajista fuerte cerca de soporte"
+        
             return False, "PUT bloqueado: soporte cerca sin ruptura confirmada"
 
         # =========================
@@ -426,3 +602,20 @@ def validar_interaccion_soporte_resistencia(
 
     except Exception as e:
         return False, "error validando soporte/resistencia: " + str(e)
+    
+def evaluar_fuerza_zona(zona):
+    if zona is None:
+        return "DEBIL"
+
+    toques = zona.get("toques", 0)
+
+    if toques >= 6:
+        return "MUY_FUERTE"
+
+    if toques >= 4:
+        return "FUERTE"
+
+    if toques >= 3:
+        return "MEDIA"
+
+    return "DEBIL"

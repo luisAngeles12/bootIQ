@@ -224,8 +224,8 @@ def diagnostico_accion_precio_zona(
             if cerca_resistencia:
                 return {
                     "accion": "CALL_RESISTENCIA_CERCA_SIN_RUPTURA",
-                    "permite": True,
-                    "razon": "acción precio: CALL con resistencia cerca sin ruptura confirmada"
+                    "permite": False,
+                    "razon": "acción precio: CALL bloqueado por resistencia cerca sin ruptura confirmada"
                 }
 
             if rechazo_comprador:
@@ -263,8 +263,8 @@ def diagnostico_accion_precio_zona(
             if cerca_soporte:
                 return {
                     "accion": "PUT_SOPORTE_CERCA_SIN_RUPTURA",
-                    "permite": True,
-                    "razon": "acción precio: PUT con soporte cerca sin ruptura confirmada"
+                    "permite": False,
+                    "razon": "acción precio: PUT bloqueado por soporte cerca sin ruptura confirmada"
                 }
 
             if rechazo_vendedor:

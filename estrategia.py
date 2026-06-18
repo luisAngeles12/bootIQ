@@ -1042,7 +1042,6 @@ def clasificar_senal_profesional(puntaje, razones, estrategia, rsi):
 
     if prioridad <= 0:
         return "C", 0
-
     return calidad, prioridad
 def detectar_cambio_estructura_choch(highs, lows, closes, lookback=10):
     try:
@@ -1504,14 +1503,17 @@ def vela_contraria_reciente(ctx, direccion):
 def peso_estrategia_profesional(patron):
     patron = str(patron).lower()
 
-    if "breakout" in patron or "retest" in patron:
-        return 110
-
-    if "pullback" in patron and "ema" in patron:
-        return 100
-
     if "choch" in patron:
+        return 88
+
+    if "pullback bajista" in patron and "ema" in patron:
+        return 108
+
+    if "breakout" in patron or "retest" in patron:
         return 95
+
+    if "pullback alcista" in patron and "ema" in patron:
+        return 75
 
     if "continuación" in patron or "continuacion" in patron:
         return 90
@@ -1523,7 +1525,6 @@ def peso_estrategia_profesional(patron):
         return 70
 
     return 50
-
 
 def score_final_senal_profesional(senal):
     patron = str(senal.get("patron", "")).lower()
@@ -1539,6 +1540,17 @@ def score_final_senal_profesional(senal):
     if "liquidity sweep" in patron:
         score -= 15
 
+    if "pullback alcista" in patron:
+        score -= 35
+
+    if "pullback bajista" in patron:
+        score += 12
+
+    if "choch" in patron:
+        score -= 12
+
+    if "continuación bajista" in patron or "continuacion bajista" in patron:
+        score += 10
     # Penalizar reacciones en rango si no son muy fuertes.
     if "reacción" in patron or "reaccion" in patron:
         if puntaje < 22:
@@ -1837,7 +1849,7 @@ def motor_estrategias_profesional(ctx):
     if (
         ctx["choch"] == 1
         and ctx["ema_alcista"]
-        and 42 <= rsi <= 64
+        and 42 <= rsi <= 60.5
         and (
             ctx["rechazo"] == 1
             or ctx["patron"] == 1
@@ -1936,10 +1948,15 @@ def motor_estrategias_profesional(ctx):
     # 9. PULLBACK ALCISTA A EMA
     # =========================
     if (
-        ctx["entrada_pullback_call"]
-        and ctx["ema_alcista"]
-        and ctx["patron"] != -1
-        and 38 <= rsi <= 58
+    ctx["entrada_pullback_call"]
+    and ctx["ema_alcista"]
+    and ctx["patron"] == 1
+    and ctx["rechazo"] == 1
+    and ctx["tipo_mercado"] == "TENDENCIA_ALCISTA"
+    and ctx["calidad_mercado"] == "LIMPIO"
+    and ctx["estado_tendencia"] == "ALCISTA_FUERTE"
+    and ctx["score_mercado"] >= 72
+    and 42 <= rsi <= 56
     ):
         puntaje = 14
         razones = [
@@ -2123,7 +2140,7 @@ def motor_estrategias_profesional(ctx):
             s.get("score_final")
         )
 
-    return senales[0]
+    return senales
 def analizar_activo(activo):
     ctx = leer_contexto_grafico(activo)
 
@@ -2180,11 +2197,9 @@ def analizar_activo(activo):
         ctx["direccion_tendencia"] = "INDEFINIDA"
         ctx["razon_tendencia"] = "error leyendo tendencia"
 
-    # ====================================
-    # FILTRO DE MERCADO EN TIEMPO REAL
-    # Si el activo ya no está bueno,
-    # sacarlo temporalmente del análisis.
-    # ====================================
+    # =========================
+    # FILTRO BASE DEL ACTIVO
+    # =========================
     calidad = ctx.get("calidad_mercado", "SIN_DATOS")
     score = ctx.get("score_mercado", 0)
     tendencia_estado = ctx.get("estado_tendencia", "INDEFINIDA")
@@ -2205,81 +2220,56 @@ def analizar_activo(activo):
         estado.cooldown_activos[activo] = time.time() + 600
         return None
 
-    senal = motor_estrategias_profesional(ctx)
-
-    if senal is None:
-        return None
-
-    if estrategia_en_cooldown(senal.get("patron", "")):
-        print(
-            senal["direccion"].upper(),
-            "bloqueado por cooldown de estrategia:",
-            activo,
-            senal.get("patron", "")
-        )
-        return None
-
-    ok_mercado, razon_validacion_mercado = validar_estrategia_por_mercado(
-        senal,
-        ctx
-    )
-
-    if not ok_mercado:
-        print(
-            senal["direccion"].upper(),
-            "bloqueado por contexto de mercado:",
-            activo,
-            razon_validacion_mercado
-        )
-        return None
-
     # =========================
-    # FASE 3B: RUPTURA ANTES DE SOPORTE/RESISTENCIA
-    # IMPORTANTE:
-    # Esto debe calcularse antes de validar zonas.
+    # FASE 4: MULTI-SEÑAL / FALLBACK
     # =========================
-    ruptura = confirmar_ruptura_zona(
-        senal["direccion"],
-        ctx["opens"],
-        ctx["closes"],
-        ctx["highs"],
-        ctx["lows"],
-        ctx["soporte"],
-        ctx["resistencia"],
-        ctx["vol"]
-    )
+    senales = motor_estrategias_profesional(ctx)
 
-    senal["ruptura_confirmada"] = ruptura.get("confirmada", False)
-    senal["tipo_ruptura"] = ruptura.get("tipo", "SIN_DATOS")
-    senal["razon_ruptura"] = ruptura.get("razon", "")
+    if not senales:
+        return None
 
-    ok_zona_sr, razon_zona_sr = validar_interaccion_soporte_resistencia(
-        senal["direccion"],
-        ctx["opens"],
-        ctx["closes"],
-        ctx["highs"],
-        ctx["lows"],
-        ctx["soporte"],
-        ctx["resistencia"],
-        ctx["vol"],
-        senal.get("puntaje", 0),
-        senal.get("patron", ""),
-        ctx.get("tipo_mercado", "INDEFINIDO"),
-        ctx.get("calidad_mercado", "NORMAL"),
-        senal.get("ruptura_confirmada", False),
-        senal.get("tipo_ruptura", "SIN_DATOS")
-    )
+    if isinstance(senales, dict):
+        senales = [senales]
 
-    if not ok_zona_sr:
-        print(
-            senal["direccion"].upper(),
-            "bloqueado por soporte/resistencia:",
-            activo,
-            razon_zona_sr
+    for senal in senales[:4]:
+
+        if senal is None:
+            continue
+
+        # =========================
+        # COOLDOWN DE ESTRATEGIA
+        # =========================
+        if estrategia_en_cooldown(senal.get("patron", "")):
+            print(
+                senal["direccion"].upper(),
+                "bloqueado por cooldown de estrategia:",
+                activo,
+                senal.get("patron", "")
+            )
+            continue
+
+        # =========================
+        # VALIDACIÓN DE MERCADO
+        # =========================
+        ok_mercado, razon_validacion_mercado = validar_estrategia_por_mercado(
+            senal,
+            ctx
         )
-    
-        call_reaccion, razon_call_reaccion = evaluar_reaccion_en_zona(
-            "call",
+
+        if not ok_mercado:
+            print(
+                senal["direccion"].upper(),
+                "bloqueado por contexto de mercado:",
+                activo,
+                razon_validacion_mercado
+            )
+            continue
+
+        # =========================
+        # RUPTURA ANTES DE ZONA
+        # =========================
+        ruptura = confirmar_ruptura_zona(
+            senal["direccion"],
             ctx["opens"],
             ctx["closes"],
             ctx["highs"],
@@ -2288,9 +2278,65 @@ def analizar_activo(activo):
             ctx["resistencia"],
             ctx["vol"]
         )
-    
-        put_reaccion, razon_put_reaccion = evaluar_reaccion_en_zona(
-            "put",
+
+        senal["ruptura_confirmada"] = ruptura.get("confirmada", False)
+        senal["tipo_ruptura"] = ruptura.get("tipo", "SIN_DATOS")
+        senal["razon_ruptura"] = ruptura.get("razon", "")
+
+        ok_zona_sr, razon_zona_sr = validar_interaccion_soporte_resistencia(
+            senal["direccion"],
+            ctx["opens"],
+            ctx["closes"],
+            ctx["highs"],
+            ctx["lows"],
+            ctx["soporte"],
+            ctx["resistencia"],
+            ctx["vol"],
+            senal.get("puntaje", 0),
+            senal.get("patron", ""),
+            ctx.get("tipo_mercado", "INDEFINIDO"),
+            ctx.get("calidad_mercado", "NORMAL"),
+            senal.get("ruptura_confirmada", False),
+            senal.get("tipo_ruptura", "SIN_DATOS")
+        )
+
+        if not ok_zona_sr:
+            print(
+                senal["direccion"].upper(),
+                "bloqueado por soporte/resistencia:",
+                activo,
+                razon_zona_sr
+            )
+
+            from entrada import guardar_senal_pendiente
+
+            if "resistencia cerca sin ruptura" in razon_zona_sr.lower():
+                senal["soporte"] = ctx["soporte"]
+                senal["resistencia"] = ctx["resistencia"]
+                senal["vol"] = ctx["vol"]
+                guardar_senal_pendiente(
+                    senal,
+                    "ESPERANDO_RUPTURA_RESISTENCIA"
+                )
+                continue
+
+            if "soporte cerca sin ruptura" in razon_zona_sr.lower():
+                senal["soporte"] = ctx["soporte"]
+                senal["resistencia"] = ctx["resistencia"]
+                senal["vol"] = ctx["vol"]
+                guardar_senal_pendiente(
+                    senal,
+                    "ESPERANDO_RUPTURA_SOPORTE"
+                )
+                continue
+
+            continue
+
+        # =========================
+        # ACCIÓN DEL PRECIO
+        # =========================
+        diagnostico_pa = diagnostico_accion_precio_zona(
+            senal["direccion"],
             ctx["opens"],
             ctx["closes"],
             ctx["highs"],
@@ -2299,182 +2345,165 @@ def analizar_activo(activo):
             ctx["resistencia"],
             ctx["vol"]
         )
-    
-        contraria = intentar_operacion_contraria_en_zona(
+
+        senal["accion_precio"] = diagnostico_pa.get("accion", "SIN_DATOS")
+        senal["razon_accion_precio"] = diagnostico_pa.get("razon", "")
+
+        if diagnostico_pa.get("permite") is False:
+            razon_pa = diagnostico_pa.get("razon", "").lower()
+
+            if "resistencia cerca" in razon_pa or "soporte cerca" in razon_pa:
+                from entrada import guardar_senal_pendiente
+
+                senal["soporte"] = ctx["soporte"]
+                senal["resistencia"] = ctx["resistencia"]
+                senal["vol"] = ctx["vol"]
+
+                if senal["direccion"] == "call":
+                    guardar_senal_pendiente(
+                        senal,
+                        "ESPERANDO_RUPTURA_RESISTENCIA"
+                    )
+                    print(activo, "guardada pendiente ruptura resistencia")
+                else:
+                    guardar_senal_pendiente(
+                        senal,
+                        "ESPERANDO_RUPTURA_SOPORTE"
+                    )
+                    print(activo, "guardada pendiente ruptura soporte")
+
+                continue
+
+            print(
+                senal["direccion"].upper(),
+                "bloqueado por acción del precio:",
+                activo,
+                diagnostico_pa.get("razon", "")
+            )
+            continue
+
+        # =========================
+        # VELA CONTRARIA RECIENTE
+        # =========================
+        bloqueada_contraria, razon_contraria = vela_contraria_reciente(
+            ctx,
+            senal["direccion"]
+        )
+
+        if bloqueada_contraria:
+            print(
+                senal["direccion"].upper(),
+                "bloqueado por vela contraria reciente:",
+                activo,
+                razon_contraria
+            )
+            continue
+
+        # =========================
+        # ZONA YA OPERADA
+        # =========================
+        if senal["direccion"] == "call":
+            precio_zona = ctx["soporte"]
+        else:
+            precio_zona = ctx["resistencia"]
+
+        bloqueada, razon_zona = zona_ya_operada(
             activo,
             senal["direccion"],
-            razon_zona_sr,
-            18 if senal["direccion"] == "put" else senal.get("puntaje", 0),
-            18 if senal["direccion"] == "call" else senal.get("puntaje", 0),
-            [
-                "CALL por reacción en soporte",
-                "reacción compradora en soporte",
-                "RSI: " + str(round(senal.get("rsi", 0), 2))
-            ],
-            [
-                "PUT por reacción en resistencia",
-                "reacción vendedora en resistencia",
-                "RSI: " + str(round(senal.get("rsi", 0), 2))
-            ],
-            senal.get("rsi", 0),
-            ctx.get("rechazo", 0),
-            ctx.get("patron", 0),
-            ctx.get("micro", 0),
-            ctx.get("triple_soporte", False),
-            ctx.get("triple_resistencia", False),
-            ctx.get("cerca_banda_inferior", False),
-            ctx.get("cerca_banda_superior", False),
-            call_reaccion,
-            razon_call_reaccion,
-            put_reaccion,
-            razon_put_reaccion
+            precio_zona,
+            ctx["vol"]
         )
 
-        if contraria is not None:
-            contraria["tipo_mercado"] = ctx.get("tipo_mercado", "INDEFINIDO")
-            contraria["razon_mercado"] = ctx.get("razon_mercado", "")
-            contraria["calidad_mercado"] = ctx.get("calidad_mercado", "SIN_DATOS")
-            contraria["score_mercado"] = ctx.get("score_mercado", 0)
-            contraria["estado_tendencia"] = ctx.get("estado_tendencia", "INDEFINIDA")
-            contraria["fuerza_tendencia"] = ctx.get("fuerza_tendencia", 0)
-            contraria["direccion_tendencia"] = ctx.get("direccion_tendencia", "INDEFINIDA")
-            contraria["accion_precio"] = "OPERACION_CONTRARIA_EN_ZONA"
-            contraria["ruptura_confirmada"] = False
-            contraria["tipo_ruptura"] = "REACCION_EN_ZONA"
-            contraria["razon_ruptura"] = razon_zona_sr
-            contraria["precio_zona"] = ctx["soporte"] if contraria["direccion"] == "call" else ctx["resistencia"]
-            contraria["vol"] = ctx["vol"]
-    
-            return contraria
+        if bloqueada:
+            print(
+                senal["direccion"].upper(),
+                "bloqueado por zona operada:",
+                activo,
+                razon_zona
+            )
+            continue
 
-        return None
+        # =========================
+        # FATIGA Y UBICACIÓN
+        # =========================
+        ok_ubicacion, razon_ubicacion = filtro_fatiga_y_ubicacion(
+            senal["direccion"],
+            ctx["opens"],
+            ctx["closes"],
+            ctx["highs"],
+            ctx["lows"],
+            ctx["soporte"],
+            ctx["resistencia"],
+            ctx["vol"]
+        )
 
-    # =========================
-    # FASE 3.1: DIAGNÓSTICO ACCIÓN DEL PRECIO
-    # OJO: por ahora NO bloquea, solo registra.
-    # =========================
-    diagnostico_pa = diagnostico_accion_precio_zona(
-        senal["direccion"],
-        ctx["opens"],
-        ctx["closes"],
-        ctx["highs"],
-        ctx["lows"],
-        ctx["soporte"],
-        ctx["resistencia"],
-        ctx["vol"]
-    )
+        if not ok_ubicacion:
+            print(
+                senal["direccion"].upper(),
+                "bloqueado por ubicación/fatiga:",
+                activo,
+                razon_ubicacion
+            )
+            continue
 
-    senal["accion_precio"] = diagnostico_pa.get("accion", "SIN_DATOS")
-    senal["razon_accion_precio"] = diagnostico_pa.get("razon", "")
+        # =========================
+        # COMPLETAR INFORMACIÓN DE LA SEÑAL
+        # =========================
+        senal["razon"] = (
+            senal["razon"]
+            + ", "
+            + razon_ubicacion
+            + ", MERCADO: "
+            + ctx.get("tipo_mercado", "INDEFINIDO")
+            + " - "
+            + ctx.get("razon_mercado", "")
+            + ", CALIDAD MERCADO: "
+            + ctx.get("calidad_mercado", "SIN_DATOS")
+            + " score "
+            + str(ctx.get("score_mercado", 0))
+            + ", TENDENCIA AVANZADA: "
+            + ctx.get("estado_tendencia", "INDEFINIDA")
+            + " fuerza "
+            + str(ctx.get("fuerza_tendencia", 0))
+            + ", VALIDACIÓN MERCADO: "
+            + razon_validacion_mercado
+            + ", ZONA SR: "
+            + razon_zona_sr
+            + ", ACCION PRECIO: "
+            + senal.get("razon_accion_precio", "")
+            + ", RUPTURA: "
+            + senal.get("razon_ruptura", "")
+        )
 
-    bloqueada_contraria, razon_contraria = vela_contraria_reciente(
-        ctx,
-        senal["direccion"]
-    )
+        senal["precio_zona"] = precio_zona
+        senal["vol"] = ctx["vol"]
 
-    if bloqueada_contraria:
+        senal["tipo_mercado"] = ctx.get("tipo_mercado", "INDEFINIDO")
+        senal["razon_mercado"] = ctx.get("razon_mercado", "")
+        senal["calidad_mercado"] = ctx.get("calidad_mercado", "SIN_DATOS")
+        senal["score_mercado"] = ctx.get("score_mercado", 0)
+
+        senal["estado_tendencia"] = ctx.get("estado_tendencia", "INDEFINIDA")
+        senal["fuerza_tendencia"] = ctx.get("fuerza_tendencia", 0)
+        senal["direccion_tendencia"] = ctx.get("direccion_tendencia", "INDEFINIDA")
+
         print(
-            senal["direccion"].upper(),
-            "bloqueado por vela contraria reciente:",
+            "CONTEXTO FINAL:",
             activo,
-            razon_contraria
+            senal["direccion"],
+            senal["patron"],
+            "| MERCADO:",
+            senal.get("tipo_mercado"),
+            "| CALIDAD:",
+            senal.get("calidad_mercado"),
+            senal.get("score_mercado"),
+            "| TENDENCIA:",
+            senal.get("estado_tendencia"),
+            senal.get("fuerza_tendencia"),
+            "| ACCION:",
+            senal.get("accion_precio")
         )
-        return None
 
-    if senal["direccion"] == "call":
-        precio_zona = ctx["soporte"]
-    else:
-        precio_zona = ctx["resistencia"]
+        return senal
 
-    bloqueada, razon_zona = zona_ya_operada(
-        activo,
-        senal["direccion"],
-        precio_zona,
-        ctx["vol"]
-    )
-
-    if bloqueada:
-        print(
-            senal["direccion"].upper(),
-            "bloqueado por zona operada:",
-            activo,
-            razon_zona
-        )
-        return None
-
-    ok_ubicacion, razon_ubicacion = filtro_fatiga_y_ubicacion(
-        senal["direccion"],
-        ctx["opens"],
-        ctx["closes"],
-        ctx["highs"],
-        ctx["lows"],
-        ctx["soporte"],
-        ctx["resistencia"],
-        ctx["vol"]
-    )
-
-    if not ok_ubicacion:
-        print(
-            senal["direccion"].upper(),
-            "bloqueado por ubicación/fatiga:",
-            activo,
-            razon_ubicacion
-        )
-        return None
-
-    senal["razon"] = (
-        senal["razon"]
-        + ", "
-        + razon_ubicacion
-        + ", MERCADO: "
-        + ctx.get("tipo_mercado", "INDEFINIDO")
-        + " - "
-        + ctx.get("razon_mercado", "")
-        + ", CALIDAD MERCADO: "
-        + ctx.get("calidad_mercado", "SIN_DATOS")
-        + " score "
-        + str(ctx.get("score_mercado", 0))
-        + ", TENDENCIA AVANZADA: "
-        + ctx.get("estado_tendencia", "INDEFINIDA")
-        + " fuerza "
-        + str(ctx.get("fuerza_tendencia", 0))
-        + ", VALIDACIÓN MERCADO: "
-        + razon_validacion_mercado
-        + ", ZONA SR: "
-        + razon_zona_sr
-        + ", ACCION PRECIO: "
-        + senal.get("razon_accion_precio", "")
-        + ", RUPTURA: "
-        + senal.get("razon_ruptura", "")
-    )
-
-    senal["precio_zona"] = precio_zona
-    senal["vol"] = ctx["vol"]
-
-    senal["tipo_mercado"] = ctx.get("tipo_mercado", "INDEFINIDO")
-    senal["razon_mercado"] = ctx.get("razon_mercado", "")
-    senal["calidad_mercado"] = ctx.get("calidad_mercado", "SIN_DATOS")
-    senal["score_mercado"] = ctx.get("score_mercado", 0)
-
-    senal["estado_tendencia"] = ctx.get("estado_tendencia", "INDEFINIDA")
-    senal["fuerza_tendencia"] = ctx.get("fuerza_tendencia", 0)
-    senal["direccion_tendencia"] = ctx.get("direccion_tendencia", "INDEFINIDA")
-
-    print(
-        "CONTEXTO FINAL:",
-        activo,
-        senal["direccion"],
-        senal["patron"],
-        "| MERCADO:",
-        senal.get("tipo_mercado"),
-        "| CALIDAD:",
-        senal.get("calidad_mercado"),
-        senal.get("score_mercado"),
-        "| TENDENCIA:",
-        senal.get("estado_tendencia"),
-        senal.get("fuerza_tendencia"),
-        "| ACCION:",
-        senal.get("accion_precio")
-    )
-
-    return senal
+    return None

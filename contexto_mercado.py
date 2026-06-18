@@ -1,3 +1,5 @@
+
+from indicadores import pendiente_ema, estructura_reciente, fuerza_impulso
 def promedio(lista):
     if not lista:
         return 0
@@ -22,6 +24,7 @@ def detectar_tipo_mercado(candles):
 
         candles = sorted(candles, key=lambda x: x["from"])
 
+        opens = [float(c["open"]) for c in candles]
         closes = [float(c["close"]) for c in candles]
         highs = [float(c["max"]) for c in candles]
         lows = [float(c["min"]) for c in candles]
@@ -63,7 +66,9 @@ def detectar_tipo_mercado(candles):
 
         rango_promedio = sum(rangos) / len(rangos)
         rango_reciente = sum(rangos[-5:]) / len(rangos[-5:])
-
+        ema_dir = pendiente_ema(closes, 21, 8)
+        estructura_dir = estructura_reciente(highs, lows, 12)
+        impulso = fuerza_impulso(opens, closes, highs, lows, 8)
         # =========================
         # COMPRESIÓN
         # =========================
@@ -82,22 +87,32 @@ def detectar_tipo_mercado(candles):
         if (
             promedio_2 > promedio_1
             and closes_ult[-1] > closes_ult[5]
-            and velas_verdes >= 9
-            and fuerza >= 0.25
+            and velas_verdes >= 10
+            and fuerza >= 0.32
+            and ema_dir == 1
+            and estructura_dir == 1
+            and impulso >= 0.42
         ):
-            return "TENDENCIA_ALCISTA", "precio con avance alcista predominante"
-
+            return "TENDENCIA_ALCISTA", "tendencia alcista confirmada por estructura, EMA e impulso"
         # =========================
         # TENDENCIA BAJISTA FLEXIBLE
         # =========================
         if (
             promedio_2 < promedio_1
             and closes_ult[-1] < closes_ult[5]
-            and velas_rojas >= 9
-            and fuerza >= 0.25
+            and velas_rojas >= 11
+            and fuerza >= 0.35
+            and ema_dir == -1
+            and estructura_dir == -1
+            and impulso >= 0.42
         ):
-            return "TENDENCIA_BAJISTA", "precio con avance bajista predominante"
-
+            return "TENDENCIA_BAJISTA", "tendencia bajista confirmada por estructura, EMA e impulso"
+        if fuerza >= 0.28:
+            if avance > 0:
+                return "TENDENCIA_ALCISTA", "tendencia alcista moderada por avance predominante"
+        
+            if avance < 0:
+                return "TENDENCIA_BAJISTA", "tendencia bajista moderada por avance predominante"
         # =========================
         # RANGO
         # =========================
@@ -217,11 +232,11 @@ def validar_estrategia_por_mercado(senal, ctx):
     if "choch" in patron:
 
         if "choch alcista" in patron and direccion == "call":
-            if cerca_resistencia and puntaje < 22:
+            if cerca_resistencia and puntaje < 21:
                 return False, "CHOCH CALL bloqueado: resistencia cerca requiere ruptura/retest o puntaje >= 22"
 
         if "choch bajista" in patron and direccion == "put":
-            if cerca_soporte and puntaje < 22:
+            if cerca_soporte and puntaje < 21:
                 return False, "CHOCH PUT bloqueado: soporte cerca requiere ruptura/retest o puntaje >= 22"
 
         if a_favor:
@@ -230,7 +245,15 @@ def validar_estrategia_por_mercado(senal, ctx):
 
             if puntaje >= 18 and confirmacion_fuerte:
                 return True, "CHOCH permitido a favor de tendencia con confirmación"
-
+            
+            if (
+                puntaje >= 20
+                and calidad_mercado in ["LIMPIO", "NORMAL"]
+                and tipo_mercado in ["TENDENCIA_ALCISTA", "TENDENCIA_BAJISTA"]
+                and a_favor
+            ):
+                return True, "CHOCH permitido por contexto fuerte aunque confirmación no sea perfecta"
+            
             return False, "CHOCH bloqueado: sin confirmación fuerte"
 
         # CHOCH contra tendencia
@@ -246,15 +269,48 @@ def validar_estrategia_por_mercado(senal, ctx):
     if "pullback" in patron:
         if calidad_mercado == "CAOTICO":
             return False, "pullback bloqueado en mercado caótico"
-
-        if a_favor and puntaje >= 16:
-            return True, "pullback permitido a favor de tendencia"
-
-        if mercado_delicado and puntaje >= 21 and rechazo != 0:
-            return True, "pullback permitido en mercado delicado con rechazo"
-
-        return False, "pullback fuera de contexto"
-
+    
+        if not a_favor:
+            return False, "pullback fuera de contexto"
+    
+        if "pullback alcista" in patron:
+            if tipo_mercado != "TENDENCIA_ALCISTA":
+                return False, "pullback alcista requiere tendencia alcista"
+    
+            if calidad_mercado != "LIMPIO":
+                return False, "pullback alcista requiere mercado limpio"
+    
+            if estado_tendencia != "ALCISTA_FUERTE":
+                return False, "pullback alcista requiere tendencia fuerte"
+    
+            if puntaje < 20:
+                return False, "pullback alcista requiere mínimo 20 puntos"
+    
+            if rechazo != 1 and patron_vela != 1:
+                return False, "pullback alcista requiere rechazo o patrón alcista"
+    
+            return True, "pullback alcista permitido con filtro reforzado"
+    
+        if "pullback bajista" in patron:
+            if tipo_mercado not in ["TENDENCIA_BAJISTA", "RANGO", "INDEFINIDO"]:
+                return False, "pullback bajista requiere tendencia bajista, rango o indefinido operable"
+            
+            if tipo_mercado == "INDEFINIDO":
+                if not (
+                    direccion_tendencia == "BAJISTA"
+                    and estado_tendencia in ["BAJISTA_NORMAL", "BAJISTA_FUERTE"]
+                    and calidad_mercado in ["LIMPIO", "NORMAL"]
+                ):
+                    return False, "pullback bajista bloqueado: indefinido sin tendencia bajista real"
+            if calidad_mercado not in ["LIMPIO", "NORMAL"]:
+                return False, "pullback bajista requiere mercado operable"
+    
+            if puntaje < 16:
+                return False, "pullback bajista requiere mínimo 16 puntos"
+    
+            return True, "pullback bajista permitido"
+    
+        return False, "pullback no reconocido"
     # =========================
     # BREAKOUT + RETEST
     # =========================
@@ -272,7 +328,7 @@ def validar_estrategia_por_mercado(senal, ctx):
             if mercado_delicado and puntaje < 21:
                 return False, "sweep bloqueado: mercado delicado requiere mínimo 21"
 
-            if puntaje >= 20 and confirmacion_fuerte:
+            if puntaje >= 22 and confirmacion_fuerte:
                 return True, "sweep permitido a favor de tendencia"
 
             return False, "sweep bloqueado: sin confirmación fuerte"
@@ -330,9 +386,12 @@ def validar_estrategia_por_mercado(senal, ctx):
     # INDEFINIDO
     # =========================
     if tipo_mercado == "INDEFINIDO":
-        if puntaje >= 23 and confirmacion_fuerte:
-            return True, "señal fuerte permitida en indefinido"
-
+        if calidad_mercado in ["LIMPIO", "NORMAL"] and puntaje >= 20 and confirmacion_fuerte:
+            return True, "señal fuerte permitida en mercado indefinido operable"
+    
+        if "choch" in patron and puntaje >= 20 and calidad_mercado in ["LIMPIO", "NORMAL"]:
+            return True, "CHOCH permitido en indefinido operable"
+    
         return False, "mercado indefinido: señal bloqueada"
 
     return True, "mercado permitido"

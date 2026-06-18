@@ -1,6 +1,14 @@
 import time
 import estado
-from config import MOSTRAR_ESTADISTICAS_CADA_RONDAS, STOP_LOSS, STOP_WIN, MAX_OPERACIONES_ABIERTAS
+from config import (
+    MOSTRAR_ESTADISTICAS_CADA_RONDAS,
+    STOP_LOSS,
+    STOP_WIN,
+    MAX_OPERACIONES_ABIERTAS,
+    VENTANA_ENTRADA_INICIO,
+    VENTANA_ENTRADA_FIN,
+    MIN_PRIORIDAD_OPERAR
+)
 from utils import segundo_actual,registrar_bloqueo, imprimir_resumen_ronda, reiniciar_metricas_ronda
 from conexion import conectar
 from historial import asegurar_historial_csv, cargar_operaciones_pendientes
@@ -102,7 +110,7 @@ def main():
         segundo = segundo_actual()
 
         # Ventana de búsqueda de entrada.
-        if not (0 <= segundo <= 24):
+        if not (VENTANA_ENTRADA_INICIO <= segundo <= VENTANA_ENTRADA_FIN):
 
             if time.time() - ultima_impresion_resumen >= 60:
                 if (
@@ -222,8 +230,8 @@ def main():
             if any(op["activo"] == senal["activo"] for op in estado.operaciones_abiertas):
                 continue
 
-            if senal.get("prioridad", 0) < 3:
-                continue
+            if senal.get("prioridad", 0) < MIN_PRIORIDAD_OPERAR:
+               continue
 
             if entrada_rapida_disponible(senal):
                 if abrir_operacion(senal):
