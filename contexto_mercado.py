@@ -185,11 +185,12 @@ def validar_estrategia_por_mercado(senal, ctx):
         or tendencia_debil
         or tendencia_indefinida
     )
-
+    ruptura_confirmada = ctx.get("ruptura_confirmada", False)
     confirmacion_fuerte = (
         rechazo != 0
         or patron_vela != 0
         or liquidity_sweep != 0
+        or ruptura_confirmada
         or puntaje >= 23
     )
 
@@ -243,11 +244,11 @@ def validar_estrategia_por_mercado(senal, ctx):
             if mercado_delicado and puntaje < 20:
                 return False, "CHOCH bloqueado: mercado delicado requiere mínimo 20"
 
-            if puntaje >= 18 and confirmacion_fuerte:
+            if puntaje >= 22 and confirmacion_fuerte:
                 return True, "CHOCH permitido a favor de tendencia con confirmación"
             
             if (
-                puntaje >= 20
+                puntaje >= 22
                 and calidad_mercado in ["LIMPIO", "NORMAL"]
                 and tipo_mercado in ["TENDENCIA_ALCISTA", "TENDENCIA_BAJISTA"]
                 and a_favor
@@ -277,14 +278,13 @@ def validar_estrategia_por_mercado(senal, ctx):
             if tipo_mercado != "TENDENCIA_ALCISTA":
                 return False, "pullback alcista requiere tendencia alcista"
     
-            if calidad_mercado != "LIMPIO":
-                return False, "pullback alcista requiere mercado limpio"
-    
-            if estado_tendencia != "ALCISTA_FUERTE":
-                return False, "pullback alcista requiere tendencia fuerte"
-    
-            if puntaje < 20:
-                return False, "pullback alcista requiere mínimo 20 puntos"
+            if calidad_mercado not in ["LIMPIO", "NORMAL"]:
+                return False, "pullback alcista requiere mercado operable"
+            
+            if estado_tendencia not in ["ALCISTA_NORMAL", "ALCISTA_FUERTE"]:
+                return False, "pullback alcista requiere tendencia alcista válida"
+            if puntaje < 18:
+                return False, "pullback alcista requiere mínimo 18 puntos"
     
             if rechazo != 1 and patron_vela != 1:
                 return False, "pullback alcista requiere rechazo o patrón alcista"
@@ -305,7 +305,7 @@ def validar_estrategia_por_mercado(senal, ctx):
             if calidad_mercado not in ["LIMPIO", "NORMAL"]:
                 return False, "pullback bajista requiere mercado operable"
     
-            if puntaje < 16:
+            if puntaje < 18:
                 return False, "pullback bajista requiere mínimo 16 puntos"
     
             return True, "pullback bajista permitido"
@@ -328,7 +328,7 @@ def validar_estrategia_por_mercado(senal, ctx):
             if mercado_delicado and puntaje < 21:
                 return False, "sweep bloqueado: mercado delicado requiere mínimo 21"
 
-            if puntaje >= 22 and confirmacion_fuerte:
+            if puntaje >= 20 and confirmacion_fuerte:
                 return True, "sweep permitido a favor de tendencia"
 
             return False, "sweep bloqueado: sin confirmación fuerte"
@@ -336,11 +336,14 @@ def validar_estrategia_por_mercado(senal, ctx):
         # Sweep contra tendencia:
         # Solo permitir si hay agotamiento real.
         if not a_favor:
-            if puntaje >= 24 and agotamiento_real:
-                return True, "sweep contra tendencia permitido por agotamiento real"
-
-            return False, "sweep contra tendencia bloqueado: sin agotamiento real"
-
+            if puntaje >= 24 and (
+                agotamiento_real
+                or rechazo != 0
+                or liquidity_sweep != 0
+            ):
+                return True, "sweep contra tendencia permitido por barrida/rechazo fuerte"
+        
+            return False, "sweep contra tendencia bloqueado: sin agotamiento suficiente"
     # =========================
     # TENDENCIA ALCISTA
     # =========================
@@ -389,7 +392,7 @@ def validar_estrategia_por_mercado(senal, ctx):
         if calidad_mercado in ["LIMPIO", "NORMAL"] and puntaje >= 20 and confirmacion_fuerte:
             return True, "señal fuerte permitida en mercado indefinido operable"
     
-        if "choch" in patron and puntaje >= 20 and calidad_mercado in ["LIMPIO", "NORMAL"]:
+        if "choch" in patron and puntaje >= 22 and calidad_mercado in ["LIMPIO", "NORMAL"]:
             return True, "CHOCH permitido en indefinido operable"
     
         return False, "mercado indefinido: señal bloqueada"

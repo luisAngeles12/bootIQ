@@ -180,13 +180,13 @@ def diagnostico_accion_precio_zona(
 
         rechazo_vendedor = (
             cerca_resistencia
-            and mecha_sup >= cuerpo * 1.3
+            and mecha_sup >= cuerpo * 1.8
             and c < o
         )
 
         rechazo_comprador = (
             cerca_soporte
-            and mecha_inf >= cuerpo * 1.3
+            and mecha_inf >= cuerpo * 1.8
             and c > o
         )
 
@@ -224,10 +224,10 @@ def diagnostico_accion_precio_zona(
             if cerca_resistencia:
                 return {
                     "accion": "CALL_RESISTENCIA_CERCA_SIN_RUPTURA",
-                    "permite": False,
-                    "razon": "acción precio: CALL bloqueado por resistencia cerca sin ruptura confirmada"
+                    "permite": True,
+                    "requiere_pendiente": True,
+                    "razon": "acción precio: CALL con resistencia cerca; decisión delegada a zonas"
                 }
-
             if rechazo_comprador:
                 return {
                     "accion": "RECHAZO_COMPRADOR_SOPORTE",
@@ -263,8 +263,9 @@ def diagnostico_accion_precio_zona(
             if cerca_soporte:
                 return {
                     "accion": "PUT_SOPORTE_CERCA_SIN_RUPTURA",
-                    "permite": False,
-                    "razon": "acción precio: PUT bloqueado por soporte cerca sin ruptura confirmada"
+                    "permite": True,
+                    "requiere_pendiente": True,
+                    "razon": "acción precio: PUT con soporte cerca; decisión delegada a zonas"
                 }
 
             if rechazo_vendedor:
@@ -292,3 +293,178 @@ def diagnostico_accion_precio_zona(
             "permite": True,
             "razon": "acción precio: error " + str(e)
         }
+
+def presion_ultimas_velas(opens, closes, highs, lows, cantidad=8):
+    try:
+        if len(closes) < cantidad:
+            return {
+                "direccion": "INDEFINIDA",
+                "fuerza": 0,
+                "alcistas": 0,
+                "bajistas": 0,
+                "razon": "velas insuficientes"
+            }
+
+        alcistas = 0
+        bajistas = 0
+        fuerza_total = 0
+        mechas_sup = 0
+        mechas_inf = 0
+
+        for i in range(-cantidad, 0):
+            o = opens[i]
+            c = closes[i]
+            h = highs[i]
+            l = lows[i]
+
+            rango = h - l
+            cuerpo = abs(c - o)
+
+            if rango <= 0:
+                continue
+
+            fuerza = cuerpo / rango
+            fuerza_total += fuerza
+
+            mecha_sup = h - max(o, c)
+            mecha_inf = min(o, c) - l
+
+            if c > o:
+                alcistas += 1
+
+            if c < o:
+                bajistas += 1
+
+            if mecha_sup >= rango * 0.35:
+                mechas_sup += 1
+
+            if mecha_inf >= rango * 0.35:
+                mechas_inf += 1
+
+        fuerza_promedio = fuerza_total / cantidad
+
+        if alcistas >= 5 and fuerza_promedio >= 0.28:
+            return {
+                "direccion": "ALCISTA",
+                "fuerza": round(fuerza_promedio, 2),
+                "alcistas": alcistas,
+                "bajistas": bajistas,
+                "razon": "presión alcista reciente"
+            }
+
+        if bajistas >= 5 and fuerza_promedio >= 0.28:
+            return {
+                "direccion": "BAJISTA",
+                "fuerza": round(fuerza_promedio, 2),
+                "alcistas": alcistas,
+                "bajistas": bajistas,
+                "razon": "presión bajista reciente"
+            }
+
+        if mechas_sup >= 4:
+            return {
+                "direccion": "VENTA",
+                "fuerza": round(fuerza_promedio, 2),
+                "alcistas": alcistas,
+                "bajistas": bajistas,
+                "razon": "presión vendedora por mechas superiores"
+            }
+
+        if mechas_inf >= 4:
+            return {
+                "direccion": "COMPRA",
+                "fuerza": round(fuerza_promedio, 2),
+                "alcistas": alcistas,
+                "bajistas": bajistas,
+                "razon": "presión compradora por mechas inferiores"
+            }
+
+        return {
+            "direccion": "NEUTRA",
+            "fuerza": round(fuerza_promedio, 2),
+            "alcistas": alcistas,
+            "bajistas": bajistas,
+            "razon": "presión neutral"
+        }
+
+    except Exception as e:
+        return {
+            "direccion": "ERROR",
+            "fuerza": 0,
+            "alcistas": 0,
+            "bajistas": 0,
+            "razon": "error presión velas: " + str(e)
+        }
+
+def validar_patron_con_contexto(
+    direccion,
+    nombre_patron,
+    opens,
+    closes,
+    highs,
+    lows,
+    soporte,
+    resistencia,
+    vol
+):
+    try:
+        if len(closes) < 20:
+            return False, "patrón sin contexto suficiente"
+
+        if vol <= 0:
+            vol = abs(closes[-1]) * 0.0001
+
+        precio = closes[-1]
+        patron = str(nombre_patron).lower()
+
+        cerca_soporte = abs(precio - soporte) <= vol * 1.40
+        cerca_resistencia = abs(resistencia - precio) <= vol * 1.40
+
+        presion = presion_ultimas_velas(
+            opens,
+            closes,
+            highs,
+            lows,
+            8
+        )
+
+        direccion_presion = presion.get("direccion", "NEUTRA")
+
+        if direccion == "call":
+            if (
+                ("martillo" in patron or "pin bar" in patron or "envolvente alcista" in patron or "rechazo alcista" in patron)
+                and cerca_soporte
+                and direccion_presion in ["COMPRA", "ALCISTA", "NEUTRA"]
+            ):
+                return True, "patrón alcista válido en soporte con contexto"
+
+            if (
+                "morning star" in patron
+                and cerca_soporte
+                and direccion_presion in ["COMPRA", "ALCISTA"]
+            ):
+                return True, "morning star válido en soporte"
+
+            return False, "patrón alcista sin contexto suficiente"
+
+        if direccion == "put":
+            if (
+                ("shooting star" in patron or "pin bar" in patron or "envolvente bajista" in patron or "rechazo bajista" in patron)
+                and cerca_resistencia
+                and direccion_presion in ["VENTA", "BAJISTA", "NEUTRA"]
+            ):
+                return True, "patrón bajista válido en resistencia con contexto"
+
+            if (
+                "evening star" in patron
+                and cerca_resistencia
+                and direccion_presion in ["VENTA", "BAJISTA"]
+            ):
+                return True, "evening star válido en resistencia"
+
+            return False, "patrón bajista sin contexto suficiente"
+
+        return False, "dirección inválida"
+
+    except Exception as e:
+        return False, "error validando patrón contexto: " + str(e)

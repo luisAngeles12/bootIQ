@@ -14,11 +14,17 @@ from conexion import conectar
 from historial import asegurar_historial_csv, cargar_operaciones_pendientes
 from mercado import obtener_activos
 from estrategia import analizar_activo
-from entrada import entrada_rapida_disponible, guardar_senal_pendiente, procesar_senales_pendientes
+from entrada import (
+    entrada_rapida_disponible,
+    guardar_senal_pendiente,
+    procesar_senales_pendientes,
+    motivo_pendiente_por_accion_precio
+)
 from operaciones import revisar_operaciones_abiertas, abrir_operacion
 from estadisticas import imprimir_estadisticas
 
 def main():
+    
     conectar()
     asegurar_historial_csv()
     cargar_operaciones_pendientes()
@@ -239,7 +245,8 @@ def main():
                     abiertas_ahora += 1
                     operaciones_desde_resumen_mercado += 1
             else:
-                guardar_senal_pendiente(senal)
+                motivo = motivo_pendiente_por_accion_precio(senal)
+                guardar_senal_pendiente(senal, motivo)
 
             time.sleep(0.02)
 
