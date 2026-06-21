@@ -65,18 +65,26 @@ def fuerza_impulso(opens, closes, highs, lows, lookback=8):
 def calcular_rsi(prices, period=14):
     if len(prices) < period + 2:
         return None
+
     serie = pd.Series(prices, dtype="float64")
     delta = serie.diff()
+
     gain = delta.where(delta > 0, 0).rolling(period).mean()
     loss = (-delta.where(delta < 0, 0)).rolling(period).mean()
-    if pd.isna(loss.iloc[-1]) or loss.iloc[-1] == 0:
-        return None
-    rs = gain / loss
-    rsi = 100 - (100 / (1 + rs))
-    if pd.isna(rsi.iloc[-1]):
-        return None
-    return float(rsi.iloc[-1])
 
+    if pd.isna(gain.iloc[-1]) or pd.isna(loss.iloc[-1]):
+        return None
+
+    if loss.iloc[-1] == 0:
+        return 100.0
+
+    if gain.iloc[-1] == 0:
+        return 0.0
+
+    rs = gain.iloc[-1] / loss.iloc[-1]
+    rsi = 100 - (100 / (1 + rs))
+
+    return float(rsi)
 
 def ema(prices, period):
     return float(pd.Series(prices, dtype="float64").ewm(span=period, adjust=False).mean().iloc[-1])

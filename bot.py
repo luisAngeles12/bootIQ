@@ -246,6 +246,19 @@ def main():
                     operaciones_desde_resumen_mercado += 1
             else:
                 motivo = motivo_pendiente_por_accion_precio(senal)
+            
+                if motivo in [
+                    "ESPERANDO_RUPTURA_RESISTENCIA",
+                    "ESPERANDO_RUPTURA_SOPORTE"
+                ]:
+                    if senal.get("soporte") is None or senal.get("resistencia") is None:
+                        print(
+                            "PENDIENTE NO GUARDADA:",
+                            senal["activo"],
+                            "sin soporte/resistencia"
+                        )
+                        continue
+            
                 guardar_senal_pendiente(senal, motivo)
 
             time.sleep(0.02)

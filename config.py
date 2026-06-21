@@ -7,7 +7,7 @@ PASSWORD = "R@putim120799"
 
 MODO_CUENTA = "PRACTICE"  # PRACTICE o REAL
 TIPOS_MERCADO = ["binary", "digital", "turbo"]  # Tipos de mercado a operar
-MONTO_BASE = 1
+MONTO_BASE = 25
 TIEMPO_EXPIRACION = 1
 CANDLE_TIME = 60
 CANDLE_NUMBER = 180

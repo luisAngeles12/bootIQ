@@ -3,7 +3,7 @@ import estado
 
 
 def segundo_actual():
-    return int(time.localtime().tm_sec)
+    return int(time.time() % 60)
 
 
 def esperar_inicio_vela():
@@ -14,7 +14,7 @@ def esperar_inicio_vela():
             return True
 
         if s > 56:
-            time.sleep(0.10)
+            time.sleep(0.05)
             continue
 
         return False

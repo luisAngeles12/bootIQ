@@ -36,7 +36,9 @@ def abrir_operacion(senal):
     activo = senal["activo"]
     direccion = senal["direccion"]
     tipo = senal.get("tipo", "turbo")
-
+    from utils import segundo_actual
+    segundo_antes = segundo_actual()
+    tiempo_antes = time.time()
     try:
         balance_antes = estado.Iq.get_balance()
 
@@ -66,19 +68,34 @@ def abrir_operacion(senal):
             return False
 
         order_id = str(order_id)
-
-        op = {
-            "order_id": order_id,
-            "activo": activo,
-            "tipo": tipo,
-            "direccion": direccion,
-            "puntaje": senal["puntaje"],
-            "patron": senal["patron"],
-            "rsi": senal["rsi"],
-            "razon": senal["razon"],
-            "hora_apertura": time.time(),
-            "balance_antes": balance_antes
-        }
+        segundo_despues = segundo_actual()
+        demora_envio = round(time.time() - tiempo_antes, 3)
+        
+        if segundo_despues > 38:
+            print(
+                "ADVERTENCIA: operación enviada tarde:",
+                activo,
+                "| segundo antes:",
+                segundo_antes,
+                "| segundo después:",
+                segundo_despues,
+                "| demora:",
+                demora_envio
+            )
+            op = {
+                "order_id": order_id,
+                "activo": activo,
+                "tipo": tipo,
+                "direccion": direccion,
+                "puntaje": senal["puntaje"],
+                "patron": senal["patron"],
+                "rsi": senal["rsi"],
+                "razon": senal["razon"],
+                "hora_apertura": time.time(),
+                "balance_antes": balance_antes,
+                "segundo_entrada": segundo_despues,
+                "demora_envio": demora_envio,
+            }
 
         estado.operaciones_abiertas.append(op)
         guardar_operaciones_pendientes()
@@ -107,7 +124,9 @@ def abrir_operacion(senal):
             "patron": senal["patron"],
             "rsi": senal["rsi"],
             "resultado": "",
-            "razon": senal["razon"]
+            "razon": senal["razon"],
+            "segundo_entrada": segundo_despues,
+            "demora_envio": demora_envio,
         })
 
         print("OPERACIÓN ABIERTA:", activo, tipo, direccion)
@@ -115,6 +134,7 @@ def abrir_operacion(senal):
         print("Operaciones abiertas:", len(estado.operaciones_abiertas))
         print("Puntaje:", senal["puntaje"])
         print("Patrón:", senal["patron"])
+        print("Segundo entrada:", segundo_despues, "| demora envío:", demora_envio)
 
         estado.cooldown_activos[activo] = time.time()
         return True

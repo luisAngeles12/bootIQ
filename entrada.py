@@ -49,7 +49,7 @@ def es_pullback_bajista_fuerte(senal):
     try:
         return (
             "pullback bajista" in str(senal.get("patron", "")).lower()
-            and senal.get("puntaje", 0) >= 16
+            and senal.get("puntaje", 0) >= 18
             and senal.get("prioridad", 0) >= 3
             and senal.get("tipo_mercado") == "TENDENCIA_BAJISTA"
             and senal.get("calidad_mercado") in ["LIMPIO", "NORMAL"]
@@ -241,7 +241,7 @@ def validar_microestructura_entrada(
         if direccion == "call":
 
             # Ya no exigir perfección.
-            if alcistas >= 2 and fuerza_promedio >= 0.18:
+            if alcistas >= 2 and fuerza_promedio >= 0.22:
 
                 # Bloquea solo absorción MUY fuerte.
                 if (
@@ -257,7 +257,7 @@ def validar_microestructura_entrada(
         # =========================
         if direccion == "put":
 
-            if bajistas >= 2 and fuerza_promedio >= 0.18:
+            if bajistas >= 2 and fuerza_promedio >= 0.22:
 
                 if (
                     ultima["mecha_inf"] >= ultima["cuerpo"] * 2.8
@@ -320,7 +320,7 @@ def decidir_entrada(activo, direccion, candles, precio_referencia):
             if movimiento > rango * 1.20:
                 return "cancelar", "precio se alejó demasiado"
 
-        if segundo > VENTANA_ENTRADA_FIN + 12:
+        if segundo > VENTANA_ENTRADA_FIN + 10:
            return "cancelar", "se pasó la ventana segura"
 
         # Evitar entrar en vela ya explotada.
@@ -618,7 +618,7 @@ def procesar_senales_pendientes(abrir_operacion):
                 restantes.append(senal)
                 continue
 
-            max_velas_pendiente = 10 if pendiente_por_ruptura else 5
+            max_velas_pendiente = 3 if pendiente_por_ruptura else 2
 
             if vela_actual - senal["vela_detectada"] > max_velas_pendiente:
                 print("SEÑAL PENDIENTE EXPIRADA:", activo)
@@ -783,18 +783,33 @@ def procesar_senales_pendientes(abrir_operacion):
             )
 
             if decision != "entrar":
-                if senal.get("entrada_confirmada", False):
-                    print(
-                        "SEÑAL PENDIENTE FLEXIBLE:",
-                        activo,
-                        "entrada ya confirmada por zona |",
-                        razon
-                    )
-                    razon = "entrada confirmada por zona"
-                else:
-                    print("SEÑAL PENDIENTE ESPERA MEJOR ENTRADA:", activo, razon)
-                    restantes.append(senal)
-                    continue
+        
+                 razon_lower = razon.lower()
+             
+                 if (
+                     "precio demasiado arriba" in razon_lower
+                     or "precio demasiado abajo" in razon_lower
+                     or "alto en vela" in razon_lower
+                     or "bajo en vela" in razon_lower
+                     or "esperar retroceso" in razon_lower
+                     or "vela demasiado corrida" in razon_lower
+                 ):
+                     print(
+                         "SEÑAL PENDIENTE ESPERA RETEST:",
+                         activo,
+                         razon
+                     )
+             
+                     restantes.append(senal)
+                     continue
+             
+                 print(
+                     "SEÑAL PENDIENTE DESCARTADA:",
+                     activo,
+                     razon
+                 )
+             
+                 continue
 
             # =========================
             # BLOQUEO POR ZONA CONTRARIA
@@ -882,8 +897,6 @@ def procesar_senales_pendientes(abrir_operacion):
             # VALIDAR MICROESTRUCTURA
             # =========================
             if senal.get("entrada_confirmada", False):
-                razon_micro = "ruptura/zona ya confirmada"
-            else:
                 ok_micro, razon_micro = validar_microestructura_entrada(
                     direccion,
                     [x["open"] for x in candles],
@@ -891,17 +904,14 @@ def procesar_senales_pendientes(abrir_operacion):
                     [x["max"] for x in candles],
                     [x["min"] for x in candles]
                 )
-
-                senal_premium = senal_premium_para_entrada(senal)
-                contexto_fuerte = contexto_fuerte_para_entrada(senal)
-
-                if not ok_micro and not senal_premium:
-                    if contexto_fuerte or pendiente_por_ruptura:
-                        print("SEÑAL PENDIENTE FLEXIBLE permitió micro débil:", activo, razon_micro)
-                    else:
-                        print("SEÑAL PENDIENTE BLOQUEADA:", activo, razon_micro)
-                        continue
-
+            
+                if not ok_micro:
+                    print(
+                        "SEÑAL PENDIENTE BLOQUEADA POR MICRO:",
+                        activo,
+                        razon_micro
+                    )
+                    continue
             print(
                 "SEÑAL PENDIENTE CONFIRMADA:",
                 activo,
@@ -955,7 +965,7 @@ def validar_punto_entrada_en_vela(direccion, candles):
             return False, "vela sin cuerpo suficiente"
 
         if direccion == "call":
-            if posicion >= 0.98 and fuerza >= 0.70:
+            if posicion >= 0.90 and fuerza >= 0.62:
                 return False, "CALL bloqueado: precio demasiado arriba"
 
             if vela_roja:
@@ -968,7 +978,7 @@ def validar_punto_entrada_en_vela(direccion, candles):
             return True, "punto CALL válido"
 
         if direccion == "put":
-            if posicion <= 0.02 and fuerza >= 0.70:
+            if posicion <= 0.10 and fuerza >= 0.62:
                 return False, "PUT bloqueado: precio demasiado abajo"
 
             if vela_verde:
@@ -988,11 +998,37 @@ def validar_punto_entrada_en_vela(direccion, candles):
 def entrada_rapida_disponible(senal):
     activo = senal["activo"]
     direccion = senal["direccion"]
-
+    motivo = senal.get("motivo_pendiente", "")
+    accion_precio = str(senal.get("accion_precio", "")).upper()
+    
+    if motivo in [
+        "ESPERANDO_RUPTURA_RESISTENCIA",
+        "ESPERANDO_RUPTURA_SOPORTE",
+        "ESPERANDO_CONFIRMACION_RECHAZO"
+    ]:
+        print(
+            "Entrada rápida bloqueada:",
+            activo,
+            "señal requiere confirmación pendiente"
+        )
+        return False
+    
+    if accion_precio in [
+        "CALL_RESISTENCIA_CERCA_SIN_RUPTURA",
+        "PUT_SOPORTE_CERCA_SIN_RUPTURA",
+        "RECHAZO_COMPRADOR_SOPORTE",
+        "RECHAZO_VENDEDOR_RESISTENCIA"
+    ]:
+        print(
+            "Entrada rápida bloqueada:",
+            activo,
+            "zona/rechazo requiere confirmación"
+        )
+        return False
     try:
         segundo = segundo_actual()
 
-        if segundo < VENTANA_ENTRADA_INICIO or segundo > VENTANA_ENTRADA_FIN + 22:
+        if segundo < VENTANA_ENTRADA_INICIO or segundo > VENTANA_ENTRADA_FIN + 8:
             print("Entrada rápida cancelada:", activo, "fuera de ventana segura:", segundo)
             return False
 
@@ -1093,12 +1129,9 @@ def entrada_rapida_disponible(senal):
             [x["min"] for x in candles]
         )
 
-        if not ok_micro and not senal_premium:
-            if contexto_fuerte or pullback_bajista_fuerte:
-                print("Entrada rápida flexible permitió micro débil:", activo, razon_micro)
-            else:
-                print("Entrada rápida bloqueada:", activo, razon_micro)
-                return False
+        if not ok_micro:
+          print("Entrada rápida bloqueada:", activo, razon_micro)
+          return False
         print(
             "Entrada rápida aprobada:",
             activo,

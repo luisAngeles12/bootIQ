@@ -292,8 +292,8 @@ def validar_estrategia_por_mercado(senal, ctx):
             return True, "pullback alcista permitido con filtro reforzado"
     
         if "pullback bajista" in patron:
-            if tipo_mercado not in ["TENDENCIA_BAJISTA", "RANGO", "INDEFINIDO"]:
-                return False, "pullback bajista requiere tendencia bajista, rango o indefinido operable"
+            if tipo_mercado != "TENDENCIA_BAJISTA":
+                return False, "pullback bajista requiere tendencia bajista"
             
             if tipo_mercado == "INDEFINIDO":
                 if not (
@@ -306,8 +306,11 @@ def validar_estrategia_por_mercado(senal, ctx):
                 return False, "pullback bajista requiere mercado operable"
     
             if puntaje < 18:
-                return False, "pullback bajista requiere mínimo 16 puntos"
-    
+                return False, "pullback bajista requiere mínimo 18 puntos"
+            
+            if rechazo != -1 and patron_vela != -1:
+              return False, "pullback bajista requiere rechazo o patrón bajista"
+            
             return True, "pullback bajista permitido"
     
         return False, "pullback no reconocido"

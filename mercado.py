@@ -7,7 +7,7 @@ from conexion import reconectar_iq
 from contexto_mercado import detectar_tipo_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
 
 MAX_ACTIVOS_ANALIZAR = 20
-MIN_SCORE_ACTIVO = 65
+MIN_SCORE_ACTIVO = 55
 
 
 def obtener_velas(activo):
@@ -109,7 +109,7 @@ def evaluar_estabilidad_activo(asset, tipo):
             return None
 
         # Score mínimo real del diagnóstico de mercado.
-        if score < 58:
+        if score < 52:
             return None
 
         # Evitar mercados sin dirección clara.
@@ -117,13 +117,13 @@ def evaluar_estabilidad_activo(asset, tipo):
             return None
 
         # Evitar tendencias débiles.
-        if "DEBIL" in estado_tendencia and score < 68:
+        if "DEBIL" in estado_tendencia and score < 62:
            return None
         # Evitar agotamiento como filtro inicial.
         # Si está agotada, puede servir para contra tendencia,
         # pero no para elegir los mejores activos base.
-        if "AGOTADA" in estado_tendencia:
-            return None
+        # if "AGOTADA" in estado_tendencia:
+        #     return None
 
         # Evitar rangos sin tendencia fuerte/normal.
         if tipo_mercado == "RANGO" and "FUERTE" not in estado_tendencia and "NORMAL" not in estado_tendencia:

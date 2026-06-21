@@ -2233,11 +2233,11 @@ def analizar_activo(activo):
         estado.cooldown_activos[activo] = time.time() + 600
         return None
 
-    if score < 58:
+    if score < 52:
         estado.cooldown_activos[activo] = time.time() + 600
         return None
 
-    if "DEBIL" in tendencia_estado and score < 68:
+    if "DEBIL" in tendencia_estado and score < 62:
         estado.cooldown_activos[activo] = time.time() + 600
         return None
 
@@ -2260,7 +2260,17 @@ def analizar_activo(activo):
 
         if senal is None:
             continue
-
+        
+       # =========================
+       # BLOQUEO TEMPORAL LIQUIDITY SWEEP
+       # =========================
+        if "liquidity sweep" in str(senal.get("patron", "")).lower():
+            print(
+                "SEÑAL BLOQUEADA TEMPORALMENTE:",
+                activo,
+                senal.get("patron", "")
+            )
+            continue 
         # =========================
         # COOLDOWN DE ESTRATEGIA
         # =========================
@@ -2576,7 +2586,9 @@ def analizar_activo(activo):
         senal["estado_tendencia"] = ctx.get("estado_tendencia", "INDEFINIDA")
         senal["fuerza_tendencia"] = ctx.get("fuerza_tendencia", 0)
         senal["direccion_tendencia"] = ctx.get("direccion_tendencia", "INDEFINIDA")
-
+        senal["soporte"] = ctx["soporte"]
+        senal["resistencia"] = ctx["resistencia"]
+        senal["vol"] = ctx["vol"]
         print(
             "CONTEXTO FINAL:",
             activo,

@@ -270,7 +270,16 @@ def confirmar_ruptura_zona(
             vela_alcista = c > o
             mecha_aceptable = mecha_sup <= cuerpo * 1.4
 
-            if rompio and cerro_encima and vela_alcista and cuerpo_fuerte and mecha_aceptable:
+            ruptura_excesiva = (c - resistencia) > (vol * 1.60)
+
+            if (
+                rompio
+                and cerro_encima
+                and vela_alcista
+                and cuerpo_fuerte
+                and mecha_aceptable
+                and not ruptura_excesiva
+            ):
                 return {
                     "confirmada": True,
                     "tipo": "RUPTURA_RESISTENCIA_CONFIRMADA",
@@ -296,7 +305,16 @@ def confirmar_ruptura_zona(
             vela_bajista = c < o
             mecha_aceptable = mecha_inf <= cuerpo * 1.4
 
-            if rompio and cerro_debajo and vela_bajista and cuerpo_fuerte and mecha_aceptable:
+            ruptura_excesiva = (soporte - c) > (vol * 1.60)
+
+            if (
+                rompio
+                and cerro_debajo
+                and vela_bajista
+                and cuerpo_fuerte
+                and mecha_aceptable
+                and not ruptura_excesiva
+            ):
                 return {
                     "confirmada": True,
                     "tipo": "RUPTURA_SOPORTE_CONFIRMADA",
@@ -406,14 +424,14 @@ def resolver_zona_pendiente(
         rechazo_vendedor = (
             cerca_resistencia
             and vela_roja
-            and mecha_sup >= cuerpo * 1.8
+            and mecha_sup >= cuerpo * 1.3
             and fuerza >= 0.16
         )
 
         rechazo_comprador = (
             cerca_soporte
             and vela_verde
-            and mecha_inf >= cuerpo * 1.8
+            and mecha_inf >= cuerpo * 1.3
             and fuerza >= 0.16
         )
 
@@ -615,30 +633,6 @@ def validar_interaccion_soporte_resistencia(
             if ruptura_confirmada or es_retest:
                 return True, "CALL permitido: resistencia rota/retest confirmado"
 
-            if (
-                "continuación alcista" in patron_txt
-                and tipo_mercado == "TENDENCIA_ALCISTA"
-                and calidad_mercado in ["LIMPIO", "NORMAL"]
-                and puntaje >= 14
-            ):
-                return True, "CALL permitido: continuación alcista cerca de resistencia con tendencia válida"
-
-            if (
-                "pullback alcista" in patron_txt
-                and tipo_mercado == "TENDENCIA_ALCISTA"
-                and calidad_mercado in ["LIMPIO", "NORMAL"]
-                and puntaje >= 18
-            ):
-                return True, "CALL permitido: pullback alcista fuerte cerca de resistencia"
-
-            if (
-                "liquidity sweep alcista" in patron_txt
-                and tipo_mercado == "TENDENCIA_ALCISTA"
-                and calidad_mercado in ["LIMPIO", "NORMAL"]
-                and puntaje >= 20
-            ):
-                return True, "CALL permitido: liquidity sweep alcista fuerte cerca de resistencia"
-
             return False, "CALL bloqueado: resistencia cerca sin ruptura confirmada"
 
         # =========================
@@ -648,32 +642,11 @@ def validar_interaccion_soporte_resistencia(
             if ruptura_confirmada or es_retest:
                 return True, "PUT permitido: soporte roto/retest confirmado"
 
-            if (
-                "continuación bajista" in patron_txt
-                and tipo_mercado == "TENDENCIA_BAJISTA"
-                and calidad_mercado in ["LIMPIO", "NORMAL"]
-                and puntaje >= 14
-            ):
-                return True, "PUT permitido: continuación bajista cerca de soporte con tendencia válida"
-
-            if (
-                "pullback bajista" in patron_txt
-                and tipo_mercado == "TENDENCIA_BAJISTA"
-                and calidad_mercado in ["LIMPIO", "NORMAL"]
-                and puntaje >= 18
-            ):
-                return True, "PUT permitido: pullback bajista fuerte cerca de soporte"
-
-            if (
-                "liquidity sweep bajista" in patron_txt
-                and tipo_mercado == "TENDENCIA_BAJISTA"
-                and calidad_mercado in ["LIMPIO", "NORMAL"]
-                and puntaje >= 20
-            ):
-                return True, "PUT permitido: liquidity sweep bajista fuerte cerca de soporte"
-
             return False, "PUT bloqueado: soporte cerca sin ruptura confirmada"
 
+        # =========================
+        # ZONA FAVORABLE
+        # =========================
         if direccion == "call" and cerca_soporte:
             return True, "CALL permitido: cerca de soporte"
 
