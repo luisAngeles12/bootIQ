@@ -633,7 +633,7 @@ def validar_interaccion_soporte_resistencia(
             if ruptura_confirmada or es_retest:
                 return True, "CALL permitido: resistencia rota/retest confirmado"
         
-            if puntaje >= 22 and calidad_mercado in ["LIMPIO", "NORMAL"]:
+            if puntaje >= 18 and calidad_mercado in ["LIMPIO", "NORMAL"]:
                 return True, "CALL permitido: señal fuerte cerca de resistencia"
         
             return False, "CALL bloqueado: resistencia cerca sin ruptura confirmada"
@@ -644,7 +644,7 @@ def validar_interaccion_soporte_resistencia(
             if ruptura_confirmada or es_retest:
                 return True, "PUT permitido: soporte roto/retest confirmado"
         
-            if puntaje >= 22 and calidad_mercado in ["LIMPIO", "NORMAL"]:
+            if puntaje >= 18 and calidad_mercado in ["LIMPIO", "NORMAL"]:
                 return True, "PUT permitido: señal fuerte cerca de soporte"
         
             return False, "PUT bloqueado: soporte cerca sin ruptura confirmada"

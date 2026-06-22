@@ -197,7 +197,7 @@ def validar_estrategia_por_mercado(senal, ctx):
         or patron_vela != 0
         or liquidity_sweep != 0
         or ruptura_confirmada
-        or puntaje >= 23
+        or puntaje >= 18
     )
 
     agotamiento_real_call = (
@@ -239,11 +239,11 @@ def validar_estrategia_por_mercado(senal, ctx):
     if "choch" in patron:
 
         if "choch alcista" in patron and direccion == "call":
-            if cerca_resistencia and puntaje < 21:
+            if cerca_resistencia and puntaje < 19:
                 return False, "CHOCH CALL bloqueado: resistencia cerca requiere ruptura/retest o puntaje >= 22"
 
         if "choch bajista" in patron and direccion == "put":
-            if cerca_soporte and puntaje < 21:
+            if cerca_soporte and puntaje < 19:
                 return False, "CHOCH PUT bloqueado: soporte cerca requiere ruptura/retest o puntaje >= 22"
 
         if a_favor:
