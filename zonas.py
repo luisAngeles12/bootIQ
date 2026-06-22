@@ -607,8 +607,8 @@ def validar_interaccion_soporte_resistencia(
         distancia_soporte = abs(precio - soporte)
         distancia_resistencia = abs(resistencia - precio)
 
-        cerca_soporte = distancia_soporte <= vol * 1.15
-        cerca_resistencia = distancia_resistencia <= vol * 1.15
+        cerca_soporte = distancia_soporte <= vol * 0.75
+        cerca_resistencia = distancia_resistencia <= vol * 0.75
 
         patron_txt = str(patron).lower()
 
@@ -632,18 +632,22 @@ def validar_interaccion_soporte_resistencia(
         if direccion == "call" and cerca_resistencia:
             if ruptura_confirmada or es_retest:
                 return True, "CALL permitido: resistencia rota/retest confirmado"
-
+        
+            if puntaje >= 22 and calidad_mercado in ["LIMPIO", "NORMAL"]:
+                return True, "CALL permitido: señal fuerte cerca de resistencia"
+        
             return False, "CALL bloqueado: resistencia cerca sin ruptura confirmada"
-
         # =========================
         # PUT cerca de soporte
         # =========================
         if direccion == "put" and cerca_soporte:
             if ruptura_confirmada or es_retest:
                 return True, "PUT permitido: soporte roto/retest confirmado"
-
+        
+            if puntaje >= 22 and calidad_mercado in ["LIMPIO", "NORMAL"]:
+                return True, "PUT permitido: señal fuerte cerca de soporte"
+        
             return False, "PUT bloqueado: soporte cerca sin ruptura confirmada"
-
         # =========================
         # ZONA FAVORABLE
         # =========================

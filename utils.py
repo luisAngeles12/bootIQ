@@ -91,3 +91,20 @@ def reiniciar_metricas_ronda():
         "entradas_abiertas": 0,
         "bloqueos": {}
     }
+
+def registrar_bloqueo(motivo):
+    import estado
+
+    if not hasattr(estado, "metricas_ronda"):
+        estado.metricas_ronda = {
+            "mercados_analizados": 0,
+            "senales_detectadas": 0,
+            "senales_aprobadas": 0,
+            "entradas_abiertas": 0,
+            "bloqueos": {}
+        }
+
+    if motivo not in estado.metricas_ronda["bloqueos"]:
+        estado.metricas_ronda["bloqueos"][motivo] = 0
+
+    estado.metricas_ronda["bloqueos"][motivo] += 1

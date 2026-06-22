@@ -2261,16 +2261,6 @@ def analizar_activo(activo):
         if senal is None:
             continue
         
-       # =========================
-       # BLOQUEO TEMPORAL LIQUIDITY SWEEP
-       # =========================
-        if "liquidity sweep" in str(senal.get("patron", "")).lower():
-            print(
-                "SEÑAL BLOQUEADA TEMPORALMENTE:",
-                activo,
-                senal.get("patron", "")
-            )
-            continue 
         # =========================
         # COOLDOWN DE ESTRATEGIA
         # =========================

@@ -36,7 +36,7 @@ FUERZA_MAXIMA_VELA_NORMAL = 0.78
 SEGUNDO_MAXIMO_VELA_CORRIDA = 18
 
 CALIDADES_OPERABLES = ["A", "A+"]
-CALIDADES_MERCADO_OPERABLES = ["NORMAL", "LIMPIO"]
+CALIDADES_MERCADO_OPERABLES = [ "LIMPIO", "NORMAL" ]
 # ============================================================
 # CONFIGURACIÓN DE ARCHIVOS
 # ============================================================
