@@ -9,6 +9,7 @@ import estrategia
 from contexto_mercado import (
     detectar_tipo_mercado,
     diagnostico_calidad_mercado,
+    diagnostico_maestro_mercado,
     diagnostico_tendencia_avanzada
 )
 
@@ -111,9 +112,14 @@ def construir_ctx_backtest(activo, ventana):
     tipo_mercado, razon_mercado = detectar_tipo_mercado(candles_contexto)
     diagnostico = diagnostico_calidad_mercado(candles_contexto)
     tendencia = diagnostico_tendencia_avanzada(candles_contexto)
+    maestro = diagnostico_maestro_mercado(candles_contexto)
 
     ctx["tipo_mercado"] = tipo_mercado
     ctx["razon_mercado"] = razon_mercado
+    ctx["regimen_mercado"] = maestro.get("regimen", "SIN_DATOS")
+    ctx["modo_mercado"] = maestro.get("modo", "SIN_DATOS")
+    ctx["riesgo_mercado"] = maestro.get("riesgo", "MEDIO")
+    ctx["razon_regimen"] =  maestro.get("razon", ""),
     ctx["calidad_mercado"] = diagnostico.get("calidad", "SIN_DATOS")
     ctx["score_mercado"] = diagnostico.get("score", 0)
     ctx["estado_tendencia"] = tendencia.get("estado_tendencia", "INDEFINIDA")

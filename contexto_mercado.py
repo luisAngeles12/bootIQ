@@ -157,7 +157,248 @@ def mercado_permite_direccion(tipo_mercado, direccion):
         return True, "mercado en expansión: evitar perseguir precio"
 
     return True, "mercado indefinido"
+def diagnostico_maestro_mercado(candles):
+    """
+    Diagnóstico maestro:
+    No reemplaza detectar_tipo_mercado().
+    Complementa la lectura para saber si el mercado es limpio, sucio,
+    agotado, peligroso o apto para continuación.
+    """
+    try:
+        if not candles or len(candles) < 30:
+            return {
+                "regimen": "SIN_DATOS",
+                "operable": False,
+                "riesgo": "ALTO",
+                "modo": "ESPERAR",
+                "razon": "velas insuficientes",
+            }
 
+        candles = sorted(candles, key=lambda x: x["from"])
+
+        tipo_mercado, razon_tipo = detectar_tipo_mercado(candles)
+        calidad = diagnostico_calidad_mercado(candles)
+        tendencia = diagnostico_tendencia_avanzada(candles)
+
+        calidad_mercado = calidad.get("calidad", "SIN_DATOS")
+        score_mercado = calidad.get("score", 0)
+
+        estado_tendencia = tendencia.get("estado_tendencia", "INDEFINIDA")
+        fuerza_tendencia = tendencia.get("fuerza_tendencia", 0)
+        direccion_tendencia = tendencia.get("direccion_tendencia", "INDEFINIDA")
+        mechas_agotamiento = tendencia.get("mechas_agotamiento", 0)
+        velas_debilitadas = tendencia.get("velas_debilitadas", 0)
+
+        ultimas = candles[-20:]
+
+        rangos = []
+        cuerpos = []
+        mechas_totales = 0
+        cambios_color = 0
+        color_anterior = None
+
+        for c in ultimas:
+            o = float(c["open"])
+            close = float(c["close"])
+            h = float(c["max"])
+            l = float(c["min"])
+
+            rango = h - l
+            cuerpo = abs(close - o)
+
+            if rango <= 0:
+                continue
+
+            rangos.append(rango)
+            cuerpos.append(cuerpo)
+
+            mecha_sup = h - max(o, close)
+            mecha_inf = min(o, close) - l
+            mechas_totales += mecha_sup + mecha_inf
+
+            color = "verde" if close > o else "roja" if close < o else "doji"
+
+            if color_anterior and color != "doji" and color_anterior != "doji":
+                if color != color_anterior:
+                    cambios_color += 1
+
+            if color != "doji":
+                color_anterior = color
+
+        if not rangos:
+            return {
+                "regimen": "SIN_DATOS",
+                "operable": False,
+                "riesgo": "ALTO",
+                "modo": "ESPERAR",
+                "razon": "rangos inválidos",
+            }
+
+        rango_promedio = promedio(rangos)
+        cuerpo_promedio = promedio(cuerpos)
+        ratio_cuerpo = cuerpo_promedio / rango_promedio if rango_promedio > 0 else 0
+
+        rango_reciente = promedio(rangos[-5:])
+        expansion = rango_reciente > rango_promedio * 1.55
+        compresion = rango_reciente < rango_promedio * 0.65
+
+        ruido_alto = (
+            calidad_mercado in ["SUCIO", "CAOTICO"]
+            or cambios_color >= 9
+            or ratio_cuerpo < 0.24
+        )
+
+        agotamiento = (
+            "AGOTADA" in estado_tendencia
+            or mechas_agotamiento >= 3
+            or velas_debilitadas >= 4
+        )
+
+        tendencia_limpia = (
+            tipo_mercado in ["TENDENCIA_ALCISTA", "TENDENCIA_BAJISTA"]
+            and calidad_mercado in ["LIMPIO", "NORMAL"]
+            and estado_tendencia.endswith(("NORMAL", "FUERTE"))
+            and fuerza_tendencia >= 58
+            and not ruido_alto
+            and not expansion
+        )
+
+        tendencia_sucia = (
+            tipo_mercado in ["TENDENCIA_ALCISTA", "TENDENCIA_BAJISTA"]
+            and (
+                ruido_alto
+                or fuerza_tendencia < 58
+                or "DEBIL" in estado_tendencia
+            )
+        )
+
+        rango_limpio = (
+            tipo_mercado == "RANGO"
+            and calidad_mercado in ["LIMPIO", "NORMAL"]
+            and score_mercado >= 60
+            and not expansion
+        )
+
+        rango_sucio = (
+            tipo_mercado == "RANGO"
+            and (
+                calidad_mercado in ["SUCIO", "CAOTICO"]
+                or score_mercado < 60
+                or expansion
+            )
+        )
+
+        if expansion:
+            return {
+                "regimen": "EXPANSION_PELIGROSA",
+                "operable": False,
+                "riesgo": "ALTO",
+                "modo": "NO_PERSEGUIR",
+                "direccion_tendencia": direccion_tendencia,
+                "fuerza_tendencia": fuerza_tendencia,
+                "calidad_mercado": calidad_mercado,
+                "score_mercado": score_mercado,
+                "razon": "mercado expandido: evitar perseguir vela corrida",
+            }
+
+        if compresion and tipo_mercado in ["RANGO", "COMPRESION"]:
+            return {
+                "regimen": "COMPRESION_PRE_RUPTURA",
+                "operable": False,
+                "riesgo": "MEDIO",
+                "modo": "ESPERAR_RUPTURA",
+                "direccion_tendencia": direccion_tendencia,
+                "fuerza_tendencia": fuerza_tendencia,
+                "calidad_mercado": calidad_mercado,
+                "score_mercado": score_mercado,
+                "razon": "mercado comprimido: esperar ruptura confirmada",
+            }
+
+        if agotamiento and tipo_mercado in ["TENDENCIA_ALCISTA", "TENDENCIA_BAJISTA"]:
+            return {
+                "regimen": "AGOTAMIENTO_" + direccion_tendencia,
+                "operable": True,
+                "riesgo": "MEDIO",
+                "modo": "SWEEP_REVERSION",
+                "direccion_tendencia": direccion_tendencia,
+                "fuerza_tendencia": fuerza_tendencia,
+                "calidad_mercado": calidad_mercado,
+                "score_mercado": score_mercado,
+                "razon": "tendencia con agotamiento: preferir sweep/rechazo, no continuación",
+            }
+
+        if tendencia_limpia:
+            return {
+                "regimen": "TENDENCIA_LIMPIA",
+                "operable": True,
+                "riesgo": "BAJO",
+                "modo": "PULLBACK_CONTINUACION",
+                "direccion_tendencia": direccion_tendencia,
+                "fuerza_tendencia": fuerza_tendencia,
+                "calidad_mercado": calidad_mercado,
+                "score_mercado": score_mercado,
+                "razon": "tendencia limpia: pullback/continuación a favor",
+            }
+
+        if tendencia_sucia:
+            return {
+                "regimen": "TENDENCIA_SUCIA",
+                "operable": True,
+                "riesgo": "MEDIO",
+                "modo": "SOLO_SWEEP_O_RECHAZO",
+                "direccion_tendencia": direccion_tendencia,
+                "fuerza_tendencia": fuerza_tendencia,
+                "calidad_mercado": calidad_mercado,
+                "score_mercado": score_mercado,
+                "razon": "tendencia con ruido o fuerza débil: evitar CHOCH/pullback flojo",
+            }
+
+        if rango_limpio:
+            return {
+                "regimen": "RANGO_LIMPIO",
+                "operable": True,
+                "riesgo": "MEDIO",
+                "modo": "EXTREMOS_SWEEP",
+                "direccion_tendencia": direccion_tendencia,
+                "fuerza_tendencia": fuerza_tendencia,
+                "calidad_mercado": calidad_mercado,
+                "score_mercado": score_mercado,
+                "razon": "rango limpio: operar extremos, sweep y rechazo",
+            }
+
+        if rango_sucio:
+            return {
+                "regimen": "RANGO_SUCIO",
+                "operable": False,
+                "riesgo": "ALTO",
+                "modo": "ESPERAR",
+                "direccion_tendencia": direccion_tendencia,
+                "fuerza_tendencia": fuerza_tendencia,
+                "calidad_mercado": calidad_mercado,
+                "score_mercado": score_mercado,
+                "razon": "rango sucio: demasiado ruido",
+            }
+
+        return {
+            "regimen": "MERCADO_MIXTO",
+            "operable": True,
+            "riesgo": "MEDIO",
+            "modo": "SOLO_SEÑALES_FUERTES",
+            "direccion_tendencia": direccion_tendencia,
+            "fuerza_tendencia": fuerza_tendencia,
+            "calidad_mercado": calidad_mercado,
+            "score_mercado": score_mercado,
+            "razon": "mercado mixto: operar solo señales fuertes",
+        }
+
+    except Exception as e:
+        return {
+            "regimen": "ERROR",
+            "operable": False,
+            "riesgo": "ALTO",
+            "modo": "ESPERAR",
+            "razon": "error diagnóstico maestro: " + str(e),
+        }
 def validar_estrategia_por_mercado(senal, ctx):
     if not senal:
         return False, "señal vacía"
@@ -177,7 +418,9 @@ def validar_estrategia_por_mercado(senal, ctx):
     rechazo = ctx.get("rechazo", 0)
     liquidity_sweep = ctx.get("liquidity_sweep", 0)
     patron_vela = ctx.get("patron", 0)
-
+    regimen_mercado = ctx.get("regimen_mercado", "SIN_DATOS")
+    modo_mercado = ctx.get("modo_mercado", "SIN_DATOS")
+    riesgo_mercado = ctx.get("riesgo_mercado", "MEDIO")
     direccion_senal = "ALCISTA" if direccion == "call" else "BAJISTA"
     a_favor = direccion_senal == direccion_tendencia
 
@@ -223,6 +466,56 @@ def validar_estrategia_por_mercado(senal, ctx):
     )
 
     agotamiento_real = agotamiento_real_call or agotamiento_real_put
+    
+    # =========================
+    # FILTRO MAESTRO DE MERCADO
+    # =========================
+    if regimen_mercado == "EXPANSION_PELIGROSA":
+        if "liquidity sweep" in patron and puntaje >= 25 and agotamiento_real:
+            return True, "mercado peligroso: solo sweep premium con agotamiento real"
+
+        return False, "mercado peligroso: señal bloqueada por régimen maestro"
+    if regimen_mercado == "RANGO_SUCIO":
+        if "liquidity sweep" in patron and puntaje >= 24:
+            return True, "rango sucio: sweep premium permitido"
+
+        return False, "rango sucio: señal bloqueada"
+    if regimen_mercado == "COMPRESION_PRE_RUPTURA":
+        if ruptura_confirmada and puntaje >= 22:
+            return True, "compresión resuelta: ruptura confirmada"
+
+        return False, "compresión: esperar ruptura confirmada"
+
+    if regimen_mercado == "TENDENCIA_SUCIA":
+        if "liquidity sweep" in patron and puntaje >= 23 and agotamiento_real:
+            return True, "tendencia sucia: sweep permitido solo con agotamiento"
+    
+        if "pullback alcista" in patron and direccion == "call" and puntaje >= 19 and a_favor:
+            return True, "tendencia sucia: pullback alcista permitido con puntaje alto"
+    
+        if "pullback bajista" in patron and direccion == "put" and puntaje >= 20 and a_favor:
+            return True, "tendencia sucia: pullback bajista permitido con puntaje alto"
+    
+        if "choch" in patron and puntaje < 22:
+            return False, "tendencia sucia: CHOCH débil bloqueado"
+        
+    if regimen_mercado == "TENDENCIA_LIMPIA":
+        if "pullback" in patron and not a_favor:
+            return False, "tendencia limpia: pullback contra tendencia bloqueado"
+
+        if "continuacion" in patron or "continuación" in patron:
+            if puntaje >= 16 and a_favor:
+                return True, "tendencia limpia: continuación permitida a favor"
+
+    if regimen_mercado == "RANGO_LIMPIO":
+        if "pullback" in patron:
+            return False, "rango limpio: pullback EMA bloqueado, preferir extremos"
+
+        if "liquidity sweep" in patron and puntaje >= 22:
+            return True, "rango limpio: sweep permitido"
+
+        if ("reaccion" in patron or "reacción" in patron) and agotamiento_real:
+            return True, "rango limpio: reacción en extremo permitida"
 
     # =========================
     # MERCADO CAÓTICO

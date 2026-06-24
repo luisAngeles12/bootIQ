@@ -7,7 +7,7 @@ from zonas import *
 from mercado import obtener_velas
 import time
 import estado
-from contexto_mercado import detectar_tipo_mercado, validar_estrategia_por_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
+from contexto_mercado import detectar_tipo_mercado, diagnostico_maestro_mercado, validar_estrategia_por_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
 from utils import estrategia_en_cooldown,registrar_bloqueo
 
 def contexto_operacion(direccion, tendencia, estructura, patron, rechazo, zona_call, zona_put, rsi, extension):
@@ -1967,12 +1967,20 @@ def motor_estrategias_profesional(ctx):
         and ctx["tipo_mercado"] == "TENDENCIA_ALCISTA"
         and ctx["calidad_mercado"] in ["LIMPIO", "NORMAL"]
         and str(ctx["estado_tendencia"]).startswith("ALCISTA")
-        and 40 <= rsi <= 60
+        and ctx["fuerza_tendencia"] >= 58
+        and 42 <= rsi <= 58
+        and not ctx["cerca_resistencia"]
+        and ctx["posicion_rango"] <= 0.72
         and (
-            ctx["patron"] == 1
-            or ctx["rechazo"] == 1
+            ctx["rechazo"] == 1
+            or ctx["patron"] == 1
             or patron_call_ok
             or direccion_presion in ["ALCISTA", "COMPRA"]
+        )
+        and not (
+            ctx["fuerza_ultima"] >= 0.78
+            and ctx["ultima_close"] > ctx["ultima_open"]
+            and ctx["posicion_rango"] >= 0.65
         )
     ):
         puntaje = 14
@@ -2201,12 +2209,16 @@ def analizar_activo(activo):
         tipo_mercado, razon_mercado = detectar_tipo_mercado(candles_contexto)
         diagnostico = diagnostico_calidad_mercado(candles_contexto)
         diagnostico_tendencia = diagnostico_tendencia_avanzada(candles_contexto)
-
+        maestro = diagnostico_maestro_mercado(candles_contexto)
         ctx["tipo_mercado"] = tipo_mercado
         ctx["razon_mercado"] = razon_mercado
         ctx["calidad_mercado"] = diagnostico.get("calidad", "SIN_DATOS")
         ctx["score_mercado"] = diagnostico.get("score", 0)
         ctx["detalle_calidad_mercado"] = diagnostico
+        ctx["regimen_mercado"] = maestro.get("regimen", "SIN_DATOS")
+        ctx["modo_mercado"] = maestro.get("modo", "SIN_DATOS")
+        ctx["riesgo_mercado"] = maestro.get("riesgo", "MEDIO")
+        ctx["razon_regimen"] =  maestro.get("razon", ""),
 
         ctx["estado_tendencia"] = diagnostico_tendencia.get("estado_tendencia", "INDEFINIDA")
         ctx["fuerza_tendencia"] = diagnostico_tendencia.get("fuerza_tendencia", 0)

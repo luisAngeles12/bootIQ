@@ -37,19 +37,53 @@ def patron_velas(opens, closes, highs, lows):
 
 def rechazo_real(opens, closes, highs, lows):
     o, c, h, l = opens[-1], closes[-1], highs[-1], lows[-1]
+
     cuerpo = abs(c - o)
     rango = h - l
+
     if rango == 0:
         return 0, "sin rechazo"
+
     mecha_sup = h - max(o, c)
     mecha_inf = min(o, c) - l
-    if mecha_inf >= cuerpo * 1.8 and c > o:
+
+    cuerpo_relativo = cuerpo / rango
+    mecha_sup_rel = mecha_sup / rango
+    mecha_inf_rel = mecha_inf / rango
+
+    # Rechazo comprador fuerte: mecha inferior grande y cierre en parte alta.
+    if (
+        mecha_inf_rel >= 0.42
+        and c > o
+        and cuerpo_relativo >= 0.22
+        and c >= l + (rango * 0.60)
+    ):
         return 1, "rechazo comprador fuerte"
-    if mecha_sup >= cuerpo * 1.8 and c < o:
+
+    # Rechazo comprador aunque la vela cierre roja, pero recupera bastante.
+    if (
+        mecha_inf_rel >= 0.50
+        and c >= l + (rango * 0.55)
+    ):
+        return 1, "rechazo comprador por recuperación"
+
+    # Rechazo vendedor fuerte: mecha superior grande y cierre en parte baja.
+    if (
+        mecha_sup_rel >= 0.42
+        and c < o
+        and cuerpo_relativo >= 0.22
+        and c <= h - (rango * 0.60)
+    ):
         return -1, "rechazo vendedor fuerte"
+
+    # Rechazo vendedor aunque la vela cierre verde, pero pierde altura.
+    if (
+        mecha_sup_rel >= 0.50
+        and c <= h - (rango * 0.55)
+    ):
+        return -1, "rechazo vendedor por recuperación fallida"
+
     return 0, "sin rechazo"
-
-
 def pin_bar(opens, closes, highs, lows):
     o, c, h, l = opens[-1], closes[-1], highs[-1], lows[-1]
     cuerpo, mecha_sup, mecha_inf, _ = cuerpo_y_mechas(o, c, h, l)
@@ -169,7 +203,16 @@ def diagnostico_accion_precio_zona(
 
         mecha_sup = h - max(o, c)
         mecha_inf = min(o, c) - l
+        lectura = lectura_avanzada_price_action(
+            opens,
+            closes,
+            highs,
+            lows,
+            8
+        )
 
+        tipo_lectura = lectura.get("tipo", "MERCADO_MIXTO")
+        direccion_lectura = lectura.get("direccion", "NEUTRA")
         margen = vol * 0.30
 
         cerca_resistencia = abs(resistencia - c) <= vol * 1.20
@@ -206,7 +249,12 @@ def diagnostico_accion_precio_zona(
         # CALL
         # =========================
         if direccion == "call":
-
+            if direccion_lectura == "PUT" and tipo_lectura in ["ABSORCION_VENDEDORA", "AGOTAMIENTO_ALCISTA"]:
+                return {
+                    "accion": tipo_lectura,
+                    "permite": False,
+                    "razon": "acción precio: lectura avanzada contradice CALL"
+                }
             if falsa_ruptura_alcista:
                 return {
                     "accion": "FALSA_RUPTURA_RESISTENCIA",
@@ -245,7 +293,12 @@ def diagnostico_accion_precio_zona(
         # PUT
         # =========================
         if direccion == "put":
-
+            if direccion_lectura == "CALL" and tipo_lectura in ["ABSORCION_COMPRADORA", "AGOTAMIENTO_BAJISTA"]:
+                return {
+                    "accion": tipo_lectura,
+                    "permite": False,
+                    "razon": "acción precio: lectura avanzada contradice PUT"
+                }
             if falsa_ruptura_bajista:
                 return {
                     "accion": "FALSA_RUPTURA_SOPORTE",
@@ -395,7 +448,125 @@ def presion_ultimas_velas(opens, closes, highs, lows, cantidad=8):
             "bajistas": 0,
             "razon": "error presión velas: " + str(e)
         }
+def lectura_avanzada_price_action(opens, closes, highs, lows, cantidad=8):
+    try:
+        if len(closes) < cantidad + 2:
+            return {
+                "direccion": "NEUTRA",
+                "tipo": "SIN_DATOS",
+                "fuerza": 0,
+                "razon": "velas insuficientes"
+            }
 
+        alcistas = 0
+        bajistas = 0
+        mechas_sup = 0
+        mechas_inf = 0
+        cuerpos_fuertes_alcistas = 0
+        cuerpos_fuertes_bajistas = 0
+        rango_total = 0
+        cuerpo_total = 0
+
+        for i in range(-cantidad, 0):
+            o = opens[i]
+            c = closes[i]
+            h = highs[i]
+            l = lows[i]
+
+            rango = h - l
+            cuerpo = abs(c - o)
+
+            if rango <= 0:
+                continue
+
+            rango_total += rango
+            cuerpo_total += cuerpo
+
+            mecha_sup = h - max(o, c)
+            mecha_inf = min(o, c) - l
+
+            if c > o:
+                alcistas += 1
+                if cuerpo / rango >= 0.45:
+                    cuerpos_fuertes_alcistas += 1
+
+            elif c < o:
+                bajistas += 1
+                if cuerpo / rango >= 0.45:
+                    cuerpos_fuertes_bajistas += 1
+
+            if mecha_sup / rango >= 0.38:
+                mechas_sup += 1
+
+            if mecha_inf / rango >= 0.38:
+                mechas_inf += 1
+
+        fuerza_cuerpo = cuerpo_total / rango_total if rango_total > 0 else 0
+
+        # Absorción compradora: presión bajista previa, pero aparecen mechas inferiores.
+        if bajistas >= 4 and mechas_inf >= 3:
+            return {
+                "direccion": "CALL",
+                "tipo": "ABSORCION_COMPRADORA",
+                "fuerza": round(fuerza_cuerpo, 2),
+                "razon": "absorción compradora: presión bajista con rechazo inferior"
+            }
+
+        # Absorción vendedora: presión alcista previa, pero aparecen mechas superiores.
+        if alcistas >= 4 and mechas_sup >= 3:
+            return {
+                "direccion": "PUT",
+                "tipo": "ABSORCION_VENDEDORA",
+                "fuerza": round(fuerza_cuerpo, 2),
+                "razon": "absorción vendedora: presión alcista con rechazo superior"
+            }
+
+        if alcistas >= 5 and cuerpos_fuertes_alcistas >= 3 and mechas_sup >= 3:
+            return {
+                "direccion": "PUT",
+                "tipo": "AGOTAMIENTO_ALCISTA",
+                "fuerza": round(fuerza_cuerpo, 2),
+                "razon": "agotamiento alcista por avance con mechas superiores"
+            }
+
+        if bajistas >= 5 and cuerpos_fuertes_bajistas >= 3 and mechas_inf >= 3:
+            return {
+                "direccion": "CALL",
+                "tipo": "AGOTAMIENTO_BAJISTA",
+                "fuerza": round(fuerza_cuerpo, 2),
+                "razon": "agotamiento bajista por caída con mechas inferiores"
+            }
+
+        if alcistas >= 5 and fuerza_cuerpo >= 0.35:
+            return {
+                "direccion": "CALL",
+                "tipo": "PRESION_ALCISTA",
+                "fuerza": round(fuerza_cuerpo, 2),
+                "razon": "presión alcista sostenida"
+            }
+
+        if bajistas >= 5 and fuerza_cuerpo >= 0.35:
+            return {
+                "direccion": "PUT",
+                "tipo": "PRESION_BAJISTA",
+                "fuerza": round(fuerza_cuerpo, 2),
+                "razon": "presión bajista sostenida"
+            }
+
+        return {
+            "direccion": "NEUTRA",
+            "tipo": "MERCADO_MIXTO",
+            "fuerza": round(fuerza_cuerpo, 2),
+            "razon": "acción de precio mixta"
+        }
+
+    except Exception as e:
+        return {
+            "direccion": "ERROR",
+            "tipo": "ERROR",
+            "fuerza": 0,
+            "razon": "error lectura avanzada price action: " + str(e)
+        }
 def validar_patron_con_contexto(
     direccion,
     nombre_patron,
