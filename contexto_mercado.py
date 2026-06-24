@@ -307,12 +307,16 @@ def validar_estrategia_por_mercado(senal, ctx):
             if estado_tendencia not in ["BAJISTA_NORMAL", "BAJISTA_FUERTE"]:
                 return False, "pullback bajista requiere tendencia bajista válida"
 
-            if puntaje < 16:
-                return False, "pullback bajista requiere mínimo 16 puntos"
+            if puntaje < 18:
+                return False, "pullback bajista requiere mínimo 18 puntos"
 
             if rechazo != -1 and patron_vela != -1:
                 return False, "pullback bajista requiere rechazo o patrón bajista"
-
+            if cerca_soporte and puntaje < 21:
+                return False, "pullback bajista bloqueado: demasiado cerca de soporte"
+            
+            if estado_tendencia != "BAJISTA_FUERTE" and puntaje < 20:
+                return False, "pullback bajista requiere tendencia bajista fuerte o puntaje alto"
             return True, "pullback bajista permitido con filtro reforzado"
     
         return False, "pullback no reconocido"

@@ -1,7 +1,5 @@
 import csv
 import os
-import contextlib
-import io
 
 import estado
 import estrategia
@@ -78,7 +76,7 @@ def analizar_activo_con_ventana(activo, ventana):
     estrategia.obtener_velas = lambda activo_param: data
 
     try:
-       senal = estrategia.analizar_activo(activo)
+        senal = estrategia.analizar_activo(activo)
     finally:
         estrategia.obtener_velas = original_obtener_velas
 
@@ -87,16 +85,53 @@ def analizar_activo_con_ventana(activo, ventana):
 
 def resultado_binario(velas, index_entrada, direccion):
     entrada = velas[index_entrada]["close"]
-    cierre = velas[index_entrada + 1]["close"]
+    vela_siguiente = velas[index_entrada + 1]
+
+    cierre = vela_siguiente["close"]
+    apertura_siguiente = vela_siguiente["open"]
+    high_siguiente = vela_siguiente["max"]
+    low_siguiente = vela_siguiente["min"]
+
+    movimiento = cierre - entrada
 
     if direccion == "call":
-        return "WIN" if cierre > entrada else "LOSS"
+        resultado = "WIN" if cierre > entrada else "LOSS"
+        distancia_resultado = cierre - entrada
+        excursion_favor = high_siguiente - entrada
+        excursion_contra = entrada - low_siguiente
 
-    if direccion == "put":
-        return "WIN" if cierre < entrada else "LOSS"
+    elif direccion == "put":
+        resultado = "WIN" if cierre < entrada else "LOSS"
+        distancia_resultado = entrada - cierre
+        excursion_favor = entrada - low_siguiente
+        excursion_contra = high_siguiente - entrada
 
-    return "LOSS"
+    else:
+        resultado = "LOSS"
+        distancia_resultado = 0
+        excursion_favor = 0
+        excursion_contra = 0
 
+    cuerpo_siguiente = abs(cierre - apertura_siguiente)
+    rango_siguiente = high_siguiente - low_siguiente
+
+    if rango_siguiente > 0:
+        fuerza_cierre = cuerpo_siguiente / rango_siguiente
+    else:
+        fuerza_cierre = 0
+
+    return {
+        "resultado": resultado,
+        "movimiento": round(movimiento, 8),
+        "distancia_resultado": round(distancia_resultado, 8),
+        "excursion_favor": round(excursion_favor, 8),
+        "excursion_contra": round(excursion_contra, 8),
+        "fuerza_cierre_siguiente": round(fuerza_cierre, 4),
+        "open_siguiente": apertura_siguiente,
+        "close_siguiente": cierre,
+        "high_siguiente": high_siguiente,
+        "low_siguiente": low_siguiente,
+    }
 
 def ejecutar_backtest(datasets):
     resultados = []
@@ -143,7 +178,7 @@ def ejecutar_backtest(datasets):
             velas = senal["_velas"]
             idx = senal["_index"]
 
-            resultado = resultado_binario(
+            info_resultado = resultado_binario(
                 velas,
                 idx,
                 senal["direccion"]
@@ -163,9 +198,19 @@ def ejecutar_backtest(datasets):
                 "calidad_mercado": senal.get("calidad_mercado", ""),
                 "score_mercado": senal.get("score_mercado", 0),
                 "estado_tendencia": senal.get("estado_tendencia", ""),
-                "resultado": resultado,
+                "resultado": info_resultado["resultado"],
                 "precio_entrada": velas[idx]["close"],
                 "precio_cierre": velas[idx + 1]["close"],
+                "movimiento": info_resultado["movimiento"],
+                "distancia_resultado": info_resultado["distancia_resultado"],
+                "excursion_favor": info_resultado["excursion_favor"],
+                "excursion_contra": info_resultado["excursion_contra"],
+                "fuerza_cierre_siguiente": info_resultado["fuerza_cierre_siguiente"],
+                "open_siguiente": info_resultado["open_siguiente"],
+                "close_siguiente": info_resultado["close_siguiente"],
+                "high_siguiente": info_resultado["high_siguiente"],
+                "low_siguiente": info_resultado["low_siguiente"],
+                "razon": senal.get("razon", ""),
             })
 
     return resultados
@@ -188,11 +233,23 @@ def guardar_resultados(resultados):
         "estado_tendencia",
         "resultado",
         "precio_entrada",
+        "precio_entrada_original",
         "precio_cierre",
+        "movimiento",
+        "distancia_resultado",
+        "excursion_favor",
+        "excursion_contra",
+        "fuerza_cierre_siguiente",
+        "open_siguiente",
+        "close_siguiente",
+        "high_siguiente",
+        "low_siguiente",
+        "rango_siguiente",
+        "razon",
     ]
 
     with open(SALIDA, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=campos)
+        writer = csv.DictWriter(f, fieldnames=campos, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(resultados)
 

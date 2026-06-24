@@ -1417,29 +1417,28 @@ def vela_contraria_reciente(ctx, direccion):
 def peso_estrategia_profesional(patron):
     patron = str(patron).lower()
 
+    if "liquidity sweep" in patron:
+        return 110
+
     if "choch" in patron:
         return 88
-
-    if "pullback bajista" in patron and "ema" in patron:
-        return 108
 
     if "breakout" in patron or "retest" in patron:
         return 95
 
     if "pullback alcista" in patron and "ema" in patron:
-        return 75
+        return 82
+
+    if "pullback bajista" in patron and "ema" in patron:
+        return 72
 
     if "continuación" in patron or "continuacion" in patron:
-        return 90
+        return 65
 
     if "reacción" in patron or "reaccion" in patron:
         return 80
 
-    if "liquidity sweep" in patron:
-        return 70
-
     return 50
-
 def score_final_senal_profesional(senal):
     patron = str(senal.get("patron", "")).lower()
 
@@ -1449,33 +1448,38 @@ def score_final_senal_profesional(senal):
 
     score = peso + (puntaje * 2) + (prioridad * 5)
 
-    # Penalizar sweeps porque en tu historial reciente
-    # están entrando demasiado contra tendencia.
+    # Sweeps son los mejores del backtest
     if "liquidity sweep" in patron:
-        score -= 15
+        score += 18
 
-    if "pullback alcista" in patron:
-        score -= 35
+    # CHOCH bajista está flojo: 47.27%
+    if "choch bajista" in patron:
+        score -= 18
 
+    # CHOCH alcista se mantiene neutral
+    elif "choch alcista" in patron:
+        score += 0
+
+    # Pullback bajista mejoró, pero sigue débil
     if "pullback bajista" in patron:
-        score += 12
-
-    if "choch" in patron:
         score -= 12
 
-    if "continuación bajista" in patron or "continuacion bajista" in patron:
-        score += 10
-    # Penalizar reacciones en rango si no son muy fuertes.
-    if "reacción" in patron or "reaccion" in patron:
-        if puntaje < 22:
-            score -= 10
+    # Pullback alcista está cerca del límite, baja un poco prioridad
+    if "pullback alcista" in patron:
+        score -= 14
 
-    # Premiar señales realmente premium.
+    # Continuaciones no se pausan, pero quedan bien abajo
+    if "continuación" in patron or "continuacion" in patron:
+        if puntaje < 16:
+            score -= 35
+        else:
+            score -= 20
+
     if puntaje >= 23:
-        score += 8
+        score += 10
 
     if senal.get("calidad") == "A+":
-        score += 6
+        score += 8
 
     return score
 def motor_estrategias_profesional(ctx):
@@ -1729,6 +1733,11 @@ def motor_estrategias_profesional(ctx):
         call_reaccion
         and ctx["patron"] != -1
         and 30 <= rsi <= 56
+        and not (
+            ctx["tipo_mercado"] == "TENDENCIA_BAJISTA"
+            and ctx["estado_tendencia"].startswith("BAJISTA")
+            and ctx["liquidity_sweep"] != 1
+        )
         and (
             ctx["cerca_soporte"]
             or patron_call_ok
@@ -1838,7 +1847,8 @@ def motor_estrategias_profesional(ctx):
     if (
         ctx["choch"] == 1
         and ctx["ema_alcista"]
-        and 42 <= rsi <= 60.5
+        and 45 <= rsi <= 58
+        and ctx["fuerza_tendencia"] >= 62
         and (
             patron_call_ok
             or direccion_presion in ["ALCISTA", "COMPRA"]
@@ -1896,7 +1906,8 @@ def motor_estrategias_profesional(ctx):
     if (
         ctx["choch"] == -1
         and ctx["ema_bajista"]
-        and 36 <= rsi <= 58
+        and ctx["fuerza_tendencia"] >= 64
+        and 42 <= rsi <= 52
         and (
             patron_put_ok
             or direccion_presion in ["BAJISTA", "VENTA"]

@@ -49,7 +49,7 @@ def es_pullback_bajista_fuerte(senal):
     try:
         return (
             "pullback bajista" in str(senal.get("patron", "")).lower()
-            and senal.get("puntaje", 0) >= 18
+            and senal.get("puntaje", 0) >= 20
             and senal.get("prioridad", 0) >= 3
             and senal.get("tipo_mercado") == "TENDENCIA_BAJISTA"
             and senal.get("calidad_mercado") in ["LIMPIO", "NORMAL"]
@@ -1052,12 +1052,12 @@ def entrada_rapida_disponible(senal):
         )
         
         if not ok_punto:
-             if pullback_bajista_fuerte and (
-                 "vela verde sin rechazo real" in razon_punto.lower()
-                 or "precio demasiado abajo" in razon_punto.lower()
-             ):
-                 print("Entrada rápida flexible permitió punto pullback bajista:", activo, razon_punto)
-             else:
+            if pullback_bajista_fuerte and (
+                "precio demasiado abajo" in razon_punto.lower()
+              ):
+                print("Entrada rápida espera mejor punto pullback bajista:", activo, razon_punto)
+                return False
+            else:
                  print("Entrada rápida bloqueada:", activo, razon_punto)
                  return False
         actual = candles[-1]
@@ -1089,7 +1089,7 @@ def entrada_rapida_disponible(senal):
             return False
 
         if direccion == "put" and cerca_low and fuerza >= 0.68 and not senal_premium:
-            if pullback_bajista_fuerte and fuerza <= 0.78:
+            if pullback_bajista_fuerte and fuerza <= 0.62:
                 print("Entrada rápida flexible permitió PUT cerca del mínimo:", activo)
             else:
                 print("Entrada rápida cancelada:", activo, "PUT cerca del mínimo")
@@ -1110,10 +1110,7 @@ def entrada_rapida_disponible(senal):
         )
 
         if not ok_vela:
-            if (
-                contexto_fuerte
-                or pullback_bajista_fuerte
-            ) and (
+            if contexto_fuerte and "liquidity sweep" in str(senal.get("patron", "")).lower() and (
                 "sin recuperación" in razon_vela.lower()
                 or "sin rechazo" in razon_vela.lower()
             ):
