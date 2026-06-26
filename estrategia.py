@@ -9,7 +9,7 @@ import time
 import estado
 from contexto_mercado import detectar_tipo_mercado, diagnostico_maestro_mercado, validar_estrategia_por_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
 from utils import estrategia_en_cooldown,registrar_bloqueo
-
+from price_action_profesional import contexto_price_action_profesional
 def contexto_operacion(direccion, tendencia, estructura, patron, rechazo, zona_call, zona_put, rsi, extension):
     if direccion == "call":
         if patron == -1:
@@ -39,6 +39,7 @@ def contexto_operacion(direccion, tendencia, estructura, patron, rechazo, zona_c
 
 
 def detectar_estrategias_price_action(patron, nombre_patron, rechazo, nombre_rechazo, zona_call, zona_put, falsa_call, nombre_falsa_call, falsa_put, nombre_falsa_put, br_call, nombre_br_call, br_put, nombre_br_put, triple_soporte, triple_resistencia, entrada_pullback_call, entrada_pullback_put, micro, rsi):
+    
     senales_call = []
     senales_put = []
     if falsa_call == 1:
@@ -690,14 +691,29 @@ def evaluar_reaccion_en_zona(
             and mechas_inferiores >= 2
             and fuerza1 < 0.55
         )
-
+        pa_profesional = contexto_price_action_profesional(
+            opens,
+            closes,
+            highs,
+            lows,
+            soporte,
+            resistencia,
+            vol
+        )
         # =========================
         # PUT EN RESISTENCIA
         # =========================
         if direccion == "put":
             if not cerca_resistencia:
                 return False, "PUT sin cercanía real a resistencia"
-
+            if (
+                pa_profesional.get("direccion") == "PUT"
+                and pa_profesional.get("tipo") in [
+                    "RECHAZO_VENDEDOR_CONFIRMADO",
+                    "AGOTAMIENTO_ALCISTA_CONFIRMADO"
+                ]
+            ):
+                return True, "PUT válido por price action profesional: " + pa_profesional.get("razon", "")
             if cerca_soporte or posicion_rango <= 0.25:
                 return False, "PUT rechazado: soporte demasiado cerca"
 
@@ -718,7 +734,14 @@ def evaluar_reaccion_en_zona(
         if direccion == "call":
             if not cerca_soporte:
                 return False, "CALL sin cercanía real a soporte"
-
+            if (
+                pa_profesional.get("direccion") == "CALL"
+                and pa_profesional.get("tipo") in [
+                    "RECHAZO_COMPRADOR_CONFIRMADO",
+                    "AGOTAMIENTO_BAJISTA_CONFIRMADO"
+                ]
+            ):
+                return True, "CALL válido por price action profesional: " + pa_profesional.get("razon", "")
             if cerca_resistencia or posicion_rango >= 0.75:
                 return False, "CALL rechazado: resistencia demasiado cerca"
 
@@ -922,7 +945,7 @@ def registrar_zona_operada(activo, direccion, precio_zona, vol):
 
     except Exception:
         pass
-def crear_senal_profesional(activo, direccion, estrategia, puntaje, rsi, razones):
+def crear_senal_profesional(activo, direccion, estrategia, puntaje, rsi, razones, ctx=None):
     calidad, prioridad = clasificar_senal_profesional(puntaje, razones, estrategia, rsi)
 
     if prioridad <= 0:
@@ -949,9 +972,14 @@ def crear_senal_profesional(activo, direccion, estrategia, puntaje, rsi, razones
         "rsi": round(rsi, 2),
         "razon": ", ".join(razones),
         "calidad": calidad,
-        "prioridad": prioridad
+        "prioridad": prioridad,
+        "accion_precio": ctx.get("accion_precio", "SIN_DATOS") if ctx else "SIN_DATOS",
+        "razon_accion_precio": ctx.get("razon_accion_precio", "") if ctx else "",
+        "pa_tipo": ctx.get("pa_tipo", "SIN_DATOS") if ctx else "SIN_DATOS",
+        "pa_direccion": ctx.get("pa_direccion", "NEUTRA") if ctx else "NEUTRA",
+        "pa_fuerza": ctx.get("pa_fuerza", 0) if ctx else 0,
+        "pa_razon": ctx.get("pa_razon", "") if ctx else "",
     }
-
 def fuerza_patron_vela(nombre_patron):
     try:
         texto = str(nombre_patron).lower()
@@ -985,6 +1013,92 @@ def fuerza_patron_vela(nombre_patron):
     except Exception as e:
         print("Error fuerza patrón:", e)
         return 0, "error patrón"
+def leer_micro_contexto_profesional(ctx):
+    try:
+        opens = ctx["opens"]
+        closes = ctx["closes"]
+        highs = ctx["highs"]
+        lows = ctx["lows"]
+
+        if len(closes) < 20:
+            return {}
+
+        o = opens[-1]
+        c = closes[-1]
+        h = highs[-1]
+        l = lows[-1]
+
+        rango = h - l
+        cuerpo = abs(c - o)
+
+        if rango <= 0:
+            rango = 0.0000001
+
+        fuerza_cuerpo = cuerpo / rango
+        mecha_sup = h - max(o, c)
+        mecha_inf = min(o, c) - l
+
+        vela_verde = c > o
+        vela_roja = c < o
+
+        cierres_5 = closes[-5:]
+        subidas = sum(1 for i in range(1, len(cierres_5)) if cierres_5[i] > cierres_5[i - 1])
+        bajadas = sum(1 for i in range(1, len(cierres_5)) if cierres_5[i] < cierres_5[i - 1])
+
+        impulso_alcista = subidas >= 3 and vela_verde and fuerza_cuerpo >= 0.45
+        impulso_bajista = bajadas >= 3 and vela_roja and fuerza_cuerpo >= 0.45
+
+        rechazo_alcista_real = (
+            vela_verde
+            and mecha_inf >= rango * 0.35
+            and fuerza_cuerpo >= 0.25
+        )
+
+        rechazo_bajista_real = (
+            vela_roja
+            and mecha_sup >= rango * 0.35
+            and fuerza_cuerpo >= 0.25
+        )
+
+        vela_climax_alcista = (
+            vela_verde
+            and fuerza_cuerpo >= 0.75
+            and ctx.get("posicion_rango", 0.5) >= 0.70
+        )
+
+        vela_climax_bajista = (
+            vela_roja
+            and fuerza_cuerpo >= 0.75
+            and ctx.get("posicion_rango", 0.5) <= 0.30
+        )
+
+        presion_corta = "NEUTRA"
+
+        if subidas >= 3:
+            presion_corta = "ALCISTA"
+        elif bajadas >= 3:
+            presion_corta = "BAJISTA"
+
+        return {
+            "fuerza_cuerpo": round(fuerza_cuerpo, 4),
+            "mecha_sup_ratio": round(mecha_sup / rango, 4),
+            "mecha_inf_ratio": round(mecha_inf / rango, 4),
+            "vela_verde": vela_verde,
+            "vela_roja": vela_roja,
+            "impulso_alcista": impulso_alcista,
+            "impulso_bajista": impulso_bajista,
+            "rechazo_alcista_real": rechazo_alcista_real,
+            "rechazo_bajista_real": rechazo_bajista_real,
+            "vela_climax_alcista": vela_climax_alcista,
+            "vela_climax_bajista": vela_climax_bajista,
+            "presion_corta": presion_corta,
+            "subidas_5": subidas,
+            "bajadas_5": bajadas,
+        }
+
+    except Exception as e:
+        print("Error leyendo micro contexto:", e)
+        return {}
 def clasificar_senal_profesional(puntaje, razones, estrategia, rsi):
     texto = " | ".join(razones).lower()
     estrategia = estrategia.lower()
@@ -1262,6 +1376,35 @@ def leer_contexto_grafico(activo):
         mecha_superior_ultima = ultima_high - max(ultima_open, ultima_close)
         mecha_inferior_ultima = min(ultima_open, ultima_close) - ultima_low
 
+    micro_contexto = leer_micro_contexto_profesional({
+        "opens": opens,
+        "closes": closes,
+        "highs": highs,
+        "lows": lows,
+        "posicion_rango": posicion_rango
+    })
+    pa_profesional = contexto_price_action_profesional(
+       opens,
+       closes,
+       highs,
+       lows,
+       soporte,
+       resistencia,
+       vol
+    )
+    diagnostico_pa_ctx = diagnostico_accion_precio_zona(
+        "call",
+        opens,
+        closes,
+        highs,
+        lows,
+        soporte,
+        resistencia,
+        vol
+    )
+
+    accion_precio_base = diagnostico_pa_ctx.get("accion", "SIN_DATOS")
+    razon_accion_precio_base = diagnostico_pa_ctx.get("razon", "")
     return {
         "activo": activo,
         "opens": opens,
@@ -1348,6 +1491,27 @@ def leer_contexto_grafico(activo):
         "fuerza_ultima": fuerza_ultima,
         "mecha_superior_ultima": mecha_superior_ultima,
         "mecha_inferior_ultima": mecha_inferior_ultima,
+
+        "micro_contexto": micro_contexto,
+        "fuerza_cuerpo": micro_contexto.get("fuerza_cuerpo", 0),
+        "mecha_sup_ratio": micro_contexto.get("mecha_sup_ratio", 0),
+        "mecha_inf_ratio": micro_contexto.get("mecha_inf_ratio", 0),
+        "impulso_alcista": micro_contexto.get("impulso_alcista", False),
+        "impulso_bajista": micro_contexto.get("impulso_bajista", False),
+        "rechazo_alcista_real": micro_contexto.get("rechazo_alcista_real", False),
+        "rechazo_bajista_real": micro_contexto.get("rechazo_bajista_real", False),
+        "vela_climax_alcista": micro_contexto.get("vela_climax_alcista", False),
+        "vela_climax_bajista": micro_contexto.get("vela_climax_bajista", False),
+        "presion_corta": micro_contexto.get("presion_corta", "NEUTRA"),
+
+        "accion_precio": accion_precio_base,
+        "razon_accion_precio": razon_accion_precio_base,
+
+        "pa_profesional": pa_profesional,
+        "pa_direccion": pa_profesional.get("direccion", "NEUTRA"),
+        "pa_tipo": pa_profesional.get("tipo", "SIN_CONTEXTO_CLARO"),
+        "pa_fuerza": pa_profesional.get("fuerza", 0),
+        "pa_razon": pa_profesional.get("razon", ""),
     }
 def vela_contraria_reciente(ctx, direccion):
     try:
@@ -1441,34 +1605,42 @@ def peso_estrategia_profesional(patron):
     return 50
 def score_final_senal_profesional(senal):
     patron = str(senal.get("patron", "")).lower()
-
+    accion = str(senal.get("accion_precio", "")).upper()
+    direccion = str(senal.get("direccion", "")).lower()
+    pa_tipo = str(senal.get("pa_tipo", "")).upper()
+    pa_direccion = str(senal.get("pa_direccion", "")).upper()
     peso = peso_estrategia_profesional(patron)
     puntaje = senal.get("puntaje", 0)
     prioridad = senal.get("prioridad", 0)
 
     score = peso + (puntaje * 2) + (prioridad * 5)
 
+    # Rechazo real en zona correcta
+    if direccion == "call" and accion == "RECHAZO_COMPRADOR_SOPORTE":
+        score += 12
+
+    if direccion == "put" and accion == "RECHAZO_VENDEDOR_RESISTENCIA":
+        score += 12
+
     # Sweeps son los mejores del backtest
     if "liquidity sweep" in patron:
         score += 18
 
-    # CHOCH bajista está flojo: 47.27%
+    # CHOCH bajista sigue flojo
     if "choch bajista" in patron:
         score -= 18
 
-    # CHOCH alcista se mantiene neutral
     elif "choch alcista" in patron:
         score += 0
 
-    # Pullback bajista mejoró, pero sigue débil
+    # Pullbacks
     if "pullback bajista" in patron:
         score -= 12
 
-    # Pullback alcista está cerca del límite, baja un poco prioridad
     if "pullback alcista" in patron:
         score -= 14
 
-    # Continuaciones no se pausan, pero quedan bien abajo
+    # Continuaciones quedan abajo, pero no apagadas
     if "continuación" in patron or "continuacion" in patron:
         if puntaje < 16:
             score -= 35
@@ -1480,7 +1652,13 @@ def score_final_senal_profesional(senal):
 
     if senal.get("calidad") == "A+":
         score += 8
+    if direccion == "call" and pa_direccion == "CALL":
+        if pa_tipo in ["RECHAZO_COMPRADOR_CONFIRMADO", "AGOTAMIENTO_BAJISTA_CONFIRMADO"]:
+            score += 18
 
+    if direccion == "put" and pa_direccion == "PUT":
+        if pa_tipo in ["RECHAZO_VENDEDOR_CONFIRMADO", "AGOTAMIENTO_ALCISTA_CONFIRMADO"]:
+            score += 18
     return score
 def motor_estrategias_profesional(ctx):
     senales = []
@@ -1571,7 +1749,8 @@ def motor_estrategias_profesional(ctx):
                 "liquidity sweep alcista",
                 puntaje,
                 rsi,
-                razones
+                razones,
+                ctx
             )
         )
 
@@ -1625,7 +1804,8 @@ def motor_estrategias_profesional(ctx):
                 "liquidity sweep bajista",
                 puntaje,
                 rsi,
-                razones
+                razones,
+                ctx
             )
         )
 
@@ -1668,7 +1848,8 @@ def motor_estrategias_profesional(ctx):
                 "breakout retest alcista",
                 puntaje,
                 rsi,
-                razones
+                razones,
+                ctx
             )
         )
 
@@ -1711,7 +1892,8 @@ def motor_estrategias_profesional(ctx):
                 "breakout retest bajista",
                 puntaje,
                 rsi,
-                razones
+                razones,
+                ctx
             )
         )
 
@@ -1776,7 +1958,8 @@ def motor_estrategias_profesional(ctx):
                 "reacción compradora en soporte",
                 puntaje,
                 rsi,
-                razones
+                razones,
+                ctx
             )
         )
 
@@ -1836,7 +2019,8 @@ def motor_estrategias_profesional(ctx):
                 "reacción vendedora en resistencia",
                 puntaje,
                 rsi,
-                razones
+                razones,
+                ctx
             )
         )
 
@@ -1895,7 +2079,8 @@ def motor_estrategias_profesional(ctx):
                 "CHOCH alcista",
                 puntaje,
                 rsi,
-                razones
+                razones,                
+                ctx
             )
         )
 
@@ -1954,7 +2139,8 @@ def motor_estrategias_profesional(ctx):
                 "CHOCH bajista",
                 puntaje,
                 rsi,
-                razones
+                razones,
+                ctx
             )
         )
 
@@ -1971,6 +2157,9 @@ def motor_estrategias_profesional(ctx):
         and 42 <= rsi <= 58
         and not ctx["cerca_resistencia"]
         and ctx["posicion_rango"] <= 0.72
+        and not ctx.get("vela_climax_alcista", False)
+        and not ctx.get("rechazo_bajista_real", False)
+        and ctx.get("presion_corta", "NEUTRA") in ["ALCISTA", "NEUTRA"]
         and (
             ctx["rechazo"] == 1
             or ctx["patron"] == 1
@@ -2011,7 +2200,8 @@ def motor_estrategias_profesional(ctx):
                 "pullback alcista a EMA",
                 puntaje,
                 rsi,
-                razones
+                razones,
+                ctx
             )
         )
 
@@ -2060,7 +2250,8 @@ def motor_estrategias_profesional(ctx):
                 "pullback bajista a EMA",
                 puntaje,
                 rsi,
-                razones
+                razones,
+                ctx
             )
         )
 
@@ -2103,7 +2294,8 @@ def motor_estrategias_profesional(ctx):
                     "continuación alcista con tendencia",
                     puntaje,
                     rsi,
-                    razones
+                    razones,
+                    ctx
                 )
             )
 
@@ -2146,7 +2338,8 @@ def motor_estrategias_profesional(ctx):
                     "continuación bajista con tendencia",
                     puntaje,
                     rsi,
-                    razones
+                    razones,
+                    ctx
                 )
             )
 

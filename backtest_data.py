@@ -6,6 +6,7 @@ import estado
 from conexion import conectar
 from config import CANDLE_TIME
 
+from mercado import obtener_activos
 CARPETA_DATA = "data_backtest"
 VELAS_POR_ACTIVO = 1000
 TIPOS_BACKTEST = ["binary", "turbo"]
@@ -85,8 +86,9 @@ def descargar_velas_activo(tipo, activo):
 
 
 def obtener_activos_abiertos():
+    print("Solicitando mercados abiertos...")
     abiertos = estado.Iq.get_all_open_time()
-
+    print("Mercados abiertos recibidos")
     activos = []
 
     for tipo in TIPOS_BACKTEST:
@@ -122,9 +124,14 @@ def obtener_activos_abiertos():
 def main():
     conectar()
 
-    activos = obtener_activos_abiertos()
+    print("Actualizando activos/OPCODE...")
+    estado.Iq.update_ACTIVES_OPCODE()
+    print("Activos/OPCODE actualizados")
 
-    print("Activos abiertos compatibles encontrados:", len(activos))
+    print("Obteniendo TOP activos con lógica real del bot...")
+    activos = obtener_activos()
+
+    print("Activos seleccionados por el bot:", len(activos))
 
     descargados = 0
 
@@ -141,7 +148,6 @@ def main():
 
     print("Descarga terminada.")
     print("Archivos descargados:", descargados)
-
 
 if __name__ == "__main__":
     main()

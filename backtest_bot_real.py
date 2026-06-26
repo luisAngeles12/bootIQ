@@ -135,6 +135,11 @@ def resultado_binario(velas, index_entrada, direccion):
 
 def ejecutar_backtest(datasets):
     resultados = []
+
+    if not datasets:
+        print("No hay datasets cargados en data_backtest.")
+        return resultados
+
     max_len = min(len(d["velas"]) for d in datasets)
 
     total_rondas = len(range(180, max_len - 2, PASO_RONDA))
@@ -168,6 +173,7 @@ def ejecutar_backtest(datasets):
         senales_ronda = sorted(
             senales_ronda,
             key=lambda x: (
+                x.get("score_final", 0),
                 x.get("prioridad", 0),
                 x.get("puntaje", 0)
             ),
@@ -192,15 +198,32 @@ def ejecutar_backtest(datasets):
                 "patron": senal.get("patron", ""),
                 "puntaje": senal.get("puntaje", 0),
                 "prioridad": senal.get("prioridad", 0),
+                "score_final": senal.get("score_final", 0),
                 "calidad": senal.get("calidad", ""),
                 "rsi": senal.get("rsi", ""),
+
                 "tipo_mercado": senal.get("tipo_mercado", ""),
                 "calidad_mercado": senal.get("calidad_mercado", ""),
                 "score_mercado": senal.get("score_mercado", 0),
                 "estado_tendencia": senal.get("estado_tendencia", ""),
+                "fuerza_tendencia": senal.get("fuerza_tendencia", 0),
+                "direccion_tendencia": senal.get("direccion_tendencia", ""),
+
+                "accion_precio": senal.get("accion_precio", ""),
+                "razon_accion_precio": senal.get("razon_accion_precio", ""),
+                "pa_tipo": senal.get("pa_tipo", ""),
+                "pa_direccion": senal.get("pa_direccion", ""),
+                "pa_fuerza": senal.get("pa_fuerza", 0),
+                "pa_razon": senal.get("pa_razon", ""),
+
+                "ruptura_confirmada": senal.get("ruptura_confirmada", False),
+                "tipo_ruptura": senal.get("tipo_ruptura", ""),
+                "razon_ruptura": senal.get("razon_ruptura", ""),
+
                 "resultado": info_resultado["resultado"],
                 "precio_entrada": velas[idx]["close"],
                 "precio_cierre": velas[idx + 1]["close"],
+
                 "movimiento": info_resultado["movimiento"],
                 "distancia_resultado": info_resultado["distancia_resultado"],
                 "excursion_favor": info_resultado["excursion_favor"],
@@ -210,11 +233,11 @@ def ejecutar_backtest(datasets):
                 "close_siguiente": info_resultado["close_siguiente"],
                 "high_siguiente": info_resultado["high_siguiente"],
                 "low_siguiente": info_resultado["low_siguiente"],
+
                 "razon": senal.get("razon", ""),
             })
 
     return resultados
-
 
 def guardar_resultados(resultados):
     campos = [
@@ -225,16 +248,32 @@ def guardar_resultados(resultados):
         "patron",
         "puntaje",
         "prioridad",
+        "score_final",
         "calidad",
         "rsi",
+
         "tipo_mercado",
         "calidad_mercado",
         "score_mercado",
         "estado_tendencia",
+        "fuerza_tendencia",
+        "direccion_tendencia",
+
+        "accion_precio",
+        "razon_accion_precio",
+        "pa_tipo",
+        "pa_direccion",
+        "pa_fuerza",
+        "pa_razon",
+
+        "ruptura_confirmada",
+        "tipo_ruptura",
+        "razon_ruptura",
+
         "resultado",
         "precio_entrada",
-        "precio_entrada_original",
         "precio_cierre",
+
         "movimiento",
         "distancia_resultado",
         "excursion_favor",
@@ -244,7 +283,7 @@ def guardar_resultados(resultados):
         "close_siguiente",
         "high_siguiente",
         "low_siguiente",
-        "rango_siguiente",
+
         "razon",
     ]
 
@@ -252,7 +291,6 @@ def guardar_resultados(resultados):
         writer = csv.DictWriter(f, fieldnames=campos, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(resultados)
-
 
 def resumen_por_campo(resultados, campo):
     grupos = {}
@@ -294,9 +332,15 @@ def imprimir_resumen(resultados):
 
     for titulo, campo in [
         ("POR ESTRATEGIA", "patron"),
+        ("POR ACCION PRECIO", "accion_precio"),
+        ("POR PA PROFESIONAL", "pa_tipo"),
+        ("POR DIRECCION PA", "pa_direccion"),
+        ("POR RUPTURA", "tipo_ruptura"),
+        ("POR SCORE FINAL", "score_final"),
         ("POR TIPO", "tipo"),
         ("POR MERCADO", "tipo_mercado"),
         ("POR CALIDAD MERCADO", "calidad_mercado"),
+        ("POR TENDENCIA", "estado_tendencia"),
         ("POR ACTIVO", "activo"),
     ]:
         print("\n=====", titulo, "=====")
@@ -308,7 +352,6 @@ def imprimir_resumen(resultados):
                 "| loss:", loss,
                 "| winrate:", str(winrate) + "%"
             )
-
 
 def main():
     reset_estado()

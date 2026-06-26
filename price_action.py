@@ -262,6 +262,12 @@ def diagnostico_accion_precio_zona(
                     "razon": "acción precio: falsa ruptura alcista en resistencia"
                 }
 
+            if rechazo_comprador:
+                return {
+                    "accion": "RECHAZO_COMPRADOR_SOPORTE",
+                    "permite": True,
+                    "razon": "acción precio: rechazo comprador en soporte"
+                }
             if ruptura_alcista:
                 return {
                     "accion": "RUPTURA_ALCISTA_CONFIRMADA",
@@ -275,12 +281,6 @@ def diagnostico_accion_precio_zona(
                     "permite": True,
                     "requiere_pendiente": True,
                     "razon": "acción precio: CALL con resistencia cerca; decisión delegada a zonas"
-                }
-            if rechazo_comprador:
-                return {
-                    "accion": "RECHAZO_COMPRADOR_SOPORTE",
-                    "permite": True,
-                    "razon": "acción precio: rechazo comprador en soporte"
                 }
 
             return {
@@ -306,6 +306,12 @@ def diagnostico_accion_precio_zona(
                     "razon": "acción precio: falsa ruptura bajista en soporte"
                 }
 
+            if rechazo_vendedor:
+                return {
+                    "accion": "RECHAZO_VENDEDOR_RESISTENCIA",
+                    "permite": True,
+                    "razon": "acción precio: rechazo vendedor en resistencia"
+                }
             if ruptura_bajista:
                 return {
                     "accion": "RUPTURA_BAJISTA_CONFIRMADA",
@@ -319,13 +325,6 @@ def diagnostico_accion_precio_zona(
                     "permite": True,
                     "requiere_pendiente": True,
                     "razon": "acción precio: PUT con soporte cerca; decisión delegada a zonas"
-                }
-
-            if rechazo_vendedor:
-                return {
-                    "accion": "RECHAZO_VENDEDOR_RESISTENCIA",
-                    "permite": True,
-                    "razon": "acción precio: rechazo vendedor en resistencia"
                 }
 
             return {
