@@ -9,7 +9,7 @@ import time
 import estado
 from contexto_mercado import detectar_tipo_mercado, diagnostico_maestro_mercado, validar_estrategia_por_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
 from utils import estrategia_en_cooldown,registrar_bloqueo
-from price_action_profesional import contexto_price_action_profesional
+from price_action_profesional import contexto_price_action_profesional,rechazo_historico_inteligente
 def contexto_operacion(direccion, tendencia, estructura, patron, rechazo, zona_call, zona_put, rsi, extension):
     if direccion == "call":
         if patron == -1:
@@ -357,6 +357,7 @@ def filtro_fatiga_y_ubicacion(
 
 
 def memoria_operativa(activo, direccion, patron):
+    
     df = cargar_historial()
 
     if df is None:
@@ -700,6 +701,7 @@ def evaluar_reaccion_en_zona(
             resistencia,
             vol
         )
+       
         # =========================
         # PUT EN RESISTENCIA
         # =========================
@@ -1157,26 +1159,54 @@ def clasificar_senal_profesional(puntaje, razones, estrategia, rsi):
     if prioridad <= 0:
         return "C", 0
     return calidad, prioridad
-def detectar_cambio_estructura_choch(highs, lows, closes, lookback=10):
+def detectar_cambio_estructura_choch(highs, lows, closes, opens=None, lookback=10):
     try:
         if len(closes) < lookback + 4:
-            return 0, "sin cambio de estructura"
+            return 0, "sin datos suficientes para CHOCH"
 
         highs_previos = highs[-lookback-2:-2]
         lows_previos = lows[-lookback-2:-2]
 
+        ultimo_open = opens[-1] if opens else closes[-2]
         ultimo_close = closes[-1]
+        ultimo_high = highs[-1]
+        ultimo_low = lows[-1]
 
         max_prev = max(highs_previos)
         min_prev = min(lows_previos)
 
-        # CHOCH alcista
-        if ultimo_close > max_prev:
-            return 1, "CHOCH alcista: rompe estructura superior"
+        rango = ultimo_high - ultimo_low
+        cuerpo = abs(ultimo_close - ultimo_open)
 
-        # CHOCH bajista
+        if rango <= 0:
+            return 0, "rango inválido para CHOCH"
+
+        fuerza_cuerpo = cuerpo / rango
+
+        if fuerza_cuerpo < 0.45:
+            return 0, "CHOCH débil: cuerpo insuficiente"
+
+        if ultimo_close > max_prev:
+            fuerza_ruptura = (ultimo_close - max_prev) / rango
+
+            if fuerza_ruptura < 0.15:
+                return 0, "CHOCH alcista débil: ruptura pequeña"
+
+            if ultimo_close <= ultimo_open:
+                return 0, "CHOCH alcista inválido: vela no alcista"
+
+            return 1, "CHOCH alcista confirmado: ruptura con cuerpo"
+
         if ultimo_close < min_prev:
-            return -1, "CHOCH bajista: rompe estructura inferior"
+            fuerza_ruptura = (min_prev - ultimo_close) / rango
+
+            if fuerza_ruptura < 0.15:
+                return 0, "CHOCH bajista débil: ruptura pequeña"
+
+            if ultimo_close >= ultimo_open:
+                return 0, "CHOCH bajista inválido: vela no bajista"
+
+            return -1, "CHOCH bajista confirmado: ruptura con cuerpo"
 
         return 0, "sin cambio de estructura"
 
@@ -1339,7 +1369,7 @@ def leer_contexto_grafico(activo):
     )
 
     choch, nombre_choch = detectar_cambio_estructura_choch(
-        highs, lows, closes
+        highs, lows, closes, opens
     )
 
     puntos_patron_vela, razon_patron_vela = fuerza_patron_vela(nombre_patron)
@@ -1391,6 +1421,15 @@ def leer_contexto_grafico(activo):
        soporte,
        resistencia,
        vol
+    )
+    rechazo_hist = rechazo_historico_inteligente(
+        opens,
+        closes,
+        highs,
+        lows,
+        soporte,
+        resistencia,
+        vol
     )
     diagnostico_pa_ctx = diagnostico_accion_precio_zona(
         "call",
@@ -1512,6 +1551,11 @@ def leer_contexto_grafico(activo):
         "pa_tipo": pa_profesional.get("tipo", "SIN_CONTEXTO_CLARO"),
         "pa_fuerza": pa_profesional.get("fuerza", 0),
         "pa_razon": pa_profesional.get("razon", ""),
+        "rechazo_hist": rechazo_hist,
+        "rechazo_hist_direccion": rechazo_hist.get("direccion", "NEUTRA"),
+        "rechazo_hist_tipo": rechazo_hist.get("tipo", "SIN_RECHAZO_HISTORICO"),
+        "rechazo_hist_fuerza": rechazo_hist.get("fuerza", 0),
+        "rechazo_hist_razon": rechazo_hist.get("razon", ""),
     }
 def vela_contraria_reciente(ctx, direccion):
     try:
@@ -1628,7 +1672,7 @@ def score_final_senal_profesional(senal):
 
     # CHOCH bajista sigue flojo
     if "choch bajista" in patron:
-        score -= 18
+        score -= 0
 
     elif "choch alcista" in patron:
         score += 0
@@ -2024,25 +2068,30 @@ def motor_estrategias_profesional(ctx):
             )
         )
 
-    # =========================
+       # =========================
     # 7. CHOCH ALCISTA
-    # CHOCH ahora requiere contexto adicional.
+    # CHOCH con rechazo histórico inteligente
     # =========================
     if (
         ctx["choch"] == 1
         and ctx["ema_alcista"]
-        and 45 <= rsi <= 58
-        and ctx["fuerza_tendencia"] >= 62
-        and (
-            patron_call_ok
-            or direccion_presion in ["ALCISTA", "COMPRA"]
-            or ctx.get("br_call", 0) == 1
+        and 42 <= rsi <= 62
+        and ctx["fuerza_tendencia"] >= 45
+        and ctx.get("rechazo_hist_direccion", "NEUTRA") != "PUT"
+        and not (
+            ctx["cerca_resistencia"]
+            and ctx.get("br_call", 0) != 1
+            and ctx.get("pa_direccion", "NEUTRA") != "CALL"
+            and ctx.get("rechazo_hist_direccion", "NEUTRA") != "CALL"
         )
+        and ctx["posicion_rango"] <= 0.82
+        and not ctx.get("vela_climax_alcista", False)
+        and not ctx.get("rechazo_bajista_real", False)
         and (
-            ctx["rechazo"] == 1
-            or ctx["patron"] == 1
-            or ctx["cerca_soporte"]
-            or ctx.get("br_call", 0) == 1
+            direccion_presion in ["ALCISTA", "COMPRA", "NEUTRA"]
+            or ctx.get("pa_direccion", "NEUTRA") in ["CALL", "NEUTRA"]
+            or ctx.get("rechazo_hist_direccion", "NEUTRA") in ["CALL", "NEUTRA"]
+            or ctx.get("impulso_alcista", False)
         )
     ):
         puntaje = 16
@@ -2051,6 +2100,7 @@ def motor_estrategias_profesional(ctx):
             ctx["nombre_choch"],
             "EMA favorece compra",
             "CHOCH con contexto confirmado",
+            "rechazo histórico: " + ctx.get("rechazo_hist_razon", ""),
             "presión: " + razon_presion,
             "patrón contexto: " + razon_patron_call,
             "RSI: " + str(round(rsi, 2))
@@ -2064,6 +2114,10 @@ def motor_estrategias_profesional(ctx):
             puntaje += 2
             razones.append(ctx["nombre_rechazo"])
 
+        if ctx.get("rechazo_hist_direccion", "NEUTRA") == "CALL":
+            puntaje += 3
+            razones.append("rechazo comprador histórico confirmado")
+
         if ctx["patron"] == 1:
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
@@ -2072,6 +2126,14 @@ def motor_estrategias_profesional(ctx):
             puntaje += 3
             razones.append(ctx.get("nombre_br_call", "ruptura/retest alcista"))
 
+        if ctx.get("pa_direccion", "NEUTRA") == "CALL":
+            puntaje += 2
+            razones.append("price action profesional favorece CALL: " + ctx.get("pa_razon", ""))
+
+        if ctx.get("impulso_alcista", False):
+            puntaje += 1
+            razones.append("micro contexto: impulso alcista")
+
         senales.append(
             crear_senal_profesional(
                 activo,
@@ -2079,30 +2141,34 @@ def motor_estrategias_profesional(ctx):
                 "CHOCH alcista",
                 puntaje,
                 rsi,
-                razones,                
+                razones,
                 ctx
             )
         )
-
-    # =========================
+        # =========================
     # 8. CHOCH BAJISTA
-    # CHOCH ahora requiere contexto adicional.
+    # CHOCH con rechazo histórico inteligente
     # =========================
     if (
         ctx["choch"] == -1
         and ctx["ema_bajista"]
-        and ctx["fuerza_tendencia"] >= 64
-        and 42 <= rsi <= 52
-        and (
-            patron_put_ok
-            or direccion_presion in ["BAJISTA", "VENTA"]
-            or ctx.get("br_put", 0) == -1
+        and 38 <= rsi <= 58
+        and ctx["fuerza_tendencia"] >= 45
+        and ctx.get("rechazo_hist_direccion", "NEUTRA") != "CALL"
+        and not (
+            ctx["cerca_soporte"]
+            and ctx.get("br_put", 0) != -1
+            and ctx.get("pa_direccion", "NEUTRA") != "PUT"
+            and ctx.get("rechazo_hist_direccion", "NEUTRA") != "PUT"
         )
+        and ctx["posicion_rango"] >= 0.18
+        and not ctx.get("vela_climax_bajista", False)
+        and not ctx.get("rechazo_alcista_real", False)
         and (
-            ctx["rechazo"] == -1
-            or ctx["patron"] == -1
-            or ctx["cerca_resistencia"]
-            or ctx.get("br_put", 0) == -1
+            direccion_presion in ["BAJISTA", "VENTA", "NEUTRA"]
+            or ctx.get("pa_direccion", "NEUTRA") in ["PUT", "NEUTRA"]
+            or ctx.get("rechazo_hist_direccion", "NEUTRA") in ["PUT", "NEUTRA"]
+            or ctx.get("impulso_bajista", False)
         )
     ):
         puntaje = 16
@@ -2111,6 +2177,7 @@ def motor_estrategias_profesional(ctx):
             ctx["nombre_choch"],
             "EMA favorece venta",
             "CHOCH con contexto confirmado",
+            "rechazo histórico: " + ctx.get("rechazo_hist_razon", ""),
             "presión: " + razon_presion,
             "patrón contexto: " + razon_patron_put,
             "RSI: " + str(round(rsi, 2))
@@ -2124,6 +2191,10 @@ def motor_estrategias_profesional(ctx):
             puntaje += 2
             razones.append(ctx["nombre_rechazo"])
 
+        if ctx.get("rechazo_hist_direccion", "NEUTRA") == "PUT":
+            puntaje += 3
+            razones.append("rechazo vendedor histórico confirmado")
+
         if ctx["patron"] == -1:
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
@@ -2131,6 +2202,14 @@ def motor_estrategias_profesional(ctx):
         if ctx.get("br_put", 0) == -1:
             puntaje += 3
             razones.append(ctx.get("nombre_br_put", "ruptura/retest bajista"))
+
+        if ctx.get("pa_direccion", "NEUTRA") == "PUT":
+            puntaje += 2
+            razones.append("price action profesional favorece PUT: " + ctx.get("pa_razon", ""))
+
+        if ctx.get("impulso_bajista", False):
+            puntaje += 1
+            razones.append("micro contexto: impulso bajista")
 
         senales.append(
             crear_senal_profesional(

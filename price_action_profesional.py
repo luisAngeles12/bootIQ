@@ -330,3 +330,99 @@ def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resis
         "agotamiento": agotamiento,
         "razon": " | ".join([r for r in razones if r])
     }
+
+def rechazo_historico_inteligente(opens, closes, highs, lows, soporte, resistencia, vol, velas=6):
+    try:
+        if len(closes) < velas + 2:
+            return {
+                "direccion": "NEUTRA",
+                "tipo": "SIN_DATOS",
+                "fuerza": 0,
+                "razon": "rechazo histórico: velas insuficientes"
+            }
+
+        if vol <= 0:
+            vol = abs(closes[-1]) * 0.0001
+
+        rechazos_compradores = 0
+        rechazos_vendedores = 0
+        cierres_altos = 0
+        cierres_bajos = 0
+
+        for i in range(-velas, 0):
+            o = opens[i]
+            c = closes[i]
+            h = highs[i]
+            l = lows[i]
+
+            rango = h - l
+            if rango <= 0:
+                continue
+
+            cuerpo = abs(c - o)
+            mecha_sup = h - max(o, c)
+            mecha_inf = min(o, c) - l
+
+            cierre_pos = (c - l) / rango
+
+            cerca_soporte = abs(c - soporte) <= vol * 1.80 or abs(l - soporte) <= vol * 1.80
+            cerca_resistencia = abs(resistencia - c) <= vol * 1.80 or abs(resistencia - h) <= vol * 1.80
+
+            if cerca_soporte and mecha_inf / rango >= 0.35 and cierre_pos >= 0.55:
+                rechazos_compradores += 1
+
+            if cerca_resistencia and mecha_sup / rango >= 0.35 and cierre_pos <= 0.45:
+                rechazos_vendedores += 1
+
+            if cierre_pos >= 0.65:
+                cierres_altos += 1
+
+            if cierre_pos <= 0.35:
+                cierres_bajos += 1
+
+        if rechazos_compradores >= 2 and cierres_altos >= 2:
+            return {
+                "direccion": "CALL",
+                "tipo": "RECHAZO_COMPRADOR_HISTORICO",
+                "fuerza": rechazos_compradores,
+                "razon": "rechazo comprador confirmado por varias velas previas"
+            }
+
+        if rechazos_vendedores >= 2 and cierres_bajos >= 2:
+            return {
+                "direccion": "PUT",
+                "tipo": "RECHAZO_VENDEDOR_HISTORICO",
+                "fuerza": rechazos_vendedores,
+                "razon": "rechazo vendedor confirmado por varias velas previas"
+            }
+
+        if rechazos_compradores > rechazos_vendedores:
+            return {
+                "direccion": "CALL",
+                "tipo": "RECHAZO_COMPRADOR_DEBIL",
+                "fuerza": rechazos_compradores,
+                "razon": "hay rechazo comprador, pero no está plenamente confirmado"
+            }
+
+        if rechazos_vendedores > rechazos_compradores:
+            return {
+                "direccion": "PUT",
+                "tipo": "RECHAZO_VENDEDOR_DEBIL",
+                "fuerza": rechazos_vendedores,
+                "razon": "hay rechazo vendedor, pero no está plenamente confirmado"
+            }
+
+        return {
+            "direccion": "NEUTRA",
+            "tipo": "SIN_RECHAZO_HISTORICO",
+            "fuerza": 0,
+            "razon": "sin rechazo histórico dominante"
+        }
+
+    except Exception as e:
+        return {
+            "direccion": "ERROR",
+            "tipo": "ERROR",
+            "fuerza": 0,
+            "razon": "error rechazo histórico: " + str(e)
+        }
