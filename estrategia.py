@@ -10,6 +10,7 @@ import estado
 from contexto_mercado import detectar_tipo_mercado, diagnostico_maestro_mercado, validar_estrategia_por_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
 from utils import estrategia_en_cooldown,registrar_bloqueo
 from price_action_profesional import contexto_price_action_profesional,rechazo_historico_inteligente
+from motor_consenso import aplicar_consenso_senal
 def contexto_operacion(direccion, tendencia, estructura, patron, rechazo, zona_call, zona_put, rsi, extension):
     if direccion == "call":
         if patron == -1:
@@ -2093,6 +2094,11 @@ def motor_estrategias_profesional(ctx):
             or ctx.get("rechazo_hist_direccion", "NEUTRA") in ["CALL", "NEUTRA"]
             or ctx.get("impulso_alcista", False)
         )
+        and not (
+            ctx.get("accion_precio") == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA"
+            and ctx.get("pa_tipo") != "IMPULSO_ALCISTA_FUERTE"
+        )
+        and rsi <= 60
     ):
         puntaje = 16
         razones = [
@@ -2169,6 +2175,22 @@ def motor_estrategias_profesional(ctx):
             or ctx.get("pa_direccion", "NEUTRA") in ["PUT", "NEUTRA"]
             or ctx.get("rechazo_hist_direccion", "NEUTRA") in ["PUT", "NEUTRA"]
             or ctx.get("impulso_bajista", False)
+        )
+        and not (
+            ctx.get("accion_precio") == "PUT_SOPORTE_CERCA_SIN_RUPTURA"
+            and ctx.get("pa_tipo") == "SIN_CONTEXTO_CLARO"
+        )
+        and not (
+            ctx.get("accion_precio") == "PUT_SOPORTE_CERCA_SIN_RUPTURA"
+            and ctx.get("pa_tipo") in [
+                "AGOTAMIENTO_BAJISTA_CONFIRMADO",
+                "RECHAZO_COMPRADOR_CONFIRMADO"
+            ]
+        )
+        and not (
+            ctx.get("accion_precio") == "PUT_SOPORTE_CERCA_SIN_RUPTURA"
+            and rsi < 43
+            and ctx["fuerza_tendencia"] < 65
         )
     ):
         puntaje = 16
@@ -2428,8 +2450,8 @@ def motor_estrategias_profesional(ctx):
         return None
 
     for s in senales:
-        s["score_final"] = score_final_senal_profesional(s)
-
+        s = aplicar_consenso_senal(s, ctx)
+        s["score_final"] = score_final_senal_profesional(s) 
     senales = sorted(
         senales,
         key=lambda x: (
@@ -2442,7 +2464,7 @@ def motor_estrategias_profesional(ctx):
 
     print("RANKING DE SEÑALES:")
     for s in senales[:5]:
-        print(
+       print(
             s.get("activo", activo),
             "|",
             s.get("direccion"),
@@ -2452,11 +2474,149 @@ def motor_estrategias_profesional(ctx):
             s.get("puntaje"),
             "| prioridad:",
             s.get("prioridad"),
+            "| consenso:",
+            s.get("consenso"),
+            s.get("nivel_consenso"),
             "| score final:",
             s.get("score_final")
         )
 
     return senales
+
+def diagnosticar_base_estrategia(senal, ctx):
+    try:
+        patron = str(senal.get("patron", "")).lower()
+        direccion = str(senal.get("direccion", "")).lower()
+
+        accion_precio = senal.get("accion_precio", "SIN_DATOS")
+        pa_tipo = ctx.get("pa_tipo", "SIN_CONTEXTO_CLARO")
+        pa_direccion = ctx.get("pa_direccion", "NEUTRA")
+        pa_fuerza = ctx.get("pa_fuerza", 0)
+
+        tipo_mercado = ctx.get("tipo_mercado", "SIN_DATOS")
+        calidad_mercado = ctx.get("calidad_mercado", "SIN_DATOS")
+        fuerza_tendencia = ctx.get("fuerza_tendencia", 0)
+        direccion_tendencia = ctx.get("direccion_tendencia", "NEUTRA")
+
+        diagnostico = {
+            "base_estrategia": "MEDIA",
+            "riesgos_base": [],
+            "fortalezas_base": []
+        }
+
+        # =========================
+        # RIESGOS DE ZONA
+        # =========================
+        if direccion == "call" and accion_precio == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA":
+            diagnostico["riesgos_base"].append("CALL_RESISTENCIA_SIN_RUPTURA")
+
+        if direccion == "put" and accion_precio == "PUT_SOPORTE_CERCA_SIN_RUPTURA":
+            diagnostico["riesgos_base"].append("PUT_SOPORTE_SIN_RUPTURA")
+
+        # =========================
+        # PRICE ACTION A FAVOR / EN CONTRA
+        # =========================
+        if direccion == "call" and pa_direccion == "CALL":
+            diagnostico["fortalezas_base"].append("PA_A_FAVOR_CALL")
+
+        if direccion == "put" and pa_direccion == "PUT":
+            diagnostico["fortalezas_base"].append("PA_A_FAVOR_PUT")
+
+        if direccion == "call" and pa_direccion == "PUT":
+            diagnostico["riesgos_base"].append("PA_CONTRA_CALL")
+
+        if direccion == "put" and pa_direccion == "CALL":
+            diagnostico["riesgos_base"].append("PA_CONTRA_PUT")
+
+        if pa_tipo == "SIN_CONTEXTO_CLARO":
+            diagnostico["riesgos_base"].append("SIN_CONTEXTO_CLARO")
+
+        if pa_tipo in [
+            "RECHAZO_COMPRADOR_CONFIRMADO",
+            "RECHAZO_VENDEDOR_CONFIRMADO",
+            "AGOTAMIENTO_BAJISTA_CONFIRMADO",
+            "AGOTAMIENTO_ALCISTA_CONFIRMADO",
+            "IMPULSO_ALCISTA_FUERTE",
+            "IMPULSO_BAJISTA_FUERTE"
+        ]:
+            diagnostico["fortalezas_base"].append(pa_tipo)
+
+        # =========================
+        # TENDENCIA
+        # =========================
+        if direccion == "call" and direccion_tendencia == "ALCISTA":
+            diagnostico["fortalezas_base"].append("TENDENCIA_A_FAVOR")
+
+        if direccion == "put" and direccion_tendencia == "BAJISTA":
+            diagnostico["fortalezas_base"].append("TENDENCIA_A_FAVOR")
+
+        if direccion == "call" and direccion_tendencia == "BAJISTA":
+            diagnostico["riesgos_base"].append("CONTRA_TENDENCIA")
+
+        if direccion == "put" and direccion_tendencia == "ALCISTA":
+            diagnostico["riesgos_base"].append("CONTRA_TENDENCIA")
+
+        if fuerza_tendencia >= 65:
+            diagnostico["fortalezas_base"].append("FUERZA_TENDENCIA_ALTA")
+
+        if fuerza_tendencia < 45:
+            diagnostico["riesgos_base"].append("FUERZA_TENDENCIA_BAJA")
+
+        # =========================
+        # ESTRATEGIAS ESPECÍFICAS
+        # =========================
+        if "choch" in patron:
+            if fuerza_tendencia < 55:
+                diagnostico["riesgos_base"].append("CHOCH_CON_TENDENCIA_DEBIL")
+            if pa_direccion.upper() == direccion.upper():
+                diagnostico["fortalezas_base"].append("CHOCH_CON_PA_A_FAVOR")
+
+        if "liquidity sweep" in patron:
+            if "RECHAZO" in pa_tipo or "AGOTAMIENTO" in pa_tipo:
+                diagnostico["fortalezas_base"].append("SWEEP_CON_RECHAZO_AGOTAMIENTO")
+            if pa_tipo == "SIN_CONTEXTO_CLARO":
+                diagnostico["riesgos_base"].append("SWEEP_SIN_CONFIRMACION_PA")
+
+        if "pullback" in patron:
+            if fuerza_tendencia >= 60:
+                diagnostico["fortalezas_base"].append("PULLBACK_CON_TENDENCIA_VALIDA")
+            else:
+                diagnostico["riesgos_base"].append("PULLBACK_TENDENCIA_INSUFICIENTE")
+
+        if "reacción" in patron or "reaccion" in patron:
+            if "RECHAZO" in pa_tipo or "AGOTAMIENTO" in pa_tipo:
+                diagnostico["fortalezas_base"].append("REACCION_CONFIRMADA")
+            else:
+                diagnostico["riesgos_base"].append("REACCION_SIN_CONFIRMACION_FUERTE")
+
+        if "continuación" in patron or "continuacion" in patron:
+            if fuerza_tendencia >= 70:
+                diagnostico["fortalezas_base"].append("CONTINUACION_CON_TENDENCIA_FUERTE")
+            else:
+                diagnostico["riesgos_base"].append("CONTINUACION_TENDENCIA_INSUFICIENTE")
+
+        # =========================
+        # CLASIFICACIÓN FINAL
+        # =========================
+        riesgos = len(diagnostico["riesgos_base"])
+        fortalezas = len(diagnostico["fortalezas_base"])
+
+        if fortalezas >= 4 and riesgos <= 1:
+            diagnostico["base_estrategia"] = "FUERTE"
+        elif riesgos >= 3 and fortalezas <= 2:
+            diagnostico["base_estrategia"] = "DEBIL"
+        else:
+            diagnostico["base_estrategia"] = "MEDIA"
+
+        return diagnostico
+
+    except Exception as e:
+        return {
+            "base_estrategia": "ERROR",
+            "riesgos_base": ["ERROR_DIAGNOSTICO_BASE"],
+            "fortalezas_base": [],
+            "error_base": str(e)
+        }    
 def analizar_activo(activo):
     ctx = leer_contexto_grafico(activo)
 
@@ -2733,7 +2893,36 @@ def analizar_activo(activo):
 
         senal["accion_precio"] = diagnostico_pa.get("accion", "SIN_DATOS")
         senal["razon_accion_precio"] = diagnostico_pa.get("razon", "")
+       
+        diagnostico_base = diagnosticar_base_estrategia(senal, ctx)
 
+        senal["base_estrategia"] = diagnostico_base.get("base_estrategia", "MEDIA")
+        senal["riesgos_base"] = "|".join(diagnostico_base.get("riesgos_base", []))
+        senal["fortalezas_base"] = "|".join(diagnostico_base.get("fortalezas_base", []))
+
+        patron_lower = str(senal.get("patron", "")).lower()
+        accion_precio = senal.get("accion_precio", "")
+        
+        if "choch" in patron_lower:
+            if accion_precio in ["CALL_ZONA_NEUTRA", "PUT_ZONA_NEUTRA"]:
+                senal["puntaje"] += 2
+                senal["razon"] += ", CHOCH en zona neutra"
+        
+            if accion_precio == "RECHAZO_COMPRADOR_SOPORTE" and senal["direccion"] == "call":
+                senal["puntaje"] += 4
+                senal["razon"] += ", CHOCH apoyado por rechazo comprador en soporte"
+        
+            if accion_precio == "RECHAZO_VENDEDOR_RESISTENCIA" and senal["direccion"] == "put":
+                senal["puntaje"] += 4
+                senal["razon"] += ", CHOCH apoyado por rechazo vendedor en resistencia"
+        
+            if accion_precio == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA" and senal["direccion"] == "call":
+                senal["puntaje"] -= 3
+                senal["razon"] += ", CHOCH cerca de resistencia sin ruptura: penalizado, no bloqueado"
+        
+            if accion_precio == "PUT_SOPORTE_CERCA_SIN_RUPTURA" and senal["direccion"] == "put":
+                senal["puntaje"] -= 3
+                senal["razon"] += ", CHOCH cerca de soporte sin ruptura: penalizado, no bloqueado"
         if diagnostico_pa.get("permite") is False:
             razon_pa = diagnostico_pa.get("razon", "").lower()
 

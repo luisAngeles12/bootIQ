@@ -353,15 +353,29 @@ class IQ_Option:
                         self.OPEN_TIME[instruments_type][name]["open"] = True
 
     def get_all_open_time(self):
-        # all pairs openned
+        # Solo buscar mercados que usa BootIQ:
+        # binary, turbo y digital.
+        # Evitamos cfd/forex/crypto porque pueden congelar la API.
         self.OPEN_TIME = nested_dict(3, dict)
+    
         binary = threading.Thread(target=self.__get_binary_open)
         digital = threading.Thread(target=self.__get_digital_open)
-        other = threading.Thread(target=self.__get_other_open)
-
-        binary.start(), digital.start(), other.start()
-
-        binary.join(), digital.join(), other.join()
+    
+        binary.daemon = True
+        digital.daemon = True
+    
+        binary.start()
+        digital.start()
+    
+        binary.join(timeout=15)
+        digital.join(timeout=15)
+    
+        if binary.is_alive():
+            print("WARNING: binary/turbo open_time tardó demasiado")
+    
+        if digital.is_alive():
+            print("WARNING: digital open_time tardó demasiado")
+    
         return self.OPEN_TIME
 
     # --------for binary option detail

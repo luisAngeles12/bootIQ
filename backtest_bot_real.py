@@ -9,7 +9,7 @@ SALIDA = "backtest_bot_real_resultados.csv"
 
 MAX_ACTIVOS_ANALIZAR = 20
 LIMITE_DATASETS = 160
-PASO_RONDA = 3
+PASO_RONDA = 1
 
 
 def leer_csv_velas(ruta):
@@ -199,6 +199,12 @@ def ejecutar_backtest(datasets):
                 "puntaje": senal.get("puntaje", 0),
                 "prioridad": senal.get("prioridad", 0),
                 "score_final": senal.get("score_final", 0),
+
+                #  ================consenso==================
+                "consenso": senal.get("consenso", 0),
+                "nivel_consenso": senal.get("nivel_consenso", ""),
+                "ajuste_consenso": senal.get("ajuste_consenso", 0),
+                "razones_consenso": senal.get("razones_consenso", ""),
                 "calidad": senal.get("calidad", ""),
                 "rsi": senal.get("rsi", ""),
 
@@ -215,6 +221,13 @@ def ejecutar_backtest(datasets):
                 "pa_direccion": senal.get("pa_direccion", ""),
                 "pa_fuerza": senal.get("pa_fuerza", 0),
                 "pa_razon": senal.get("pa_razon", ""),
+
+                # =========================
+                # NUEVO DIAGNOSTICO BASE
+                # =========================
+                "base_estrategia": senal.get("base_estrategia", ""),
+                "riesgos_base": senal.get("riesgos_base", ""),
+                "fortalezas_base": senal.get("fortalezas_base", ""),
 
                 "ruptura_confirmada": senal.get("ruptura_confirmada", False),
                 "tipo_ruptura": senal.get("tipo_ruptura", ""),
@@ -249,6 +262,10 @@ def guardar_resultados(resultados):
         "puntaje",
         "prioridad",
         "score_final",
+        "consenso",
+        "nivel_consenso",
+        "ajuste_consenso",
+        "razones_consenso",
         "calidad",
         "rsi",
 
@@ -265,6 +282,13 @@ def guardar_resultados(resultados):
         "pa_direccion",
         "pa_fuerza",
         "pa_razon",
+
+        # =========================
+        # NUEVO DIAGNOSTICO BASE
+        # =========================
+        "base_estrategia",
+        "riesgos_base",
+        "fortalezas_base",
 
         "ruptura_confirmada",
         "tipo_ruptura",
@@ -286,7 +310,6 @@ def guardar_resultados(resultados):
 
         "razon",
     ]
-
     with open(SALIDA, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=campos, extrasaction="ignore")
         writer.writeheader()
@@ -314,7 +337,51 @@ def resumen_por_campo(resultados, campo):
 
     return sorted(filas, key=lambda x: x[4], reverse=True)
 
+def resumen_por_lista(resultados, campo):
+    grupos = {}
 
+    for r in resultados:
+        valor = r.get(campo, "")
+
+        if not valor:
+            continue
+
+        items = str(valor).split("|")
+
+        for item in items:
+            item = item.strip()
+
+            if not item:
+                continue
+
+            if item not in grupos:
+                grupos[item] = {"total": 0, "win": 0}
+
+            grupos[item]["total"] += 1
+
+            if r["resultado"] == "WIN":
+                grupos[item]["win"] += 1
+
+    filas = []
+
+    for clave, d in grupos.items():
+        wr = round((d["win"] / d["total"]) * 100, 2) if d["total"] else 0
+        filas.append((clave, d["total"], d["win"], d["total"] - d["win"], wr))
+
+    return sorted(filas, key=lambda x: x[1], reverse=True)
+
+
+def imprimir_tabla_resumen(titulo, filas, limite=20):
+    print("\n=====", titulo, "=====")
+
+    for clave, total, win, loss, winrate in filas[:limite]:
+        print(
+            clave,
+            "| total:", total,
+            "| win:", win,
+            "| loss:", loss,
+            "| winrate:", str(winrate) + "%"
+        )
 def imprimir_resumen(resultados):
     total = len(resultados)
     wins = sum(1 for r in resultados if r["resultado"] == "WIN")
@@ -332,27 +399,36 @@ def imprimir_resumen(resultados):
 
     for titulo, campo in [
         ("POR ESTRATEGIA", "patron"),
+        ("POR BASE ESTRATEGIA", "base_estrategia"),
         ("POR ACCION PRECIO", "accion_precio"),
         ("POR PA PROFESIONAL", "pa_tipo"),
         ("POR DIRECCION PA", "pa_direccion"),
         ("POR RUPTURA", "tipo_ruptura"),
         ("POR SCORE FINAL", "score_final"),
+        ("POR NIVEL CONSENSO", "nivel_consenso"),
         ("POR TIPO", "tipo"),
         ("POR MERCADO", "tipo_mercado"),
         ("POR CALIDAD MERCADO", "calidad_mercado"),
         ("POR TENDENCIA", "estado_tendencia"),
         ("POR ACTIVO", "activo"),
     ]:
-        print("\n=====", titulo, "=====")
-        for clave, total, win, loss, winrate in resumen_por_campo(resultados, campo)[:20]:
-            print(
-                clave,
-                "| total:", total,
-                "| win:", win,
-                "| loss:", loss,
-                "| winrate:", str(winrate) + "%"
-            )
+        imprimir_tabla_resumen(
+            titulo,
+            resumen_por_campo(resultados, campo),
+            limite=20
+        )
 
+    imprimir_tabla_resumen(
+        "POR RIESGOS BASE",
+        resumen_por_lista(resultados, "riesgos_base"),
+        limite=30
+    )
+
+    imprimir_tabla_resumen(
+        "POR FORTALEZAS BASE",
+        resumen_por_lista(resultados, "fortalezas_base"),
+        limite=30
+    )
 def main():
     reset_estado()
 

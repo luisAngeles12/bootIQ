@@ -5,11 +5,25 @@ import os
 import estado
 from conexion import conectar
 from config import CANDLE_TIME
-
 from mercado import obtener_activos
+
 CARPETA_DATA = "data_backtest"
 VELAS_POR_ACTIVO = 1000
-TIPOS_BACKTEST = ["binary", "turbo"]
+MIN_VELAS_VALIDAS = 200
+ESPERA_ENTRE_DESCARGAS = 0.35
+
+
+def limpiar_data_backtest():
+    os.makedirs(CARPETA_DATA, exist_ok=True)
+
+    eliminados = 0
+
+    for archivo in os.listdir(CARPETA_DATA):
+        if archivo.endswith(".csv"):
+            os.remove(os.path.join(CARPETA_DATA, archivo))
+            eliminados += 1
+
+    print("data_backtest limpiada. Archivos eliminados:", eliminados, flush=True)
 
 
 def activo_compatible(activo):
@@ -30,6 +44,8 @@ def guardar_velas_csv(tipo, activo, candles):
 
     nombre_seguro = activo.replace("/", "_")
     ruta = os.path.join(CARPETA_DATA, f"{tipo}_{nombre_seguro}.csv")
+
+    candles = sorted(candles, key=lambda x: x["from"])
 
     with open(ruta, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
@@ -54,15 +70,19 @@ def guardar_velas_csv(tipo, activo, candles):
                 c.get("close"),
                 c.get("max"),
                 c.get("min"),
-                c.get("volume", 0)
+                c.get("volume", 0),
             ])
 
-    print("Guardado:", ruta, "| velas:", len(candles))
+    print("Guardado:", ruta, "| velas:", len(candles), flush=True)
 
 
 def descargar_velas_activo(tipo, activo):
+    if not activo_compatible(activo):
+        print("Activo incompatible:", tipo, activo, flush=True)
+        return False
+
     try:
-        print("Descargando:", tipo, activo)
+        print("Descargando:", tipo, activo, "| velas:", VELAS_POR_ACTIVO, flush=True)
 
         candles = estado.Iq.get_candles(
             activo,
@@ -71,67 +91,30 @@ def descargar_velas_activo(tipo, activo):
             time.time()
         )
 
-        if not candles or len(candles) < 200:
-            print("Sin suficientes velas:", tipo, activo)
+        if not candles or len(candles) < MIN_VELAS_VALIDAS:
+            print("Sin suficientes velas:", tipo, activo, "| recibidas:", len(candles) if candles else 0, flush=True)
             return False
-
-        candles = sorted(candles, key=lambda x: x["from"])
 
         guardar_velas_csv(tipo, activo, candles)
         return True
 
     except Exception as e:
-        print("Error descargando", tipo, activo, e)
+        print("Error descargando", tipo, activo, e, flush=True)
         return False
 
 
-def obtener_activos_abiertos():
-    print("Solicitando mercados abiertos...")
-    abiertos = estado.Iq.get_all_open_time()
-    print("Mercados abiertos recibidos")
-    activos = []
-
-    for tipo in TIPOS_BACKTEST:
-        mercados = abiertos.get(tipo, {})
-
-        for activo, info in mercados.items():
-            if not info.get("open", False):
-                continue
-
-            if not activo_compatible(activo):
-                continue
-
-            activos.append({
-                "tipo": tipo,
-                "activo": activo
-            })
-
-    activos_unicos = []
-    vistos = set()
-
-    for item in activos:
-        clave = item["tipo"] + "_" + item["activo"]
-
-        if clave in vistos:
-            continue
-
-        vistos.add(clave)
-        activos_unicos.append(item)
-
-    return activos_unicos
-
-
 def main():
+    print("1. Iniciando backtest_data", flush=True)
+
     conectar()
+    print("2. Conectado", flush=True)
 
-    print("Actualizando activos/OPCODE...")
-    estado.Iq.update_ACTIVES_OPCODE()
-    print("Activos/OPCODE actualizados")
+    limpiar_data_backtest()
+    print("3. Carpeta lista", flush=True)
 
-    print("Obteniendo TOP activos con lógica real del bot...")
+    print("4. Obteniendo activos con la lógica REAL del bot...", flush=True)
     activos = obtener_activos()
-
-    print("Activos seleccionados por el bot:", len(activos))
+    print("5. Activos seleccionados:", len(activos), flush=True)
 
     descargados = 0
 
@@ -144,10 +127,12 @@ def main():
         if ok:
             descargados += 1
 
-        time.sleep(0.35)
+        time.sleep(ESPERA_ENTRE_DESCARGAS)
 
-    print("Descarga terminada.")
-    print("Archivos descargados:", descargados)
+    print("Descarga terminada.", flush=True)
+    print("Archivos descargados:", descargados, flush=True)
+    print("Carpeta:", CARPETA_DATA, flush=True)
+
 
 if __name__ == "__main__":
     main()
