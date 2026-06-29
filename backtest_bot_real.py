@@ -3,6 +3,7 @@ import os
 
 import estado
 import estrategia
+from evaluador_fase4 import evaluar_senal_fase4
 
 CARPETA_DATA = "data_backtest"
 SALIDA = "backtest_bot_real_resultados.csv"
@@ -179,11 +180,19 @@ def ejecutar_backtest(datasets):
             ),
             reverse=True
         )
-
+        if ronda % 100 == 0:
+            print(
+                "Ronda:",
+                ronda,
+                "Señales:",
+                len(senales_ronda)
+            )
         for senal in senales_ronda[:MAX_ACTIVOS_ANALIZAR]:
             velas = senal["_velas"]
             idx = senal["_index"]
-
+        
+            evaluacion_fase4 = evaluar_senal_fase4(senal)
+        
             info_resultado = resultado_binario(
                 velas,
                 idx,
@@ -232,6 +241,14 @@ def ejecutar_backtest(datasets):
                 "ruptura_confirmada": senal.get("ruptura_confirmada", False),
                 "tipo_ruptura": senal.get("tipo_ruptura", ""),
                 "razon_ruptura": senal.get("razon_ruptura", ""),
+                 
+                "fase4_evaluada": evaluacion_fase4.get("fase4_evaluada", False),
+                "fase4_permitir_operacion": evaluacion_fase4.get("fase4_permitir_operacion", True),
+                "fase4_modo": evaluacion_fase4.get("fase4_modo", ""),
+                "fase4_confianza": evaluacion_fase4.get("fase4_confianza", 50.0),
+                "fase4_decision": evaluacion_fase4.get("fase4_decision", ""),
+                "fase4_debe_bloquear": evaluacion_fase4.get("fase4_debe_bloquear", False),
+                "fase4_motivo": evaluacion_fase4.get("fase4_motivo", ""),
 
                 "resultado": info_resultado["resultado"],
                 "precio_entrada": velas[idx]["close"],
@@ -293,6 +310,14 @@ def guardar_resultados(resultados):
         "ruptura_confirmada",
         "tipo_ruptura",
         "razon_ruptura",
+        
+        "fase4_evaluada",
+        "fase4_permitir_operacion",
+        "fase4_modo",
+        "fase4_confianza",
+        "fase4_decision",
+        "fase4_debe_bloquear",
+        "fase4_motivo",
 
         "resultado",
         "precio_entrada",
@@ -382,6 +407,56 @@ def imprimir_tabla_resumen(titulo, filas, limite=20):
             "| loss:", loss,
             "| winrate:", str(winrate) + "%"
         )
+
+def imprimir_resumen_fase4(resultados):
+    if not resultados:
+        return
+
+    evaluadas = [r for r in resultados if str(r.get("fase4_evaluada", "")).lower() == "true" or r.get("fase4_evaluada") is True]
+
+    permitidas = [
+        r for r in resultados
+        if str(r.get("fase4_permitir_operacion", "")).lower() == "true"
+        or r.get("fase4_permitir_operacion") is True
+    ]
+
+    bloqueadas = [
+        r for r in resultados
+        if str(r.get("fase4_debe_bloquear", "")).lower() == "true"
+        or r.get("fase4_debe_bloquear") is True
+    ]
+
+    def calcular_wr(filas):
+        total = len(filas)
+        wins = sum(1 for r in filas if r.get("resultado") == "WIN")
+        losses = total - wins
+        wr = round((wins / total) * 100, 2) if total else 0
+        return total, wins, losses, wr
+
+    total_original, wins_original, losses_original, wr_original = calcular_wr(resultados)
+    total_permitidas, wins_permitidas, losses_permitidas, wr_permitidas = calcular_wr(permitidas)
+    total_bloqueadas, wins_bloqueadas, losses_bloqueadas, wr_bloqueadas = calcular_wr(bloqueadas)
+
+    precision_bloqueo = round((losses_bloqueadas / total_bloqueadas) * 100, 2) if total_bloqueadas else 0
+
+    print("\n===== IMPACTO FASE 4 =====")
+    print("Operaciones originales:", total_original)
+    print("WIN originales:", wins_original)
+    print("LOSS originales:", losses_original)
+    print("Winrate original:", str(wr_original) + "%")
+    print("----------------------------")
+    print("Operaciones evaluadas Fase 4:", len(evaluadas))
+    print("Permitidas por Fase 4:", total_permitidas)
+    print("WIN permitidas:", wins_permitidas)
+    print("LOSS permitidas:", losses_permitidas)
+    print("Winrate permitidas:", str(wr_permitidas) + "%")
+    print("----------------------------")
+    print("Bloqueadas por Fase 4:", total_bloqueadas)
+    print("WIN bloqueadas:", wins_bloqueadas)
+    print("LOSS bloqueadas:", losses_bloqueadas)
+    print("Winrate bloqueadas:", str(wr_bloqueadas) + "%")
+    print("Precisión del bloqueo:", str(precision_bloqueo) + "%")
+    print("==========================\n")
 def imprimir_resumen(resultados):
     total = len(resultados)
     wins = sum(1 for r in resultados if r["resultado"] == "WIN")
@@ -396,7 +471,7 @@ def imprimir_resumen(resultados):
     print("Perdidas:", losses)
     print("Winrate:", wr, "%")
     print("============================\n")
-
+    imprimir_resumen_fase4(resultados)
     for titulo, campo in [
         ("POR ESTRATEGIA", "patron"),
         ("POR BASE ESTRATEGIA", "base_estrategia"),

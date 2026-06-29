@@ -1,0 +1,1518 @@
+{
+    "version": "4.1",
+    "descripcion": "Base de conocimiento estadística generada desde auditoría de backtest.",
+    "ultima_actualizacion": "2026-06-28 20:03:16",
+    "min_muestra_usable": 5,
+    "niveles": {
+        "nivel_1_estrategia": {
+            "campos": [
+                "patron"
+            ],
+            "fuertes": {},
+            "debiles": {
+                "patron:pullback_alcista_a_ema": {
+                    "clave": "patron:pullback_alcista_a_ema",
+                    "nivel": "nivel_1_estrategia",
+                    "campos": [
+                        "patron"
+                    ],
+                    "total": 23,
+                    "wins": 8,
+                    "losses": 15,
+                    "winrate": 34.78,
+                    "confianza_muestra": "ALTA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.848,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:pullback_bajista_a_ema": {
+                    "clave": "patron:pullback_bajista_a_ema",
+                    "nivel": "nivel_1_estrategia",
+                    "campos": [
+                        "patron"
+                    ],
+                    "total": 18,
+                    "wins": 6,
+                    "losses": 12,
+                    "winrate": 33.33,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.833,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                }
+            },
+            "neutras": {
+                "patron:reaccion_vendedora_en_resistencia": {
+                    "clave": "patron:reaccion_vendedora_en_resistencia",
+                    "nivel": "nivel_1_estrategia",
+                    "campos": [
+                        "patron"
+                    ],
+                    "total": 20,
+                    "wins": 12,
+                    "losses": 8,
+                    "winrate": 60.0,
+                    "confianza_muestra": "ALTA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:choch_bajista": {
+                    "clave": "patron:choch_bajista",
+                    "nivel": "nivel_1_estrategia",
+                    "campos": [
+                        "patron"
+                    ],
+                    "total": 45,
+                    "wins": 26,
+                    "losses": 19,
+                    "winrate": 57.78,
+                    "confianza_muestra": "ALTA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_bajista": {
+                    "clave": "patron:liquidity_sweep_bajista",
+                    "nivel": "nivel_1_estrategia",
+                    "campos": [
+                        "patron"
+                    ],
+                    "total": 43,
+                    "wins": 22,
+                    "losses": 21,
+                    "winrate": 51.16,
+                    "confianza_muestra": "ALTA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_alcista": {
+                    "clave": "patron:liquidity_sweep_alcista",
+                    "nivel": "nivel_1_estrategia",
+                    "campos": [
+                        "patron"
+                    ],
+                    "total": 57,
+                    "wins": 27,
+                    "losses": 30,
+                    "winrate": 47.37,
+                    "confianza_muestra": "ALTA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:choch_alcista": {
+                    "clave": "patron:choch_alcista",
+                    "nivel": "nivel_1_estrategia",
+                    "campos": [
+                        "patron"
+                    ],
+                    "total": 13,
+                    "wins": 8,
+                    "losses": 5,
+                    "winrate": 61.54,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:reaccion_compradora_en_soporte": {
+                    "clave": "patron:reaccion_compradora_en_soporte",
+                    "nivel": "nivel_1_estrategia",
+                    "campos": [
+                        "patron"
+                    ],
+                    "total": 11,
+                    "wins": 6,
+                    "losses": 5,
+                    "winrate": 54.55,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                }
+            }
+        },
+        "nivel_2_estrategia_direccion": {
+            "campos": [
+                "patron",
+                "direccion"
+            ],
+            "fuertes": {},
+            "debiles": {
+                "patron:pullback_alcista_a_ema + direccion:call": {
+                    "clave": "patron:pullback_alcista_a_ema + direccion:call",
+                    "nivel": "nivel_2_estrategia_direccion",
+                    "campos": [
+                        "patron",
+                        "direccion"
+                    ],
+                    "total": 23,
+                    "wins": 8,
+                    "losses": 15,
+                    "winrate": 34.78,
+                    "confianza_muestra": "ALTA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.848,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:pullback_bajista_a_ema + direccion:put": {
+                    "clave": "patron:pullback_bajista_a_ema + direccion:put",
+                    "nivel": "nivel_2_estrategia_direccion",
+                    "campos": [
+                        "patron",
+                        "direccion"
+                    ],
+                    "total": 18,
+                    "wins": 6,
+                    "losses": 12,
+                    "winrate": 33.33,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.833,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                }
+            },
+            "neutras": {
+                "patron:reaccion_vendedora_en_resistencia + direccion:put": {
+                    "clave": "patron:reaccion_vendedora_en_resistencia + direccion:put",
+                    "nivel": "nivel_2_estrategia_direccion",
+                    "campos": [
+                        "patron",
+                        "direccion"
+                    ],
+                    "total": 20,
+                    "wins": 12,
+                    "losses": 8,
+                    "winrate": 60.0,
+                    "confianza_muestra": "ALTA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:choch_bajista + direccion:put": {
+                    "clave": "patron:choch_bajista + direccion:put",
+                    "nivel": "nivel_2_estrategia_direccion",
+                    "campos": [
+                        "patron",
+                        "direccion"
+                    ],
+                    "total": 45,
+                    "wins": 26,
+                    "losses": 19,
+                    "winrate": 57.78,
+                    "confianza_muestra": "ALTA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_bajista + direccion:put": {
+                    "clave": "patron:liquidity_sweep_bajista + direccion:put",
+                    "nivel": "nivel_2_estrategia_direccion",
+                    "campos": [
+                        "patron",
+                        "direccion"
+                    ],
+                    "total": 43,
+                    "wins": 22,
+                    "losses": 21,
+                    "winrate": 51.16,
+                    "confianza_muestra": "ALTA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_alcista + direccion:call": {
+                    "clave": "patron:liquidity_sweep_alcista + direccion:call",
+                    "nivel": "nivel_2_estrategia_direccion",
+                    "campos": [
+                        "patron",
+                        "direccion"
+                    ],
+                    "total": 57,
+                    "wins": 27,
+                    "losses": 30,
+                    "winrate": 47.37,
+                    "confianza_muestra": "ALTA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:choch_alcista + direccion:call": {
+                    "clave": "patron:choch_alcista + direccion:call",
+                    "nivel": "nivel_2_estrategia_direccion",
+                    "campos": [
+                        "patron",
+                        "direccion"
+                    ],
+                    "total": 13,
+                    "wins": 8,
+                    "losses": 5,
+                    "winrate": 61.54,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:reaccion_compradora_en_soporte + direccion:call": {
+                    "clave": "patron:reaccion_compradora_en_soporte + direccion:call",
+                    "nivel": "nivel_2_estrategia_direccion",
+                    "campos": [
+                        "patron",
+                        "direccion"
+                    ],
+                    "total": 11,
+                    "wins": 6,
+                    "losses": 5,
+                    "winrate": 54.55,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                }
+            }
+        },
+        "nivel_3_estrategia_mercado": {
+            "campos": [
+                "patron",
+                "direccion",
+                "tipo_mercado"
+            ],
+            "fuertes": {
+                "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:tendencia_bajista": {
+                    "clave": "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:tendencia_bajista",
+                    "nivel": "nivel_3_estrategia_mercado",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado"
+                    ],
+                    "total": 9,
+                    "wins": 7,
+                    "losses": 2,
+                    "winrate": 77.78,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "FUERTE",
+                    "peso": 1.278,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                }
+            },
+            "debiles": {
+                "patron:pullback_alcista_a_ema + direccion:call + tipo_mercado:tendencia_alcista": {
+                    "clave": "patron:pullback_alcista_a_ema + direccion:call + tipo_mercado:tendencia_alcista",
+                    "nivel": "nivel_3_estrategia_mercado",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado"
+                    ],
+                    "total": 23,
+                    "wins": 8,
+                    "losses": 15,
+                    "winrate": 34.78,
+                    "confianza_muestra": "ALTA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.848,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:rango": {
+                    "clave": "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:rango",
+                    "nivel": "nivel_3_estrategia_mercado",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado"
+                    ],
+                    "total": 14,
+                    "wins": 6,
+                    "losses": 8,
+                    "winrate": 42.86,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.929,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:pullback_bajista_a_ema + direccion:put + tipo_mercado:tendencia_bajista": {
+                    "clave": "patron:pullback_bajista_a_ema + direccion:put + tipo_mercado:tendencia_bajista",
+                    "nivel": "nivel_3_estrategia_mercado",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado"
+                    ],
+                    "total": 18,
+                    "wins": 6,
+                    "losses": 12,
+                    "winrate": 33.33,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.833,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:rango": {
+                    "clave": "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:rango",
+                    "nivel": "nivel_3_estrategia_mercado",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado"
+                    ],
+                    "total": 11,
+                    "wins": 3,
+                    "losses": 8,
+                    "winrate": 27.27,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.773,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                }
+            },
+            "neutras": {
+                "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista": {
+                    "clave": "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista",
+                    "nivel": "nivel_3_estrategia_mercado",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado"
+                    ],
+                    "total": 43,
+                    "wins": 25,
+                    "losses": 18,
+                    "winrate": 58.14,
+                    "confianza_muestra": "ALTA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:tendencia_alcista": {
+                    "clave": "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:tendencia_alcista",
+                    "nivel": "nivel_3_estrategia_mercado",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado"
+                    ],
+                    "total": 23,
+                    "wins": 12,
+                    "losses": 11,
+                    "winrate": 52.17,
+                    "confianza_muestra": "ALTA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_bajista": {
+                    "clave": "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_bajista",
+                    "nivel": "nivel_3_estrategia_mercado",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado"
+                    ],
+                    "total": 33,
+                    "wins": 15,
+                    "losses": 18,
+                    "winrate": 45.45,
+                    "confianza_muestra": "ALTA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:choch_alcista + direccion:call + tipo_mercado:tendencia_alcista": {
+                    "clave": "patron:choch_alcista + direccion:call + tipo_mercado:tendencia_alcista",
+                    "nivel": "nivel_3_estrategia_mercado",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado"
+                    ],
+                    "total": 10,
+                    "wins": 6,
+                    "losses": 4,
+                    "winrate": 60.0,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_alcista": {
+                    "clave": "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_alcista",
+                    "nivel": "nivel_3_estrategia_mercado",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado"
+                    ],
+                    "total": 10,
+                    "wins": 6,
+                    "losses": 4,
+                    "winrate": 60.0,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:reaccion_vendedora_en_resistencia + direccion:put + tipo_mercado:tendencia_bajista": {
+                    "clave": "patron:reaccion_vendedora_en_resistencia + direccion:put + tipo_mercado:tendencia_bajista",
+                    "nivel": "nivel_3_estrategia_mercado",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado"
+                    ],
+                    "total": 12,
+                    "wins": 7,
+                    "losses": 5,
+                    "winrate": 58.33,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:reaccion_compradora_en_soporte + direccion:call + tipo_mercado:rango": {
+                    "clave": "patron:reaccion_compradora_en_soporte + direccion:call + tipo_mercado:rango",
+                    "nivel": "nivel_3_estrategia_mercado",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado"
+                    ],
+                    "total": 5,
+                    "wins": 3,
+                    "losses": 2,
+                    "winrate": 60.0,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:reaccion_vendedora_en_resistencia + direccion:put + tipo_mercado:rango": {
+                    "clave": "patron:reaccion_vendedora_en_resistencia + direccion:put + tipo_mercado:rango",
+                    "nivel": "nivel_3_estrategia_mercado",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado"
+                    ],
+                    "total": 7,
+                    "wins": 4,
+                    "losses": 3,
+                    "winrate": 57.14,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:reaccion_compradora_en_soporte + direccion:call + tipo_mercado:tendencia_alcista": {
+                    "clave": "patron:reaccion_compradora_en_soporte + direccion:call + tipo_mercado:tendencia_alcista",
+                    "nivel": "nivel_3_estrategia_mercado",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado"
+                    ],
+                    "total": 6,
+                    "wins": 3,
+                    "losses": 3,
+                    "winrate": 50.0,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                }
+            }
+        },
+        "nivel_4_estrategia_mercado_tendencia": {
+            "campos": [
+                "patron",
+                "direccion",
+                "tipo_mercado",
+                "estado_tendencia"
+            ],
+            "fuertes": {
+                "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal": {
+                    "clave": "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal",
+                    "nivel": "nivel_4_estrategia_mercado_tendencia",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia"
+                    ],
+                    "total": 6,
+                    "wins": 4,
+                    "losses": 2,
+                    "winrate": 66.67,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "FUERTE",
+                    "peso": 1.167,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                }
+            },
+            "debiles": {
+                "patron:pullback_alcista_a_ema + direccion:call + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal": {
+                    "clave": "patron:pullback_alcista_a_ema + direccion:call + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal",
+                    "nivel": "nivel_4_estrategia_mercado_tendencia",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia"
+                    ],
+                    "total": 21,
+                    "wins": 6,
+                    "losses": 15,
+                    "winrate": 28.57,
+                    "confianza_muestra": "ALTA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.786,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:pullback_bajista_a_ema + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal": {
+                    "clave": "patron:pullback_bajista_a_ema + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal",
+                    "nivel": "nivel_4_estrategia_mercado_tendencia",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia"
+                    ],
+                    "total": 13,
+                    "wins": 5,
+                    "losses": 8,
+                    "winrate": 38.46,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.885,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal": {
+                    "clave": "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal",
+                    "nivel": "nivel_4_estrategia_mercado_tendencia",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia"
+                    ],
+                    "total": 7,
+                    "wins": 3,
+                    "losses": 4,
+                    "winrate": 42.86,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.929,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:reaccion_vendedora_en_resistencia + direccion:put + tipo_mercado:rango + estado_tendencia:bajista_debil": {
+                    "clave": "patron:reaccion_vendedora_en_resistencia + direccion:put + tipo_mercado:rango + estado_tendencia:bajista_debil",
+                    "nivel": "nivel_4_estrategia_mercado_tendencia",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia"
+                    ],
+                    "total": 5,
+                    "wins": 2,
+                    "losses": 3,
+                    "winrate": 40.0,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.9,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:rango + estado_tendencia:alcista_debil": {
+                    "clave": "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:rango + estado_tendencia:alcista_debil",
+                    "nivel": "nivel_4_estrategia_mercado_tendencia",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia"
+                    ],
+                    "total": 8,
+                    "wins": 3,
+                    "losses": 5,
+                    "winrate": 37.5,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.875,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:rango + estado_tendencia:bajista_debil": {
+                    "clave": "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:rango + estado_tendencia:bajista_debil",
+                    "nivel": "nivel_4_estrategia_mercado_tendencia",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia"
+                    ],
+                    "total": 8,
+                    "wins": 3,
+                    "losses": 5,
+                    "winrate": 37.5,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.875,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                }
+            },
+            "neutras": {
+                "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal": {
+                    "clave": "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal",
+                    "nivel": "nivel_4_estrategia_mercado_tendencia",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia"
+                    ],
+                    "total": 26,
+                    "wins": 14,
+                    "losses": 12,
+                    "winrate": 53.85,
+                    "confianza_muestra": "ALTA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal": {
+                    "clave": "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal",
+                    "nivel": "nivel_4_estrategia_mercado_tendencia",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia"
+                    ],
+                    "total": 22,
+                    "wins": 10,
+                    "losses": 12,
+                    "winrate": 45.45,
+                    "confianza_muestra": "ALTA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_fuerte": {
+                    "clave": "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_fuerte",
+                    "nivel": "nivel_4_estrategia_mercado_tendencia",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia"
+                    ],
+                    "total": 15,
+                    "wins": 9,
+                    "losses": 6,
+                    "winrate": 60.0,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:reaccion_vendedora_en_resistencia + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal": {
+                    "clave": "patron:reaccion_vendedora_en_resistencia + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal",
+                    "nivel": "nivel_4_estrategia_mercado_tendencia",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia"
+                    ],
+                    "total": 10,
+                    "wins": 6,
+                    "losses": 4,
+                    "winrate": 60.0,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal": {
+                    "clave": "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal",
+                    "nivel": "nivel_4_estrategia_mercado_tendencia",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia"
+                    ],
+                    "total": 19,
+                    "wins": 10,
+                    "losses": 9,
+                    "winrate": 52.63,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_fuerte": {
+                    "clave": "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_fuerte",
+                    "nivel": "nivel_4_estrategia_mercado_tendencia",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia"
+                    ],
+                    "total": 8,
+                    "wins": 5,
+                    "losses": 3,
+                    "winrate": 62.5,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:choch_alcista + direccion:call + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal": {
+                    "clave": "patron:choch_alcista + direccion:call + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal",
+                    "nivel": "nivel_4_estrategia_mercado_tendencia",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia"
+                    ],
+                    "total": 7,
+                    "wins": 4,
+                    "losses": 3,
+                    "winrate": 57.14,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:rango + estado_tendencia:alcista_debil": {
+                    "clave": "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:rango + estado_tendencia:alcista_debil",
+                    "nivel": "nivel_4_estrategia_mercado_tendencia",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia"
+                    ],
+                    "total": 6,
+                    "wins": 3,
+                    "losses": 3,
+                    "winrate": 50.0,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                }
+            }
+        },
+        "nivel_5_estrategia_mercado_tendencia_pa": {
+            "campos": [
+                "patron",
+                "direccion",
+                "tipo_mercado",
+                "estado_tendencia",
+                "pa_tipo",
+                "pa_direccion"
+            ],
+            "fuertes": {
+                "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_fuerte + pa_tipo:impulso_bajista_fuerte + pa_direccion:put": {
+                    "clave": "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_fuerte + pa_tipo:impulso_bajista_fuerte + pa_direccion:put",
+                    "nivel": "nivel_5_estrategia_mercado_tendencia_pa",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion"
+                    ],
+                    "total": 7,
+                    "wins": 5,
+                    "losses": 2,
+                    "winrate": 71.43,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "FUERTE",
+                    "peso": 1.214,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra": {
+                    "clave": "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra",
+                    "nivel": "nivel_5_estrategia_mercado_tendencia_pa",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion"
+                    ],
+                    "total": 6,
+                    "wins": 4,
+                    "losses": 2,
+                    "winrate": 66.67,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "FUERTE",
+                    "peso": 1.167,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                }
+            },
+            "debiles": {
+                "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra": {
+                    "clave": "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra",
+                    "nivel": "nivel_5_estrategia_mercado_tendencia_pa",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion"
+                    ],
+                    "total": 15,
+                    "wins": 6,
+                    "losses": 9,
+                    "winrate": 40.0,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.9,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:pullback_bajista_a_ema + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra": {
+                    "clave": "patron:pullback_bajista_a_ema + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra",
+                    "nivel": "nivel_5_estrategia_mercado_tendencia_pa",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion"
+                    ],
+                    "total": 10,
+                    "wins": 4,
+                    "losses": 6,
+                    "winrate": 40.0,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.9,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:pullback_alcista_a_ema + direccion:call + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra": {
+                    "clave": "patron:pullback_alcista_a_ema + direccion:call + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra",
+                    "nivel": "nivel_5_estrategia_mercado_tendencia_pa",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion"
+                    ],
+                    "total": 13,
+                    "wins": 4,
+                    "losses": 9,
+                    "winrate": 30.77,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.808,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:rango + estado_tendencia:bajista_debil + pa_tipo:sin_contexto_claro + pa_direccion:neutra": {
+                    "clave": "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:rango + estado_tendencia:bajista_debil + pa_tipo:sin_contexto_claro + pa_direccion:neutra",
+                    "nivel": "nivel_5_estrategia_mercado_tendencia_pa",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion"
+                    ],
+                    "total": 6,
+                    "wins": 1,
+                    "losses": 5,
+                    "winrate": 16.67,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.667,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                }
+            },
+            "neutras": {
+                "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra": {
+                    "clave": "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra",
+                    "nivel": "nivel_5_estrategia_mercado_tendencia_pa",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion"
+                    ],
+                    "total": 17,
+                    "wins": 10,
+                    "losses": 7,
+                    "winrate": 58.82,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:impulso_bajista_fuerte + pa_direccion:put": {
+                    "clave": "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:impulso_bajista_fuerte + pa_direccion:put",
+                    "nivel": "nivel_5_estrategia_mercado_tendencia_pa",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion"
+                    ],
+                    "total": 16,
+                    "wins": 8,
+                    "losses": 8,
+                    "winrate": 50.0,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_fuerte + pa_tipo:sin_contexto_claro + pa_direccion:neutra": {
+                    "clave": "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_fuerte + pa_tipo:sin_contexto_claro + pa_direccion:neutra",
+                    "nivel": "nivel_5_estrategia_mercado_tendencia_pa",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion"
+                    ],
+                    "total": 8,
+                    "wins": 5,
+                    "losses": 3,
+                    "winrate": 62.5,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:rango + estado_tendencia:alcista_debil + pa_tipo:sin_contexto_claro + pa_direccion:neutra": {
+                    "clave": "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:rango + estado_tendencia:alcista_debil + pa_tipo:sin_contexto_claro + pa_direccion:neutra",
+                    "nivel": "nivel_5_estrategia_mercado_tendencia_pa",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion"
+                    ],
+                    "total": 5,
+                    "wins": 3,
+                    "losses": 2,
+                    "winrate": 60.0,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra": {
+                    "clave": "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra",
+                    "nivel": "nivel_5_estrategia_mercado_tendencia_pa",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion"
+                    ],
+                    "total": 5,
+                    "wins": 3,
+                    "losses": 2,
+                    "winrate": 60.0,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:reaccion_vendedora_en_resistencia + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:rechazo_vendedor_confirmado + pa_direccion:put": {
+                    "clave": "patron:reaccion_vendedora_en_resistencia + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:rechazo_vendedor_confirmado + pa_direccion:put",
+                    "nivel": "nivel_5_estrategia_mercado_tendencia_pa",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion"
+                    ],
+                    "total": 7,
+                    "wins": 4,
+                    "losses": 3,
+                    "winrate": 57.14,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:choch_alcista + direccion:call + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal + pa_tipo:impulso_alcista_fuerte + pa_direccion:call": {
+                    "clave": "patron:choch_alcista + direccion:call + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal + pa_tipo:impulso_alcista_fuerte + pa_direccion:call",
+                    "nivel": "nivel_5_estrategia_mercado_tendencia_pa",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion"
+                    ],
+                    "total": 7,
+                    "wins": 4,
+                    "losses": 3,
+                    "winrate": 57.14,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:rechazo_vendedor_confirmado + pa_direccion:put": {
+                    "clave": "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:rechazo_vendedor_confirmado + pa_direccion:put",
+                    "nivel": "nivel_5_estrategia_mercado_tendencia_pa",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion"
+                    ],
+                    "total": 9,
+                    "wins": 5,
+                    "losses": 4,
+                    "winrate": 55.56,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_fuerte + pa_tipo:rechazo_vendedor_confirmado + pa_direccion:put": {
+                    "clave": "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_fuerte + pa_tipo:rechazo_vendedor_confirmado + pa_direccion:put",
+                    "nivel": "nivel_5_estrategia_mercado_tendencia_pa",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion"
+                    ],
+                    "total": 8,
+                    "wins": 4,
+                    "losses": 4,
+                    "winrate": 50.0,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:rango + estado_tendencia:alcista_debil + pa_tipo:sin_contexto_claro + pa_direccion:neutra": {
+                    "clave": "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:rango + estado_tendencia:alcista_debil + pa_tipo:sin_contexto_claro + pa_direccion:neutra",
+                    "nivel": "nivel_5_estrategia_mercado_tendencia_pa",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion"
+                    ],
+                    "total": 6,
+                    "wins": 3,
+                    "losses": 3,
+                    "winrate": 50.0,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                }
+            }
+        },
+        "nivel_6_estrategia_mercado_tendencia_pa_calidad": {
+            "campos": [
+                "patron",
+                "direccion",
+                "tipo_mercado",
+                "estado_tendencia",
+                "pa_tipo",
+                "pa_direccion",
+                "calidad_mercado"
+            ],
+            "fuertes": {
+                "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_fuerte + pa_tipo:impulso_bajista_fuerte + pa_direccion:put + calidad_mercado:normal": {
+                    "clave": "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_fuerte + pa_tipo:impulso_bajista_fuerte + pa_direccion:put + calidad_mercado:normal",
+                    "nivel": "nivel_6_estrategia_mercado_tendencia_pa_calidad",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion",
+                        "calidad_mercado"
+                    ],
+                    "total": 6,
+                    "wins": 4,
+                    "losses": 2,
+                    "winrate": 66.67,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "FUERTE",
+                    "peso": 1.167,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra + calidad_mercado:normal": {
+                    "clave": "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra + calidad_mercado:normal",
+                    "nivel": "nivel_6_estrategia_mercado_tendencia_pa_calidad",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion",
+                        "calidad_mercado"
+                    ],
+                    "total": 6,
+                    "wins": 4,
+                    "losses": 2,
+                    "winrate": 66.67,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "FUERTE",
+                    "peso": 1.167,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                }
+            },
+            "debiles": {
+                "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra + calidad_mercado:normal": {
+                    "clave": "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra + calidad_mercado:normal",
+                    "nivel": "nivel_6_estrategia_mercado_tendencia_pa_calidad",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion",
+                        "calidad_mercado"
+                    ],
+                    "total": 15,
+                    "wins": 6,
+                    "losses": 9,
+                    "winrate": 40.0,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.9,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:pullback_bajista_a_ema + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra + calidad_mercado:normal": {
+                    "clave": "patron:pullback_bajista_a_ema + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra + calidad_mercado:normal",
+                    "nivel": "nivel_6_estrategia_mercado_tendencia_pa_calidad",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion",
+                        "calidad_mercado"
+                    ],
+                    "total": 10,
+                    "wins": 4,
+                    "losses": 6,
+                    "winrate": 40.0,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.9,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:pullback_alcista_a_ema + direccion:call + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra + calidad_mercado:normal": {
+                    "clave": "patron:pullback_alcista_a_ema + direccion:call + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra + calidad_mercado:normal",
+                    "nivel": "nivel_6_estrategia_mercado_tendencia_pa_calidad",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion",
+                        "calidad_mercado"
+                    ],
+                    "total": 13,
+                    "wins": 4,
+                    "losses": 9,
+                    "winrate": 30.77,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.808,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_fuerte + pa_tipo:rechazo_vendedor_confirmado + pa_direccion:put + calidad_mercado:normal": {
+                    "clave": "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_fuerte + pa_tipo:rechazo_vendedor_confirmado + pa_direccion:put + calidad_mercado:normal",
+                    "nivel": "nivel_6_estrategia_mercado_tendencia_pa_calidad",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion",
+                        "calidad_mercado"
+                    ],
+                    "total": 7,
+                    "wins": 3,
+                    "losses": 4,
+                    "winrate": 42.86,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.929,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:rango + estado_tendencia:bajista_debil + pa_tipo:sin_contexto_claro + pa_direccion:neutra + calidad_mercado:normal": {
+                    "clave": "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:rango + estado_tendencia:bajista_debil + pa_tipo:sin_contexto_claro + pa_direccion:neutra + calidad_mercado:normal",
+                    "nivel": "nivel_6_estrategia_mercado_tendencia_pa_calidad",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion",
+                        "calidad_mercado"
+                    ],
+                    "total": 5,
+                    "wins": 1,
+                    "losses": 4,
+                    "winrate": 20.0,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "DEBIL",
+                    "peso": 0.7,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                }
+            },
+            "neutras": {
+                "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra + calidad_mercado:normal": {
+                    "clave": "patron:liquidity_sweep_bajista + direccion:put + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra + calidad_mercado:normal",
+                    "nivel": "nivel_6_estrategia_mercado_tendencia_pa_calidad",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion",
+                        "calidad_mercado"
+                    ],
+                    "total": 17,
+                    "wins": 10,
+                    "losses": 7,
+                    "winrate": 58.82,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:impulso_bajista_fuerte + pa_direccion:put + calidad_mercado:normal": {
+                    "clave": "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:impulso_bajista_fuerte + pa_direccion:put + calidad_mercado:normal",
+                    "nivel": "nivel_6_estrategia_mercado_tendencia_pa_calidad",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion",
+                        "calidad_mercado"
+                    ],
+                    "total": 15,
+                    "wins": 7,
+                    "losses": 8,
+                    "winrate": 46.67,
+                    "confianza_muestra": "MEDIA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra + calidad_mercado:normal": {
+                    "clave": "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra + calidad_mercado:normal",
+                    "nivel": "nivel_6_estrategia_mercado_tendencia_pa_calidad",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion",
+                        "calidad_mercado"
+                    ],
+                    "total": 5,
+                    "wins": 3,
+                    "losses": 2,
+                    "winrate": 60.0,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_fuerte + pa_tipo:sin_contexto_claro + pa_direccion:neutra + calidad_mercado:normal": {
+                    "clave": "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_fuerte + pa_tipo:sin_contexto_claro + pa_direccion:neutra + calidad_mercado:normal",
+                    "nivel": "nivel_6_estrategia_mercado_tendencia_pa_calidad",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion",
+                        "calidad_mercado"
+                    ],
+                    "total": 7,
+                    "wins": 4,
+                    "losses": 3,
+                    "winrate": 57.14,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:reaccion_vendedora_en_resistencia + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:rechazo_vendedor_confirmado + pa_direccion:put + calidad_mercado:normal": {
+                    "clave": "patron:reaccion_vendedora_en_resistencia + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:rechazo_vendedor_confirmado + pa_direccion:put + calidad_mercado:normal",
+                    "nivel": "nivel_6_estrategia_mercado_tendencia_pa_calidad",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion",
+                        "calidad_mercado"
+                    ],
+                    "total": 7,
+                    "wins": 4,
+                    "losses": 3,
+                    "winrate": 57.14,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:choch_alcista + direccion:call + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal + pa_tipo:impulso_alcista_fuerte + pa_direccion:call + calidad_mercado:normal": {
+                    "clave": "patron:choch_alcista + direccion:call + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal + pa_tipo:impulso_alcista_fuerte + pa_direccion:call + calidad_mercado:normal",
+                    "nivel": "nivel_6_estrategia_mercado_tendencia_pa_calidad",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion",
+                        "calidad_mercado"
+                    ],
+                    "total": 7,
+                    "wins": 4,
+                    "losses": 3,
+                    "winrate": 57.14,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:rechazo_vendedor_confirmado + pa_direccion:put + calidad_mercado:normal": {
+                    "clave": "patron:choch_bajista + direccion:put + tipo_mercado:tendencia_bajista + estado_tendencia:bajista_normal + pa_tipo:rechazo_vendedor_confirmado + pa_direccion:put + calidad_mercado:normal",
+                    "nivel": "nivel_6_estrategia_mercado_tendencia_pa_calidad",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion",
+                        "calidad_mercado"
+                    ],
+                    "total": 9,
+                    "wins": 5,
+                    "losses": 4,
+                    "winrate": 55.56,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                },
+                "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:rango + estado_tendencia:alcista_debil + pa_tipo:sin_contexto_claro + pa_direccion:neutra + calidad_mercado:normal": {
+                    "clave": "patron:liquidity_sweep_alcista + direccion:call + tipo_mercado:rango + estado_tendencia:alcista_debil + pa_tipo:sin_contexto_claro + pa_direccion:neutra + calidad_mercado:normal",
+                    "nivel": "nivel_6_estrategia_mercado_tendencia_pa_calidad",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion",
+                        "calidad_mercado"
+                    ],
+                    "total": 6,
+                    "wins": 3,
+                    "losses": 3,
+                    "winrate": 50.0,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "NEUTRA",
+                    "peso": 1.0,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                }
+            }
+        },
+        "nivel_7_combinacion_completa": {
+            "campos": [
+                "patron",
+                "direccion",
+                "activo",
+                "tipo_mercado",
+                "estado_tendencia",
+                "pa_tipo",
+                "pa_direccion",
+                "calidad_mercado"
+            ],
+            "fuertes": {
+                "patron:liquidity_sweep_bajista + direccion:put + activo:suiusd_otc + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra + calidad_mercado:normal": {
+                    "clave": "patron:liquidity_sweep_bajista + direccion:put + activo:suiusd_otc + tipo_mercado:tendencia_alcista + estado_tendencia:alcista_normal + pa_tipo:sin_contexto_claro + pa_direccion:neutra + calidad_mercado:normal",
+                    "nivel": "nivel_7_combinacion_completa",
+                    "campos": [
+                        "patron",
+                        "direccion",
+                        "activo",
+                        "tipo_mercado",
+                        "estado_tendencia",
+                        "pa_tipo",
+                        "pa_direccion",
+                        "calidad_mercado"
+                    ],
+                    "total": 5,
+                    "wins": 4,
+                    "losses": 1,
+                    "winrate": 80.0,
+                    "confianza_muestra": "BAJA",
+                    "clasificacion": "FUERTE",
+                    "peso": 1.3,
+                    "ultima_actualizacion": "2026-06-28 20:03:16"
+                }
+            },
+            "debiles": {},
+            "neutras": {}
+        }
+    }
+}

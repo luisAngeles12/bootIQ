@@ -4,11 +4,11 @@ import os
 
 import estado
 from conexion import conectar
-from config import CANDLE_TIME
+from config import CANDLE_TIME , CANDLE_NUMBER
 from mercado import obtener_activos
 
 CARPETA_DATA = "data_backtest"
-VELAS_POR_ACTIVO = 1000
+VELAS_POR_ACTIVO = CANDLE_NUMBER
 MIN_VELAS_VALIDAS = 200
 ESPERA_ENTRE_DESCARGAS = 0.35
 
@@ -82,26 +82,84 @@ def descargar_velas_activo(tipo, activo):
         return False
 
     try:
-        print("Descargando:", tipo, activo, "| velas:", VELAS_POR_ACTIVO, flush=True)
+        print("Descargando:", tipo, activo, "| velas objetivo:", VELAS_POR_ACTIVO, flush=True)
 
-        candles = estado.Iq.get_candles(
-            activo,
-            CANDLE_TIME,
-            VELAS_POR_ACTIVO,
-            time.time()
-        )
+        todas_las_velas = []
+        timestamp_final = time.time()
+        velas_restantes = VELAS_POR_ACTIVO
+        max_por_bloque = 1000
 
-        if not candles or len(candles) < MIN_VELAS_VALIDAS:
-            print("Sin suficientes velas:", tipo, activo, "| recibidas:", len(candles) if candles else 0, flush=True)
+        while velas_restantes > 0:
+            cantidad = min(max_por_bloque, velas_restantes)
+
+            print(
+                "Bloque:",
+                tipo,
+                activo,
+                "| solicitando:",
+                cantidad,
+                "| timestamp:",
+                int(timestamp_final),
+                flush=True
+            )
+
+            candles = estado.Iq.get_candles(
+                activo,
+                CANDLE_TIME,
+                cantidad,
+                timestamp_final
+            )
+
+            if not candles:
+                print("Bloque vacío:", tipo, activo, flush=True)
+                break
+
+            todas_las_velas.extend(candles)
+
+            candles_ordenadas = sorted(candles, key=lambda x: x["from"])
+            timestamp_final = candles_ordenadas[0]["from"] - 1
+
+            velas_restantes -= len(candles)
+
+            print(
+                "Recibidas bloque:",
+                len(candles),
+                "| acumuladas:",
+                len(todas_las_velas),
+                flush=True
+            )
+
+            if len(candles) < cantidad:
+                print("IQ devolvió menos velas de las solicitadas. Se detiene este activo.", flush=True)
+                break
+
+            time.sleep(ESPERA_ENTRE_DESCARGAS)
+
+        # Eliminar duplicados por timestamp
+        velas_unicas = {}
+        for c in todas_las_velas:
+            velas_unicas[c["from"]] = c
+
+        candles_finales = list(velas_unicas.values())
+        candles_finales = sorted(candles_finales, key=lambda x: x["from"])
+
+        if not candles_finales or len(candles_finales) < MIN_VELAS_VALIDAS:
+            print(
+                "Sin suficientes velas:",
+                tipo,
+                activo,
+                "| recibidas:",
+                len(candles_finales) if candles_finales else 0,
+                flush=True
+            )
             return False
 
-        guardar_velas_csv(tipo, activo, candles)
+        guardar_velas_csv(tipo, activo, candles_finales)
         return True
 
     except Exception as e:
         print("Error descargando", tipo, activo, e, flush=True)
         return False
-
 
 def main():
     print("1. Iniciando backtest_data", flush=True)
