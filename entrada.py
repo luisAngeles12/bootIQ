@@ -557,15 +557,93 @@ def guardar_senal_pendiente(senal, motivo_pendiente="ENTRADA_NORMAL"):
     return True
 
 def motivo_pendiente_por_accion_precio(senal):
-    accion = str(senal.get("accion_precio", "")).upper()
+    """
+    Decide si una señal debe entrar directo o quedar pendiente
+    esperando confirmación de ruptura/rechazo.
 
-    if accion == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA":
+    Objetivo:
+    - No bloquear estrategias.
+    - Mandar setups dudosos a confirmación.
+    - Aprovechar rechazos y rupturas reales.
+    """
+
+    direccion = str(senal.get("direccion", "")).lower()
+    accion_precio = str(senal.get("accion_precio", "")).upper()
+    tipo_setup = str(senal.get("tipo_setup", "")).upper()
+    calidad_setup = str(senal.get("calidad_setup", "")).upper()
+    modo_setup = str(senal.get("modo_entrada_setup", "")).upper()
+    pa_tipo = str(senal.get("pa_tipo", "")).upper()
+    pa_direccion = str(senal.get("pa_direccion", "")).upper()
+    patron = str(senal.get("patron", "")).lower()
+
+    # =========================
+    # NO OPERAR
+    # =========================
+    if modo_setup == "NO_OPERAR":
+        return "NO_OPERAR"
+
+    # =========================
+    # RUPTURAS POR ZONA
+    # =========================
+    if direccion == "call" and accion_precio in [
+        "CALL_RESISTENCIA_CERCA_SIN_RUPTURA",
+        "CALL_ZONA_NEUTRA"
+    ]:
         return "ESPERANDO_RUPTURA_RESISTENCIA"
 
-    if accion == "PUT_SOPORTE_CERCA_SIN_RUPTURA":
+    if direccion == "put" and accion_precio in [
+        "PUT_SOPORTE_CERCA_SIN_RUPTURA",
+        "PUT_ZONA_NEUTRA"
+    ]:
         return "ESPERANDO_RUPTURA_SOPORTE"
 
-    return "ENTRADA_NORMAL"
+    # =========================
+    # SWEEP / REVERSIÓN
+    # =========================
+    if tipo_setup in [
+        "SWEEP_ALCISTA",
+        "SWEEP_BAJISTA",
+        "REVERSION_ALCISTA",
+        "REVERSION_BAJISTA"
+    ]:
+        # Si ya tiene PA fuerte a favor, puede entrar directo.
+        if direccion == "call" and pa_direccion == "CALL" and pa_tipo in [
+            "RECHAZO_COMPRADOR_CONFIRMADO",
+            "AGOTAMIENTO_BAJISTA_CONFIRMADO",
+            "IMPULSO_ALCISTA_FUERTE"
+        ]:
+            return None
+
+        if direccion == "put" and pa_direccion == "PUT" and pa_tipo in [
+            "RECHAZO_VENDEDOR_CONFIRMADO",
+            "AGOTAMIENTO_ALCISTA_CONFIRMADO",
+            "IMPULSO_BAJISTA_FUERTE"
+        ]:
+            return None
+
+        # Si no tiene confirmación fuerte, no se bloquea:
+        # se guarda pendiente.
+        return "ESPERANDO_CONFIRMACION_RECHAZO"
+
+    # =========================
+    # RECHAZOS EN SOPORTE / RESISTENCIA
+    # =========================
+    if "reaccion" in patron or tipo_setup in [
+        "RECHAZO_ALCISTA",
+        "RECHAZO_BAJISTA"
+    ]:
+        if calidad_setup in ["PREMIUM", "BUENA"]:
+            return None
+
+        return "ESPERANDO_CONFIRMACION_RECHAZO"
+
+    # =========================
+    # SETUPS MEDIOS
+    # =========================
+    if calidad_setup == "MEDIA":
+        return "ESPERANDO_CONFIRMACION_RECHAZO"
+
+    return None
 def procesar_senales_pendientes(abrir_operacion):
     import time
     import estado

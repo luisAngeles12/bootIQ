@@ -147,7 +147,39 @@ def generar_piramide_estadistica(resultados):
             "pa_tipo",
             "pa_direccion",
             "calidad_mercado"
-        ]
+        ],
+        "nivel_8_tipo_setup": [
+            "tipo_setup"
+        ],
+
+        "nivel_9_setup_calidad": [
+            "tipo_setup",
+            "calidad_setup"
+        ],
+
+        "nivel_10_setup_modo": [
+            "tipo_setup",
+            "calidad_setup",
+            "modo_entrada_setup"
+        ],
+
+        "nivel_11_setup_mercado": [
+            "tipo_setup",
+            "calidad_setup",
+            "modo_entrada_setup",
+            "tipo_mercado",
+            "estado_tendencia"
+        ],
+
+        "nivel_12_setup_pa": [
+            "tipo_setup",
+            "calidad_setup",
+            "modo_entrada_setup",
+            "tipo_mercado",
+            "estado_tendencia",
+            "pa_tipo",
+            "pa_direccion"
+        ],
     }
 
     piramide = {}

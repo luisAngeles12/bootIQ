@@ -249,7 +249,8 @@ def main():
             
                 if motivo in [
                     "ESPERANDO_RUPTURA_RESISTENCIA",
-                    "ESPERANDO_RUPTURA_SOPORTE"
+                    "ESPERANDO_RUPTURA_SOPORTE",
+                    "ESPERANDO_CONFIRMACION_RECHAZO"
                 ]:
                     if senal.get("soporte") is None or senal.get("resistencia") is None:
                         print(

@@ -4,6 +4,7 @@ import os
 import estado
 import estrategia
 from evaluador_fase4 import evaluar_senal_fase4
+from motor_ejecusion import buscar_entrada_confirmada
 
 CARPETA_DATA = "data_backtest"
 SALIDA = "backtest_bot_real_resultados.csv"
@@ -193,16 +194,24 @@ def ejecutar_backtest(datasets):
         
             evaluacion_fase4 = evaluar_senal_fase4(senal)
         
-            info_resultado = resultado_binario(
+            idx_entrada, motivo_ejecucion = buscar_entrada_confirmada(
                 velas,
                 idx,
+                senal
+            )
+            
+            if idx_entrada is None:
+                continue
+            
+            info_resultado = resultado_binario(
+                velas,
+                idx_entrada,
                 senal["direccion"]
             )
-
             resultados.append({
                 "tipo": senal.get("tipo", ""),
                 "activo": senal.get("activo", ""),
-                "fecha": velas[idx]["from"],
+                "fecha": velas[idx_entrada]["from"],
                 "direccion": senal.get("direccion", ""),
                 "patron": senal.get("patron", ""),
                 "puntaje": senal.get("puntaje", 0),
@@ -241,7 +250,20 @@ def ejecutar_backtest(datasets):
                 "ruptura_confirmada": senal.get("ruptura_confirmada", False),
                 "tipo_ruptura": senal.get("tipo_ruptura", ""),
                 "razon_ruptura": senal.get("razon_ruptura", ""),
-                 
+
+                "tipo_setup": senal.get("tipo_setup", "INDEFINIDO"),
+                "calidad_setup": senal.get("calidad_setup", "MEDIA"),
+                "modo_entrada_setup": senal.get("modo_entrada_setup", "DIRECTA"),
+                "puntaje_extra_setup": senal.get("puntaje_extra_setup", 0),
+                "riesgo_extra_setup": senal.get("riesgo_extra_setup", 0),
+                "balance_setup": senal.get("balance_setup", 0),
+                "a_favor_tendencia": senal.get("a_favor_tendencia", False),
+                "razones_setup": senal.get("razones_setup", ""),
+                "idx_senal": idx,
+                "idx_entrada": idx_entrada,
+                "motivo_ejecucion": motivo_ejecucion,
+                "espera_velas": idx_entrada - idx, 
+                
                 "fase4_evaluada": evaluacion_fase4.get("fase4_evaluada", False),
                 "fase4_permitir_operacion": evaluacion_fase4.get("fase4_permitir_operacion", True),
                 "fase4_modo": evaluacion_fase4.get("fase4_modo", ""),
@@ -251,8 +273,8 @@ def ejecutar_backtest(datasets):
                 "fase4_motivo": evaluacion_fase4.get("fase4_motivo", ""),
 
                 "resultado": info_resultado["resultado"],
-                "precio_entrada": velas[idx]["close"],
-                "precio_cierre": velas[idx + 1]["close"],
+                "precio_entrada": velas[idx_entrada]["close"],
+                "precio_cierre": velas[idx_entrada + 1]["close"],
 
                 "movimiento": info_resultado["movimiento"],
                 "distancia_resultado": info_resultado["distancia_resultado"],
@@ -311,6 +333,18 @@ def guardar_resultados(resultados):
         "tipo_ruptura",
         "razon_ruptura",
         
+        "tipo_setup",
+        "calidad_setup",
+        "modo_entrada_setup",
+        "puntaje_extra_setup",
+        "riesgo_extra_setup",
+        "balance_setup",
+        "a_favor_tendencia",
+        "razones_setup",
+        "idx_senal",
+        "idx_entrada",
+        "motivo_ejecucion",
+        "espera_velas",
         "fase4_evaluada",
         "fase4_permitir_operacion",
         "fase4_modo",
@@ -473,20 +507,28 @@ def imprimir_resumen(resultados):
     print("============================\n")
     imprimir_resumen_fase4(resultados)
     for titulo, campo in [
-        ("POR ESTRATEGIA", "patron"),
-        ("POR BASE ESTRATEGIA", "base_estrategia"),
-        ("POR ACCION PRECIO", "accion_precio"),
-        ("POR PA PROFESIONAL", "pa_tipo"),
-        ("POR DIRECCION PA", "pa_direccion"),
-        ("POR RUPTURA", "tipo_ruptura"),
-        ("POR SCORE FINAL", "score_final"),
-        ("POR NIVEL CONSENSO", "nivel_consenso"),
-        ("POR TIPO", "tipo"),
-        ("POR MERCADO", "tipo_mercado"),
-        ("POR CALIDAD MERCADO", "calidad_mercado"),
-        ("POR TENDENCIA", "estado_tendencia"),
-        ("POR ACTIVO", "activo"),
-    ]:
+            ("POR ESTRATEGIA", "patron"),
+            ("POR BASE ESTRATEGIA", "base_estrategia"),
+            ("POR ACCION PRECIO", "accion_precio"),
+            ("POR PA PROFESIONAL", "pa_tipo"),
+            ("POR DIRECCION PA", "pa_direccion"),
+            ("POR RUPTURA", "tipo_ruptura"),
+        
+            # NUEVOS REPORTES
+            ("POR TIPO SETUP", "tipo_setup"),
+            ("POR CALIDAD SETUP", "calidad_setup"),
+            ("POR MODO ENTRADA SETUP", "modo_entrada_setup"),
+            ("POR MOTIVO EJECUCION", "motivo_ejecucion"),
+            ("POR ESPERA VELAS", "espera_velas"),
+            ("POR SCORE FINAL", "score_final"),
+            ("POR NIVEL CONSENSO", "nivel_consenso"),
+            ("POR TIPO", "tipo"),
+            ("POR MERCADO", "tipo_mercado"),
+            ("POR CALIDAD MERCADO", "calidad_mercado"),
+            ("POR TENDENCIA", "estado_tendencia"),
+            ("POR ACTIVO", "activo"),
+     
+        ]:
         imprimir_tabla_resumen(
             titulo,
             resumen_por_campo(resultados, campo),

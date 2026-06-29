@@ -7,7 +7,14 @@ from zonas import *
 from mercado import obtener_velas
 import time
 import estado
-from contexto_mercado import detectar_tipo_mercado, diagnostico_maestro_mercado, validar_estrategia_por_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
+from contexto_mercado import (
+    detectar_tipo_mercado,
+    diagnostico_maestro_mercado,
+    validar_estrategia_por_mercado,
+    clasificar_setup_estrategico,
+    diagnostico_calidad_mercado,
+    diagnostico_tendencia_avanzada
+)
 from utils import estrategia_en_cooldown,registrar_bloqueo
 from price_action_profesional import contexto_price_action_profesional,rechazo_historico_inteligente
 from motor_consenso import aplicar_consenso_senal
@@ -1215,28 +1222,170 @@ def detectar_cambio_estructura_choch(highs, lows, closes, opens=None, lookback=1
         print("Error detectando CHOCH:", e)
         return 0, "error CHOCH"
 def detectar_liquidity_sweep(opens, closes, highs, lows, lookback=12):
+    """
+    Detecta barridas de liquidez con validación profesional.
+
+    Retorna:
+        -1 = sweep bajista / posible PUT
+         1 = sweep alcista / posible CALL
+         0 = sin sweep válido
+
+    Mantiene compatibilidad con el flujo actual:
+        return direccion, razon
+    """
+
     try:
-        if len(closes) < lookback + 3:
-            return 0, "sin barrida de liquidez"
+        if len(closes) < lookback + 5:
+            return 0, "sin barrida de liquidez: velas insuficientes"
 
         high_actual = highs[-1]
         low_actual = lows[-1]
         close_actual = closes[-1]
         open_actual = opens[-1]
 
-        max_prev = max(highs[-lookback-1:-1])
-        min_prev = min(lows[-lookback-1:-1])
+        high_prev = highs[-2]
+        low_prev = lows[-2]
+        close_prev = closes[-2]
+        open_prev = opens[-2]
+
+        rango_actual = max(high_actual - low_actual, 0.0000001)
+        cuerpo_actual = abs(close_actual - open_actual)
+
+        mecha_superior = high_actual - max(open_actual, close_actual)
+        mecha_inferior = min(open_actual, close_actual) - low_actual
+
+        cuerpo_pct = cuerpo_actual / rango_actual
+        mecha_sup_pct = mecha_superior / rango_actual
+        mecha_inf_pct = mecha_inferior / rango_actual
+
+        highs_previos = highs[-lookback-1:-1]
+        lows_previos = lows[-lookback-1:-1]
+        closes_previos = closes[-lookback-1:-1]
+
+        max_prev = max(highs_previos)
+        min_prev = min(lows_previos)
+
+        rango_promedio = sum(
+            max(highs[i] - lows[i], 0.0000001)
+            for i in range(len(highs) - lookback - 1, len(highs) - 1)
+        ) / lookback
 
         vela_roja = close_actual < open_actual
         vela_verde = close_actual > open_actual
 
-        # Barre máximo anterior y cierra debajo = posible PUT
-        if high_actual > max_prev and close_actual < max_prev and vela_roja:
-            return -1, "liquidity sweep bajista: barrida de máximos"
+        cierre_en_parte_baja = close_actual <= low_actual + (rango_actual * 0.45)
+        cierre_en_parte_alta = close_actual >= high_actual - (rango_actual * 0.45)
 
-        # Barre mínimo anterior y cierra arriba = posible CALL
-        if low_actual < min_prev and close_actual > min_prev and vela_verde:
-            return 1, "liquidity sweep alcista: barrida de mínimos"
+        # Ruptura real sobre zonas previas
+        barrio_maximo = high_actual > max_prev
+        barrio_minimo = low_actual < min_prev
+
+        # Evita barridas microscópicas
+        exceso_maximo = high_actual - max_prev
+        exceso_minimo = min_prev - low_actual
+
+        exceso_max_pct = exceso_maximo / rango_promedio if rango_promedio else 0
+        exceso_min_pct = exceso_minimo / rango_promedio if rango_promedio else 0
+
+        # Confirmación de retorno dentro de la zona
+        recupero_debajo_max = close_actual < max_prev
+        recupero_arriba_min = close_actual > min_prev
+
+        # Filtro de vela demasiado débil
+        vela_con_rango_valido = rango_actual >= rango_promedio * 0.65
+        vela_no_doji = cuerpo_pct >= 0.18
+
+        # =========================
+        # SWEEP BAJISTA / PUT
+        # =========================
+        if barrio_maximo and recupero_debajo_max:
+            score = 0
+            razones = ["liquidity sweep bajista: barrida de máximos"]
+
+            if vela_roja:
+                score += 20
+                razones.append("vela roja confirma rechazo")
+
+            if mecha_sup_pct >= 0.35:
+                score += 20
+                razones.append("mecha superior dominante")
+
+            if cierre_en_parte_baja:
+                score += 15
+                razones.append("cierre en zona baja de la vela")
+
+            if exceso_max_pct >= 0.10:
+                score += 10
+                razones.append("barrida con exceso suficiente")
+
+            if vela_con_rango_valido:
+                score += 10
+                razones.append("rango de vela válido")
+
+            if vela_no_doji:
+                score += 10
+                razones.append("cuerpo de vela suficiente")
+
+            if close_actual < close_prev:
+                score += 10
+                razones.append("cierre actual confirma presión bajista")
+
+            if high_actual > high_prev and close_actual < close_prev:
+                score += 5
+                razones.append("estructura inmediata rechaza máximos")
+
+            if score >= 55:
+                razones.append(f"score_sweep={score}")
+                return -1, " | ".join(razones)
+
+            return 0, "sweep bajista débil: " + " | ".join(razones) + f" | score_sweep={score}"
+
+        # =========================
+        # SWEEP ALCISTA / CALL
+        # =========================
+        if barrio_minimo and recupero_arriba_min:
+            score = 0
+            razones = ["liquidity sweep alcista: barrida de mínimos"]
+
+            if vela_verde:
+                score += 20
+                razones.append("vela verde confirma rechazo")
+
+            if mecha_inf_pct >= 0.35:
+                score += 20
+                razones.append("mecha inferior dominante")
+
+            if cierre_en_parte_alta:
+                score += 15
+                razones.append("cierre en zona alta de la vela")
+
+            if exceso_min_pct >= 0.10:
+                score += 10
+                razones.append("barrida con exceso suficiente")
+
+            if vela_con_rango_valido:
+                score += 10
+                razones.append("rango de vela válido")
+
+            if vela_no_doji:
+                score += 10
+                razones.append("cuerpo de vela suficiente")
+
+            if close_actual > close_prev:
+                score += 10
+                razones.append("cierre actual confirma presión alcista")
+
+            if low_actual < low_prev and close_actual > close_prev:
+                score += 5
+                razones.append("estructura inmediata rechaza mínimos")
+
+            # Sweep alcista venía débil en el aprendizaje.
+            # Por eso exige un poco más de calidad que el bajista.
+            if score >= 65:
+                razones.append(f"score_sweep={score}")
+                return 1, " | ".join(razones)
+
+            return 0, "sweep alcista débil: " + " | ".join(razones) + f" | score_sweep={score}"
 
         return 0, "sin barrida de liquidez"
 
@@ -1558,6 +1707,7 @@ def leer_contexto_grafico(activo):
         "rechazo_hist_fuerza": rechazo_hist.get("fuerza", 0),
         "rechazo_hist_razon": rechazo_hist.get("razon", ""),
     }
+
 def vela_contraria_reciente(ctx, direccion):
     try:
         opens = ctx["opens"]
@@ -2729,22 +2879,56 @@ def analizar_activo(activo):
             continue
 
         # =========================
+        # CLASIFICACIÓN INTELIGENTE DEL SETUP
+        # =========================
+        setup = clasificar_setup_estrategico(senal, ctx)
+        
+        senal["tipo_setup"] = setup.get("tipo_setup", "INDEFINIDO")
+        senal["calidad_setup"] = setup.get("calidad_setup", "MEDIA")
+        senal["modo_entrada_setup"] = setup.get("modo_entrada", "DIRECTA")
+        senal["puntaje_extra_setup"] = setup.get("puntaje_extra_setup", 0)
+        senal["riesgo_extra_setup"] = setup.get("riesgo_extra_setup", 0)
+        senal["balance_setup"] = setup.get("balance_setup", 0)
+        senal["a_favor_tendencia"] = setup.get("a_favor_tendencia", False)
+        senal["razones_setup"] = " | ".join(setup.get("razones_setup", []))
+        
+        # Ajuste inteligente: no bloquea todavía, mejora/degrada la señal
+        senal["puntaje"] = senal.get("puntaje", 0) + setup.get("puntaje_extra_setup", 0)
+        
+        if setup.get("riesgo_extra_setup", 0) >= 4:
+            senal["puntaje"] -= 2
+        
+        # =========================
         # VALIDACIÓN DE MERCADO
         # =========================
         ok_mercado, razon_validacion_mercado = validar_estrategia_por_mercado(
             senal,
             ctx
         )
-
+        
+        # Cambio importante:
+        # Si mercado bloquea, pero el setup es BUENO/PREMIUM,
+        # no lo matamos de una vez. Lo dejamos seguir para zona/PA.
         if not ok_mercado:
-            print(
-                senal["direccion"].upper(),
-                "bloqueado por contexto de mercado:",
-                activo,
-                razon_validacion_mercado
-            )
-            continue
-
+            calidad_setup = senal.get("calidad_setup", "MEDIA")
+            modo_setup = senal.get("modo_entrada_setup", "DIRECTA")
+        
+            if calidad_setup in ["PREMIUM", "BUENA"] and modo_setup != "NO_OPERAR":
+                senal["razon"] += (
+                    ", advertencia mercado: "
+                    + razon_validacion_mercado
+                    + ", setup "
+                    + calidad_setup
+                    + " conserva señal"
+                )
+            else:
+                print(
+                    senal["direccion"].upper(),
+                    "bloqueado por contexto de mercado:",
+                    activo,
+                    razon_validacion_mercado
+                )
+                continue
         # =========================
         # RUPTURA ANTES DE ZONA
         # =========================
@@ -3051,7 +3235,11 @@ def analizar_activo(activo):
 
         senal["precio_zona"] = precio_zona
         senal["vol"] = ctx["vol"]
-
+        senal["tipo_setup"] = senal.get("tipo_setup", "INDEFINIDO")
+        senal["calidad_setup"] = senal.get("calidad_setup", "MEDIA")
+        senal["modo_entrada_setup"] = senal.get("modo_entrada_setup", "DIRECTA")
+        senal["balance_setup"] = senal.get("balance_setup", 0)
+        senal["razones_setup"] = senal.get("razones_setup", "")
         senal["tipo_mercado"] = ctx.get("tipo_mercado", "INDEFINIDO")
         senal["razon_mercado"] = ctx.get("razon_mercado", "")
         senal["calidad_mercado"] = ctx.get("calidad_mercado", "SIN_DATOS")
