@@ -12,6 +12,7 @@ MIN_SCORE_ACTIVO = 55
 
 def obtener_velas(activo):
     
+    
     try:
         if not estado.Iq.check_connect():
             reconectar_iq()

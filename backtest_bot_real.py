@@ -4,8 +4,10 @@ import os
 import estado
 import estrategia
 from evaluador_fase4 import evaluar_senal_fase4
-from motor_ejecusion import buscar_entrada_confirmada
-
+from motor_protocolos import buscar_entrada_confirmada
+from motor_setup import enriquecer_senal_con_setup
+from contexto_mercado import detectar_tipo_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
+from motor_aprendizaje_historico import generar_aprendizaje_desde_resultados
 CARPETA_DATA = "data_backtest"
 SALIDA = "backtest_bot_real_resultados.csv"
 
@@ -56,7 +58,121 @@ def cargar_datasets():
 
     return datasets[:LIMITE_DATASETS]
 
+def evaluar_estabilidad_dataset(dataset):
+    velas = dataset["velas"]
 
+    if len(velas) < 180:
+        return None
+
+    ventana = velas[-180:]
+
+    tipo_mercado, _ = detectar_tipo_mercado(ventana)
+    diagnostico = diagnostico_calidad_mercado(ventana)
+    tendencia = diagnostico_tendencia_avanzada(ventana)
+
+    calidad = diagnostico.get("calidad", "SIN_DATOS")
+    score = diagnostico.get("score", 0)
+    estado_tendencia = tendencia.get("estado_tendencia", "INDEFINIDA")
+    fuerza_tendencia = tendencia.get("fuerza_tendencia", 0)
+
+    activo = dataset.get("activo", "")
+
+    if "-op" in activo.lower():
+        return None
+
+    if "/" in activo:
+        return None
+
+    if calidad not in ["LIMPIO", "NORMAL"]:
+        return None
+
+    if score < 52:
+        return None
+
+    if estado_tendencia == "INDEFINIDA":
+        return None
+
+    if "DEBIL" in estado_tendencia and score < 62:
+        return None
+
+    if tipo_mercado == "RANGO" and "FUERTE" not in estado_tendencia and "NORMAL" not in estado_tendencia:
+        return None
+
+    score_filtro = score
+
+    if calidad == "LIMPIO":
+        score_filtro += 25
+
+    if calidad == "NORMAL":
+        score_filtro += 15
+
+    if "FUERTE" in estado_tendencia:
+        score_filtro += 25
+
+    if "NORMAL" in estado_tendencia:
+        score_filtro += 15
+
+    if tipo_mercado in ["TENDENCIA_ALCISTA", "TENDENCIA_BAJISTA"]:
+        score_filtro += 15
+
+    if tipo_mercado == "RANGO":
+        score_filtro -= 5
+
+    if "-OTC" in activo:
+        score_filtro += 5
+
+    dataset["score_filtro_dataset"] = score_filtro
+    dataset["tipo_mercado_dataset"] = tipo_mercado
+    dataset["calidad_mercado_dataset"] = calidad
+    dataset["score_mercado_dataset"] = score
+    dataset["estado_tendencia_dataset"] = estado_tendencia
+    dataset["fuerza_tendencia_dataset"] = fuerza_tendencia
+
+    return dataset
+
+
+def seleccionar_top_datasets(datasets, limite=20):
+    evaluados = []
+
+    for dataset in datasets:
+        evaluado = evaluar_estabilidad_dataset(dataset)
+
+        if evaluado is not None:
+            evaluados.append(evaluado)
+
+    evaluados = sorted(
+        evaluados,
+        key=lambda x: x.get("score_filtro_dataset", 0),
+        reverse=True
+    )
+
+    seleccionados = evaluados[:limite]
+
+    print("\n===== DATASETS SELECCIONADOS PARA BACKTEST =====")
+    print("Total datasets cargados:", len(datasets))
+    print("Datasets compatibles:", len(evaluados))
+    print("Datasets usados:", len(seleccionados))
+
+    for d in seleccionados:
+        print(
+            d["activo"],
+            "| tipo:",
+            d.get("tipo", "N/A"),
+            "| filtro:",
+            round(d.get("score_filtro_dataset", 0), 2),
+            "| mercado:",
+            d.get("tipo_mercado_dataset", "N/A"),
+            "| calidad:",
+            d.get("calidad_mercado_dataset", "N/A"),
+            "| score mercado:",
+            d.get("score_mercado_dataset", 0),
+            "| tendencia:",
+            d.get("estado_tendencia_dataset", "N/A"),
+            "| fuerza:",
+            round(d.get("fuerza_tendencia_dataset", 0), 2)
+        )
+
+    return seleccionados
 def reset_estado():
     estado.cooldown_activos = {}
     estado.zonas_operadas = {}
@@ -135,6 +251,104 @@ def resultado_binario(velas, index_entrada, direccion):
         "low_siguiente": low_siguiente,
     }
 
+def crear_registro_resultado(senal, velas, idx, idx_entrada, motivo_ejecucion, evaluacion_fase4, estado_operacion):
+    if idx_entrada is None:
+        idx_entrada = idx
+
+    info_resultado = resultado_binario(
+        velas,
+        idx_entrada,
+        senal["direccion"]
+    )
+
+    return {
+        "tipo": senal.get("tipo", ""),
+        "activo": senal.get("activo", ""),
+        "fecha": velas[idx_entrada]["from"],
+        "direccion": senal.get("direccion", ""),
+        "patron": senal.get("patron", ""),
+        "puntaje": senal.get("puntaje", 0),
+        "prioridad": senal.get("prioridad", 0),
+        "score_final": senal.get("score_final", 0),
+
+        "consenso": senal.get("consenso", 0),
+        "nivel_consenso": senal.get("nivel_consenso", ""),
+        "ajuste_consenso": senal.get("ajuste_consenso", 0),
+        "razones_consenso": senal.get("razones_consenso", ""),
+        "calidad": senal.get("calidad", ""),
+        "rsi": senal.get("rsi", ""),
+
+        "tipo_mercado": senal.get("tipo_mercado", ""),
+        "calidad_mercado": senal.get("calidad_mercado", ""),
+        "score_mercado": senal.get("score_mercado", 0),
+        "estado_tendencia": senal.get("estado_tendencia", ""),
+        "fuerza_tendencia": senal.get("fuerza_tendencia", 0),
+        "direccion_tendencia": senal.get("direccion_tendencia", ""),
+
+        "accion_precio": senal.get("accion_precio", ""),
+        "razon_accion_precio": senal.get("razon_accion_precio", ""),
+        "pa_tipo": senal.get("pa_tipo", ""),
+        "pa_direccion": senal.get("pa_direccion", ""),
+        "pa_fuerza": senal.get("pa_fuerza", 0),
+        "pa_razon": senal.get("pa_razon", ""),
+
+        "base_estrategia": senal.get("base_estrategia", ""),
+        "riesgos_base": senal.get("riesgos_base", ""),
+        "fortalezas_base": senal.get("fortalezas_base", ""),
+
+        "ruptura_confirmada": senal.get("ruptura_confirmada", False),
+        "tipo_ruptura": senal.get("tipo_ruptura", ""),
+        "razon_ruptura": senal.get("razon_ruptura", ""),
+
+        "tipo_setup": senal.get("tipo_setup", "INDEFINIDO"),
+        "calidad_setup": senal.get("calidad_setup", "MEDIA"),
+        "modo_entrada_setup": senal.get("modo_entrada_setup", "DIRECTA"),
+        "puntaje_extra_setup": senal.get("puntaje_extra_setup", 0),
+        "riesgo_extra_setup": senal.get("riesgo_extra_setup", 0),
+        "balance_setup": senal.get("balance_setup", 0),
+        "a_favor_tendencia": senal.get("a_favor_tendencia", False),
+        "razones_setup": senal.get("razones_setup", ""),
+        "familia_setup": senal.get("familia_setup", ""),
+        "subtipo_setup": senal.get("subtipo_setup", ""),
+        "protocolo_sugerido": senal.get("protocolo_sugerido", ""),
+        "nivel_setup": senal.get("nivel_setup", ""),
+        "estado_setup": senal.get("estado_setup", ""),
+        "confianza_setup": senal.get("confianza_setup", 0),
+        "razones_clasificador_setup": senal.get("razones_clasificador_setup", ""),
+
+        "idx_senal": idx,
+        "idx_entrada": idx_entrada,
+        "motivo_ejecucion": motivo_ejecucion,
+        "estado_operacion": estado_operacion,
+        "espera_velas": idx_entrada - idx,
+
+        "fase4_evaluada": evaluacion_fase4.get("fase4_evaluada", False),
+        "fase4_permitir_operacion": evaluacion_fase4.get("fase4_permitir_operacion", True),
+        "fase4_modo": evaluacion_fase4.get("fase4_modo", ""),
+        "fase4_confianza": evaluacion_fase4.get("fase4_confianza", 50.0),
+        "fase4_decision": evaluacion_fase4.get("fase4_decision", ""),
+        "fase4_debe_bloquear": evaluacion_fase4.get("fase4_debe_bloquear", False),
+        "fase4_motivo": evaluacion_fase4.get("fase4_motivo", ""),
+
+        "resultado": info_resultado["resultado"],
+        "resultado_hipotetico": info_resultado["resultado"],
+
+        "precio_entrada": velas[idx_entrada]["close"],
+        "precio_cierre": velas[idx_entrada + 1]["close"],
+
+        "movimiento": info_resultado["movimiento"],
+        "distancia_resultado": info_resultado["distancia_resultado"],
+        "excursion_favor": info_resultado["excursion_favor"],
+        "excursion_contra": info_resultado["excursion_contra"],
+        "fuerza_cierre_siguiente": info_resultado["fuerza_cierre_siguiente"],
+        "open_siguiente": info_resultado["open_siguiente"],
+        "close_siguiente": info_resultado["close_siguiente"],
+        "high_siguiente": info_resultado["high_siguiente"],
+        "low_siguiente": info_resultado["low_siguiente"],
+
+        "razon": senal.get("razon", ""),
+    }
+
 def ejecutar_backtest(datasets):
     resultados = []
 
@@ -167,9 +381,10 @@ def ejecutar_backtest(datasets):
                 continue
 
             senal["tipo"] = tipo
+            senal = enriquecer_senal_con_setup(senal)
+
             senal["_velas"] = velas
             senal["_index"] = i
-
             senales_ronda.append(senal)
 
         senales_ronda = sorted(
@@ -181,116 +396,63 @@ def ejecutar_backtest(datasets):
             ),
             reverse=True
         )
+
         if ronda % 100 == 0:
-            print(
-                "Ronda:",
-                ronda,
-                "Señales:",
-                len(senales_ronda)
-            )
+            print("Ronda:", ronda, "Señales:", len(senales_ronda))
+
         for senal in senales_ronda[:MAX_ACTIVOS_ANALIZAR]:
             velas = senal["_velas"]
             idx = senal["_index"]
-        
+
             evaluacion_fase4 = evaluar_senal_fase4(senal)
-        
+
+            if evaluacion_fase4.get("fase4_debe_bloquear", False):
+                resultados.append(
+                    crear_registro_resultado(
+                        senal=senal,
+                        velas=velas,
+                        idx=idx,
+                        idx_entrada=idx,
+                        motivo_ejecucion="CANCELADA_FASE4",
+                        evaluacion_fase4=evaluacion_fase4,
+                        estado_operacion="CANCELADA_FASE4"
+                    )
+                )
+                continue
+
             idx_entrada, motivo_ejecucion = buscar_entrada_confirmada(
                 velas,
                 idx,
                 senal
             )
-            
+
             if idx_entrada is None:
+                resultados.append(
+                    crear_registro_resultado(
+                        senal=senal,
+                        velas=velas,
+                        idx=idx,
+                        idx_entrada=idx,
+                        motivo_ejecucion=motivo_ejecucion,
+                        evaluacion_fase4=evaluacion_fase4,
+                        estado_operacion="CANCELADA_PROTOCOLO"
+                    )
+                )
                 continue
-            
-            info_resultado = resultado_binario(
-                velas,
-                idx_entrada,
-                senal["direccion"]
+
+            resultados.append(
+                crear_registro_resultado(
+                    senal=senal,
+                    velas=velas,
+                    idx=idx,
+                    idx_entrada=idx_entrada,
+                    motivo_ejecucion=motivo_ejecucion,
+                    evaluacion_fase4=evaluacion_fase4,
+                    estado_operacion="OPERADA"
+                )
             )
-            resultados.append({
-                "tipo": senal.get("tipo", ""),
-                "activo": senal.get("activo", ""),
-                "fecha": velas[idx_entrada]["from"],
-                "direccion": senal.get("direccion", ""),
-                "patron": senal.get("patron", ""),
-                "puntaje": senal.get("puntaje", 0),
-                "prioridad": senal.get("prioridad", 0),
-                "score_final": senal.get("score_final", 0),
-
-                #  ================consenso==================
-                "consenso": senal.get("consenso", 0),
-                "nivel_consenso": senal.get("nivel_consenso", ""),
-                "ajuste_consenso": senal.get("ajuste_consenso", 0),
-                "razones_consenso": senal.get("razones_consenso", ""),
-                "calidad": senal.get("calidad", ""),
-                "rsi": senal.get("rsi", ""),
-
-                "tipo_mercado": senal.get("tipo_mercado", ""),
-                "calidad_mercado": senal.get("calidad_mercado", ""),
-                "score_mercado": senal.get("score_mercado", 0),
-                "estado_tendencia": senal.get("estado_tendencia", ""),
-                "fuerza_tendencia": senal.get("fuerza_tendencia", 0),
-                "direccion_tendencia": senal.get("direccion_tendencia", ""),
-
-                "accion_precio": senal.get("accion_precio", ""),
-                "razon_accion_precio": senal.get("razon_accion_precio", ""),
-                "pa_tipo": senal.get("pa_tipo", ""),
-                "pa_direccion": senal.get("pa_direccion", ""),
-                "pa_fuerza": senal.get("pa_fuerza", 0),
-                "pa_razon": senal.get("pa_razon", ""),
-
-                # =========================
-                # NUEVO DIAGNOSTICO BASE
-                # =========================
-                "base_estrategia": senal.get("base_estrategia", ""),
-                "riesgos_base": senal.get("riesgos_base", ""),
-                "fortalezas_base": senal.get("fortalezas_base", ""),
-
-                "ruptura_confirmada": senal.get("ruptura_confirmada", False),
-                "tipo_ruptura": senal.get("tipo_ruptura", ""),
-                "razon_ruptura": senal.get("razon_ruptura", ""),
-
-                "tipo_setup": senal.get("tipo_setup", "INDEFINIDO"),
-                "calidad_setup": senal.get("calidad_setup", "MEDIA"),
-                "modo_entrada_setup": senal.get("modo_entrada_setup", "DIRECTA"),
-                "puntaje_extra_setup": senal.get("puntaje_extra_setup", 0),
-                "riesgo_extra_setup": senal.get("riesgo_extra_setup", 0),
-                "balance_setup": senal.get("balance_setup", 0),
-                "a_favor_tendencia": senal.get("a_favor_tendencia", False),
-                "razones_setup": senal.get("razones_setup", ""),
-                "idx_senal": idx,
-                "idx_entrada": idx_entrada,
-                "motivo_ejecucion": motivo_ejecucion,
-                "espera_velas": idx_entrada - idx, 
-                
-                "fase4_evaluada": evaluacion_fase4.get("fase4_evaluada", False),
-                "fase4_permitir_operacion": evaluacion_fase4.get("fase4_permitir_operacion", True),
-                "fase4_modo": evaluacion_fase4.get("fase4_modo", ""),
-                "fase4_confianza": evaluacion_fase4.get("fase4_confianza", 50.0),
-                "fase4_decision": evaluacion_fase4.get("fase4_decision", ""),
-                "fase4_debe_bloquear": evaluacion_fase4.get("fase4_debe_bloquear", False),
-                "fase4_motivo": evaluacion_fase4.get("fase4_motivo", ""),
-
-                "resultado": info_resultado["resultado"],
-                "precio_entrada": velas[idx_entrada]["close"],
-                "precio_cierre": velas[idx_entrada + 1]["close"],
-
-                "movimiento": info_resultado["movimiento"],
-                "distancia_resultado": info_resultado["distancia_resultado"],
-                "excursion_favor": info_resultado["excursion_favor"],
-                "excursion_contra": info_resultado["excursion_contra"],
-                "fuerza_cierre_siguiente": info_resultado["fuerza_cierre_siguiente"],
-                "open_siguiente": info_resultado["open_siguiente"],
-                "close_siguiente": info_resultado["close_siguiente"],
-                "high_siguiente": info_resultado["high_siguiente"],
-                "low_siguiente": info_resultado["low_siguiente"],
-
-                "razon": senal.get("razon", ""),
-            })
 
     return resultados
-
 def guardar_resultados(resultados):
     campos = [
         "tipo",
@@ -341,9 +503,17 @@ def guardar_resultados(resultados):
         "balance_setup",
         "a_favor_tendencia",
         "razones_setup",
+        "familia_setup",
+        "subtipo_setup",
+        "protocolo_sugerido",
+        "nivel_setup",
+        "estado_setup",
+        "confianza_setup",
+        "razones_clasificador_setup",
         "idx_senal",
         "idx_entrada",
         "motivo_ejecucion",
+        "estado_operacion",
         "espera_velas",
         "fase4_evaluada",
         "fase4_permitir_operacion",
@@ -354,6 +524,7 @@ def guardar_resultados(resultados):
         "fase4_motivo",
 
         "resultado",
+        "resultado_hipotetico",
         "precio_entrada",
         "precio_cierre",
 
@@ -492,11 +663,12 @@ def imprimir_resumen_fase4(resultados):
     print("Precisión del bloqueo:", str(precision_bloqueo) + "%")
     print("==========================\n")
 def imprimir_resumen(resultados):
-    total = len(resultados)
-    wins = sum(1 for r in resultados if r["resultado"] == "WIN")
+    operadas = [r for r in resultados if r.get("estado_operacion") == "OPERADA"]
+
+    total = len(operadas)
+    wins = sum(1 for r in operadas if r["resultado"] == "WIN")
     losses = total - wins
     wr = round((wins / total) * 100, 2) if total else 0
-
     print("\n===== BACKTEST BOT REAL =====")
     print("Datasets:", LIMITE_DATASETS)
     print("Paso ronda:", PASO_RONDA)
@@ -506,6 +678,10 @@ def imprimir_resumen(resultados):
     print("Winrate:", wr, "%")
     print("============================\n")
     imprimir_resumen_fase4(resultados)
+    print("Total señales evaluadas:", len(resultados))
+    print("Operadas:", len(operadas))
+    print("Canceladas Fase 4:", len([r for r in resultados if r.get("estado_operacion") == "CANCELADA_FASE4"]))
+    print("Canceladas Protocolo:", len([r for r in resultados if r.get("estado_operacion") == "CANCELADA_PROTOCOLO"]))
     for titulo, campo in [
             ("POR ESTRATEGIA", "patron"),
             ("POR BASE ESTRATEGIA", "base_estrategia"),
@@ -516,6 +692,11 @@ def imprimir_resumen(resultados):
         
             # NUEVOS REPORTES
             ("POR TIPO SETUP", "tipo_setup"),
+            ("POR FAMILIA SETUP", "familia_setup"),
+            ("POR SUBTIPO SETUP", "subtipo_setup"),
+            ("POR PROTOCOLO SUGERIDO", "protocolo_sugerido"),
+            ("POR NIVEL SETUP", "nivel_setup"),
+            ("POR ESTADO SETUP", "estado_setup"),
             ("POR CALIDAD SETUP", "calidad_setup"),
             ("POR MODO ENTRADA SETUP", "modo_entrada_setup"),
             ("POR MOTIVO EJECUCION", "motivo_ejecucion"),
@@ -530,33 +711,39 @@ def imprimir_resumen(resultados):
      
         ]:
         imprimir_tabla_resumen(
+          "POR ESTADO OPERACION",
+          resumen_por_campo(resultados, "estado_operacion"),
+          limite=10
+        )
+        imprimir_tabla_resumen(
             titulo,
             resumen_por_campo(resultados, campo),
             limite=20
         )
-
-    imprimir_tabla_resumen(
-        "POR RIESGOS BASE",
-        resumen_por_lista(resultados, "riesgos_base"),
-        limite=30
-    )
-
-    imprimir_tabla_resumen(
-        "POR FORTALEZAS BASE",
-        resumen_por_lista(resultados, "fortalezas_base"),
-        limite=30
-    )
+    
+        imprimir_tabla_resumen(
+            "POR RIESGOS BASE",
+            resumen_por_lista(resultados, "riesgos_base"),
+            limite=30
+        )
+    
+        imprimir_tabla_resumen(
+            "POR FORTALEZAS BASE",
+            resumen_por_lista(resultados, "fortalezas_base"),
+            limite=30
+        )
 def main():
     reset_estado()
 
     datasets = cargar_datasets()
-
+    datasets = seleccionar_top_datasets(datasets, limite=MAX_ACTIVOS_ANALIZAR)
     print("Datasets cargados:", len(datasets))
     print("Ejecutando backtest usando analizar_activo() real...")
 
     resultados = ejecutar_backtest(datasets)
 
     guardar_resultados(resultados)
+    generar_aprendizaje_desde_resultados(resultados)
     imprimir_resumen(resultados)
 
     print("Archivo generado:", SALIDA)

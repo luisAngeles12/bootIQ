@@ -76,6 +76,15 @@ def construir_evidencia_operacion(senal, ctx=None):
 
         "ruptura_confirmada": senal.get("ruptura_confirmada", False),
         "tipo_ruptura": normalizar(senal.get("tipo_ruptura")),
+        "familia_setup": normalizar(senal.get("familia_setup")),
+        "subtipo_setup": normalizar(senal.get("subtipo_setup")),
+        "protocolo_sugerido": normalizar(senal.get("protocolo_sugerido")),
+        "nivel_setup": normalizar(senal.get("nivel_setup")),
+        "estado_setup": normalizar(senal.get("estado_setup")),
+        "confianza_setup": senal.get("confianza_setup", 50),
+        "razones_clasificador_setup": normalizar(
+            senal.get("razones_clasificador_setup")
+        ),
     }
 
     return evidencia

@@ -1,145 +1,177 @@
 from motor_inferencia import inferir_confianza
 from detector_riesgo_compuesto import evaluar_riesgo_compuesto
+from motor_aprendizaje_historico import evaluar_aprendizaje_historico
 
-UMBRAL_OPERAR = 60.0
-UMBRAL_NO_OPERAR = 45.0
+UMBRAL_OPERAR_DIRECTO = 68.0
+UMBRAL_OPERAR_NORMAL = 55.0
+UMBRAL_PROTOCOLO_ESTRICTO = 42.0
 
-PENALIZACION_SUAVE = 0.92
-PENALIZACION_MEDIA = 0.84
-PENALIZACION_FUERTE = 0.70
-
-BONO_SUAVE = 1.06
-BONO_MEDIO = 1.12
-
-PESO_MINIMO_DECISION = 0.50
-PESO_MAXIMO_DECISION = 1.35
+PESO_MINIMO_DECISION = 0.55
+PESO_MAXIMO_DECISION = 1.30
 
 
 def limitar_peso(peso):
     return max(PESO_MINIMO_DECISION, min(PESO_MAXIMO_DECISION, peso))
 
 
-def aplicar_reglas_generales(evidencia):
-    """
-    Reglas generales basadas en hallazgos estadísticos.
-    No reemplazan la base de conocimiento.
-    Solo ayudan cuando la muestra histórica es pequeña.
-    """
+def _txt(v):
+    return str(v or "").lower().strip()
 
+
+def aplicar_reglas_generales(evidencia):
     peso = 1.0
     motivos = []
 
-    patron = str(evidencia.get("patron", "")).lower()
-    direccion = str(evidencia.get("direccion", "")).lower()
-    tipo_mercado = str(evidencia.get("tipo_mercado", "")).lower()
-    estado_tendencia = str(evidencia.get("estado_tendencia", "")).lower()
-    pa_tipo = str(evidencia.get("pa_tipo", "")).lower()
-    pa_direccion = str(evidencia.get("pa_direccion", "")).lower()
-    accion_precio = str(evidencia.get("accion_precio", "")).lower()
-    nivel_consenso = str(evidencia.get("nivel_consenso", "")).lower()
-    base_estrategia = str(evidencia.get("base_estrategia", "")).lower()
-    fortalezas_base = str(evidencia.get("fortalezas_base", "")).lower()
-    riesgos_base = str(evidencia.get("riesgos_base", "")).lower()
+    patron = _txt(evidencia.get("patron"))
+    direccion = _txt(evidencia.get("direccion"))
+    tipo_mercado = _txt(evidencia.get("tipo_mercado"))
+    pa_tipo = _txt(evidencia.get("pa_tipo"))
+    pa_direccion = _txt(evidencia.get("pa_direccion"))
+    accion_precio = _txt(evidencia.get("accion_precio"))
+    nivel_consenso = _txt(evidencia.get("nivel_consenso"))
+    base_estrategia = _txt(evidencia.get("base_estrategia"))
+    fortalezas_base = _txt(evidencia.get("fortalezas_base"))
+    riesgos_base = _txt(evidencia.get("riesgos_base"))
+    tipo_setup = _txt(evidencia.get("tipo_setup"))
 
-    # ==========================
-    # PENALIZACIONES CALL
-    # ==========================
-    if direccion == "call":
-        if "pullback_alcista" in patron or "pullback alcista" in patron:
-            peso *= PENALIZACION_FUERTE
-            motivos.append("Penalización fuerte: pullback alcista históricamente débil.")
-
-        if "choch_alcista" in patron or "choch alcista" in patron:
-            peso *= PENALIZACION_MEDIA
-            motivos.append("Penalización media: CHOCH alcista con rendimiento bajo.")
-
-        if tipo_mercado == "tendencia_alcista" and estado_tendencia == "alcista_normal":
-            peso *= PENALIZACION_MEDIA
-            motivos.append("Penalización media: ALCISTA_NORMAL ha mostrado bajo rendimiento.")
-
-        if pa_direccion == "call":
-            peso *= PENALIZACION_MEDIA
-            motivos.append("Penalización media: PA a favor de CALL ha sido débil en validación.")
-
-        if "impulso_alcista_fuerte" in pa_tipo:
-            peso *= PENALIZACION_FUERTE
-            motivos.append("Penalización fuerte: impulso alcista fuerte terminó siendo mala señal.")
-
-        if "call_resistencia_cerca_sin_ruptura" in accion_precio:
-            peso *= PENALIZACION_MEDIA
-            motivos.append("Penalización media: CALL con resistencia cerca sin ruptura.")
-
-    # ==========================
-    # PENALIZACIONES PUT
-    # ==========================
-    if direccion == "put":
-        if "liquidity_sweep_bajista" in patron and tipo_mercado == "tendencia_alcista":
-            peso *= PENALIZACION_MEDIA
-            motivos.append("Penalización media: sweep bajista contra tendencia alcista.")
-
-        if pa_direccion == "call":
-            peso *= PENALIZACION_MEDIA
-            motivos.append("Penalización media: PA contradice operación PUT.")
-
-    # ==========================
-    # REGLAS GENERALES DE RIESGO
-    # ==========================
-    if nivel_consenso == "bajo":
-        peso *= PENALIZACION_SUAVE
-        motivos.append("Penalización suave: consenso bajo.")
-
-    if nivel_consenso == "medio":
-        peso *= PENALIZACION_SUAVE
-        motivos.append("Penalización suave: consenso medio.")
+    if nivel_consenso in ["muy_bajo", "bajo"]:
+        peso *= 0.96
+        motivos.append("Ajuste suave: consenso bajo.")
 
     if base_estrategia == "media":
-        peso *= PENALIZACION_MEDIA
-        motivos.append("Penalización media: base de estrategia MEDIA tuvo bajo rendimiento.")
+        peso *= 0.97
+        motivos.append("Ajuste suave: base media.")
 
-    if "call_resistencia_sin_ruptura" in riesgos_base:
-        peso *= PENALIZACION_MEDIA
-        motivos.append("Penalización media: riesgo CALL resistencia sin ruptura.")
+    if base_estrategia == "debil":
+        peso *= 0.95
+        motivos.append("Ajuste suave: base débil.")
 
-    # ==========================
-    # BONOS
-    # ==========================
+    if "sin_contexto_claro" in riesgos_base or pa_tipo == "sin_contexto_claro":
+        peso *= 0.96
+        motivos.append("Ajuste suave: PA sin contexto claro.")
+
+    if "contra_tendencia" in riesgos_base:
+        peso *= 0.95
+        motivos.append("Ajuste suave: contra tendencia.")
+
+    if "pullback" in patron or "pullback" in tipo_setup:
+        peso *= 0.96
+        motivos.append("Ajuste suave: pullback requiere confirmación.")
+
+    if "resistencia_cerca_sin_ruptura" in accion_precio:
+        peso *= 0.92
+        motivos.append("Ajuste fuerte: CALL/resistencia sin ruptura.")
+
+    if "soporte_cerca_sin_ruptura" in accion_precio:
+        peso *= 0.98
+        motivos.append("Ajuste leve: soporte sin ruptura.")
+
     if tipo_mercado == "rango":
-        peso *= BONO_SUAVE
-        motivos.append("Bono suave: mercado en rango ha tenido buen rendimiento.")
+        peso *= 1.06
+        motivos.append("Bono: mercado en rango.")
 
-    if tipo_mercado == "tendencia_bajista":
-        peso *= BONO_SUAVE
-        motivos.append("Bono suave: tendencia bajista ha tenido buen rendimiento.")
+    if "choch" in patron or "choch" in tipo_setup:
+        peso *= 1.06
+        motivos.append("Bono: CHOCH.")
 
-    if estado_tendencia == "bajista_normal":
-        peso *= BONO_MEDIO
-        motivos.append("Bono medio: BAJISTA_NORMAL ha sido contexto fuerte.")
+    if "sweep" in patron or "sweep" in tipo_setup:
+        peso *= 1.03
+        motivos.append("Bono leve: sweep.")
 
-    if pa_direccion == "put":
-        peso *= BONO_MEDIO
-        motivos.append("Bono medio: PA a favor de PUT ha sido fuerte.")
+    if pa_direccion == direccion:
+        peso *= 1.05
+        motivos.append("Bono: PA alineado.")
 
-    if "rechazo_vendedor_confirmado" in pa_tipo:
-        peso *= BONO_MEDIO
-        motivos.append("Bono medio: rechazo vendedor confirmado.")
+    if "impulso" in pa_tipo and pa_direccion == direccion:
+        peso *= 1.04
+        motivos.append("Bono: impulso a favor.")
 
-    if "impulso_bajista_fuerte" in pa_tipo:
-        peso *= BONO_MEDIO
-        motivos.append("Bono medio: impulso bajista fuerte.")
+    if "rechazo" in pa_tipo and pa_direccion == direccion:
+        peso *= 1.06
+        motivos.append("Bono: rechazo confirmado.")
 
-    if "pa_a_favor_put" in fortalezas_base:
-        peso *= BONO_MEDIO
-        motivos.append("Bono medio: fortaleza PA a favor PUT.")
+    if "tendencia_a_favor" in fortalezas_base:
+        peso *= 1.04
+        motivos.append("Bono: tendencia a favor.")
 
     return limitar_peso(round(peso, 3)), motivos
 
 
-def evaluar_decision(evidencia):
-    """
-    Motor central de decisión BootIQ.
-    Combina inferencia histórica + reglas generales de robustez.
-    """
+def regla_bloqueo_duro_contextual(evidencia):
+    protocolo_sugerido = _txt(evidencia.get("protocolo_sugerido"))
+    estado_setup = _txt(evidencia.get("estado_setup"))
+    nivel_setup = _txt(evidencia.get("nivel_setup"))
+    confianza_setup = float(evidencia.get("confianza_setup", 50) or 50)
+    accion_precio = _txt(evidencia.get("accion_precio"))
+    direccion = _txt(evidencia.get("direccion"))
+    riesgos_base = _txt(evidencia.get("riesgos_base"))
+    fortalezas_base = _txt(evidencia.get("fortalezas_base"))
+    pa_tipo = _txt(evidencia.get("pa_tipo"))
+    nivel_consenso = _txt(evidencia.get("nivel_consenso"))
 
+    if (
+    protocolo_sugerido == "protocolo_ruptura_resistencia"
+    and estado_setup == "pendiente_confirmacion"
+    and nivel_setup in ["medio_bajo", "bajo"]
+    and confianza_setup < 50
+    and nivel_consenso in ["muy_bajo", "bajo"]
+    ):
+        return True, "Bloqueo duro: ruptura de resistencia pendiente + setup débil + consenso bajo."
+
+    if (
+        direccion == "call"
+        and "call_resistencia_cerca_sin_ruptura" in accion_precio
+        and nivel_consenso in ["muy_bajo", "bajo"]
+        and confianza_setup < 52
+    ):
+        return True, "Bloqueo duro: CALL contra resistencia sin ruptura + consenso bajo + confianza setup baja."
+    if (
+        "call_resistencia_sin_ruptura" in riesgos_base
+        and "pa_a_favor_call" not in fortalezas_base
+        and pa_tipo not in ["impulso_alcista_fuerte", "rechazo_comprador_confirmado"]
+    ):
+        return True, "Bloqueo duro: resistencia sin ruptura sin PA alcista suficiente."
+
+    return False, ""
+
+
+def sugerir_modo_ejecucion(confianza, riesgo_nivel, evidencia):
+    tipo_setup = _txt(evidencia.get("tipo_setup"))
+    patron = _txt(evidencia.get("patron"))
+    accion_precio = _txt(evidencia.get("accion_precio"))
+
+    texto = " ".join([tipo_setup, patron, accion_precio])
+
+    if riesgo_nivel == "EXTREMO":
+        return "NO_OPERAR"
+
+    if "resistencia_cerca_sin_ruptura" in texto:
+        return "NO_OPERAR_SI_NO_ROMPE"
+
+    if "pullback" in texto:
+        if confianza >= UMBRAL_OPERAR_NORMAL:
+            return "ESPERAR_RECHAZO_IMPULSO"
+        return "ESPERAR_2_VELAS_RECHAZO"
+
+    if "choch" in texto:
+        return "ESPERAR_RUPTURA_IMPULSO"
+
+    if "sweep" in texto or "liquidity" in texto:
+        return "ESPERAR_RECHAZO"
+
+    if "soporte" in texto or "resistencia" in texto or "zona" in texto:
+        return "ESPERAR_RECHAZO_O_RUPTURA"
+
+    if confianza >= UMBRAL_OPERAR_DIRECTO and riesgo_nivel in ["BAJO", "MEDIO"]:
+        return "DIRECTA_PERMITIDA"
+
+    if confianza >= UMBRAL_OPERAR_NORMAL:
+        return "ENTRADA_CONFIRMADA"
+
+    return "PROTOCOLO_ESTRICTO"
+
+
+def evaluar_decision(evidencia):
     resultado_inferencia = inferir_confianza(evidencia)
 
     confianza_base = resultado_inferencia.get("confianza", 50.0)
@@ -148,44 +180,56 @@ def evaluar_decision(evidencia):
 
     peso_reglas, motivos_reglas = aplicar_reglas_generales(evidencia)
     riesgo_compuesto = evaluar_riesgo_compuesto(evidencia)
+    aprendizaje = evaluar_aprendizaje_historico(evidencia)
     peso_final = limitar_peso(round(peso_inferencia * peso_reglas, 3))
     confianza = round(max(0, min(100, 50.0 * peso_final)), 2)
+    confianza += aprendizaje.get("ajuste_confianza_aprendizaje", 0)
+    confianza = round(max(0, min(100, confianza)), 2)
+
+    riesgo_nivel = riesgo_compuesto.get("riesgo_nivel", "BAJO")
+    riesgo_puntos = riesgo_compuesto.get("riesgo_puntos", 0)
 
     motivos = []
     motivos.extend(resultado_inferencia.get("motivos", []))
     motivos.extend(motivos_reglas)
     motivos.extend(riesgo_compuesto.get("motivos_riesgo", []))
+    motivos.append(aprendizaje.get("motivo_aprendizaje", ""))
+    bloqueo_duro, motivo_bloqueo = regla_bloqueo_duro_contextual(evidencia)
+
+    modo_ejecucion_sugerido = sugerir_modo_ejecucion(
+        confianza=confianza,
+        riesgo_nivel=riesgo_nivel,
+        evidencia=evidencia
+    )
 
     operar = True
-    decision = "OPERAR"
-    riesgo_nivel = riesgo_compuesto.get("riesgo_nivel", "BAJO")
-    
-    bloquear_por_riesgo_y_confianza = (
-        riesgo_nivel == "EXTREMO"
-        or (
-            riesgo_nivel == "ALTO"
-            and confianza < 50
-        )
-    )
-    
-    if (
-        bloquear_por_riesgo_y_confianza
-        or confianza <= UMBRAL_NO_OPERAR
-        or decision_inferencia == "DEBIL"
-    ):
+    decision = "OPERAR_CON_PROTOCOLO"
+
+    if bloqueo_duro:
         operar = False
         decision = "NO_OPERAR"
-        motivos.append("Bloqueada por motor de decisión: baja confianza final.")
+        motivos.append(motivo_bloqueo)
 
-    elif confianza >= UMBRAL_OPERAR:
-        operar = True
-        decision = "OPERAR"
-        motivos.append("Aprobada por motor de decisión: confianza suficiente.")
+    elif riesgo_nivel == "EXTREMO":
+        operar = False
+        decision = "NO_OPERAR"
+        motivos.append("Bloqueada por riesgo extremo.")
+
+    elif confianza >= UMBRAL_OPERAR_DIRECTO:
+        decision = "OPERAR_DIRECTO_O_CONFIRMADO"
+        motivos.append("Aprobada: confianza alta.")
+
+    elif confianza >= UMBRAL_OPERAR_NORMAL:
+        decision = "OPERAR_CON_CONFIRMACION"
+        motivos.append("Aprobada: requiere confirmación del protocolo.")
+
+    elif confianza >= UMBRAL_PROTOCOLO_ESTRICTO:
+        decision = "OPERAR_CON_PROTOCOLO_ESTRICTO"
+        motivos.append("Permitida solo con protocolo estricto.")
 
     else:
-        operar = True
-        decision = "OPERAR_OBSERVACION"
-        motivos.append("Permitida en observación: confianza intermedia.")
+        decision = "SOLO_SI_PROTOCOLO_CONFIRMA"
+        motivos.append("Confianza baja: solo operar si protocolo confirma fuerte.")
 
     return {
         "operar": operar,
@@ -199,63 +243,11 @@ def evaluar_decision(evidencia):
         "motivos": motivos,
         "detalle_inferencia": resultado_inferencia,
         "riesgo_compuesto": riesgo_compuesto,
-        "riesgo_nivel": riesgo_compuesto.get("riesgo_nivel"),
-        "riesgo_puntos": riesgo_compuesto.get("riesgo_puntos"),
-        "bloquear_por_riesgo_y_confianza": bloquear_por_riesgo_y_confianza,
+        "riesgo_nivel": riesgo_nivel,
+        "riesgo_puntos": riesgo_puntos,
+        "modo_ejecucion_sugerido": modo_ejecucion_sugerido,
+        "bloquear_por_riesgo_y_confianza": bloqueo_duro or riesgo_nivel == "EXTREMO",
+        "aprendizaje_historico": aprendizaje,
+        "decision_aprendizaje": aprendizaje.get("decision_aprendizaje", ""),
+        "ajuste_confianza_aprendizaje": aprendizaje.get("ajuste_confianza_aprendizaje", 0),
     }
-
-
-def probar_motor_decision():
-    ejemplos = [
-        {
-            "activo": "BIDU-OTC",
-            "direccion": "put",
-            "patron": "CHOCH bajista",
-            "tipo_mercado": "TENDENCIA_BAJISTA",
-            "estado_tendencia": "BAJISTA_NORMAL",
-            "pa_tipo": "IMPULSO_BAJISTA_FUERTE",
-            "pa_direccion": "PUT",
-            "calidad_mercado": "NORMAL",
-            "nivel_consenso": "PREMIUM",
-            "base_estrategia": "FUERTE",
-            "fortalezas_base": "PA_A_FAVOR_PUT|IMPULSO_BAJISTA_FUERTE",
-            "riesgos_base": "",
-        },
-        {
-            "activo": "COCOA-OTC",
-            "direccion": "call",
-            "patron": "pullback alcista a EMA",
-            "tipo_mercado": "TENDENCIA_ALCISTA",
-            "estado_tendencia": "ALCISTA_NORMAL",
-            "pa_tipo": "IMPULSO_ALCISTA_FUERTE",
-            "pa_direccion": "CALL",
-            "accion_precio": "CALL_RESISTENCIA_CERCA_SIN_RUPTURA",
-            "calidad_mercado": "NORMAL",
-            "nivel_consenso": "BAJO",
-            "base_estrategia": "MEDIA",
-            "fortalezas_base": "PA_A_FAVOR_CALL|IMPULSO_ALCISTA_FUERTE",
-            "riesgos_base": "CALL_RESISTENCIA_SIN_RUPTURA",
-        }
-    ]
-
-    print("\n===== PRUEBA MOTOR DECISIÓN BOOTIQ =====")
-
-    for i, evidencia in enumerate(ejemplos, start=1):
-        resultado = evaluar_decision(evidencia)
-
-        print(f"\n--- EJEMPLO {i} ---")
-        print("Patrón:", evidencia["patron"])
-        print("Dirección:", evidencia["direccion"])
-        print("Confianza:", resultado["confianza"])
-        print("Decisión:", resultado["decision"])
-        print("Operar:", resultado["operar"])
-        print("Peso inferencia:", resultado["peso_inferencia"])
-        print("Peso reglas:", resultado["peso_reglas"])
-        print("Peso final:", resultado["peso_final"])
-
-        for motivo in resultado["motivos"]:
-            print("-", motivo)
-
-
-if __name__ == "__main__":
-    probar_motor_decision()

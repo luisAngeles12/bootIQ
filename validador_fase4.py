@@ -24,7 +24,7 @@ def validar_operacion_fase4(evidencia):
 
     operar = decision.get("operar", True)
     confianza = decision.get("confianza", 50.0)
-    decision_confianza = decision.get("decision_confianza", "NEUTRA")
+    decision_confianza = decision.get("decision", "NEUTRA")
 
     debe_bloquear = not operar
 
