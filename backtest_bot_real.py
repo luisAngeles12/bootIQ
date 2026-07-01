@@ -315,7 +315,14 @@ def crear_registro_resultado(senal, velas, idx, idx_entrada, motivo_ejecucion, e
         "estado_setup": senal.get("estado_setup", ""),
         "confianza_setup": senal.get("confianza_setup", 0),
         "razones_clasificador_setup": senal.get("razones_clasificador_setup", ""),
-
+        "riesgo_protocolo": senal.get("riesgo_protocolo", 0),
+        "nivel_riesgo_protocolo": senal.get("nivel_riesgo_protocolo", ""),
+        "razon_riesgo_protocolo": senal.get("razon_riesgo_protocolo", ""),
+        
+        "indice_confirmacion_ia": senal.get("indice_confirmacion_ia", 0),
+        "nivel_confirmacion_ia": senal.get("nivel_confirmacion_ia", ""),
+        "accion_confirmacion_ia": senal.get("accion_confirmacion_ia", ""),
+        "razon_confirmacion_ia": senal.get("razon_confirmacion_ia", ""),
         "idx_senal": idx,
         "idx_entrada": idx_entrada,
         "motivo_ejecucion": motivo_ejecucion,
@@ -510,6 +517,15 @@ def guardar_resultados(resultados):
         "estado_setup",
         "confianza_setup",
         "razones_clasificador_setup",
+        "riesgo_protocolo",
+        "nivel_riesgo_protocolo",
+        "razon_riesgo_protocolo",
+        
+        "indice_confirmacion_ia",
+        "nivel_confirmacion_ia",
+        "accion_confirmacion_ia",
+        "razon_confirmacion_ia",
+        "rango_indice_confirmacion_ia",
         "idx_senal",
         "idx_entrada",
         "motivo_ejecucion",
@@ -662,9 +678,28 @@ def imprimir_resumen_fase4(resultados):
     print("Winrate bloqueadas:", str(wr_bloqueadas) + "%")
     print("Precisión del bloqueo:", str(precision_bloqueo) + "%")
     print("==========================\n")
+
+def clasificar_indice_confirmacion_ia(valor):
+    try:
+        valor = float(valor)
+    except Exception:
+        return "SIN_INDICE"
+
+    if valor >= 90:
+        return "90_100_PREMIUM"
+    if valor >= 75:
+        return "75_89_ALTO"
+    if valor >= 60:
+        return "60_74_MEDIO"
+    if valor >= 45:
+        return "45_59_BAJO"
+    return "0_44_MUY_BAJO"
 def imprimir_resumen(resultados):
     operadas = [r for r in resultados if r.get("estado_operacion") == "OPERADA"]
-
+    for r in resultados:
+        r["rango_indice_confirmacion_ia"] = clasificar_indice_confirmacion_ia(
+            r.get("indice_confirmacion_ia", 0)
+        )
     total = len(operadas)
     wins = sum(1 for r in operadas if r["resultado"] == "WIN")
     losses = total - wins
@@ -682,56 +717,60 @@ def imprimir_resumen(resultados):
     print("Operadas:", len(operadas))
     print("Canceladas Fase 4:", len([r for r in resultados if r.get("estado_operacion") == "CANCELADA_FASE4"]))
     print("Canceladas Protocolo:", len([r for r in resultados if r.get("estado_operacion") == "CANCELADA_PROTOCOLO"]))
-    for titulo, campo in [
-            ("POR ESTRATEGIA", "patron"),
-            ("POR BASE ESTRATEGIA", "base_estrategia"),
-            ("POR ACCION PRECIO", "accion_precio"),
-            ("POR PA PROFESIONAL", "pa_tipo"),
-            ("POR DIRECCION PA", "pa_direccion"),
-            ("POR RUPTURA", "tipo_ruptura"),
-        
-            # NUEVOS REPORTES
-            ("POR TIPO SETUP", "tipo_setup"),
-            ("POR FAMILIA SETUP", "familia_setup"),
-            ("POR SUBTIPO SETUP", "subtipo_setup"),
-            ("POR PROTOCOLO SUGERIDO", "protocolo_sugerido"),
-            ("POR NIVEL SETUP", "nivel_setup"),
-            ("POR ESTADO SETUP", "estado_setup"),
-            ("POR CALIDAD SETUP", "calidad_setup"),
-            ("POR MODO ENTRADA SETUP", "modo_entrada_setup"),
-            ("POR MOTIVO EJECUCION", "motivo_ejecucion"),
-            ("POR ESPERA VELAS", "espera_velas"),
-            ("POR SCORE FINAL", "score_final"),
-            ("POR NIVEL CONSENSO", "nivel_consenso"),
-            ("POR TIPO", "tipo"),
-            ("POR MERCADO", "tipo_mercado"),
-            ("POR CALIDAD MERCADO", "calidad_mercado"),
-            ("POR TENDENCIA", "estado_tendencia"),
-            ("POR ACTIVO", "activo"),
-     
-        ]:
-        imprimir_tabla_resumen(
-          "POR ESTADO OPERACION",
-          resumen_por_campo(resultados, "estado_operacion"),
-          limite=10
-        )
+    reportes = [
+        ("POR ESTRATEGIA", "patron"),
+        ("POR BASE ESTRATEGIA", "base_estrategia"),
+        ("POR ACCION PRECIO", "accion_precio"),
+        ("POR PA PROFESIONAL", "pa_tipo"),
+        ("POR DIRECCION PA", "pa_direccion"),
+        ("POR RUPTURA", "tipo_ruptura"),
+        ("POR TIPO SETUP", "tipo_setup"),
+        ("POR FAMILIA SETUP", "familia_setup"),
+        ("POR SUBTIPO SETUP", "subtipo_setup"),
+        ("POR PROTOCOLO SUGERIDO", "protocolo_sugerido"),
+        ("POR NIVEL SETUP", "nivel_setup"),
+        ("POR ESTADO SETUP", "estado_setup"),
+        ("POR CALIDAD SETUP", "calidad_setup"),
+        ("POR MODO ENTRADA SETUP", "modo_entrada_setup"),
+        ("POR MOTIVO EJECUCION", "motivo_ejecucion"),
+        ("POR NIVEL RIESGO PROTOCOLO", "nivel_riesgo_protocolo"),
+        ("POR NIVEL CONFIRMACION IA", "nivel_confirmacion_ia"),
+        ("POR ACCION CONFIRMACION IA", "accion_confirmacion_ia"),
+        ("POR INDICE CONFIRMACION IA", "rango_indice_confirmacion_ia"),
+        ("POR ESPERA VELAS", "espera_velas"),
+        ("POR SCORE FINAL", "score_final"),
+        ("POR NIVEL CONSENSO", "nivel_consenso"),
+        ("POR TIPO", "tipo"),
+        ("POR MERCADO", "tipo_mercado"),
+        ("POR CALIDAD MERCADO", "calidad_mercado"),
+        ("POR TENDENCIA", "estado_tendencia"),
+        ("POR ACTIVO", "activo"),
+    ]
+
+    imprimir_tabla_resumen(
+        "POR ESTADO OPERACION",
+        resumen_por_campo(resultados, "estado_operacion"),
+        limite=10
+    )
+
+    for titulo, campo in reportes:
         imprimir_tabla_resumen(
             titulo,
             resumen_por_campo(resultados, campo),
             limite=20
         )
-    
-        imprimir_tabla_resumen(
-            "POR RIESGOS BASE",
-            resumen_por_lista(resultados, "riesgos_base"),
-            limite=30
-        )
-    
-        imprimir_tabla_resumen(
-            "POR FORTALEZAS BASE",
-            resumen_por_lista(resultados, "fortalezas_base"),
-            limite=30
-        )
+
+    imprimir_tabla_resumen(
+        "POR RIESGOS BASE",
+        resumen_por_lista(resultados, "riesgos_base"),
+        limite=30
+    )
+
+    imprimir_tabla_resumen(
+        "POR FORTALEZAS BASE",
+        resumen_por_lista(resultados, "fortalezas_base"),
+        limite=30
+    )
 def main():
     reset_estado()
 

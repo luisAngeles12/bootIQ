@@ -1,4 +1,5 @@
 # motor_protocolos.py
+from motor_confirmacion import decidir_confirmacion
 
 def _txt(v):
     return str(v or "").lower().strip()
@@ -134,42 +135,191 @@ def _tipo_protocolo(senal):
 
 
 def _riesgo_cancelacion(senal):
+    """
+    Fase 5.4:
+    Riesgo adaptativo. Mantiene bloqueos duros solo para casos críticos.
+    El resto se decide por riesgo acumulado.
+    """
     modo = _txt(senal.get("modo_entrada_setup"))
     calidad = _txt(senal.get("calidad_setup"))
     balance = _num(senal.get("balance_setup"))
-    nivel_consenso = _txt(senal.get("nivel_consenso"))
-    tipo_setup = _txt(senal.get("tipo_setup"))
-    tendencia = _txt(senal.get("tendencia") or senal.get("estado_tendencia"))
     calidad_mercado = _txt(senal.get("calidad_mercado"))
-    subtipo = _txt(senal.get("subtipo_setup"))
-    estado_setup = _txt(senal.get("estado_setup"))
 
     if "no_operar" in modo or "cancelar" in modo:
         return True, "CANCELADA_PROTOCOLO_NO_OPERAR"
 
-    if calidad in ["baja", "muy_baja", "debil", "débil"]:
+    if calidad in ["muy_baja", "baja"]:
         return True, "CANCELADA_CALIDAD_SETUP_BAJA"
 
-    if balance <= -3:
-        return True, "CANCELADA_BALANCE_SETUP_NEGATIVO"
+    if balance <= -4:
+        return True, "CANCELADA_BALANCE_SETUP_CRITICO"
 
     if calidad_mercado == "sucio":
         return True, "CANCELADA_MERCADO_SUCIO"
 
-    if tipo_setup == "continuacion" and "fuerte" in tendencia:
-        return True, "CANCELADA_CONTINUACION_TENDENCIA_EXTREMA"
+    diagnostico = evaluar_riesgo_protocolo(senal)
+    riesgo = diagnostico.get("riesgo", 100)
+    nivel = diagnostico.get("nivel", "ALTO")
 
-    if nivel_consenso == "bueno":
-        return True, "CANCELADA_CONSENSO_BUENO_DEBIL"
+    senal["riesgo_protocolo"] = riesgo
+    senal["nivel_riesgo_protocolo"] = nivel
+    senal["razon_riesgo_protocolo"] = diagnostico.get("razon", "")
 
-    if subtipo == "zona_sin_ruptura":
-        return True, "CANCELADA_ZONA_SIN_RUPTURA"
-
-    if estado_setup == "pendiente_confirmacion" and subtipo in ["sweep_simple", "zona_sin_ruptura"]:
-        return True, "CANCELADA_SETUP_PENDIENTE_DEBIL"
+    if riesgo >= 75:
+        return True, "CANCELADA_RIESGO_PROTOCOLO_ALTO"
 
     return False, ""
 
+def evaluar_riesgo_protocolo(senal):
+    """
+    Fase 5.3.1:
+    Evalúa riesgo del protocolo sin cancelar todavía.
+    Solo diagnostica.
+    """
+    try:
+        riesgo = 0
+        motivos = []
+
+        modo = _txt(senal.get("modo_entrada_setup"))
+        calidad = _txt(senal.get("calidad_setup"))
+        balance = _num(senal.get("balance_setup"))
+        score = _num(senal.get("score_final"))
+        nivel_consenso = _txt(senal.get("nivel_consenso"))
+        tipo_setup = _txt(senal.get("tipo_setup"))
+        subtipo = _txt(senal.get("subtipo_setup"))
+        estado_setup = _txt(senal.get("estado_setup"))
+        nivel_setup = _txt(senal.get("nivel_setup"))
+        confianza_setup = _num(senal.get("confianza_setup"))
+        tendencia = _txt(senal.get("tendencia") or senal.get("estado_tendencia"))
+        calidad_mercado = _txt(senal.get("calidad_mercado"))
+        base = _txt(senal.get("base_estrategia"))
+        pa_tipo = _txt(senal.get("pa_tipo"))
+        pa_direccion = _txt(senal.get("pa_direccion"))
+        direccion = _direccion(senal)
+
+        if "no_operar" in modo or "cancelar" in modo:
+            riesgo += 45
+            motivos.append("modo entrada no operar/cancelar")
+
+        if calidad in ["baja", "muy_baja", "debil", "débil"]:
+            riesgo += 35
+            motivos.append("calidad setup baja")
+
+        if balance <= -3:
+            riesgo += 35
+            motivos.append("balance setup muy negativo")
+        elif balance < 0:
+            riesgo += 12
+            motivos.append("balance setup negativo")
+        elif balance >= 2:
+            riesgo -= 12
+            motivos.append("balance setup positivo")
+
+        if calidad_mercado == "sucio":
+            riesgo += 35
+            motivos.append("mercado sucio")
+        elif calidad_mercado == "normal":
+            riesgo += 5
+            motivos.append("mercado normal")
+        elif calidad_mercado == "limpio":
+            riesgo -= 8
+            motivos.append("mercado limpio")
+
+        if tipo_setup == "continuacion" and "fuerte" in tendencia:
+            riesgo += 15
+            motivos.append("continuación en tendencia extrema/fuerte")
+
+        if nivel_consenso == "bueno":
+            riesgo += 8
+            motivos.append("consenso bueno, no premium")
+        elif nivel_consenso == "alto":
+            riesgo -= 10
+            motivos.append("consenso alto")
+        elif nivel_consenso == "premium":
+            riesgo -= 15
+            motivos.append("consenso premium")
+        elif nivel_consenso in ["bajo", "muy_bajo"]:
+            riesgo += 18
+            motivos.append("consenso bajo")
+
+        if subtipo == "zona_sin_ruptura":
+            riesgo += 25
+            motivos.append("zona sin ruptura")
+
+        if estado_setup == "pendiente_confirmacion":
+            riesgo += 18
+            motivos.append("setup pendiente confirmación")
+
+        if nivel_setup in ["medio_bajo", "bajo"]:
+            riesgo += 15
+            motivos.append("nivel setup bajo/medio bajo")
+
+        if confianza_setup and confianza_setup < 55:
+            riesgo += 15
+            motivos.append("confianza setup baja")
+        elif confianza_setup >= 65:
+            riesgo -= 8
+            motivos.append("confianza setup aceptable")
+
+        if base == "fuerte":
+            riesgo -= 12
+            motivos.append("base estrategia fuerte")
+        elif base == "debil" or base == "débil":
+            riesgo += 12
+            motivos.append("base estrategia débil")
+
+        if score >= 180:
+            riesgo -= 18
+            motivos.append("score final alto")
+        elif score >= 145:
+            riesgo -= 10
+            motivos.append("score final aceptable")
+        elif score and score < 100:
+            riesgo += 15
+            motivos.append("score final bajo")
+
+        if direccion == "call":
+            if pa_direccion == "call" and "confirmado" in pa_tipo:
+                riesgo -= 12
+                motivos.append("PA confirmado a favor CALL")
+            elif pa_direccion == "put":
+                riesgo += 18
+                motivos.append("PA contra CALL")
+
+        if direccion == "put":
+            if pa_direccion == "put" and "confirmado" in pa_tipo:
+                riesgo -= 12
+                motivos.append("PA confirmado a favor PUT")
+            elif pa_direccion == "call":
+                riesgo += 18
+                motivos.append("PA contra PUT")
+
+        if riesgo < 0:
+            riesgo = 0
+
+        if riesgo >= 70:
+            nivel = "ALTO"
+        elif riesgo >= 45:
+            nivel = "MEDIO"
+        elif riesgo >= 25:
+            nivel = "BAJO"
+        else:
+            nivel = "MUY_BAJO"
+
+        return {
+            "riesgo": round(riesgo, 2),
+            "nivel": nivel,
+            "motivos": motivos,
+            "razon": " | ".join(motivos)
+        }
+
+    except Exception as e:
+        return {
+            "riesgo": 100,
+            "nivel": "ERROR",
+            "motivos": ["error evaluando riesgo protocolo"],
+            "razon": "error evaluando riesgo protocolo: " + str(e)
+        }
 
 def _entrada_directa_permitida(senal):
     calidad = _txt(senal.get("calidad_setup"))
@@ -205,76 +355,97 @@ def _entrada_directa_permitida(senal):
 def _protocolo_sweep(velas, idx, senal):
     direccion = _direccion(senal)
     subtipo = _txt(senal.get("subtipo_setup"))
+    riesgo = _num(senal.get("riesgo_protocolo"), 100)
+    score = _num(senal.get("score_final"))
+    nivel_consenso = _txt(senal.get("nivel_consenso"))
+
+    def confirmacion_fuerte(j):
+        return _ruptura_micro(velas, j, direccion) and _impulso(velas[j], direccion)
+
+    def confirmacion_media(j):
+        return _ruptura_micro(velas, j, direccion) or (
+            _rechazo(velas[j], direccion) and _impulso(velas[j], direccion)
+        )
 
     if subtipo == "sweep_simple":
-        for j in range(idx + 1, min(idx + 4, len(velas) - 1)):
-            if _ruptura_micro(velas, j, direccion) and _impulso(velas[j], direccion):
-                return j, "PROTOCOLO_SWEEP_SIMPLE_SOLO_RUPTURA_IMPULSO"
+        for j in range(idx + 2, min(idx + 5, len(velas) - 1)):
+            if confirmacion_fuerte(j):
+                return j, "PROTOCOLO_SWEEP_SIMPLE_RUPTURA_IMPULSO_ESPERA_2"
+
+        if riesgo <= 35 and score >= 145 and nivel_consenso in ["alto", "premium"]:
+            for j in range(idx + 2, min(idx + 5, len(velas) - 1)):
+                if confirmacion_media(j):
+                    return j, "PROTOCOLO_SWEEP_SIMPLE_CONFIRMACION_MEDIA"
 
         return None, "CANCELADA_SWEEP_SIMPLE"
 
     if subtipo == "sweep_ruptura_confirmable":
-        for j in range(idx + 1, min(idx + 4, len(velas) - 1)):
-            if _ruptura_micro(velas, j, direccion) and _impulso(velas[j], direccion):
-                return j, "PROTOCOLO_SWEEP_RUPTURA_CONFIRMABLE_IMPULSO"
+        for j in range(idx + 2, min(idx + 5, len(velas) - 1)):
+            if confirmacion_fuerte(j):
+                return j, "PROTOCOLO_SWEEP_RUPTURA_CONFIRMABLE_IMPULSO_ESPERA_2"
+
+        if riesgo <= 40 and score >= 135:
+            for j in range(idx + 2, min(idx + 5, len(velas) - 1)):
+                if confirmacion_media(j):
+                    return j, "PROTOCOLO_SWEEP_RUPTURA_CONFIRMABLE_MEDIA"
 
         return None, "CANCELADA_SWEEP_RUPTURA_NO_CONFIRMADA"
 
     if subtipo == "sweep_con_rechazo_agotamiento":
-        for j in range(idx, min(idx + 4, len(velas) - 1)):
-            if _rechazo(velas[j], direccion):
-                return j, "PROTOCOLO_SWEEP_RECHAZO_AGOTAMIENTO"
+        for j in range(idx + 1, min(idx + 5, len(velas) - 1)):
+            if _rechazo(velas[j], direccion) and _impulso(velas[j], direccion):
+                return j, "PROTOCOLO_SWEEP_RECHAZO_AGOTAMIENTO_CONFIRMADO"
 
-        for j in range(idx + 1, min(idx + 4, len(velas) - 1)):
-            if _ruptura_micro(velas, j, direccion) and _impulso(velas[j], direccion):
+        for j in range(idx + 2, min(idx + 5, len(velas) - 1)):
+            if confirmacion_fuerte(j):
                 return j, "PROTOCOLO_SWEEP_AGOTAMIENTO_RUPTURA_IMPULSO"
 
         return None, "CANCELADA_SWEEP_AGOTAMIENTO_SIN_CONFIRMACION"
 
-    for j in range(idx, min(idx + 4, len(velas) - 1)):
-        if _rechazo(velas[j], direccion):
-            return j, "PROTOCOLO_SWEEP_RECHAZO"
+    for j in range(idx + 2, min(idx + 5, len(velas) - 1)):
+        if confirmacion_fuerte(j):
+            return j, "PROTOCOLO_SWEEP_RUPTURA_IMPULSO_ESPERA_2"
 
-    for j in range(idx + 1, min(idx + 4, len(velas) - 1)):
-        if _ruptura_micro(velas, j, direccion) and _impulso(velas[j], direccion):
-            return j, "PROTOCOLO_SWEEP_RUPTURA_IMPULSO"
+    for j in range(idx + 2, min(idx + 5, len(velas) - 1)):
+        if riesgo <= 40 and confirmacion_media(j):
+            return j, "PROTOCOLO_SWEEP_CONFIRMACION_MEDIA"
 
     return None, "CANCELADA_SWEEP_SIN_RECHAZO_VALIDO"
-
 
 def _protocolo_choch(velas, idx, senal):
     direccion = _direccion(senal)
     subtipo = _txt(senal.get("subtipo_setup"))
 
+    # CHOCH con PA a favor: esperar mínimo 2 velas
     if subtipo == "choch_con_pa_a_favor":
-        for j in range(idx, min(idx + 4, len(velas) - 1)):
+        for j in range(idx + 2, min(idx + 5, len(velas) - 1)):
             if _ruptura_micro(velas, j, direccion) and _impulso(velas[j], direccion):
-                return j, "PROTOCOLO_CHOCH_PA_FAVOR_RUPTURA_IMPULSO"
+                return j, "PROTOCOLO_CHOCH_PA_FAVOR_RUPTURA_IMPULSO_ESPERA_2"
 
-        for j in range(idx + 1, min(idx + 5, len(velas) - 1)):
+        for j in range(idx + 2, min(idx + 6, len(velas) - 1)):
             if _pullback_recuperado(velas, j, direccion) and _impulso(velas[j], direccion):
-                return j, "PROTOCOLO_CHOCH_PA_FAVOR_PULLBACK_IMPULSO"
+                return j, "PROTOCOLO_CHOCH_PA_FAVOR_PULLBACK_IMPULSO_ESPERA_2"
 
         return None, "CANCELADA_CHOCH_PA_FAVOR_SIN_CONFIRMACION"
 
+    # CHOCH con tendencia débil: esperar confirmación real
     if subtipo == "choch_tendencia_debil":
-        for j in range(idx + 1, min(idx + 5, len(velas) - 1)):
+        for j in range(idx + 2, min(idx + 6, len(velas) - 1)):
             if _ruptura_micro(velas, j, direccion) and _impulso(velas[j], direccion):
-                return j, "PROTOCOLO_CHOCH_TENDENCIA_DEBIL_RUPTURA_IMPULSO"
+                return j, "PROTOCOLO_CHOCH_TENDENCIA_DEBIL_RUPTURA_IMPULSO_ESPERA_2"
 
         return None, "CANCELADA_CHOCH_TENDENCIA_DEBIL"
 
-    for j in range(idx, min(idx + 4, len(velas) - 1)):
+    # CHOCH genérico: no entrar en idx ni idx+1
+    for j in range(idx + 2, min(idx + 5, len(velas) - 1)):
         if _ruptura_micro(velas, j, direccion) and _impulso(velas[j], direccion):
-            return j, "PROTOCOLO_CHOCH_RUPTURA_IMPULSO"
+            return j, "PROTOCOLO_CHOCH_RUPTURA_IMPULSO_ESPERA_2"
 
-    for j in range(idx + 1, min(idx + 5, len(velas) - 1)):
+    for j in range(idx + 2, min(idx + 6, len(velas) - 1)):
         if _pullback_recuperado(velas, j, direccion) and _impulso(velas[j], direccion):
-            return j, "PROTOCOLO_CHOCH_PULLBACK_CON_IMPULSO"
+            return j, "PROTOCOLO_CHOCH_PULLBACK_CON_IMPULSO_ESPERA_2"
 
     return None, "CANCELADA_CHOCH_SIN_RUPTURA_REAL"
-
-
 def _protocolo_pullback(velas, idx, senal):
     direccion = _direccion(senal)
     subtipo = _txt(senal.get("subtipo_setup"))
@@ -282,44 +453,67 @@ def _protocolo_pullback(velas, idx, senal):
     calidad_mercado = _txt(senal.get("calidad_mercado"))
     nivel_consenso = _txt(senal.get("nivel_consenso"))
     balance = _num(senal.get("balance_setup"))
+    riesgo = _num(senal.get("riesgo_protocolo"), 100)
+    score = _num(senal.get("score_final"))
 
-    if subtipo in ["pullback_generico", "pullback_tendencia_insuficiente", "pullback_tendencia_agotada"]:
-        return None, f"CANCELADA_{subtipo.upper()}"
+    if subtipo == "pullback_tendencia_agotada":
+        return None, "CANCELADA_PULLBACK_TENDENCIA_AGOTADA"
+
+    if subtipo == "pullback_tendencia_insuficiente":
+        if riesgo > 35 and score < 145 and nivel_consenso not in ["alto", "premium"]:
+            return None, "CANCELADA_PULLBACK_TENDENCIA_INSUFICIENTE"
+
+    if subtipo == "pullback_generico":
+        if riesgo > 30 and score < 150 and balance < 2:
+            return None, "CANCELADA_PULLBACK_GENERICO"
 
     if calidad_mercado != "limpio":
-        if nivel_consenso not in ["premium", "alto"] and balance < 2:
+        if nivel_consenso not in ["premium", "alto"] and balance < 1 and riesgo > 35:
             return None, "CANCELADA_PULLBACK_MERCADO_NO_LIMPIO"
 
     if "debil" in tendencia or "débil" in tendencia:
-        return None, "CANCELADA_PULLBACK_TENDENCIA_DEBIL"
+        if nivel_consenso not in ["alto", "premium"] and score < 150:
+            return None, "CANCELADA_PULLBACK_TENDENCIA_DEBIL"
 
     if "agotada" in tendencia:
         return None, "CANCELADA_PULLBACK_TENDENCIA_AGOTADA"
 
-    for j in range(idx + 1, min(idx + 6, len(velas) - 1)):
+    for j in range(idx + 2, min(idx + 6, len(velas) - 1)):
         recuperado = _pullback_recuperado(velas, j, direccion)
         rechazo = _rechazo(velas[j], direccion)
         impulso = _impulso(velas[j], direccion)
 
         if subtipo == "pullback_continuacion_limpia":
             if recuperado and rechazo and impulso:
-                return j, "PROTOCOLO_PULLBACK_LIMPIO_RECHAZO_IMPULSO"
+                return j, "PROTOCOLO_PULLBACK_LIMPIO_RECHAZO_IMPULSO_ESPERA_2"
 
-            if recuperado and impulso:
+            if recuperado and impulso and riesgo <= 35:
                 return j, "PROTOCOLO_PULLBACK_LIMPIO_RECUPERACION_IMPULSO"
 
         if subtipo == "pullback_balance_positivo":
-            if j - idx == 2 and recuperado and rechazo:
+            if recuperado and rechazo:
                 return j, "PROTOCOLO_PULLBACK_BALANCE_ESPERA_2_RECHAZO"
 
-            if recuperado and rechazo and impulso:
-                return j, "PROTOCOLO_PULLBACK_BALANCE_RECHAZO_IMPULSO"
+            if recuperado and impulso and riesgo <= 40:
+                return j, "PROTOCOLO_PULLBACK_BALANCE_RECUPERACION_IMPULSO"
 
-        if j - idx == 2 and recuperado and rechazo:
-            return j, "PROTOCOLO_PULLBACK_ESPERA_2_RECHAZO"
+        if subtipo in ["pullback_tendencia_insuficiente", "pullback_generico"]:
+            if recuperado and rechazo and impulso:
+                return j, "PROTOCOLO_PULLBACK_GENERICO_RECHAZO_IMPULSO_ESPERA_2"
+
+            if (
+                recuperado
+                and impulso
+                and riesgo <= 30
+                and score >= 150
+                and nivel_consenso in ["alto", "premium"]
+            ):
+                return j, "PROTOCOLO_PULLBACK_GENERICO_CONFIRMADO_POR_RIESGO_BAJO"
+
+        if recuperado and rechazo and impulso:
+            return j, "PROTOCOLO_PULLBACK_RECHAZO_IMPULSO_ESPERA_2"
 
     return None, "CANCELADA_PULLBACK_SIN_CONFIRMACION_INSTITUCIONAL"
-
 
 def _protocolo_reaccion_zona(velas, idx, senal):
     direccion = _direccion(senal)
@@ -379,6 +573,19 @@ def buscar_entrada_confirmada(velas, idx, senal):
     if idx >= len(velas) - 2:
         return None, "CANCELADA_SIN_VELAS_FUTURAS"
 
+    diagnostico_riesgo = evaluar_riesgo_protocolo(senal)
+
+    senal["riesgo_protocolo"] = diagnostico_riesgo.get("riesgo", 100)
+    senal["nivel_riesgo_protocolo"] = diagnostico_riesgo.get("nivel", "ERROR")
+    senal["razon_riesgo_protocolo"] = diagnostico_riesgo.get("razon", "")
+
+    confirmacion_ia = decidir_confirmacion(senal)
+
+    senal["indice_confirmacion_ia"] = confirmacion_ia.get("indice", 0)
+    senal["nivel_confirmacion_ia"] = confirmacion_ia.get("nivel", "BAJO")
+    senal["accion_confirmacion_ia"] = confirmacion_ia.get("accion", "CANCELAR")
+    senal["razon_confirmacion_ia"] = confirmacion_ia.get("razon", "")
+
     cancelar, motivo = _riesgo_cancelacion(senal)
     if cancelar:
         return None, motivo
@@ -398,7 +605,17 @@ def buscar_entrada_confirmada(velas, idx, senal):
         return None, "CANCELADA_RUPTURA_RESISTENCIA_NO_CONFIRMADA"
 
     if estado_setup == "pendiente_confirmacion":
-        if nivel_setup in ["medio_bajo", "bajo"] or confianza_setup < 55:
+        riesgo_actual = _num(senal.get("riesgo_protocolo"), 100)
+        score_actual = _num(senal.get("score_final"))
+        nivel_consenso_actual = _txt(senal.get("nivel_consenso"))
+
+        if (
+            riesgo_actual >= 65
+            and nivel_setup in ["medio_bajo", "bajo"]
+            and confianza_setup < 55
+            and score_actual < 145
+            and nivel_consenso_actual not in ["alto", "premium"]
+        ):
             return None, "CANCELADA_SETUP_PENDIENTE_DEBIL"
 
     protocolo = _tipo_protocolo(senal)

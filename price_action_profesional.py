@@ -25,10 +25,10 @@ def _vela(o, c, h, l):
 def rechazo_confirmado(opens, closes, highs, lows, soporte, resistencia, vol):
     """
     Detecta rechazo real + confirmación.
-    No mira solo una vela. Mira rechazo y continuidad.
+    Más estricto para evitar llamar favorable a rechazos débiles.
     """
     try:
-        if len(closes) < 6:
+        if len(closes) < 8:
             return {
                 "tipo": "SIN_DATOS",
                 "direccion": "NEUTRA",
@@ -40,74 +40,103 @@ def rechazo_confirmado(opens, closes, highs, lows, soporte, resistencia, vol):
         if vol <= 0:
             vol = abs(closes[-1]) * 0.0001
 
-        # vela de rechazo = penúltima
-        o_rej = opens[-2]
-        c_rej = closes[-2]
-        h_rej = highs[-2]
-        l_rej = lows[-2]
-
-        # vela de confirmación = última
-        o_conf = opens[-1]
-        c_conf = closes[-1]
-        h_conf = highs[-1]
-        l_conf = lows[-1]
+        o_rej, c_rej, h_rej, l_rej = opens[-2], closes[-2], highs[-2], lows[-2]
+        o_conf, c_conf, h_conf, l_conf = opens[-1], closes[-1], highs[-1], lows[-1]
 
         rej = _vela(o_rej, c_rej, h_rej, l_rej)
         conf = _vela(o_conf, c_conf, h_conf, l_conf)
 
-        cerca_soporte = abs(c_rej - soporte) <= vol * 1.35 or abs(l_rej - soporte) <= vol * 1.35
-        cerca_resistencia = abs(resistencia - c_rej) <= vol * 1.35 or abs(resistencia - h_rej) <= vol * 1.35
+        precio = closes[-1]
+        rango_total = abs(resistencia - soporte)
 
+        if rango_total <= 0:
+            rango_total = vol * 2
+
+        posicion_rango = abs(precio - soporte) / rango_total
+
+        cerca_soporte = (
+            abs(c_rej - soporte) <= vol * 1.05
+            or abs(l_rej - soporte) <= vol * 1.05
+        )
+
+        cerca_resistencia = (
+            abs(resistencia - c_rej) <= vol * 1.05
+            or abs(resistencia - h_rej) <= vol * 1.05
+        )
+
+        distancia_resistencia = abs(resistencia - precio)
+        distancia_soporte = abs(precio - soporte)
+
+        # =========================
+        # RECHAZO COMPRADOR / CALL
+        # =========================
         rechazo_comprador = (
             cerca_soporte
-            and rej["mecha_inf_ratio"] >= 0.38
-            and rej["cierre_pos"] >= 0.52
+            and rej["mecha_inf_ratio"] >= 0.45
+            and rej["cierre_pos"] >= 0.58
+            and posicion_rango <= 0.62
         )
 
         confirma_call = (
             conf["verde"]
+            and conf["fuerza"] >= 0.38
             and c_conf > c_rej
-            and c_conf >= l_conf + (conf["rango"] * 0.55)
+            and c_conf > o_rej
+            and conf["cierre_pos"] >= 0.62
+            and distancia_resistencia > vol * 0.70
         )
 
-        if rechazo_comprador and confirma_call:
+        sin_rechazo_vendedor_actual = conf["mecha_sup_ratio"] <= 0.42
+
+        if rechazo_comprador and confirma_call and sin_rechazo_vendedor_actual:
             fuerza = (
                 rej["mecha_inf_ratio"]
                 + conf["fuerza"]
-            ) / 2
+                + conf["cierre_pos"]
+            ) / 3
 
             return {
                 "tipo": "RECHAZO_COMPRADOR_CONFIRMADO",
                 "direccion": "CALL",
                 "confirmado": True,
                 "fuerza": round(fuerza, 3),
-                "razon": "rechazo comprador confirmado: soporte + recuperación + vela de confirmación"
+                "razon": "rechazo comprador confirmado: soporte + cierre alto + confirmación sin resistencia inmediata"
             }
 
+        # =========================
+        # RECHAZO VENDEDOR / PUT
+        # =========================
         rechazo_vendedor = (
             cerca_resistencia
-            and rej["mecha_sup_ratio"] >= 0.38
-            and rej["cierre_pos"] <= 0.48
+            and rej["mecha_sup_ratio"] >= 0.42
+            and rej["cierre_pos"] <= 0.44
+            and posicion_rango >= 0.38
         )
 
         confirma_put = (
             conf["roja"]
+            and conf["fuerza"] >= 0.34
             and c_conf < c_rej
-            and c_conf <= h_conf - (conf["rango"] * 0.55)
+            and c_conf < o_rej
+            and conf["cierre_pos"] <= 0.42
+            and distancia_soporte > vol * 0.75
         )
 
-        if rechazo_vendedor and confirma_put:
+        sin_rechazo_comprador_actual = conf["mecha_inf_ratio"] <= 0.45
+
+        if rechazo_vendedor and confirma_put and sin_rechazo_comprador_actual:
             fuerza = (
                 rej["mecha_sup_ratio"]
                 + conf["fuerza"]
-            ) / 2
+                + (1 - conf["cierre_pos"])
+            ) / 3
 
             return {
                 "tipo": "RECHAZO_VENDEDOR_CONFIRMADO",
                 "direccion": "PUT",
                 "confirmado": True,
                 "fuerza": round(fuerza, 3),
-                "razon": "rechazo vendedor confirmado: resistencia + rechazo + vela de confirmación"
+                "razon": "rechazo vendedor confirmado: resistencia + cierre bajo + confirmación sin soporte inmediato"
             }
 
         return {
@@ -126,8 +155,6 @@ def rechazo_confirmado(opens, closes, highs, lows, soporte, resistencia, vol):
             "fuerza": 0,
             "razon": "error rechazo confirmado: " + str(e)
         }
-
-
 def impulso_profesional(opens, closes, highs, lows, cantidad=5):
     try:
         if len(closes) < cantidad:
@@ -193,11 +220,12 @@ def impulso_profesional(opens, closes, highs, lows, cantidad=5):
 
 def agotamiento_profesional(opens, closes, highs, lows, soporte, resistencia, vol, cantidad=6):
     try:
-        if len(closes) < cantidad:
+        if len(closes) < cantidad + 1:
             return {
                 "direccion": "NEUTRA",
                 "tipo": "SIN_DATOS",
                 "confirmado": False,
+                "fuerza": 0,
                 "razon": "agotamiento: velas insuficientes"
             }
 
@@ -205,20 +233,28 @@ def agotamiento_profesional(opens, closes, highs, lows, soporte, resistencia, vo
             vol = abs(closes[-1]) * 0.0001
 
         precio = closes[-1]
+        rango_total = abs(resistencia - soporte)
 
-        cerca_resistencia = abs(resistencia - precio) <= vol * 1.40
-        cerca_soporte = abs(precio - soporte) <= vol * 1.40
+        if rango_total <= 0:
+            rango_total = vol * 2
+
+        posicion_rango = abs(precio - soporte) / rango_total
+
+        cerca_resistencia = abs(resistencia - precio) <= vol * 1.15
+        cerca_soporte = abs(precio - soporte) <= vol * 1.15
 
         verdes = 0
         rojas = 0
         mechas_sup = 0
         mechas_inf = 0
         cuerpos = []
+        fuerzas = []
 
         for i in range(-cantidad, 0):
             v = _vela(opens[i], closes[i], highs[i], lows[i])
 
             cuerpos.append(v["cuerpo"])
+            fuerzas.append(v["fuerza"])
 
             if v["verde"]:
                 verdes += 1
@@ -226,34 +262,78 @@ def agotamiento_profesional(opens, closes, highs, lows, soporte, resistencia, vo
             if v["roja"]:
                 rojas += 1
 
-            if v["mecha_sup_ratio"] >= 0.35:
+            if v["mecha_sup_ratio"] >= 0.38:
                 mechas_sup += 1
 
-            if v["mecha_inf_ratio"] >= 0.35:
+            if v["mecha_inf_ratio"] >= 0.38:
                 mechas_inf += 1
 
-        cuerpos_decrecen = cuerpos[-1] < cuerpos[0] if cuerpos else False
+        cuerpo_inicio = sum(cuerpos[:3]) / 3
+        cuerpo_final = sum(cuerpos[-3:]) / 3
 
-        if cerca_resistencia and verdes >= 4 and mechas_sup >= 3 and cuerpos_decrecen:
+        fuerza_inicio = sum(fuerzas[:3]) / 3
+        fuerza_final = sum(fuerzas[-3:]) / 3
+
+        cuerpos_decrecen = cuerpo_final < cuerpo_inicio * 0.82
+        fuerza_decrece = fuerza_final < fuerza_inicio * 0.88
+
+        ultima = _vela(opens[-1], closes[-1], highs[-1], lows[-1])
+
+        confirmacion_bajista = (
+            ultima["roja"]
+            and ultima["cierre_pos"] <= 0.45
+            and ultima["mecha_sup_ratio"] >= 0.28
+        )
+
+        confirmacion_alcista = (
+            ultima["verde"]
+            and ultima["cierre_pos"] >= 0.55
+            and ultima["mecha_inf_ratio"] >= 0.28
+        )
+
+        if (
+            cerca_resistencia
+            and posicion_rango >= 0.68
+            and verdes >= 4
+            and mechas_sup >= 3
+            and cuerpos_decrecen
+            and fuerza_decrece
+            and confirmacion_bajista
+        ):
+            fuerza = min(1, (mechas_sup / cantidad) + (fuerza_inicio - fuerza_final))
+
             return {
                 "direccion": "PUT",
                 "tipo": "AGOTAMIENTO_ALCISTA_CONFIRMADO",
                 "confirmado": True,
-                "razon": "agotamiento alcista confirmado: resistencia + avance cansado + mechas superiores"
+                "fuerza": round(fuerza, 3),
+                "razon": "agotamiento alcista confirmado: resistencia + pérdida de fuerza + confirmación bajista"
             }
 
-        if cerca_soporte and rojas >= 4 and mechas_inf >= 3 and cuerpos_decrecen:
+        if (
+            cerca_soporte
+            and posicion_rango <= 0.32
+            and rojas >= 4
+            and mechas_inf >= 3
+            and cuerpos_decrecen
+            and fuerza_decrece
+            and confirmacion_alcista
+        ):
+            fuerza = min(1, (mechas_inf / cantidad) + (fuerza_inicio - fuerza_final))
+
             return {
                 "direccion": "CALL",
                 "tipo": "AGOTAMIENTO_BAJISTA_CONFIRMADO",
                 "confirmado": True,
-                "razon": "agotamiento bajista confirmado: soporte + caída cansada + mechas inferiores"
+                "fuerza": round(fuerza, 3),
+                "razon": "agotamiento bajista confirmado: soporte + pérdida de fuerza + confirmación alcista"
             }
 
         return {
             "direccion": "NEUTRA",
             "tipo": "SIN_AGOTAMIENTO_CONFIRMADO",
             "confirmado": False,
+            "fuerza": 0,
             "razon": "sin agotamiento confirmado"
         }
 
@@ -262,9 +342,9 @@ def agotamiento_profesional(opens, closes, highs, lows, soporte, resistencia, vo
             "direccion": "NEUTRA",
             "tipo": "ERROR",
             "confirmado": False,
+            "fuerza": 0,
             "razon": "error agotamiento profesional: " + str(e)
         }
-
 
 def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resistencia, vol):
     rechazo = rechazo_confirmado(
@@ -300,37 +380,70 @@ def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resis
     tipo = "SIN_CONTEXTO_CLARO"
     fuerza = 0
     razones = []
+    contradicciones = []
+
+    rechazo_dir = rechazo.get("direccion", "NEUTRA")
+    impulso_dir = impulso.get("direccion", "NEUTRA")
+    agotamiento_dir = agotamiento.get("direccion", "NEUTRA")
 
     if rechazo.get("confirmado"):
-        direccion = rechazo.get("direccion", "NEUTRA")
+        direccion = rechazo_dir
         tipo = rechazo.get("tipo", "RECHAZO_CONFIRMADO")
         fuerza += rechazo.get("fuerza", 0)
         razones.append(rechazo.get("razon", ""))
 
     if agotamiento.get("confirmado"):
-        direccion = agotamiento.get("direccion", direccion)
-        tipo = agotamiento.get("tipo", tipo)
-        fuerza += 0.35
-        razones.append(agotamiento.get("razon", ""))
+        if direccion == "NEUTRA":
+            direccion = agotamiento_dir
+            tipo = agotamiento.get("tipo", tipo)
+            fuerza += agotamiento.get("fuerza", 0)
+            razones.append(agotamiento.get("razon", ""))
 
-    if impulso.get("direccion") != "NEUTRA":
+        elif agotamiento_dir == direccion:
+            fuerza += agotamiento.get("fuerza", 0) * 0.70
+            razones.append(agotamiento.get("razon", ""))
+
+        else:
+            contradicciones.append("agotamiento contradice rechazo")
+
+    if impulso_dir != "NEUTRA":
         razones.append(impulso.get("razon", ""))
 
         if direccion == "NEUTRA":
-            direccion = impulso.get("direccion")
+            direccion = impulso_dir
             tipo = impulso.get("tipo")
             fuerza += impulso.get("fuerza", 0)
+
+        elif impulso_dir == direccion:
+            fuerza += impulso.get("fuerza", 0) * 0.45
+
+        else:
+            contradicciones.append("impulso contrario a price action")
+
+    if contradicciones:
+        fuerza *= 0.55
+        razones.append("contradicciones: " + " | ".join(contradicciones))
+
+        if fuerza < 0.55:
+            direccion = "NEUTRA"
+            tipo = "PA_CONTRADICTORIO"
+
+    fuerza = round(min(fuerza, 1), 3)
+
+    if fuerza < 0.45:
+        direccion = "NEUTRA"
+        tipo = "SIN_CONTEXTO_CLARO"
 
     return {
         "direccion": direccion,
         "tipo": tipo,
-        "fuerza": round(fuerza, 3),
+        "fuerza": fuerza,
         "rechazo": rechazo,
         "impulso": impulso,
         "agotamiento": agotamiento,
+        "contradicciones": contradicciones,
         "razon": " | ".join([r for r in razones if r])
     }
-
 def rechazo_historico_inteligente(opens, closes, highs, lows, soporte, resistencia, vol, velas=6):
     try:
         if len(closes) < velas + 2:

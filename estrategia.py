@@ -989,6 +989,14 @@ def crear_senal_profesional(activo, direccion, estrategia, puntaje, rsi, razones
         "pa_direccion": ctx.get("pa_direccion", "NEUTRA") if ctx else "NEUTRA",
         "pa_fuerza": ctx.get("pa_fuerza", 0) if ctx else 0,
         "pa_razon": ctx.get("pa_razon", "") if ctx else "",
+        "posicion_rango": ctx.get("posicion_rango", 0.5) if ctx else 0.5,
+        "rechazo_hist_direccion": ctx.get("rechazo_hist_direccion", "NEUTRA") if ctx else "NEUTRA",
+        "impulso_alcista": ctx.get("impulso_alcista", False) if ctx else False,
+        "impulso_bajista": ctx.get("impulso_bajista", False) if ctx else False,
+        "rechazo_alcista_real": ctx.get("rechazo_alcista_real", False) if ctx else False,
+        "rechazo_bajista_real": ctx.get("rechazo_bajista_real", False) if ctx else False,
+        "direccion_tendencia": ctx.get("direccion_tendencia", "NEUTRA") if ctx else "NEUTRA",
+        "fuerza_tendencia": ctx.get("fuerza_tendencia", 0) if ctx else 0,
     }
 def fuerza_patron_vela(nombre_patron):
     try:
@@ -1804,38 +1812,28 @@ def score_final_senal_profesional(senal):
     direccion = str(senal.get("direccion", "")).lower()
     pa_tipo = str(senal.get("pa_tipo", "")).upper()
     pa_direccion = str(senal.get("pa_direccion", "")).upper()
+
     peso = peso_estrategia_profesional(patron)
     puntaje = senal.get("puntaje", 0)
     prioridad = senal.get("prioridad", 0)
 
     score = peso + (puntaje * 2) + (prioridad * 5)
 
-    # Rechazo real en zona correcta
     if direccion == "call" and accion == "RECHAZO_COMPRADOR_SOPORTE":
         score += 12
 
     if direccion == "put" and accion == "RECHAZO_VENDEDOR_RESISTENCIA":
         score += 12
 
-    # Sweeps son los mejores del backtest
     if "liquidity sweep" in patron:
         score += 18
 
-    # CHOCH bajista sigue flojo
-    if "choch bajista" in patron:
-        score -= 0
-
-    elif "choch alcista" in patron:
-        score += 0
-
-    # Pullbacks
     if "pullback bajista" in patron:
         score -= 12
 
     if "pullback alcista" in patron:
         score -= 14
 
-    # Continuaciones quedan abajo, pero no apagadas
     if "continuación" in patron or "continuacion" in patron:
         if puntaje < 16:
             score -= 35
@@ -1847,13 +1845,33 @@ def score_final_senal_profesional(senal):
 
     if senal.get("calidad") == "A+":
         score += 8
-    if direccion == "call" and pa_direccion == "CALL":
-        if pa_tipo in ["RECHAZO_COMPRADOR_CONFIRMADO", "AGOTAMIENTO_BAJISTA_CONFIRMADO"]:
-            score += 18
 
-    if direccion == "put" and pa_direccion == "PUT":
-        if pa_tipo in ["RECHAZO_VENDEDOR_CONFIRMADO", "AGOTAMIENTO_ALCISTA_CONFIRMADO"]:
-            score += 18
+    ctx_pa = {
+        "pa_direccion": pa_direccion,
+        "pa_tipo": pa_tipo,
+        "pa_fuerza": senal.get("pa_fuerza", 0),
+        "accion_precio": senal.get("accion_precio", "SIN_DATOS"),
+        "direccion_tendencia": senal.get("direccion_tendencia", "NEUTRA"),
+        "fuerza_tendencia": senal.get("fuerza_tendencia", 0),
+        "posicion_rango": senal.get("posicion_rango", 0.5),
+        "rechazo_hist_direccion": senal.get("rechazo_hist_direccion", "NEUTRA"),
+        "impulso_alcista": senal.get("impulso_alcista", False),
+        "impulso_bajista": senal.get("impulso_bajista", False),
+        "rechazo_alcista_real": senal.get("rechazo_alcista_real", False),
+        "rechazo_bajista_real": senal.get("rechazo_bajista_real", False),
+    }
+
+    confianza_pa = evaluar_confianza_price_action(ctx_pa, direccion)
+
+    if confianza_pa.get("nivel") == "ALTA":
+        score += 18
+    elif confianza_pa.get("nivel") == "MEDIA":
+        score += 9
+    elif confianza_pa.get("nivel") == "BAJA":
+        score += 2
+    elif confianza_pa.get("nivel") == "DEBIL":
+        score -= 10
+
     return score
 def motor_estrategias_profesional(ctx):
     senales = []
@@ -2632,7 +2650,137 @@ def motor_estrategias_profesional(ctx):
         )
 
     return senales
+def evaluar_confianza_price_action(ctx, direccion):
+    try:
+        direccion = str(direccion).upper()
 
+        pa_direccion = str(ctx.get("pa_direccion", "NEUTRA")).upper()
+        pa_tipo = str(ctx.get("pa_tipo", "SIN_CONTEXTO_CLARO")).upper()
+        pa_fuerza = float(ctx.get("pa_fuerza", 0) or 0)
+
+        accion_precio = str(ctx.get("accion_precio", "SIN_DATOS")).upper()
+        direccion_tendencia = str(ctx.get("direccion_tendencia", "NEUTRA")).upper()
+        fuerza_tendencia = float(ctx.get("fuerza_tendencia", 0) or 0)
+        posicion_rango = float(ctx.get("posicion_rango", 0.5) or 0.5)
+
+        rechazo_hist_direccion = str(ctx.get("rechazo_hist_direccion", "NEUTRA")).upper()
+        impulso_alcista = bool(ctx.get("impulso_alcista", False))
+        impulso_bajista = bool(ctx.get("impulso_bajista", False))
+        rechazo_alcista_real = bool(ctx.get("rechazo_alcista_real", False))
+        rechazo_bajista_real = bool(ctx.get("rechazo_bajista_real", False))
+
+        if pa_direccion != direccion:
+            return {
+                "nivel": "NINGUNA",
+                "score": 0,
+                "pa_valido": False,
+                "razon": "price action no coincide con dirección"
+            }
+
+        score = 0
+        razones = []
+
+        if pa_tipo in [
+            "RECHAZO_COMPRADOR_CONFIRMADO",
+            "RECHAZO_VENDEDOR_CONFIRMADO",
+            "AGOTAMIENTO_BAJISTA_CONFIRMADO",
+            "AGOTAMIENTO_ALCISTA_CONFIRMADO",
+            "IMPULSO_ALCISTA_FUERTE",
+            "IMPULSO_BAJISTA_FUERTE"
+        ]:
+            score += 25
+            razones.append("tipo PA válido")
+
+        if pa_fuerza >= 0.70:
+            score += 30
+            razones.append("PA fuerte")
+        elif pa_fuerza >= 0.55:
+            score += 20
+            razones.append("PA medio")
+        elif pa_fuerza >= 0.45:
+            score += 10
+            razones.append("PA mínimo")
+        else:
+            score -= 25
+            razones.append("PA débil")
+
+        if direccion == "CALL":
+            if accion_precio == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA":
+                score -= 25
+                razones.append("CALL cerca de resistencia sin ruptura")
+
+            if posicion_rango >= 0.78:
+                score -= 15
+                razones.append("CALL alto en rango")
+
+            if rechazo_bajista_real:
+                score -= 25
+                razones.append("rechazo bajista contra CALL")
+
+            if impulso_alcista:
+                score += 10
+                razones.append("micro impulso alcista")
+
+            if direccion_tendencia == "ALCISTA" and fuerza_tendencia >= 55:
+                score += 10
+                razones.append("tendencia apoya CALL")
+
+            if rechazo_hist_direccion == "CALL":
+                score += 12
+                razones.append("rechazo histórico apoya CALL")
+
+        if direccion == "PUT":
+            if accion_precio == "PUT_SOPORTE_CERCA_SIN_RUPTURA":
+                score -= 30
+                razones.append("PUT cerca de soporte sin ruptura")
+
+            if posicion_rango <= 0.25:
+                score -= 18
+                razones.append("PUT bajo en rango")
+
+            if rechazo_alcista_real:
+                score -= 25
+                razones.append("rechazo alcista contra PUT")
+
+            if impulso_bajista:
+                score += 10
+                razones.append("micro impulso bajista")
+
+            if direccion_tendencia == "BAJISTA" and fuerza_tendencia >= 55:
+                score += 10
+                razones.append("tendencia apoya PUT")
+
+            if rechazo_hist_direccion == "PUT":
+                score += 12
+                razones.append("rechazo histórico apoya PUT")
+
+        if score >= 65:
+            nivel = "ALTA"
+            pa_valido = True
+        elif score >= 45:
+            nivel = "MEDIA"
+            pa_valido = True
+        elif score >= 30:
+            nivel = "BAJA"
+            pa_valido = False
+        else:
+            nivel = "DEBIL"
+            pa_valido = False
+
+        return {
+            "nivel": nivel,
+            "score": score,
+            "pa_valido": pa_valido,
+            "razon": " | ".join(razones)
+        }
+
+    except Exception as e:
+        return {
+            "nivel": "ERROR",
+            "score": 0,
+            "pa_valido": False,
+            "razon": "error evaluando confianza PA: " + str(e)
+        }
 def diagnosticar_base_estrategia(senal, ctx):
     try:
         patron = str(senal.get("patron", "")).lower()
@@ -2666,12 +2814,19 @@ def diagnosticar_base_estrategia(senal, ctx):
         # =========================
         # PRICE ACTION A FAVOR / EN CONTRA
         # =========================
+        confianza_pa = evaluar_confianza_price_action(ctx, direccion)
+
         if direccion == "call" and pa_direccion == "CALL":
-            diagnostico["fortalezas_base"].append("PA_A_FAVOR_CALL")
-
+            if confianza_pa.get("pa_valido") and confianza_pa.get("nivel") in ["MEDIA", "ALTA"]:
+                diagnostico["fortalezas_base"].append("PA_A_FAVOR_CALL_" + confianza_pa.get("nivel"))
+            else:
+                diagnostico["riesgos_base"].append("PA_A_FAVOR_CALL_DEBIL")
+        
         if direccion == "put" and pa_direccion == "PUT":
-            diagnostico["fortalezas_base"].append("PA_A_FAVOR_PUT")
-
+            if confianza_pa.get("pa_valido") and confianza_pa.get("nivel") in ["MEDIA", "ALTA"]:
+                diagnostico["fortalezas_base"].append("PA_A_FAVOR_PUT_" + confianza_pa.get("nivel"))
+            else:
+                diagnostico["riesgos_base"].append("PA_A_FAVOR_PUT_DEBIL")
         if direccion == "call" and pa_direccion == "PUT":
             diagnostico["riesgos_base"].append("PA_CONTRA_CALL")
 
@@ -2722,8 +2877,19 @@ def diagnosticar_base_estrategia(senal, ctx):
                 diagnostico["fortalezas_base"].append("CHOCH_CON_PA_A_FAVOR")
 
         if "liquidity sweep" in patron:
-            if "RECHAZO" in pa_tipo or "AGOTAMIENTO" in pa_tipo:
-                diagnostico["fortalezas_base"].append("SWEEP_CON_RECHAZO_AGOTAMIENTO")
+            confianza_pa = evaluar_confianza_price_action(ctx, direccion)
+        
+            if (
+                ("RECHAZO" in pa_tipo or "AGOTAMIENTO" in pa_tipo)
+                and confianza_pa.get("pa_valido")
+                and confianza_pa.get("nivel") in ["MEDIA", "ALTA"]
+            ):
+                diagnostico["fortalezas_base"].append(
+                    "SWEEP_CON_RECHAZO_AGOTAMIENTO_" + confianza_pa.get("nivel")
+                )
+            else:
+                diagnostico["riesgos_base"].append("SWEEP_CON_CONFIRMACION_PA_DEBIL")
+        
             if pa_tipo == "SIN_CONTEXTO_CLARO":
                 diagnostico["riesgos_base"].append("SWEEP_SIN_CONFIRMACION_PA")
 
