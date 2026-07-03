@@ -985,8 +985,20 @@ def crear_senal_profesional(activo, direccion, estrategia, puntaje, rsi, razones
         "razon": ", ".join(razones),
         "calidad": calidad,
         "prioridad": prioridad,
-        "accion_precio": ctx.get("accion_precio", "SIN_DATOS") if ctx else "SIN_DATOS",
-        "razon_accion_precio": ctx.get("razon_accion_precio", "") if ctx else "",
+        "accion_precio": (
+            ctx.get("accion_precio_call", "SIN_DATOS")
+            if ctx and direccion == "call"
+            else ctx.get("accion_precio_put", "SIN_DATOS")
+            if ctx and direccion == "put"
+            else "SIN_DATOS"
+        ),
+        "razon_accion_precio": (
+            ctx.get("razon_accion_precio_call", "")
+            if ctx and direccion == "call"
+            else ctx.get("razon_accion_precio_put", "")
+            if ctx and direccion == "put"
+            else ""
+        ),
         "pa_tipo": ctx.get("pa_tipo", "SIN_DATOS") if ctx else "SIN_DATOS",
         "pa_direccion": ctx.get("pa_direccion", "NEUTRA") if ctx else "NEUTRA",
         "pa_fuerza": ctx.get("pa_fuerza", 0) if ctx else 0,
@@ -1591,7 +1603,7 @@ def leer_contexto_grafico(activo):
         resistencia,
         vol
     )
-    diagnostico_pa_ctx = diagnostico_accion_precio_zona(
+    diagnostico_pa_call = diagnostico_accion_precio_zona(
         "call",
         opens,
         closes,
@@ -1601,9 +1613,23 @@ def leer_contexto_grafico(activo):
         resistencia,
         vol
     )
-
-    accion_precio_base = diagnostico_pa_ctx.get("accion", "SIN_DATOS")
-    razon_accion_precio_base = diagnostico_pa_ctx.get("razon", "")
+    
+    diagnostico_pa_put = diagnostico_accion_precio_zona(
+        "put",
+        opens,
+        closes,
+        highs,
+        lows,
+        soporte,
+        resistencia,
+        vol
+    )
+    
+    accion_precio_call = diagnostico_pa_call.get("accion", "SIN_DATOS")
+    razon_accion_precio_call = diagnostico_pa_call.get("razon", "")
+    
+    accion_precio_put = diagnostico_pa_put.get("accion", "SIN_DATOS")
+    razon_accion_precio_put = diagnostico_pa_put.get("razon", "")
     return {
         "activo": activo,
         "opens": opens,
@@ -1703,8 +1729,15 @@ def leer_contexto_grafico(activo):
         "vela_climax_bajista": micro_contexto.get("vela_climax_bajista", False),
         "presion_corta": micro_contexto.get("presion_corta", "NEUTRA"),
 
-        "accion_precio": accion_precio_base,
-        "razon_accion_precio": razon_accion_precio_base,
+        "accion_precio_call": accion_precio_call,
+        "razon_accion_precio_call": razon_accion_precio_call,
+        
+        "accion_precio_put": accion_precio_put,
+        "razon_accion_precio_put": razon_accion_precio_put,
+        
+        # Compatibilidad vieja: se mantiene para no romper otros módulos.
+        "accion_precio": accion_precio_call,
+        "razon_accion_precio": razon_accion_precio_call,
 
         "pa_profesional": pa_profesional,
         "pa_direccion": pa_profesional.get("direccion", "NEUTRA"),
@@ -1875,6 +1908,23 @@ def score_final_senal_profesional(senal):
         score -= 10
 
     return score
+def pa_profesional_apoya(ctx, direccion, minimo_fuerza=0.35, aceptar_neutro=False):
+    direccion = str(direccion).upper()
+
+    pa_direccion = str(ctx.get("pa_direccion", "NEUTRA")).upper()
+    pa_tipo = str(ctx.get("pa_tipo", "SIN_CONTEXTO_CLARO")).upper()
+    pa_fuerza = float(ctx.get("pa_fuerza", 0) or 0)
+
+    if pa_tipo == "SIN_CONTEXTO_CLARO":
+        return False
+
+    if pa_direccion == direccion and pa_fuerza >= minimo_fuerza:
+        return True
+
+    if aceptar_neutro and pa_direccion == "NEUTRA" and pa_fuerza >= minimo_fuerza:
+        return True
+
+    return False
 def motor_estrategias_profesional(ctx):
     senales = []
 
@@ -2268,6 +2318,7 @@ def motor_estrategias_profesional(ctx):
             ctx.get("accion_precio") == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA"
             and ctx.get("pa_tipo") != "IMPULSO_ALCISTA_FUERTE"
         )
+        and pa_profesional_apoya(ctx, "call", minimo_fuerza=0.35, aceptar_neutro=True)
         and rsi <= 60
     ):
         puntaje = 16
@@ -2915,6 +2966,7 @@ def diagnosticar_base_estrategia(senal, ctx):
             "fortalezas_base": [],
             "error_base": str(e)
         }
+
 def analizar_activo(activo):
     ctx = leer_contexto_grafico(activo)
 

@@ -109,37 +109,26 @@ def regla_bloqueo_duro_contextual(evidencia):
     pa_tipo = _txt(evidencia.get("pa_tipo"))
     nivel_consenso = _txt(evidencia.get("nivel_consenso"))
 
-    # Bloqueos de baja calidad comprobada
-    riesgos_criticos = [
-        "pa_a_favor_call_debil",
-        "choch_sin_pa_valido",
-        "choch_con_tendencia_debil",
-        "impulso_alcista_fuerte_debil_historico",
-    ]
-
-    for riesgo in riesgos_criticos:
-        if riesgo in riesgos_base:
-            return True, f"Bloqueo duro: riesgo crítico detectado ({riesgo})."
+    if (
+        "pa_a_favor_call_debil" in riesgos_base
+        and nivel_consenso in ["muy_bajo", "bajo"]
+        and confianza_setup < 50
+    ):
+        return True, "Bloqueo duro: CALL débil + consenso bajo + setup débil."
 
     if (
-        "continuacion_tendencia_insuficiente" in riesgos_base
-        and nivel_consenso in ["muy_bajo", "bajo", "medio"]
+        "choch_con_tendencia_debil" in riesgos_base
+        and nivel_consenso in ["muy_bajo", "bajo"]
+        and confianza_setup < 50
     ):
-        return True, "Bloqueo duro: continuación con tendencia insuficiente y consenso no alto."
+        return True, "Bloqueo duro: CHOCH con tendencia débil + consenso bajo."
 
     if (
-        "pullback_tendencia_insuficiente" in riesgos_base
-        and confianza_setup < 55
-        and nivel_setup in ["bajo", "medio_bajo"]
+        "impulso_alcista_fuerte_debil_historico" in riesgos_base
+        and nivel_consenso in ["muy_bajo", "bajo"]
+        and confianza_setup < 50
     ):
-        return True, "Bloqueo duro: pullback sin tendencia suficiente + setup débil."
-
-    if (
-        "call_resistencia_sin_ruptura" in riesgos_base
-        and "pa_a_favor_call_alta" not in fortalezas_base
-        and "rechazo_comprador_confirmado" not in fortalezas_base
-    ):
-        return True, "Bloqueo duro: CALL resistencia sin ruptura sin confirmación fuerte."
+        return True, "Bloqueo duro: impulso alcista débil histórico + consenso bajo."
 
     if (
         protocolo_sugerido == "protocolo_ruptura_resistencia"
@@ -156,17 +145,17 @@ def regla_bloqueo_duro_contextual(evidencia):
         and nivel_consenso in ["muy_bajo", "bajo"]
         and confianza_setup < 52
     ):
-        return True, "Bloqueo duro: CALL contra resistencia sin ruptura + consenso bajo + confianza setup baja."
+        return True, "Bloqueo duro: CALL contra resistencia sin ruptura + consenso bajo."
 
     if (
         "call_resistencia_sin_ruptura" in riesgos_base
         and "pa_a_favor_call" not in fortalezas_base
         and pa_tipo not in ["impulso_alcista_fuerte", "rechazo_comprador_confirmado"]
+        and nivel_consenso in ["muy_bajo", "bajo"]
     ):
-        return True, "Bloqueo duro: resistencia sin ruptura sin PA alcista suficiente."
+        return True, "Bloqueo duro: resistencia sin ruptura sin PA alcista ni consenso."
 
     return False, ""
-
 def sugerir_modo_ejecucion(confianza, riesgo_nivel, evidencia):
     tipo_setup = _txt(evidencia.get("tipo_setup"))
     patron = _txt(evidencia.get("patron"))
