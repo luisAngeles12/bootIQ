@@ -13,8 +13,8 @@ MIN_MUESTRA_BAJA = 5
 MIN_MUESTRA_MEDIA = 10
 MIN_MUESTRA_ALTA = 20
 
-WINRATE_FUERTE = 65
-WINRATE_DEBIL = 45
+WINRATE_FUERTE = 58
+WINRATE_DEBIL = 48
 
 
 def normalizar(valor):
@@ -100,86 +100,46 @@ def filtrar_por_clasificacion(bloque, clasificacion):
 def generar_piramide_estadistica(resultados):
     niveles = {
         "nivel_1_estrategia": ["patron"],
-
-        "nivel_2_estrategia_direccion": [
-            "patron",
-            "direccion"
-        ],
-
-        "nivel_3_estrategia_mercado": [
-            "patron",
-            "direccion",
-            "tipo_mercado"
-        ],
-
+        "nivel_2_estrategia_direccion": ["patron", "direccion"],
+        "nivel_3_estrategia_mercado": ["patron", "direccion", "tipo_mercado"],
         "nivel_4_estrategia_mercado_tendencia": [
-            "patron",
-            "direccion",
-            "tipo_mercado",
-            "estado_tendencia"
+            "patron", "direccion", "tipo_mercado", "estado_tendencia"
         ],
-
         "nivel_5_estrategia_mercado_tendencia_pa": [
-            "patron",
-            "direccion",
-            "tipo_mercado",
-            "estado_tendencia",
-            "pa_tipo",
-            "pa_direccion"
+            "patron", "direccion", "tipo_mercado", "estado_tendencia", "pa_tipo", "pa_direccion"
         ],
-
         "nivel_6_estrategia_mercado_tendencia_pa_calidad": [
-            "patron",
-            "direccion",
-            "tipo_mercado",
-            "estado_tendencia",
-            "pa_tipo",
-            "pa_direccion",
-            "calidad_mercado"
+            "patron", "direccion", "tipo_mercado", "estado_tendencia", "pa_tipo",
+            "pa_direccion", "calidad_mercado"
         ],
-
         "nivel_7_combinacion_completa": [
-            "patron",
-            "direccion",
-            "activo",
-            "tipo_mercado",
-            "estado_tendencia",
-            "pa_tipo",
-            "pa_direccion",
-            "calidad_mercado"
-        ],
-        "nivel_8_tipo_setup": [
-            "tipo_setup"
+            "patron", "direccion", "activo", "tipo_mercado", "estado_tendencia",
+            "pa_tipo", "pa_direccion", "calidad_mercado"
         ],
 
-        "nivel_9_setup_calidad": [
-            "tipo_setup",
-            "calidad_setup"
-        ],
-
-        "nivel_10_setup_modo": [
-            "tipo_setup",
-            "calidad_setup",
-            "modo_entrada_setup"
-        ],
-
+        "nivel_8_tipo_setup": ["tipo_setup"],
+        "nivel_9_setup_calidad": ["tipo_setup", "calidad_setup"],
+        "nivel_10_setup_modo": ["tipo_setup", "calidad_setup", "modo_entrada_setup"],
         "nivel_11_setup_mercado": [
-            "tipo_setup",
-            "calidad_setup",
-            "modo_entrada_setup",
-            "tipo_mercado",
-            "estado_tendencia"
+            "tipo_setup", "calidad_setup", "modo_entrada_setup",
+            "tipo_mercado", "estado_tendencia"
+        ],
+        "nivel_12_setup_pa": [
+            "tipo_setup", "calidad_setup", "modo_entrada_setup",
+            "tipo_mercado", "estado_tendencia", "pa_tipo", "pa_direccion"
         ],
 
-        "nivel_12_setup_pa": [
-            "tipo_setup",
-            "calidad_setup",
-            "modo_entrada_setup",
-            "tipo_mercado",
-            "estado_tendencia",
-            "pa_tipo",
-            "pa_direccion"
-        ],
+        # ==========================
+        # NUEVOS NIVELES FASE 6
+        # ==========================
+        "nivel_13_fortalezas_base": ["fortalezas_base"],
+        "nivel_14_riesgos_base": ["riesgos_base"],
+        "nivel_15_fortaleza_estrategia": ["patron", "fortalezas_base"],
+        "nivel_16_riesgo_estrategia": ["patron", "riesgos_base"],
+        "nivel_17_confirmacion_ia": ["nivel_confirmacion_ia", "accion_confirmacion_ia"],
+        "nivel_18_motivo_ejecucion": ["motivo_ejecucion"],
+        "nivel_19_riesgo_protocolo": ["nivel_riesgo_protocolo"],
+        "nivel_20_protocolo_motivo": ["protocolo_sugerido", "motivo_ejecucion"],
     }
 
     piramide = {}
@@ -198,7 +158,6 @@ def generar_piramide_estadistica(resultados):
         }
 
     return piramide
-
 
 def generar_resumen_ejecutivo(piramide):
     resumen = {}
@@ -296,7 +255,10 @@ def main():
     imprimir_mejores_y_peores(auditoria, "nivel_3_estrategia_mercado")
     imprimir_mejores_y_peores(auditoria, "nivel_5_estrategia_mercado_tendencia_pa")
     imprimir_mejores_y_peores(auditoria, "nivel_7_combinacion_completa")
-
+    imprimir_mejores_y_peores(auditoria, "nivel_13_fortalezas_base")
+    imprimir_mejores_y_peores(auditoria, "nivel_14_riesgos_base")
+    imprimir_mejores_y_peores(auditoria, "nivel_17_confirmacion_ia")
+    imprimir_mejores_y_peores(auditoria, "nivel_18_motivo_ejecucion")
 
 if __name__ == "__main__":
     main()

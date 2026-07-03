@@ -31,16 +31,27 @@ def guardar_json(datos, ruta):
 
 
 def calcular_peso(clasificacion, winrate):
+    winrate = float(winrate or 50)
+
     if clasificacion == "FUERTE":
-        exceso = max(0, winrate - 50)
-        return round(1 + (exceso / 100), 3)
+        if winrate >= 75:
+            return 1.35
+        if winrate >= 68:
+            return 1.25
+        if winrate >= 62:
+            return 1.16
+        return 1.10
 
     if clasificacion == "DEBIL":
-        deficit = max(0, 50 - winrate)
-        return round(1 - (deficit / 100), 3)
+        if winrate <= 30:
+            return 0.65
+        if winrate <= 38:
+            return 0.75
+        if winrate <= 44:
+            return 0.85
+        return 0.92
 
-    return PESO_NEUTRO
-
+    return 1.0
 
 def convertir_combinacion(clave, stats, nivel, campos):
     return {

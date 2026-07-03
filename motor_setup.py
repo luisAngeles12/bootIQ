@@ -24,13 +24,26 @@ def _leer_lista(valor):
     return [x.strip().upper() for x in str(valor).split("|") if x.strip()]
 
 
-def clasificar_setup(senal):
-    """
-    Fase 5.4
-    Clasifica el setup sin bloquear ni ejecutar.
-    Corrige degradación contextual para CALL cerca de resistencia sin ruptura.
-    """
+def _ajustar(confianza, valor, razones, motivo):
+    confianza += valor
+    signo = "+" if valor >= 0 else ""
+    razones.append(f"{signo}{valor}: {motivo}")
+    return confianza
 
+
+def _nivel_estado_desde_confianza(confianza):
+    if confianza >= 78:
+        return "ALTO", "MADURO"
+    if confianza >= 65:
+        return "MEDIO_ALTO", "CONFIRMABLE"
+    if confianza >= 52:
+        return "MEDIO", "PENDIENTE_CONFIRMACION"
+    if confianza >= 42:
+        return "MEDIO_BAJO", "INMADURO"
+    return "BAJO", "PELIGROSO"
+
+
+def clasificar_setup(senal):
     tipo_setup = _txt(senal.get("tipo_setup", "INDEFINIDO"))
     patron = _txt(senal.get("patron", ""))
     direccion = _txt(senal.get("direccion", ""))
@@ -41,7 +54,6 @@ def clasificar_setup(senal):
     calidad_mercado = _txt(senal.get("calidad_mercado", ""))
     tendencia = _txt(senal.get("estado_tendencia", ""))
     base_estrategia = _txt(senal.get("base_estrategia", ""))
-    calidad_setup = _txt(senal.get("calidad_setup", ""))
     nivel_consenso = _txt(senal.get("nivel_consenso", ""))
 
     score_final = _num(senal.get("score_final"))
@@ -49,16 +61,6 @@ def clasificar_setup(senal):
 
     fortalezas = _leer_lista(senal.get("fortalezas_base", ""))
     riesgos = _leer_lista(senal.get("riesgos_base", ""))
-
-    es_call_resistencia_sin_ruptura = (
-        direccion == "CALL"
-        and "CALL_RESISTENCIA_CERCA_SIN_RUPTURA" in accion_precio
-    )
-
-    es_put_soporte_sin_ruptura = (
-        direccion == "PUT"
-        and "PUT_SOPORTE_CERCA_SIN_RUPTURA" in accion_precio
-    )
 
     texto_total = " ".join([
         tipo_setup,
@@ -74,13 +76,11 @@ def clasificar_setup(senal):
     familia_setup = "INDEFINIDA"
     subtipo_setup = "INDEFINIDO"
     protocolo_sugerido = "PROTOCOLO_GENERICO"
-    nivel_setup = "MEDIO"
-    estado_setup = "INMADURO"
     confianza_setup = 50
-    razones = []
+    razones = ["Base neutral: 50"]
 
     # ==========================
-    # SWEEP
+    # CLASIFICACIÓN BASE
     # ==========================
 
     if _contiene(texto_total, "SWEEP", "LIQUIDITY", "LIQUIDEZ"):
@@ -92,28 +92,13 @@ def clasificar_setup(senal):
             "SWEEP_CON_RECHAZO_AGOTAMIENTO"
         ):
             subtipo_setup = "SWEEP_CON_RECHAZO_AGOTAMIENTO"
-            nivel_setup = "ALTO"
-            estado_setup = "MADURO"
-            confianza_setup = 78
-            razones.append("Sweep con rechazo/agotamiento confirmado.")
-
+            confianza_setup = _ajustar(confianza_setup, 10, razones, "Sweep con rechazo/agotamiento")
         elif _contiene(texto_total, "RUPTURA"):
             subtipo_setup = "SWEEP_RUPTURA_CONFIRMABLE"
-            nivel_setup = "MEDIO_ALTO"
-            estado_setup = "CONFIRMABLE"
-            confianza_setup = 68
-            razones.append("Sweep necesita confirmación por ruptura.")
-
+            confianza_setup = _ajustar(confianza_setup, 5, razones, "Sweep con ruptura confirmable")
         else:
             subtipo_setup = "SWEEP_SIMPLE"
-            nivel_setup = "MEDIO"
-            estado_setup = "PENDIENTE_CONFIRMACION"
-            confianza_setup = 58
-            razones.append("Sweep sin confirmación fuerte.")
-
-    # ==========================
-    # CHOCH
-    # ==========================
+            confianza_setup = _ajustar(confianza_setup, 0, razones, "Sweep simple")
 
     elif _contiene(texto_total, "CHOCH", "CAMBIO_ESTRUCTURA"):
         familia_setup = "REVERSIÓN_ESTRUCTURAL"
@@ -121,28 +106,13 @@ def clasificar_setup(senal):
 
         if _contiene(" ".join(fortalezas), "CHOCH_CON_PA_A_FAVOR") or pa_direccion == direccion:
             subtipo_setup = "CHOCH_CON_PA_A_FAVOR"
-            nivel_setup = "ALTO"
-            estado_setup = "MADURO"
-            confianza_setup = 82
-            razones.append("CHOCH con Price Action alineado.")
-
+            confianza_setup = _ajustar(confianza_setup, 4, razones, "CHOCH con PA alineado")
         elif _contiene(tendencia, "DEBIL", "DÉBIL"):
             subtipo_setup = "CHOCH_TENDENCIA_DEBIL"
-            nivel_setup = "MEDIO_ALTO"
-            estado_setup = "CONFIRMABLE"
-            confianza_setup = 70
-            razones.append("CHOCH en tendencia débil; requiere ruptura/impulso.")
-
+            confianza_setup = _ajustar(confianza_setup, -8, razones, "CHOCH en tendencia débil")
         else:
             subtipo_setup = "CHOCH_SIMPLE"
-            nivel_setup = "MEDIO_ALTO"
-            estado_setup = "CONFIRMABLE"
-            confianza_setup = 72
-            razones.append("CHOCH válido con confirmación pendiente.")
-
-    # ==========================
-    # PULLBACK
-    # ==========================
+            confianza_setup = _ajustar(confianza_setup, 2, razones, "CHOCH simple")
 
     elif _contiene(texto_total, "PULLBACK", "EMA", "RETROCESO"):
         familia_setup = "CONTINUACIÓN"
@@ -150,42 +120,19 @@ def clasificar_setup(senal):
 
         if _contiene(" ".join(riesgos), "PULLBACK_TENDENCIA_INSUFICIENTE"):
             subtipo_setup = "PULLBACK_TENDENCIA_INSUFICIENTE"
-            nivel_setup = "BAJO"
-            estado_setup = "PELIGROSO"
-            confianza_setup = 38
-            razones.append("Pullback con tendencia insuficiente.")
-
+            confianza_setup = _ajustar(confianza_setup, -6, razones, "Pullback con tendencia insuficiente")
         elif _contiene(tendencia, "AGOTADA"):
             subtipo_setup = "PULLBACK_TENDENCIA_AGOTADA"
-            nivel_setup = "BAJO"
-            estado_setup = "PELIGROSO"
-            confianza_setup = 35
-            razones.append("Pullback en tendencia agotada.")
-
+            confianza_setup = _ajustar(confianza_setup, -12, razones, "Pullback con tendencia agotada")
         elif calidad_mercado == "LIMPIO" and _contiene(" ".join(fortalezas), "TENDENCIA_A_FAVOR"):
             subtipo_setup = "PULLBACK_CONTINUACION_LIMPIA"
-            nivel_setup = "ALTO"
-            estado_setup = "MADURO"
-            confianza_setup = 76
-            razones.append("Pullback con mercado limpio y tendencia a favor.")
-
+            confianza_setup = _ajustar(confianza_setup, 4, razones, "Pullback limpio con tendencia")
         elif balance_setup >= 2 and nivel_consenso in ["PREMIUM", "ALTO", "MEDIO"]:
             subtipo_setup = "PULLBACK_BALANCE_POSITIVO"
-            nivel_setup = "MEDIO_ALTO"
-            estado_setup = "CONFIRMABLE"
-            confianza_setup = 66
-            razones.append("Pullback con balance positivo, requiere confirmación.")
-
+            confianza_setup = _ajustar(confianza_setup, 3, razones, "Pullback con balance positivo")
         else:
             subtipo_setup = "PULLBACK_GENERICO"
-            nivel_setup = "MEDIO_BAJO"
-            estado_setup = "INMADURO"
-            confianza_setup = 48
-            razones.append("Pullback genérico; no debe entrar directo.")
-
-    # ==========================
-    # REACCIÓN EN ZONA
-    # ==========================
+            confianza_setup = _ajustar(confianza_setup, -2, razones, "Pullback genérico")
 
     elif _contiene(texto_total, "SOPORTE", "RESISTENCIA", "ZONA", "RECHAZO"):
         familia_setup = "REACCIÓN_ZONA"
@@ -193,28 +140,13 @@ def clasificar_setup(senal):
 
         if _contiene(pa_tipo, "RECHAZO") and pa_direccion == direccion:
             subtipo_setup = "ZONA_RECHAZO_CONFIRMADO"
-            nivel_setup = "ALTO"
-            estado_setup = "MADURO"
-            confianza_setup = 74
-            razones.append("Reacción en zona con rechazo confirmado.")
-
+            confianza_setup = _ajustar(confianza_setup, 6, razones, "Zona con rechazo confirmado")
         elif _contiene(accion_precio, "SIN_RUPTURA"):
             subtipo_setup = "ZONA_SIN_RUPTURA"
-            nivel_setup = "MEDIO"
-            estado_setup = "PENDIENTE_CONFIRMACION"
-            confianza_setup = 58
-            razones.append("Zona cercana sin ruptura; esperar rechazo o ruptura.")
-
+            confianza_setup = _ajustar(confianza_setup, -4, razones, "Zona sin ruptura")
         else:
             subtipo_setup = "ZONA_GENERICA"
-            nivel_setup = "MEDIO"
-            estado_setup = "CONFIRMABLE"
-            confianza_setup = 55
-            razones.append("Reacción en zona genérica.")
-
-    # ==========================
-    # CONTINUACIÓN
-    # ==========================
+            confianza_setup = _ajustar(confianza_setup, 0, razones, "Zona genérica")
 
     elif _contiene(texto_total, "CONTINUACION", "CONTINUACIÓN", "TENDENCIA"):
         familia_setup = "CONTINUACIÓN"
@@ -225,78 +157,97 @@ def clasificar_setup(senal):
             "CONTINUACION_CON_TENDENCIA_FUERTE"
         ):
             subtipo_setup = "CONTINUACION_TENDENCIA_FUERTE"
-            nivel_setup = "MEDIO_ALTO"
-            estado_setup = "CONFIRMABLE"
-            confianza_setup = 68
-            razones.append("Continuación con tendencia fuerte.")
-
+            confianza_setup = _ajustar(confianza_setup, 4, razones, "Continuación con tendencia fuerte")
         else:
             subtipo_setup = "CONTINUACION_SIMPLE"
-            nivel_setup = "MEDIO"
-            estado_setup = "CONFIRMABLE"
-            confianza_setup = 56
-            razones.append("Continuación simple, requiere impulso.")
-
-    # ==========================
-    # INDEFINIDO
-    # ==========================
+            confianza_setup = _ajustar(confianza_setup, -2, razones, "Continuación simple")
 
     else:
-        familia_setup = "INDEFINIDA"
-        subtipo_setup = "INDEFINIDO"
-        protocolo_sugerido = "PROTOCOLO_GENERICO"
-        nivel_setup = "BAJO"
-        estado_setup = "INMADURO"
-        confianza_setup = 40
-        razones.append("Setup no clasificado con precisión.")
+        confianza_setup = _ajustar(confianza_setup, -10, razones, "Setup indefinido")
 
     # ==========================
-    # AJUSTES GENERALES
+    # AJUSTES POR EVIDENCIA
     # ==========================
 
-    if calidad_setup == "PREMIUM":
-        confianza_setup += 6
-    elif calidad_setup == "BUENA":
-        confianza_setup += 3
-    elif calidad_setup == "MEDIA":
-        confianza_setup -= 2
+    if pa_direccion == direccion:
+        confianza_setup = _ajustar(confianza_setup, 6, razones, "PA alineado")
+    elif pa_direccion and pa_direccion not in ["NEUTRA", "SIN_DATO"] and pa_direccion != direccion:
+        confianza_setup = _ajustar(confianza_setup, -12, razones, "PA en contra")
+
+    if _contiene(pa_tipo, "IMPULSO", "RECHAZO") and pa_direccion == direccion:
+        confianza_setup = _ajustar(confianza_setup, 5, razones, "Impulso/rechazo a favor")
+
+    if nivel_consenso == "PREMIUM":
+        confianza_setup = _ajustar(confianza_setup, 4, razones, "Consenso premium")
+    elif nivel_consenso == "ALTO":
+        confianza_setup = _ajustar(confianza_setup, 3, razones, "Consenso alto")
+    elif nivel_consenso in ["BAJO", "MUY_BAJO"]:
+        confianza_setup = _ajustar(confianza_setup, -3, razones, "Consenso bajo")
 
     if base_estrategia == "FUERTE":
-        confianza_setup += 4
+        confianza_setup = _ajustar(confianza_setup, 3, razones, "Base estrategia fuerte")
     elif base_estrategia == "DEBIL":
-        confianza_setup -= 3
+        confianza_setup = _ajustar(confianza_setup, -4, razones, "Base estrategia débil")
 
     if score_final >= 200:
-        confianza_setup += 5
-    elif score_final < 120:
-        confianza_setup -= 5
+        confianza_setup = _ajustar(confianza_setup, 3, razones, "Score final alto")
+    elif score_final and score_final < 120:
+        confianza_setup = _ajustar(confianza_setup, -4, razones, "Score final bajo")
 
-    # ==========================
-    # AJUSTE CONTEXTUAL FASE 5.4
-    # ==========================
-    # El log mostró que CALL cerca de resistencia sin ruptura
-    # está perdiendo fuerte. No se bloquea aquí: se degrada.
-    # El protocolo deberá exigir ruptura real.
+    if calidad_mercado == "SUCIO":
+        confianza_setup = _ajustar(confianza_setup, -10, razones, "Mercado sucio")
 
-    if es_call_resistencia_sin_ruptura:
-        confianza_setup -= 18
-        nivel_setup = "MEDIO_BAJO"
-        estado_setup = "PENDIENTE_CONFIRMACION"
+    if "CALL_RESISTENCIA_CERCA_SIN_RUPTURA" in accion_precio and direccion == "CALL":
         protocolo_sugerido = "PROTOCOLO_RUPTURA_RESISTENCIA"
-        razones.append(
-            "CALL cerca de resistencia sin ruptura: degradado a pendiente de confirmación."
+        confianza_setup = _ajustar(confianza_setup, -14, razones, "CALL contra resistencia sin ruptura")
+
+    if "PUT_SOPORTE_CERCA_SIN_RUPTURA" in accion_precio and direccion == "PUT":
+        confianza_setup = _ajustar(confianza_setup, 2, razones, "PUT soporte cercano aceptable")
+
+    if "PA_A_FAVOR_CALL_DEBIL" in riesgos:
+        confianza_setup = _ajustar(confianza_setup, -12, razones, "PA CALL débil histórico")
+
+    if "CHOCH_CON_TENDENCIA_DEBIL" in riesgos:
+        confianza_setup = _ajustar(confianza_setup, -10, razones, "CHOCH con tendencia débil")
+
+    if "CONTINUACION_TENDENCIA_INSUFICIENTE" in riesgos:
+        confianza_setup = _ajustar(confianza_setup, -8, razones, "Continuación con tendencia insuficiente")
+
+    if "REACCION_SIN_CONFIRMACION_FUERTE" in riesgos:
+        confianza_setup = _ajustar(confianza_setup, -6, razones, "Reacción sin confirmación fuerte")
+
+    # ==========================
+    # HISTÓRICO COMO AJUSTE SUAVE
+    # ==========================
+
+    decision_aprendizaje = _txt(senal.get("decision_aprendizaje", ""))
+    ajuste_aprendizaje = _num(
+        senal.get(
+            "ajuste_confianza_aprendizaje",
+            senal.get("ajuste_confianza", 0)
         )
+    )
 
-    # PUT cerca de soporte sin ruptura no se castiga igual.
-    # En el log reciente está funcionando mejor que CALL en resistencia.
-
-    if es_put_soporte_sin_ruptura:
-        confianza_setup += 4
-        razones.append(
-            "PUT cerca de soporte sin ruptura mantiene buen rendimiento reciente."
+    if decision_aprendizaje == "FAVORABLE":
+        confianza_setup = _ajustar(
+            confianza_setup,
+            min(6, max(3, ajuste_aprendizaje)),
+            razones,
+            "Aprendizaje histórico favorable"
+        )
+    elif decision_aprendizaje == "DEBIL":
+        confianza_setup = _ajustar(
+            confianza_setup,
+            max(-8, min(-3, ajuste_aprendizaje)),
+            razones,
+            "Aprendizaje histórico débil"
         )
 
     confianza_setup = max(0, min(100, round(confianza_setup, 2)))
+    nivel_setup, estado_setup = _nivel_estado_desde_confianza(confianza_setup)
+
+    if confianza_setup < 42:
+        protocolo_sugerido = protocolo_sugerido
 
     return {
         "familia_setup": familia_setup,
@@ -310,10 +261,6 @@ def clasificar_setup(senal):
 
 
 def enriquecer_senal_con_setup(senal):
-    """
-    Devuelve la misma señal enriquecida.
-    No elimina campos anteriores.
-    """
     datos_setup = clasificar_setup(senal)
     senal.update(datos_setup)
     return senal

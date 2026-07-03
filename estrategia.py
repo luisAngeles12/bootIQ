@@ -5,8 +5,10 @@ from indicadores import *
 from price_action import *
 from zonas import *
 from mercado import obtener_velas
+from motor_setup import enriquecer_senal_con_setup
 import time
 import estado
+from motor_adaptativo import ajustar_fortalezas_riesgos_por_aprendizaje
 from contexto_mercado import (
     detectar_tipo_mercado,
     diagnostico_maestro_mercado,
@@ -2786,15 +2788,11 @@ def diagnosticar_base_estrategia(senal, ctx):
         patron = str(senal.get("patron", "")).lower()
         direccion = str(senal.get("direccion", "")).lower()
 
-        accion_precio = senal.get("accion_precio", "SIN_DATOS")
-        pa_tipo = ctx.get("pa_tipo", "SIN_CONTEXTO_CLARO")
-        pa_direccion = ctx.get("pa_direccion", "NEUTRA")
-        pa_fuerza = ctx.get("pa_fuerza", 0)
-
-        tipo_mercado = ctx.get("tipo_mercado", "SIN_DATOS")
-        calidad_mercado = ctx.get("calidad_mercado", "SIN_DATOS")
-        fuerza_tendencia = ctx.get("fuerza_tendencia", 0)
-        direccion_tendencia = ctx.get("direccion_tendencia", "NEUTRA")
+        accion_precio = str(senal.get("accion_precio", "SIN_DATOS")).upper()
+        pa_tipo = str(ctx.get("pa_tipo", "SIN_CONTEXTO_CLARO")).upper()
+        pa_direccion = str(ctx.get("pa_direccion", "NEUTRA")).upper()
+        fuerza_tendencia = float(ctx.get("fuerza_tendencia", 0) or 0)
+        direccion_tendencia = str(ctx.get("direccion_tendencia", "NEUTRA")).upper()
 
         diagnostico = {
             "base_estrategia": "MEDIA",
@@ -2802,124 +2800,108 @@ def diagnosticar_base_estrategia(senal, ctx):
             "fortalezas_base": []
         }
 
-        # =========================
-        # RIESGOS DE ZONA
-        # =========================
+        def riesgo(nombre):
+            if nombre not in diagnostico["riesgos_base"]:
+                diagnostico["riesgos_base"].append(nombre)
+
+        def fortaleza(nombre):
+            if nombre not in diagnostico["fortalezas_base"]:
+                diagnostico["fortalezas_base"].append(nombre)
+
+        confianza_pa = evaluar_confianza_price_action(ctx, direccion)
+        nivel_pa = str(confianza_pa.get("nivel", "NINGUNA")).upper()
+        pa_valido = bool(confianza_pa.get("pa_valido", False))
+
+        # ZONAS
         if direccion == "call" and accion_precio == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA":
-            diagnostico["riesgos_base"].append("CALL_RESISTENCIA_SIN_RUPTURA")
+            riesgo("CALL_RESISTENCIA_SIN_RUPTURA")
 
         if direccion == "put" and accion_precio == "PUT_SOPORTE_CERCA_SIN_RUPTURA":
-            diagnostico["riesgos_base"].append("PUT_SOPORTE_SIN_RUPTURA")
+            riesgo("PUT_SOPORTE_SIN_RUPTURA")
 
-        # =========================
-        # PRICE ACTION A FAVOR / EN CONTRA
-        # =========================
-        confianza_pa = evaluar_confianza_price_action(ctx, direccion)
+        # PRICE ACTION
+        if pa_direccion == "NEUTRA" or pa_tipo == "SIN_CONTEXTO_CLARO":
+            riesgo("SIN_CONTEXTO_CLARO")
 
-        if direccion == "call" and pa_direccion == "CALL":
-            if confianza_pa.get("pa_valido") and confianza_pa.get("nivel") in ["MEDIA", "ALTA"]:
-                diagnostico["fortalezas_base"].append("PA_A_FAVOR_CALL_" + confianza_pa.get("nivel"))
-            else:
-                diagnostico["riesgos_base"].append("PA_A_FAVOR_CALL_DEBIL")
-        
-        if direccion == "put" and pa_direccion == "PUT":
-            if confianza_pa.get("pa_valido") and confianza_pa.get("nivel") in ["MEDIA", "ALTA"]:
-                diagnostico["fortalezas_base"].append("PA_A_FAVOR_PUT_" + confianza_pa.get("nivel"))
-            else:
-                diagnostico["riesgos_base"].append("PA_A_FAVOR_PUT_DEBIL")
-        if direccion == "call" and pa_direccion == "PUT":
-            diagnostico["riesgos_base"].append("PA_CONTRA_CALL")
+        elif pa_direccion != direccion.upper():
+            riesgo("PA_CONTRA_" + direccion.upper())
 
-        if direccion == "put" and pa_direccion == "CALL":
-            diagnostico["riesgos_base"].append("PA_CONTRA_PUT")
+        elif pa_valido and nivel_pa in ["MEDIA", "ALTA"]:
+            fortaleza("PA_A_FAVOR_" + direccion.upper() + "_" + nivel_pa)
 
-        if pa_tipo == "SIN_CONTEXTO_CLARO":
-            diagnostico["riesgos_base"].append("SIN_CONTEXTO_CLARO")
+        else:
+            riesgo("PA_A_FAVOR_" + direccion.upper() + "_DEBIL")
 
-        if pa_tipo in [
-            "RECHAZO_COMPRADOR_CONFIRMADO",
-            "RECHAZO_VENDEDOR_CONFIRMADO",
-            "AGOTAMIENTO_BAJISTA_CONFIRMADO",
-            "AGOTAMIENTO_ALCISTA_CONFIRMADO",
-            "IMPULSO_ALCISTA_FUERTE",
-            "IMPULSO_BAJISTA_FUERTE"
-        ]:
-            diagnostico["fortalezas_base"].append(pa_tipo)
+        # No todo PA confirmado es fortaleza. Solo dejamos los que mostraron mejor comportamiento.
+        if pa_tipo in ["RECHAZO_COMPRADOR_CONFIRMADO", "IMPULSO_BAJISTA_FUERTE"]:
+            fortaleza(pa_tipo)
 
-        # =========================
+        if pa_tipo in ["IMPULSO_ALCISTA_FUERTE", "RECHAZO_VENDEDOR_CONFIRMADO"]:
+            riesgo(pa_tipo + "_DEBIL_HISTORICO")
+
         # TENDENCIA
-        # =========================
-        if direccion == "call" and direccion_tendencia == "ALCISTA":
-            diagnostico["fortalezas_base"].append("TENDENCIA_A_FAVOR")
+        tendencia_a_favor = (
+            direccion == "call" and direccion_tendencia == "ALCISTA"
+        ) or (
+            direccion == "put" and direccion_tendencia == "BAJISTA"
+        )
 
-        if direccion == "put" and direccion_tendencia == "BAJISTA":
-            diagnostico["fortalezas_base"].append("TENDENCIA_A_FAVOR")
-
-        if direccion == "call" and direccion_tendencia == "BAJISTA":
-            diagnostico["riesgos_base"].append("CONTRA_TENDENCIA")
-
-        if direccion == "put" and direccion_tendencia == "ALCISTA":
-            diagnostico["riesgos_base"].append("CONTRA_TENDENCIA")
-
-        if fuerza_tendencia >= 65:
-            diagnostico["fortalezas_base"].append("FUERZA_TENDENCIA_ALTA")
+        if tendencia_a_favor and fuerza_tendencia >= 65:
+            riesgo("TENDENCIA_FUERTE_NO_CONFIABLE")
+        elif tendencia_a_favor:
+            riesgo("TENDENCIA_A_FAVOR_NO_PREDICTIVA")
+        elif not tendencia_a_favor and direccion_tendencia in ["ALCISTA", "BAJISTA"]:
+            riesgo("CONTRA_TENDENCIA")
 
         if fuerza_tendencia < 45:
-            diagnostico["riesgos_base"].append("FUERZA_TENDENCIA_BAJA")
+            riesgo("FUERZA_TENDENCIA_BAJA")
 
-        # =========================
-        # ESTRATEGIAS ESPECÍFICAS
-        # =========================
+        # ESTRATEGIAS
         if "choch" in patron:
             if fuerza_tendencia < 55:
-                diagnostico["riesgos_base"].append("CHOCH_CON_TENDENCIA_DEBIL")
-            if pa_direccion.upper() == direccion.upper():
-                diagnostico["fortalezas_base"].append("CHOCH_CON_PA_A_FAVOR")
+                riesgo("CHOCH_CON_TENDENCIA_DEBIL")
+            if pa_direccion == direccion.upper() and pa_valido and nivel_pa in ["MEDIA", "ALTA"]:
+                fortaleza("CHOCH_CON_PA_VALIDO")
+            else:
+                riesgo("CHOCH_SIN_PA_VALIDO")
 
         if "liquidity sweep" in patron:
-            confianza_pa = evaluar_confianza_price_action(ctx, direccion)
-        
             if (
                 ("RECHAZO" in pa_tipo or "AGOTAMIENTO" in pa_tipo)
-                and confianza_pa.get("pa_valido")
-                and confianza_pa.get("nivel") in ["MEDIA", "ALTA"]
+                and pa_valido
+                and nivel_pa in ["MEDIA", "ALTA"]
             ):
-                diagnostico["fortalezas_base"].append(
-                    "SWEEP_CON_RECHAZO_AGOTAMIENTO_" + confianza_pa.get("nivel")
-                )
+                fortaleza("SWEEP_CON_PA_VALIDO")
             else:
-                diagnostico["riesgos_base"].append("SWEEP_CON_CONFIRMACION_PA_DEBIL")
-        
+                riesgo("SWEEP_CON_CONFIRMACION_PA_DEBIL")
+
             if pa_tipo == "SIN_CONTEXTO_CLARO":
-                diagnostico["riesgos_base"].append("SWEEP_SIN_CONFIRMACION_PA")
+                riesgo("SWEEP_SIN_CONFIRMACION_PA")
 
         if "pullback" in patron:
-            if fuerza_tendencia >= 60:
-                diagnostico["fortalezas_base"].append("PULLBACK_CON_TENDENCIA_VALIDA")
+            if tendencia_a_favor and 50 <= fuerza_tendencia <= 64 and pa_valido:
+                fortaleza("PULLBACK_CON_PA_Y_TENDENCIA")
             else:
-                diagnostico["riesgos_base"].append("PULLBACK_TENDENCIA_INSUFICIENTE")
+                riesgo("PULLBACK_TENDENCIA_INSUFICIENTE")
 
         if "reacción" in patron or "reaccion" in patron:
-            if "RECHAZO" in pa_tipo or "AGOTAMIENTO" in pa_tipo:
-                diagnostico["fortalezas_base"].append("REACCION_CONFIRMADA")
+            if ("RECHAZO" in pa_tipo or "AGOTAMIENTO" in pa_tipo) and pa_valido:
+                fortaleza("REACCION_CONFIRMADA")
             else:
-                diagnostico["riesgos_base"].append("REACCION_SIN_CONFIRMACION_FUERTE")
+                riesgo("REACCION_SIN_CONFIRMACION_FUERTE")
 
         if "continuación" in patron or "continuacion" in patron:
-            if fuerza_tendencia >= 70:
-                diagnostico["fortalezas_base"].append("CONTINUACION_CON_TENDENCIA_FUERTE")
+            if tendencia_a_favor and fuerza_tendencia >= 55 and pa_valido:
+                fortaleza("CONTINUACION_CON_PA_VALIDO")
             else:
-                diagnostico["riesgos_base"].append("CONTINUACION_TENDENCIA_INSUFICIENTE")
+                riesgo("CONTINUACION_TENDENCIA_INSUFICIENTE")
 
-        # =========================
-        # CLASIFICACIÓN FINAL
-        # =========================
         riesgos = len(diagnostico["riesgos_base"])
         fortalezas = len(diagnostico["fortalezas_base"])
 
-        if fortalezas >= 4 and riesgos <= 1:
+        if fortalezas >= 3 and riesgos <= 1:
             diagnostico["base_estrategia"] = "FUERTE"
-        elif riesgos >= 3 and fortalezas <= 2:
+        elif riesgos >= 3 and fortalezas <= 1:
             diagnostico["base_estrategia"] = "DEBIL"
         else:
             diagnostico["base_estrategia"] = "MEDIA"
@@ -2932,7 +2914,7 @@ def diagnosticar_base_estrategia(senal, ctx):
             "riesgos_base": ["ERROR_DIAGNOSTICO_BASE"],
             "fortalezas_base": [],
             "error_base": str(e)
-        }    
+        }
 def analizar_activo(activo):
     ctx = leer_contexto_grafico(activo)
 
@@ -3249,7 +3231,10 @@ def analizar_activo(activo):
         senal["base_estrategia"] = diagnostico_base.get("base_estrategia", "MEDIA")
         senal["riesgos_base"] = "|".join(diagnostico_base.get("riesgos_base", []))
         senal["fortalezas_base"] = "|".join(diagnostico_base.get("fortalezas_base", []))
-
+        # =========================
+        # SETUP FINAL - MOTOR_SETUP REFACTORIZADO
+        # =========================
+        senal = enriquecer_senal_con_setup(senal)
         patron_lower = str(senal.get("patron", "")).lower()
         accion_precio = senal.get("accion_precio", "")
         

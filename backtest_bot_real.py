@@ -413,6 +413,11 @@ def ejecutar_backtest(datasets):
 
             evaluacion_fase4 = evaluar_senal_fase4(senal)
 
+            senal["fase4_confianza"] = evaluacion_fase4.get("fase4_confianza", 50.0)
+            senal["fase4_decision"] = evaluacion_fase4.get("fase4_decision", "")
+            senal["fase4_modo"] = evaluacion_fase4.get("fase4_modo", "")
+            senal["fase4_debe_bloquear"] = evaluacion_fase4.get("fase4_debe_bloquear", False)
+            
             if evaluacion_fase4.get("fase4_debe_bloquear", False):
                 resultados.append(
                     crear_registro_resultado(

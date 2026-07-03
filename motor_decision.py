@@ -2,9 +2,9 @@ from motor_inferencia import inferir_confianza
 from detector_riesgo_compuesto import evaluar_riesgo_compuesto
 from motor_aprendizaje_historico import evaluar_aprendizaje_historico
 
-UMBRAL_OPERAR_DIRECTO = 68.0
-UMBRAL_OPERAR_NORMAL = 55.0
-UMBRAL_PROTOCOLO_ESTRICTO = 42.0
+UMBRAL_OPERAR_DIRECTO = 65.0
+UMBRAL_OPERAR_NORMAL = 50.0
+UMBRAL_PROTOCOLO_ESTRICTO = 38.0
 
 PESO_MINIMO_DECISION = 0.55
 PESO_MAXIMO_DECISION = 1.30
@@ -109,12 +109,44 @@ def regla_bloqueo_duro_contextual(evidencia):
     pa_tipo = _txt(evidencia.get("pa_tipo"))
     nivel_consenso = _txt(evidencia.get("nivel_consenso"))
 
+    # Bloqueos de baja calidad comprobada
+    riesgos_criticos = [
+        "pa_a_favor_call_debil",
+        "choch_sin_pa_valido",
+        "choch_con_tendencia_debil",
+        "impulso_alcista_fuerte_debil_historico",
+    ]
+
+    for riesgo in riesgos_criticos:
+        if riesgo in riesgos_base:
+            return True, f"Bloqueo duro: riesgo crítico detectado ({riesgo})."
+
     if (
-    protocolo_sugerido == "protocolo_ruptura_resistencia"
-    and estado_setup == "pendiente_confirmacion"
-    and nivel_setup in ["medio_bajo", "bajo"]
-    and confianza_setup < 50
-    and nivel_consenso in ["muy_bajo", "bajo"]
+        "continuacion_tendencia_insuficiente" in riesgos_base
+        and nivel_consenso in ["muy_bajo", "bajo", "medio"]
+    ):
+        return True, "Bloqueo duro: continuación con tendencia insuficiente y consenso no alto."
+
+    if (
+        "pullback_tendencia_insuficiente" in riesgos_base
+        and confianza_setup < 55
+        and nivel_setup in ["bajo", "medio_bajo"]
+    ):
+        return True, "Bloqueo duro: pullback sin tendencia suficiente + setup débil."
+
+    if (
+        "call_resistencia_sin_ruptura" in riesgos_base
+        and "pa_a_favor_call_alta" not in fortalezas_base
+        and "rechazo_comprador_confirmado" not in fortalezas_base
+    ):
+        return True, "Bloqueo duro: CALL resistencia sin ruptura sin confirmación fuerte."
+
+    if (
+        protocolo_sugerido == "protocolo_ruptura_resistencia"
+        and estado_setup == "pendiente_confirmacion"
+        and nivel_setup in ["medio_bajo", "bajo"]
+        and confianza_setup < 50
+        and nivel_consenso in ["muy_bajo", "bajo"]
     ):
         return True, "Bloqueo duro: ruptura de resistencia pendiente + setup débil + consenso bajo."
 
@@ -125,6 +157,7 @@ def regla_bloqueo_duro_contextual(evidencia):
         and confianza_setup < 52
     ):
         return True, "Bloqueo duro: CALL contra resistencia sin ruptura + consenso bajo + confianza setup baja."
+
     if (
         "call_resistencia_sin_ruptura" in riesgos_base
         and "pa_a_favor_call" not in fortalezas_base
@@ -133,7 +166,6 @@ def regla_bloqueo_duro_contextual(evidencia):
         return True, "Bloqueo duro: resistencia sin ruptura sin PA alcista suficiente."
 
     return False, ""
-
 
 def sugerir_modo_ejecucion(confianza, riesgo_nivel, evidencia):
     tipo_setup = _txt(evidencia.get("tipo_setup"))
@@ -181,8 +213,13 @@ def evaluar_decision(evidencia):
     peso_reglas, motivos_reglas = aplicar_reglas_generales(evidencia)
     riesgo_compuesto = evaluar_riesgo_compuesto(evidencia)
     aprendizaje = evaluar_aprendizaje_historico(evidencia)
+
     peso_final = limitar_peso(round(peso_inferencia * peso_reglas, 3))
-    confianza = round(max(0, min(100, 50.0 * peso_final)), 2)
+    
+    # Antes usaba 50 fijo y destruía la confianza real de inferencia.
+    # Ahora respeta la confianza calculada por motor_inferencia.
+    confianza = round(max(0, min(100, confianza_base * peso_final)), 2)
+    
     confianza += aprendizaje.get("ajuste_confianza_aprendizaje", 0)
     confianza = round(max(0, min(100, confianza)), 2)
 
@@ -228,8 +265,9 @@ def evaluar_decision(evidencia):
         motivos.append("Permitida solo con protocolo estricto.")
 
     else:
+        operar = True
         decision = "SOLO_SI_PROTOCOLO_CONFIRMA"
-        motivos.append("Confianza baja: solo operar si protocolo confirma fuerte.")
+        motivos.append("Confianza baja: no entrada directa; solo permitir si el protocolo confirma fuerte.")
 
     return {
         "operar": operar,

@@ -2,7 +2,7 @@ import json
 import os
 
 from config_fase4 import RUTA_BASE_CONOCIMIENTO
-from normalizador import construir_clave_normalizada, normalizar_evidencia
+from normalizador import construir_clave_normalizada, normalizar_evidencia, normalizar_texto
 
 PESO_MINIMO = 0.50
 PESO_MAXIMO = 1.35
@@ -13,14 +13,6 @@ UMBRAL_FAVORABLE = 65.0
 UMBRAL_DEBIL = 45.0
 
 
-def normalizar(valor):
-    if valor is None:
-        return "SIN_DATO"
-
-    valor = str(valor).strip()
-    return valor if valor else "SIN_DATO"
-
-
 def cargar_base_conocimiento(ruta=RUTA_BASE_CONOCIMIENTO):
     if not os.path.exists(ruta):
         return None
@@ -28,9 +20,6 @@ def cargar_base_conocimiento(ruta=RUTA_BASE_CONOCIMIENTO):
     with open(ruta, "r", encoding="utf-8") as f:
         return json.load(f)
 
-
-def construir_clave(signal, campos):
-    return construir_clave_normalizada(signal, campos)
 
 def limitar_peso(peso):
     return max(PESO_MINIMO, min(PESO_MAXIMO, peso))
@@ -50,8 +39,33 @@ def calcular_confianza_desde_peso(peso_final):
     return round(max(0, min(100, confianza)), 2)
 
 
+def _campo_valido(signal, campo):
+    valor = normalizar_texto(signal.get(campo))
+    return valor not in ["sin_dato", "", "none", "null"]
+
+
+def _nivel_usable(signal, campos):
+    """
+    Evita usar niveles estadísticos cuando la señal aún no tiene
+    todos los campos necesarios.
+
+    Ejemplo:
+    Fase 4 no debe usar motivo_ejecucion si todavía no existe.
+    """
+
+    if not campos:
+        return False
+
+    for campo in campos:
+        if not _campo_valido(signal, campo):
+            return False
+
+    return True
+
+
 def evaluar_senal(signal, base_conocimiento=None):
     signal = normalizar_evidencia(signal)
+
     if base_conocimiento is None:
         base_conocimiento = cargar_base_conocimiento()
 
@@ -60,7 +74,8 @@ def evaluar_senal(signal, base_conocimiento=None):
             "confianza": CONFIANZA_BASE,
             "decision": "SIN_BASE_CONOCIMIENTO",
             "peso_final": 1.0,
-            "motivos": ["No se encontró base_conocimiento.json"]
+            "motivos": ["No se encontró base_conocimiento.json"],
+            "coincidencias": []
         }
 
     motivos = []
@@ -71,7 +86,11 @@ def evaluar_senal(signal, base_conocimiento=None):
 
     for nombre_nivel, datos_nivel in niveles.items():
         campos = datos_nivel.get("campos", [])
-        clave = construir_clave(signal, campos)
+
+        if not _nivel_usable(signal, campos):
+            continue
+
+        clave = construir_clave_normalizada(signal, campos)
 
         for grupo in ["fuertes", "debiles", "neutras"]:
             combinacion = datos_nivel.get(grupo, {}).get(clave)
