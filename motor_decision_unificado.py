@@ -284,62 +284,94 @@ def evaluar_decision_bootiq(decision_bootiq):
                 "contradicción price action"
             )
     # =========================
-    # 9. EVIDENCIAS MERCADO
+    # 9. EVIDENCIAS MERCADO SELECTIVAS
     # =========================
+    tipos_mercado = []
+
     for ev in mercado_evidencias:
-        if not isinstance(ev, dict):
-            continue
-    
-        tipo_ev = _txt(ev.get("tipo", ""))
-        direccion_ev = _txt(ev.get("direccion", ""))
-        peso_ev = _num(ev.get("peso", 0))
-        fuerza_ev = _num(ev.get("fuerza", 0))
-        direccion_senal = _txt(identidad.get("direccion", ""))
-    
-        if direccion_ev in ["CALL", "PUT"] and direccion_senal:
-            ajuste = min(7, max(1, abs(peso_ev) / 3))
-    
-            if direccion_ev == direccion_senal.upper():
-                if peso_ev > 0:
-                    score = _agregar(
-                        score,
-                        ajuste,
-                        razones,
-                        "evidencia mercado a favor: " + tipo_ev
-                    )
-                else:
-                    score = _agregar(
-                        score,
-                        -ajuste,
-                        advertencias,
-                        "evidencia mercado débil a favor: " + tipo_ev
-                    )
-            else:
-                if peso_ev > 0:
-                    score = _agregar(
-                        score,
-                        -ajuste,
-                        advertencias,
-                        "evidencia mercado contra dirección: " + tipo_ev
-                    )
-    
-        elif direccion_ev == "NEUTRA":
-            ajuste = min(6, max(1, abs(peso_ev) / 3))
-    
-            if peso_ev > 0:
-                score = _agregar(
-                    score,
-                    ajuste,
-                    razones,
-                    "evidencia mercado favorable: " + tipo_ev
-                )
-            elif peso_ev < 0:
-                score = _agregar(
-                    score,
-                    -ajuste,
-                    advertencias,
-                    "evidencia mercado riesgosa: " + tipo_ev
-                )        
+        if isinstance(ev, dict):
+            tipos_mercado.append(_txt(ev.get("tipo", "")))
+
+    set_mercado = set(tipos_mercado)
+    direccion_senal = _txt(identidad.get("direccion", ""))
+
+    # Evidencias buenas detectadas en backtest:
+    # - TENDENCIA_ALCISTA + MERCADO_NORMAL
+    # - TENDENCIA_ALCISTA + MERCADO_NORMAL + TENDENCIA_LIMPIA
+    # - TENDENCIA_ALCISTA + MERCADO_NORMAL + TENDENCIA_FUERTE + TENDENCIA_LIMPIA
+    # - TENDENCIA_BAJISTA + MERCADO_NORMAL + TENDENCIA_FUERTE + TENDENCIA_LIMPIA
+
+    if (
+        direccion_senal == "CALL"
+        and "TENDENCIA_ALCISTA" in set_mercado
+        and "MERCADO_NORMAL" in set_mercado
+    ):
+        score = _agregar(
+            score,
+            4,
+            razones,
+            "mercado selectivo favorable CALL: tendencia alcista normal"
+        )
+
+    if (
+        direccion_senal == "CALL"
+        and "TENDENCIA_ALCISTA" in set_mercado
+        and "TENDENCIA_LIMPIA" in set_mercado
+    ):
+        score = _agregar(
+            score,
+            3,
+            razones,
+            "mercado selectivo favorable CALL: tendencia limpia"
+        )
+
+    if (
+        direccion_senal == "PUT"
+        and "TENDENCIA_BAJISTA" in set_mercado
+        and "MERCADO_NORMAL" in set_mercado
+        and "TENDENCIA_FUERTE" in set_mercado
+        and "TENDENCIA_LIMPIA" in set_mercado
+    ):
+        score = _agregar(
+            score,
+            5,
+            razones,
+            "mercado selectivo favorable PUT: bajista fuerte limpia"
+        )
+
+    # Evidencias malas detectadas en backtest:
+    # - TENDENCIA_BAJISTA + MERCADO_NORMAL
+    # - TENDENCIA_BAJISTA + MERCADO_NORMAL + TENDENCIA_FUERTE
+    # - MERCADO_NORMAL + TENDENCIA_DEBIL
+
+    if (
+        direccion_senal == "PUT"
+        and "TENDENCIA_BAJISTA" in set_mercado
+        and "MERCADO_NORMAL" in set_mercado
+        and "TENDENCIA_LIMPIA" not in set_mercado
+    ):
+        score = _agregar(
+            score,
+            -4,
+            advertencias,
+            "mercado selectivo débil PUT: bajista normal sin limpieza"
+        )
+
+    if "TENDENCIA_DEBIL" in set_mercado:
+        score = _agregar(
+            score,
+            -4,
+            advertencias,
+            "mercado selectivo penaliza tendencia débil"
+        )
+
+    if "TENDENCIA_AGOTADA" in set_mercado:
+        score = _agregar(
+            score,
+            -3,
+            advertencias,
+            "mercado selectivo penaliza tendencia agotada"
+        )
     # =========================
     # DECISIÓN FINAL
     # =========================

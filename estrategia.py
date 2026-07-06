@@ -3430,6 +3430,8 @@ def evaluar_senal_candidata(activo, ctx, senal):
     )
 
     senal = resultado_bootiq["senal"]
+    if senal.get("decision_unificada_accion") == "NO_OPERAR":
+      return None
     return senal
 def analizar_activo(activo):
     ctx = leer_contexto_grafico(activo)

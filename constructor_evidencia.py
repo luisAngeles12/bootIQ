@@ -85,6 +85,8 @@ def construir_evidencia_operacion(senal, ctx=None):
         "razones_clasificador_setup": normalizar(
             senal.get("razones_clasificador_setup")
         ),
+        "pa_evidencias": senal.get("pa_evidencias", ctx.get("pa_evidencias", [])),
+        "mercado_evidencias": senal.get("mercado_evidencias", ctx.get("mercado_evidencias", [])),
     }
 
     return evidencia

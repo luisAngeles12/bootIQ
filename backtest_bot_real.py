@@ -837,6 +837,8 @@ def imprimir_resumen(resultados):
         ("POR CALIDAD MERCADO", "calidad_mercado"),
         ("POR TENDENCIA", "estado_tendencia"),
         ("POR ACTIVO", "activo"),
+        ("POR EVIDENCIA PA", "bootiq_evidencias_price_action"),
+        ("POR EVIDENCIA MERCADO", "bootiq_evidencias_mercado"),
     ]
 
     imprimir_tabla_resumen(

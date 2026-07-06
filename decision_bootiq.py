@@ -11,7 +11,7 @@ def crear_decision_bootiq(senal=None, ctx=None):
 
     senal = senal or {}
     ctx = ctx or {}
-
+    
     return {
         "identidad": {
             "activo": senal.get("activo", ctx.get("activo", "")),
@@ -192,7 +192,13 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         from motor_decision_unificado import evaluar_decision_bootiq
 
         ctx = ctx or {}
-
+        from constructor_evidencia import construir_evidencia_operacion
+        
+        evidencia = construir_evidencia_operacion(senal, ctx)
+        
+        senal["pa_evidencias"] = evidencia.get("pa_evidencias", senal.get("pa_evidencias", []))
+        senal["mercado_evidencias"] = evidencia.get("mercado_evidencias", senal.get("mercado_evidencias", []))
+        senal["evidencia_operacion"] = evidencia
         decision = crear_decision_bootiq(senal, ctx)
 
         decision = aplicar_consenso_decision(decision)
