@@ -43,7 +43,15 @@ def _nivel_estado_desde_confianza(confianza):
     return "BAJO", "PELIGROSO"
 
 
-def clasificar_setup(senal):
+def identificar_setup(senal):
+    """
+    Identifica familia, subtipo y protocolo base del setup.
+
+    Fase 6:
+    - Separamos la identidad del setup de la evaluación completa.
+    - Mantiene la misma lógica anterior para no alterar el backtest.
+    """
+
     tipo_setup = _txt(senal.get("tipo_setup", "INDEFINIDO"))
     patron = _txt(senal.get("patron", ""))
     direccion = _txt(senal.get("direccion", ""))
@@ -53,10 +61,8 @@ def clasificar_setup(senal):
     mercado = _txt(senal.get("tipo_mercado", ""))
     calidad_mercado = _txt(senal.get("calidad_mercado", ""))
     tendencia = _txt(senal.get("estado_tendencia", ""))
-    base_estrategia = _txt(senal.get("base_estrategia", ""))
     nivel_consenso = _txt(senal.get("nivel_consenso", ""))
 
-    score_final = _num(senal.get("score_final"))
     balance_setup = _num(senal.get("balance_setup"))
 
     fortalezas = _leer_lista(senal.get("fortalezas_base", ""))
@@ -165,6 +171,36 @@ def clasificar_setup(senal):
     else:
         confianza_setup = _ajustar(confianza_setup, -10, razones, "Setup indefinido")
 
+    return {
+        "familia_setup": familia_setup,
+        "subtipo_setup": subtipo_setup,
+        "protocolo_sugerido": protocolo_sugerido,
+        "confianza_setup": confianza_setup,
+        "razones": razones,
+    }
+
+
+def clasificar_setup(senal):
+    direccion = _txt(senal.get("direccion", ""))
+    accion_precio = _txt(senal.get("accion_precio", ""))
+    pa_tipo = _txt(senal.get("pa_tipo", ""))
+    pa_direccion = _txt(senal.get("pa_direccion", ""))
+    calidad_mercado = _txt(senal.get("calidad_mercado", ""))
+    base_estrategia = _txt(senal.get("base_estrategia", ""))
+    nivel_consenso = _txt(senal.get("nivel_consenso", ""))
+
+    score_final = _num(senal.get("score_final"))
+
+    riesgos = _leer_lista(senal.get("riesgos_base", ""))
+
+    identidad_setup = identificar_setup(senal)
+
+    familia_setup = identidad_setup["familia_setup"]
+    subtipo_setup = identidad_setup["subtipo_setup"]
+    protocolo_sugerido = identidad_setup["protocolo_sugerido"]
+    confianza_setup = identidad_setup["confianza_setup"]
+    razones = identidad_setup["razones"]
+
     # ==========================
     # AJUSTES POR EVIDENCIA
     # ==========================
@@ -258,6 +294,73 @@ def clasificar_setup(senal):
         "confianza_setup": confianza_setup,
         "razones_clasificador_setup": " | ".join(razones),
     }
+
+
+def aplicar_setup_decision(decision_bootiq):
+    """
+    Aplica clasificación de setup al contrato central DecisionBootIQ.
+
+    BootIQ V2:
+    - No decide operación final.
+    - No modifica señal plana.
+    - Solo escribe evidencia en decision_bootiq["setup"].
+    """
+
+    try:
+        identidad = decision_bootiq.get("identidad", {})
+        estrategia = decision_bootiq.get("estrategia", {})
+        mercado = decision_bootiq.get("mercado", {})
+        price_action = decision_bootiq.get("price_action", {})
+        riesgos = decision_bootiq.get("riesgos", {})
+        fortalezas = decision_bootiq.get("fortalezas", {})
+        consenso = decision_bootiq.get("consenso", {})
+        historial = decision_bootiq.get("historial", {})
+
+        senal_temp = {
+            "tipo_setup": decision_bootiq.get("setup", {}).get("tipo_setup", "INDEFINIDO"),
+            "patron": identidad.get("patron", ""),
+            "direccion": identidad.get("direccion", ""),
+            "accion_precio": price_action.get("accion_precio", ""),
+            "pa_tipo": price_action.get("pa_tipo", ""),
+            "pa_direccion": price_action.get("pa_direccion", ""),
+            "tipo_mercado": mercado.get("tipo_mercado", ""),
+            "calidad_mercado": mercado.get("calidad_mercado", ""),
+            "estado_tendencia": mercado.get("estado_tendencia", ""),
+            "base_estrategia": estrategia.get("base_estrategia", ""),
+            "nivel_consenso": consenso.get("nivel_consenso", ""),
+            "score_final": estrategia.get("score_final", 0),
+            "balance_setup": fortalezas.get("balance_setup", 0),
+            "fortalezas_base": fortalezas.get("fortalezas_base", ""),
+            "riesgos_base": riesgos.get("riesgos_base", ""),
+            "decision_aprendizaje": historial.get("decision_aprendizaje", ""),
+            "ajuste_confianza_aprendizaje": historial.get("ajuste_confianza_aprendizaje", 0),
+            "ajuste_confianza": historial.get("ajuste_confianza", 0),
+        }
+
+        datos_setup = clasificar_setup(senal_temp)
+
+        if "setup" not in decision_bootiq:
+            decision_bootiq["setup"] = {}
+
+        decision_bootiq["setup"].update(datos_setup)
+
+        return decision_bootiq
+
+    except Exception as e:
+        if "setup" not in decision_bootiq:
+            decision_bootiq["setup"] = {}
+
+        decision_bootiq["setup"].update({
+            "familia_setup": "ERROR",
+            "subtipo_setup": "ERROR",
+            "protocolo_sugerido": "PROTOCOLO_GENERICO",
+            "nivel_setup": "ERROR",
+            "estado_setup": "ERROR",
+            "confianza_setup": 0,
+            "razones_clasificador_setup": "error aplicando setup a DecisionBootIQ: " + str(e),
+        })
+
+        return decision_bootiq
 
 
 def enriquecer_senal_con_setup(senal):

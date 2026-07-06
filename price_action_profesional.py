@@ -381,18 +381,47 @@ def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resis
     fuerza = 0
     razones = []
     contradicciones = []
+    evidencias = []
 
     rechazo_dir = rechazo.get("direccion", "NEUTRA")
     impulso_dir = impulso.get("direccion", "NEUTRA")
     agotamiento_dir = agotamiento.get("direccion", "NEUTRA")
 
+    # =========================
+    # EVIDENCIA: RECHAZO
+    # =========================
     if rechazo.get("confirmado"):
+        evidencia = {
+            "fuente": "price_action",
+            "tipo": rechazo.get("tipo", "RECHAZO_CONFIRMADO"),
+            "direccion": rechazo_dir,
+            "peso": 30,
+            "fuerza": rechazo.get("fuerza", 0),
+            "confirmada": True,
+            "razon": rechazo.get("razon", "")
+        }
+        evidencias.append(evidencia)
+
         direccion = rechazo_dir
         tipo = rechazo.get("tipo", "RECHAZO_CONFIRMADO")
         fuerza += rechazo.get("fuerza", 0)
         razones.append(rechazo.get("razon", ""))
 
+    # =========================
+    # EVIDENCIA: AGOTAMIENTO
+    # =========================
     if agotamiento.get("confirmado"):
+        evidencia = {
+            "fuente": "price_action",
+            "tipo": agotamiento.get("tipo", "AGOTAMIENTO_CONFIRMADO"),
+            "direccion": agotamiento_dir,
+            "peso": 26,
+            "fuerza": agotamiento.get("fuerza", 0),
+            "confirmada": True,
+            "razon": agotamiento.get("razon", "")
+        }
+        evidencias.append(evidencia)
+
         if direccion == "NEUTRA":
             direccion = agotamiento_dir
             tipo = agotamiento.get("tipo", tipo)
@@ -406,7 +435,24 @@ def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resis
         else:
             contradicciones.append("agotamiento contradice rechazo")
 
+    # =========================
+    # EVIDENCIA: IMPULSO
+    # =========================
     if impulso_dir != "NEUTRA":
+        evidencia = {
+            "fuente": "price_action",
+            "tipo": impulso.get("tipo", "IMPULSO"),
+            "direccion": impulso_dir,
+            "peso": 18,
+            "fuerza": impulso.get("fuerza", 0),
+            "confirmada": impulso.get("tipo", "") in [
+                "IMPULSO_ALCISTA_FUERTE",
+                "IMPULSO_BAJISTA_FUERTE"
+            ],
+            "razon": impulso.get("razon", "")
+        }
+        evidencias.append(evidencia)
+
         razones.append(impulso.get("razon", ""))
 
         if direccion == "NEUTRA":
@@ -420,7 +466,20 @@ def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resis
         else:
             contradicciones.append("impulso contrario a price action")
 
+    # =========================
+    # CONTRADICCIONES
+    # =========================
     if contradicciones:
+        evidencias.append({
+            "fuente": "price_action",
+            "tipo": "CONTRADICCION_PA",
+            "direccion": "NEUTRA",
+            "peso": -22,
+            "fuerza": 0,
+            "confirmada": True,
+            "razon": " | ".join(contradicciones)
+        })
+
         fuerza *= 0.55
         razones.append("contradicciones: " + " | ".join(contradicciones))
 
@@ -430,6 +489,8 @@ def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resis
 
     fuerza = round(min(fuerza, 1), 3)
 
+    # Compatibilidad: mantenemos la lógica actual.
+    # Todavía no cambiamos comportamiento del bot.
     if fuerza < 0.45:
         direccion = "NEUTRA"
         tipo = "SIN_CONTEXTO_CLARO"
@@ -442,6 +503,7 @@ def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resis
         "impulso": impulso,
         "agotamiento": agotamiento,
         "contradicciones": contradicciones,
+        "evidencias": evidencias,
         "razon": " | ".join([r for r in razones if r])
     }
 def rechazo_historico_inteligente(opens, closes, highs, lows, soporte, resistencia, vol, velas=6):

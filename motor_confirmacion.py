@@ -96,3 +96,49 @@ def decidir_confirmacion(senal):
         "razones": ["Confianza insuficiente para protocolo."],
         "razon": "Confianza insuficiente para protocolo."
     }
+
+def aplicar_confirmacion_decision(decision_bootiq):
+    """
+    Aplica confirmación IA/protocolo al contrato central DecisionBootIQ.
+
+    BootIQ V2:
+    - No decide operación final.
+    - No modifica señal plana.
+    - Solo escribe evidencia en decision_bootiq["protocolo"].
+    """
+
+    try:
+        setup = decision_bootiq.get("setup", {})
+        protocolo = decision_bootiq.get("protocolo", {})
+        fase4 = decision_bootiq.get("fase4", {})
+
+        senal_temp = {
+            "fase4_decision": fase4.get("fase4_decision", ""),
+            "fase4_confianza": fase4.get("fase4_confianza", 50),
+            "modo_entrada_setup": setup.get("modo_entrada_setup", ""),
+            "calidad_setup": setup.get("calidad_setup", ""),
+            "protocolo_sugerido": protocolo.get("protocolo_sugerido", ""),
+            "riesgo_protocolo": protocolo.get("riesgo_protocolo", 50),
+        }
+
+        resultado = decidir_confirmacion(senal_temp)
+
+        decision_bootiq["protocolo"]["indice_confirmacion_ia"] = resultado.get("indice", 0)
+        decision_bootiq["protocolo"]["nivel_confirmacion_ia"] = resultado.get("nivel", "")
+        decision_bootiq["protocolo"]["accion_confirmacion_ia"] = resultado.get("accion", "")
+        decision_bootiq["protocolo"]["razon_confirmacion_ia"] = resultado.get("razon", "")
+
+        return decision_bootiq
+
+    except Exception as e:
+        if "protocolo" not in decision_bootiq:
+            decision_bootiq["protocolo"] = {}
+
+        decision_bootiq["protocolo"]["indice_confirmacion_ia"] = 0
+        decision_bootiq["protocolo"]["nivel_confirmacion_ia"] = "ERROR"
+        decision_bootiq["protocolo"]["accion_confirmacion_ia"] = "CANCELAR"
+        decision_bootiq["protocolo"]["razon_confirmacion_ia"] = (
+            "error aplicando confirmación a DecisionBootIQ: " + str(e)
+        )
+
+        return decision_bootiq

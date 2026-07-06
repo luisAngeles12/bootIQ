@@ -5,9 +5,14 @@ import estado
 import estrategia
 from evaluador_fase4 import evaluar_senal_fase4
 from motor_protocolos import buscar_entrada_confirmada
-from motor_setup import enriquecer_senal_con_setup
+from motor_setup import enriquecer_senal_con_setup, aplicar_setup_decision
 from contexto_mercado import detectar_tipo_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
 from motor_aprendizaje_historico import generar_aprendizaje_desde_resultados
+from decision_bootiq import crear_decision_bootiq, aplanar_decision_bootiq
+from motor_decision_unificado import evaluar_decision_bootiq
+from motor_consenso import aplicar_consenso_decision
+from motor_confirmacion import aplicar_confirmacion_decision
+
 CARPETA_DATA = "data_backtest"
 SALIDA = "backtest_bot_real_resultados.csv"
 
@@ -261,7 +266,29 @@ def crear_registro_resultado(senal, velas, idx, idx_entrada, motivo_ejecucion, e
         senal["direccion"]
     )
 
-    return {
+    # =========================
+    # DECISION BOOTIQ V2
+    # =========================
+    decision_bootiq = crear_decision_bootiq(senal)
+    decision_bootiq = aplicar_consenso_decision(decision_bootiq)
+    decision_bootiq = aplicar_setup_decision(decision_bootiq)
+    decision_bootiq = aplicar_confirmacion_decision(decision_bootiq)
+
+    decision_unificada = evaluar_decision_bootiq(decision_bootiq)
+
+    senal["decision_unificada_accion"] = decision_unificada.get("accion", "")
+    senal["decision_unificada_score"] = decision_unificada.get("score", 0)
+    senal["decision_unificada_confianza"] = decision_unificada.get("confianza", "")
+    senal["decision_unificada_razones"] = " | ".join(decision_unificada.get("razones", []))
+    senal["decision_unificada_advertencias"] = " | ".join(decision_unificada.get("advertencias", []))
+    senal["decision_unificada_bloqueos"] = " | ".join(decision_unificada.get("bloqueos", []))
+
+    decision_bootiq = crear_decision_bootiq(senal)
+    decision_bootiq = aplicar_consenso_decision(decision_bootiq)
+    decision_bootiq = aplicar_confirmacion_decision(decision_bootiq)
+    decision_bootiq_plana = aplanar_decision_bootiq(decision_bootiq)
+
+    registro = {
         "tipo": senal.get("tipo", ""),
         "activo": senal.get("activo", ""),
         "fecha": velas[idx_entrada]["from"],
@@ -318,11 +345,12 @@ def crear_registro_resultado(senal, velas, idx, idx_entrada, motivo_ejecucion, e
         "riesgo_protocolo": senal.get("riesgo_protocolo", 0),
         "nivel_riesgo_protocolo": senal.get("nivel_riesgo_protocolo", ""),
         "razon_riesgo_protocolo": senal.get("razon_riesgo_protocolo", ""),
-        
+
         "indice_confirmacion_ia": senal.get("indice_confirmacion_ia", 0),
         "nivel_confirmacion_ia": senal.get("nivel_confirmacion_ia", ""),
         "accion_confirmacion_ia": senal.get("accion_confirmacion_ia", ""),
         "razon_confirmacion_ia": senal.get("razon_confirmacion_ia", ""),
+
         "idx_senal": idx,
         "idx_entrada": idx_entrada,
         "motivo_ejecucion": motivo_ejecucion,
@@ -352,9 +380,18 @@ def crear_registro_resultado(senal, velas, idx, idx_entrada, motivo_ejecucion, e
         "close_siguiente": info_resultado["close_siguiente"],
         "high_siguiente": info_resultado["high_siguiente"],
         "low_siguiente": info_resultado["low_siguiente"],
-
+        "decision_unificada_accion": senal.get("decision_unificada_accion", ""),
+        "decision_unificada_score": senal.get("decision_unificada_score", 0),
+        "decision_unificada_confianza": senal.get("decision_unificada_confianza", ""),
+        "decision_unificada_razones": senal.get("decision_unificada_razones", ""),
+        "decision_unificada_advertencias": senal.get("decision_unificada_advertencias", ""),
+        "decision_unificada_bloqueos": senal.get("decision_unificada_bloqueos", ""),
         "razon": senal.get("razon", ""),
     }
+
+    registro.update(decision_bootiq_plana)
+
+    return registro
 
 def ejecutar_backtest(datasets):
     resultados = []
@@ -559,6 +596,54 @@ def guardar_resultados(resultados):
         "high_siguiente",
         "low_siguiente",
 
+        "bootiq_identidad_activo",
+        "bootiq_identidad_tipo",
+        "bootiq_identidad_direccion",
+        "bootiq_identidad_patron",
+
+        "bootiq_estrategia_puntaje",
+        "bootiq_estrategia_prioridad",
+        "bootiq_estrategia_score_final",
+        "bootiq_estrategia_calidad",
+
+        "bootiq_mercado_tipo_mercado",
+        "bootiq_mercado_calidad_mercado",
+        "bootiq_mercado_score_mercado",
+        "bootiq_mercado_estado_tendencia",
+        "bootiq_mercado_fuerza_tendencia",
+        "bootiq_mercado_direccion_tendencia",
+
+        "bootiq_price_action_accion_precio",
+        "bootiq_price_action_pa_tipo",
+        "bootiq_price_action_pa_direccion",
+        "bootiq_price_action_pa_fuerza",
+
+        "bootiq_setup_tipo_setup",
+        "bootiq_setup_calidad_setup",
+        "bootiq_setup_modo_entrada_setup",
+        "bootiq_setup_balance_setup",
+        "bootiq_setup_familia_setup",
+        "bootiq_setup_subtipo_setup",
+
+        "bootiq_consenso_consenso",
+        "bootiq_consenso_nivel_consenso",
+
+        "bootiq_protocolo_protocolo_sugerido",
+        "bootiq_protocolo_nivel_riesgo_protocolo",
+        "bootiq_protocolo_indice_confirmacion_ia",
+        "bootiq_protocolo_accion_confirmacion_ia",
+
+        "bootiq_fase4_fase4_confianza",
+        "bootiq_fase4_fase4_decision",
+        "bootiq_fase4_fase4_debe_bloquear",
+
+        "bootiq_decision_unificada_accion",
+        "bootiq_decision_unificada_score",
+        "bootiq_decision_unificada_confianza",
+
+        "bootiq_resultado_estado_operacion",
+        "bootiq_resultado_motivo_ejecucion",
+        "bootiq_resultado_resultado",
         "razon",
     ]
     with open(SALIDA, "w", newline="", encoding="utf-8") as f:
@@ -745,6 +830,8 @@ def imprimir_resumen(resultados):
         ("POR ESPERA VELAS", "espera_velas"),
         ("POR SCORE FINAL", "score_final"),
         ("POR NIVEL CONSENSO", "nivel_consenso"),
+        ("POR DECISION BOOTIQ", "decision_unificada_accion"),
+        ("POR CONFIANZA BOOTIQ", "decision_unificada_confianza"),
         ("POR TIPO", "tipo"),
         ("POR MERCADO", "tipo_mercado"),
         ("POR CALIDAD MERCADO", "calidad_mercado"),

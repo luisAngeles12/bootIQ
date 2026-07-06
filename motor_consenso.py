@@ -358,3 +358,70 @@ def aplicar_consenso_senal(senal, ctx):
     senal["razones_consenso"] = resultado.get("razones_consenso", "")
 
     return senal
+
+def aplicar_consenso_decision(decision_bootiq):
+    """
+    Aplica el consenso al contrato central DecisionBootIQ.
+
+    BootIQ V2:
+    - No modifica la señal plana.
+    - No decide operación.
+    - Solo escribe evidencia en decision_bootiq["consenso"].
+    """
+
+    try:
+        identidad = decision_bootiq.get("identidad", {})
+        estrategia = decision_bootiq.get("estrategia", {})
+        mercado = decision_bootiq.get("mercado", {})
+        price_action = decision_bootiq.get("price_action", {})
+
+        senal_temp = {
+            "direccion": identidad.get("direccion", ""),
+            "patron": identidad.get("patron", ""),
+            "puntaje": estrategia.get("puntaje", 0),
+            "prioridad": estrategia.get("prioridad", 0),
+            "score_final": estrategia.get("score_final", 0),
+            "calidad": estrategia.get("calidad", ""),
+            "accion_precio": price_action.get("accion_precio", ""),
+            "pa_tipo": price_action.get("pa_tipo", ""),
+            "pa_direccion": price_action.get("pa_direccion", ""),
+            "pa_fuerza": price_action.get("pa_fuerza", 0),
+            "base_estrategia": estrategia.get("base_estrategia", "MEDIA"),
+            "riesgos_base": estrategia.get("riesgos_base", ""),
+            "fortalezas_base": estrategia.get("fortalezas_base", ""),
+        }
+
+        ctx_temp = {
+            "calidad_mercado": mercado.get("calidad_mercado", ""),
+            "regimen_mercado": mercado.get("regimen_mercado", ""),
+            "riesgo_mercado": mercado.get("riesgo_mercado", "MEDIO"),
+            "direccion_tendencia": mercado.get("direccion_tendencia", ""),
+            "estado_tendencia": mercado.get("estado_tendencia", ""),
+            "fuerza_tendencia": mercado.get("fuerza_tendencia", 0),
+            "score_mercado": mercado.get("score_mercado", 0),
+            "pa_tipo": price_action.get("pa_tipo", ""),
+            "pa_direccion": price_action.get("pa_direccion", ""),
+            "pa_fuerza": price_action.get("pa_fuerza", 0),
+            "accion_precio": price_action.get("accion_precio", ""),
+        }
+
+        resultado = calcular_consenso_senal(senal_temp, ctx_temp)
+
+        decision_bootiq["consenso"] = {
+            "consenso": resultado.get("consenso", 50),
+            "nivel_consenso": resultado.get("nivel_consenso", "MEDIO"),
+            "ajuste_consenso": resultado.get("ajuste_consenso", 0),
+            "razones_consenso": resultado.get("razones_consenso", ""),
+        }
+
+        return decision_bootiq
+
+    except Exception as e:
+        decision_bootiq["consenso"] = {
+            "consenso": 50,
+            "nivel_consenso": "ERROR",
+            "ajuste_consenso": 0,
+            "razones_consenso": "error aplicando consenso a DecisionBootIQ: " + str(e),
+        }
+
+        return decision_bootiq
