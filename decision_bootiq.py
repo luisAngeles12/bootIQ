@@ -176,51 +176,65 @@ def aplanar_decision_bootiq(decision):
     return plano
 def aplicar_decision_unificada_a_senal(senal, ctx=None):
     """
-    Evalúa una señal candidata usando el contrato central BootIQ.
+    Evalúa una señal candidata usando el cerebro único BootIQ.
 
     No ejecuta operación.
     No toca broker.
-    No cambia protocolo.
-    Solo centraliza la decisión y escribe el resultado en la señal.
+    No aplica protocolo.
+    Solo construye evidencia, llama al cerebro único y escribe la decisión final.
     """
 
     try:
-        from motor_consenso import aplicar_consenso_decision
-        from motor_setup import aplicar_setup_decision
-        from motor_riesgo import aplicar_riesgo_decision
-        from motor_confirmacion import aplicar_confirmacion_decision
-        from motor_decision_unificado import evaluar_decision_bootiq
-
         ctx = ctx or {}
+
         from constructor_evidencia import construir_evidencia_operacion
-        
+        from motor_decision import evaluar_decision_cerebro_unico
+
         evidencia = construir_evidencia_operacion(senal, ctx)
-        
+        decision_cerebro = evaluar_decision_cerebro_unico(evidencia)
+
+        accion = decision_cerebro.get("decision", "NO_OPERAR")
+        operar = decision_cerebro.get("operar", False)
+
+        senal["cerebro_unico_decision"] = accion
+        senal["cerebro_unico_operar"] = operar
+        senal["cerebro_unico_confianza"] = decision_cerebro.get("confianza", 0)
+        senal["cerebro_unico_riesgo"] = decision_cerebro.get("riesgo_nivel", "")
+        senal["cerebro_unico_motivos"] = " | ".join(decision_cerebro.get("motivos", []))
+
         senal["pa_evidencias"] = evidencia.get("pa_evidencias", senal.get("pa_evidencias", []))
         senal["mercado_evidencias"] = evidencia.get("mercado_evidencias", senal.get("mercado_evidencias", []))
         senal["evidencia_operacion"] = evidencia
+
+        if accion == "OPERAR_CON_PROTOCOLO":
+            accion_sistema = "ESPERAR"
+        elif accion == "OPERAR":
+            accion_sistema = "OPERAR"
+        else:
+            accion_sistema = "NO_OPERAR"
+        
+        senal["decision_unificada_score"] = decision_cerebro.get("confianza", 0)
+        senal["decision_unificada_confianza"] = decision_cerebro.get("confianza", 0)
+        senal["decision_unificada_razones"] = " | ".join(decision_cerebro.get("motivos", []))
+        senal["decision_unificada_advertencias"] = ""
+        senal["decision_unificada_bloqueos"] = ""
+
         decision = crear_decision_bootiq(senal, ctx)
-
-        decision = aplicar_consenso_decision(decision)
-        decision = aplicar_setup_decision(decision)
-        decision = aplicar_riesgo_decision(decision)
-        decision = aplicar_confirmacion_decision(decision)
-
-        resultado = evaluar_decision_bootiq(decision)
-
-        senal["decision_unificada_accion"] = resultado.get("accion", "")
-        senal["decision_unificada_score"] = resultado.get("score", 0)
-        senal["decision_unificada_confianza"] = resultado.get("confianza", "")
-        senal["decision_unificada_razones"] = " | ".join(resultado.get("razones", []))
-        senal["decision_unificada_advertencias"] = " | ".join(resultado.get("advertencias", []))
-        senal["decision_unificada_bloqueos"] = " | ".join(resultado.get("bloqueos", []))
+        decision["decision_unificada"] = {
+            "accion": accion_sistema,
+            "score": decision_cerebro.get("confianza", 0),
+            "confianza": decision_cerebro.get("confianza", 0),
+            "razones": " | ".join(decision_cerebro.get("motivos", [])),
+            "advertencias": "",
+            "bloqueos": "",
+        }
 
         return {
-            "permitida": resultado.get("accion") in ["OPERAR", "ESPERAR"],
+            "permitida": operar,
             "senal": senal,
             "decision": decision,
-            "resultado": resultado,
-            "razon": "decisión BootIQ aplicada"
+            "resultado": decision_cerebro,
+            "razon": "decisión aplicada por cerebro único"
         }
 
     except Exception as e:

@@ -1,6 +1,7 @@
 from motor_inferencia import inferir_confianza
 from detector_riesgo_compuesto import evaluar_riesgo_compuesto
 from motor_aprendizaje_historico import evaluar_aprendizaje_historico
+from motor_ponderacion import calcular_ponderacion_estadistica
 
 UMBRAL_OPERAR_DIRECTO = 65.0
 UMBRAL_OPERAR_NORMAL = 50.0
@@ -162,7 +163,7 @@ def sugerir_modo_ejecucion(confianza, riesgo_nivel, evidencia):
     accion_precio = _txt(evidencia.get("accion_precio"))
 
     texto = " ".join([tipo_setup, patron, accion_precio])
-
+    
     if riesgo_nivel == "EXTREMO":
         return "NO_OPERAR"
 
@@ -214,12 +215,39 @@ def evaluar_decision(evidencia):
 
     riesgo_nivel = riesgo_compuesto.get("riesgo_nivel", "BAJO")
     riesgo_puntos = riesgo_compuesto.get("riesgo_puntos", 0)
-
+    pa_evidencias = evidencia.get("pa_evidencias", [])
+    ajuste_evidencias = 0
+    motivos_evidencias = []
+    direccion = _txt(evidencia.get("direccion", ""))
+    pa_evidencias = evidencia.get("pa_evidencias", [])
+    mercado_evidencias = evidencia.get("mercado_evidencias", [])
+    
+    ajuste_evidencias = 0
+    motivos_evidencias = []
     motivos = []
     motivos.extend(resultado_inferencia.get("motivos", []))
     motivos.extend(motivos_reglas)
     motivos.extend(riesgo_compuesto.get("motivos_riesgo", []))
     motivos.append(aprendizaje.get("motivo_aprendizaje", ""))
+    for ev in pa_evidencias:
+        tipo = _txt(ev.get("tipo", ""))
+        direccion_ev = _txt(ev.get("direccion", ""))
+        peso = float(ev.get("peso", 0) or 0)
+        fuerza = float(ev.get("fuerza", 0) or 0)
+        direccion = _txt(evidencia.get("direccion", ""))
+    
+        if direccion_ev == direccion.upper() and fuerza >= 0.45:
+            ajuste_evidencias += min(6, max(1, peso / 8))
+            motivos_evidencias.append("PA a favor: " + tipo)
+    
+        elif direccion_ev in ["call", "put"] and direccion_ev != direccion:
+            ajuste_evidencias -= min(6, max(1, abs(peso) / 8))
+            motivos_evidencias.append("PA en contra: " + tipo)
+    
+        if tipo == "contradiccion_pa":
+            ajuste_evidencias -= 5
+            motivos_evidencias.append("PA contradictorio")
+
     bloqueo_duro, motivo_bloqueo = regla_bloqueo_duro_contextual(evidencia)
 
     modo_ejecucion_sugerido = sugerir_modo_ejecucion(
@@ -235,7 +263,8 @@ def evaluar_decision(evidencia):
         operar = False
         decision = "NO_OPERAR"
         motivos.append(motivo_bloqueo)
-
+        confianza = round(max(0, min(100, confianza + ajuste_evidencias)), 2)
+        motivos.extend(motivos_evidencias)
     elif riesgo_nivel == "EXTREMO":
         operar = False
         decision = "NO_OPERAR"
@@ -277,4 +306,235 @@ def evaluar_decision(evidencia):
         "aprendizaje_historico": aprendizaje,
         "decision_aprendizaje": aprendizaje.get("decision_aprendizaje", ""),
         "ajuste_confianza_aprendizaje": aprendizaje.get("ajuste_confianza_aprendizaje", 0),
+    }
+def evaluar_decision_cerebro_unico(evidencia):
+    """
+    Cerebro único BootIQ.
+
+    Integra especialistas.
+    No bloquea desde módulos externos.
+    Decide una sola vez al final.
+    """
+
+    resultado_inferencia = inferir_confianza(evidencia)
+    riesgo_compuesto = evaluar_riesgo_compuesto(evidencia)
+    aprendizaje = evaluar_aprendizaje_historico(evidencia)
+
+    confianza_base = resultado_inferencia.get("confianza", 50.0)
+    ajuste_aprendizaje = aprendizaje.get("ajuste_confianza_aprendizaje", 0)
+
+    confianza = confianza_base + ajuste_aprendizaje
+    confianza = round(max(0, min(100, confianza)), 2)
+
+    riesgo_nivel = riesgo_compuesto.get("riesgo_nivel", "BAJO")
+    riesgo_puntos = riesgo_compuesto.get("riesgo_puntos", 0)
+
+    direccion = _txt(evidencia.get("direccion", ""))
+    patron = _txt(evidencia.get("patron", ""))
+    tipo_setup = _txt(evidencia.get("tipo_setup", ""))
+    subtipo_setup = _txt(evidencia.get("subtipo_setup", ""))
+    protocolo = _txt(evidencia.get("protocolo_sugerido", ""))
+    accion_precio = _txt(evidencia.get("accion_precio", ""))
+    riesgos_base = _txt(evidencia.get("riesgos_base", ""))
+    fortalezas_base = _txt(evidencia.get("fortalezas_base", ""))
+
+    pa_evidencias = evidencia.get("pa_evidencias", [])
+    mercado_evidencias = evidencia.get("mercado_evidencias", [])
+
+    ajuste_evidencias = 0
+    motivos = []
+
+    motivos.extend(resultado_inferencia.get("motivos", []))
+    motivos.extend(riesgo_compuesto.get("motivos_riesgo", []))
+
+    motivo_aprendizaje = aprendizaje.get("motivo_aprendizaje", "")
+    if motivo_aprendizaje:
+        motivos.append(motivo_aprendizaje)
+
+    # =========================
+    # LECTURA PRICE ACTION
+    # =========================
+    for ev in pa_evidencias:
+        tipo = _txt(ev.get("tipo", ""))
+        direccion_ev = _txt(ev.get("direccion", ""))
+        peso = float(ev.get("peso", 0) or 0)
+        fuerza = float(ev.get("fuerza", 0) or 0)
+        confirmada = bool(ev.get("confirmada", False))
+
+        if tipo == "contradiccion_pa":
+            ajuste_evidencias -= 6
+            motivos.append("PA: contradicción interna detectada.")
+            continue
+
+        if direccion_ev in ["call", "put"]:
+            if direccion_ev == direccion:
+                ajuste = min(5, max(1, peso / 10))
+                if confirmada:
+                    ajuste += 1
+
+                if fuerza < 0.45:
+                    ajuste *= 0.5
+                    motivos.append("PA a favor débil: " + tipo)
+                else:
+                    motivos.append("PA a favor: " + tipo)
+
+                ajuste_evidencias += ajuste
+            else:
+                ajuste = min(6, max(2, abs(peso) / 9))
+                ajuste_evidencias -= ajuste
+                motivos.append("PA en contra: " + tipo)
+
+    # =========================
+    # LECTURA MERCADO
+    # =========================
+    tipos_mercado = set()
+
+    for ev in mercado_evidencias:
+        if isinstance(ev, dict):
+            tipos_mercado.add(_txt(ev.get("tipo", "")))
+
+    if direccion == "call" and "tendencia_alcista" in tipos_mercado and "mercado_normal" in tipos_mercado:
+        ajuste_evidencias += 3
+        motivos.append("Mercado: CALL alineado con tendencia alcista normal.")
+
+    if direccion == "call" and "tendencia_alcista" in tipos_mercado and "tendencia_limpia" in tipos_mercado:
+        ajuste_evidencias += 2
+        motivos.append("Mercado: CALL con tendencia limpia.")
+
+    if (
+        direccion == "put"
+        and "tendencia_bajista" in tipos_mercado
+        and "mercado_normal" in tipos_mercado
+        and "tendencia_fuerte" in tipos_mercado
+        and "tendencia_limpia" in tipos_mercado
+    ):
+        ajuste_evidencias += 4
+        motivos.append("Mercado: PUT bajista fuerte y limpio.")
+
+    if (
+        direccion == "put"
+        and "tendencia_bajista" in tipos_mercado
+        and "mercado_normal" in tipos_mercado
+        and "tendencia_limpia" not in tipos_mercado
+    ):
+        ajuste_evidencias -= 4
+        motivos.append("Mercado: PUT bajista normal sin limpieza.")
+
+    if "tendencia_debil" in tipos_mercado:
+        ajuste_evidencias -= 3
+        motivos.append("Mercado: tendencia débil.")
+
+    if "tendencia_agotada" in tipos_mercado:
+        ajuste_evidencias -= 3
+        motivos.append("Mercado: tendencia agotada.")
+
+    if "mercado_sucio" in tipos_mercado:
+        ajuste_evidencias -= 4
+        motivos.append("Mercado: sucio o caótico.")
+
+    # =========================
+    # LECTURA ESTRATÉGICA
+    # =========================
+
+    if "choch" in patron or "choch" in tipo_setup or "choch" in subtipo_setup:
+        if "choch_con_pa_a_favor" in subtipo_setup:
+            ajuste_evidencias += 2
+            motivos.append("Estrategia: CHOCH con PA a favor.")
+
+        if "choch_con_tendencia_debil" in riesgos_base:
+            ajuste_evidencias -= 5
+            motivos.append("Estrategia: CHOCH con tendencia débil.")
+
+        if "choch_sin_pa_valido" in riesgos_base:
+            ajuste_evidencias -= 4
+            motivos.append("Estrategia: CHOCH sin PA válido.")
+
+    if "pullback" in patron or "pullback" in tipo_setup or "pullback" in subtipo_setup:
+        if "pullback_tendencia_insuficiente" in riesgos_base:
+            ajuste_evidencias -= 4
+            motivos.append("Estrategia: pullback con tendencia insuficiente.")
+
+        if "pullback_con_pa_y_tendencia" in fortalezas_base:
+            ajuste_evidencias += 3
+            motivos.append("Estrategia: pullback con PA y tendencia.")
+
+        if "pullback_balance_positivo" in subtipo_setup:
+            ajuste_evidencias += 2
+            motivos.append("Estrategia: pullback con balance positivo.")
+
+    if "sweep" in patron or "sweep" in tipo_setup or "sweep" in subtipo_setup or "liquidity" in patron:
+        if "sweep_sin_confirmacion_pa" in riesgos_base:
+            ajuste_evidencias -= 4
+            motivos.append("Estrategia: sweep sin confirmación PA.")
+
+        if "sweep_con_confirmacion_pa_debil" in riesgos_base:
+            ajuste_evidencias -= 3
+            motivos.append("Estrategia: sweep con confirmación PA débil.")
+
+        if "sweep_rupTura_confirmable".lower() in subtipo_setup:
+            ajuste_evidencias += 1
+            motivos.append("Estrategia: sweep con ruptura confirmable.")
+
+    if "call_resistencia_sin_ruptura" in riesgos_base or "call_resistencia" in accion_precio:
+        ajuste_evidencias -= 5
+        motivos.append("Estrategia: CALL cerca de resistencia sin ruptura.")
+
+    if "put_soporte_sin_ruptura" in riesgos_base or "put_soporte" in accion_precio:
+        ajuste_evidencias -= 2
+        motivos.append("Estrategia: PUT cerca de soporte sin ruptura.")
+
+    if "reaccion_confirmada" in fortalezas_base or "zona_rechazo_confirmado" in subtipo_setup:
+        ajuste_evidencias += 2
+        motivos.append("Estrategia: reacción/zona confirmada.")
+
+    if "continuacion_tendencia_insuficiente" in riesgos_base:
+        ajuste_evidencias -= 3
+        motivos.append("Estrategia: continuación con tendencia insuficiente.")
+
+    confianza = round(max(0, min(100, confianza + ajuste_evidencias)), 2)
+    ponderacion = calcular_ponderacion_estadistica(evidencia)
+
+    ajuste_ponderacion = ponderacion.get("ajuste_ponderacion", 0)
+    confianza = round(max(0, min(100, confianza + ajuste_ponderacion)), 2)
+    
+    motivos.extend(ponderacion.get("motivos_ponderacion", []))
+    # =========================
+    # DECISIÓN FINAL ÚNICA RECALIBRADA
+    # =========================
+    
+    if riesgo_nivel == "EXTREMO":
+        decision = "NO_OPERAR"
+        operar = False
+        motivos.append("Cerebro único: riesgo extremo.")
+    
+    elif confianza >= 62 and riesgo_nivel in ["BAJO", "MEDIO"]:
+        decision = "OPERAR"
+        operar = True
+        motivos.append("Cerebro único: confianza alta y riesgo aceptable.")
+    
+    elif confianza >= 48:
+        decision = "OPERAR_CON_PROTOCOLO"
+        operar = True
+        motivos.append("Cerebro único: confianza media, requiere protocolo.")
+    
+    else:
+        decision = "NO_OPERAR"
+        operar = False
+        motivos.append("Cerebro único: confianza insuficiente.")
+    return {
+        "operar": operar,
+        "decision": decision,
+        "confianza": confianza,
+        "confianza_base": confianza_base,
+        "ajuste_evidencias": round(ajuste_evidencias, 2),
+        "riesgo_nivel": riesgo_nivel,
+        "riesgo_puntos": riesgo_puntos,
+        "motivos": motivos,
+        "detalle_inferencia": resultado_inferencia,
+        "riesgo_compuesto": riesgo_compuesto,
+        "aprendizaje_historico": aprendizaje,
+        "decision_aprendizaje": aprendizaje.get("decision_aprendizaje", ""),
+        "ajuste_confianza_aprendizaje": ajuste_aprendizaje,
+        "ajuste_ponderacion": ajuste_ponderacion,
+        "ponderacion_estadistica": ponderacion,
     }

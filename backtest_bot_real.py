@@ -387,6 +387,10 @@ def crear_registro_resultado(senal, velas, idx, idx_entrada, motivo_ejecucion, e
         "decision_unificada_advertencias": senal.get("decision_unificada_advertencias", ""),
         "decision_unificada_bloqueos": senal.get("decision_unificada_bloqueos", ""),
         "razon": senal.get("razon", ""),
+        "cerebro_unico_decision": senal.get("cerebro_unico_decision", ""),
+        "cerebro_unico_operar": senal.get("cerebro_unico_operar", False),
+        "cerebro_unico_confianza": senal.get("cerebro_unico_confianza", 0),
+        "cerebro_unico_riesgo": senal.get("cerebro_unico_riesgo", ""),
     }
 
     registro.update(decision_bootiq_plana)
@@ -839,6 +843,8 @@ def imprimir_resumen(resultados):
         ("POR ACTIVO", "activo"),
         ("POR EVIDENCIA PA", "bootiq_evidencias_price_action"),
         ("POR EVIDENCIA MERCADO", "bootiq_evidencias_mercado"),
+        ("POR CEREBRO UNICO DECISION", "cerebro_unico_decision"),
+        ("POR CEREBRO UNICO RIESGO", "cerebro_unico_riesgo"),
     ]
 
     imprimir_tabla_resumen(

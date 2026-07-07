@@ -8,7 +8,40 @@ def normalizar(valor, defecto="SIN_DATO"):
         return defecto
 
     return valor
+def normalizar_numero(valor, defecto=0):
+    try:
+        return float(valor)
+    except Exception:
+        return defecto
 
+
+def normalizar_evidencia_item(ev, modulo_defecto="desconocido"):
+    if not isinstance(ev, dict):
+        return None
+
+    return {
+        "modulo": normalizar(ev.get("modulo", ev.get("fuente", modulo_defecto))),
+        "tipo": normalizar(ev.get("tipo")),
+        "direccion": normalizar(ev.get("direccion", "NEUTRA")).upper(),
+        "peso": normalizar_numero(ev.get("peso", 0)),
+        "confianza": normalizar_numero(ev.get("confianza", 50)),
+        "fuerza": normalizar_numero(ev.get("fuerza", 0)),
+        "confirmada": bool(ev.get("confirmada", False)),
+        "razon": normalizar(ev.get("razon"), ""),
+        "categoria": normalizar(ev.get("categoria"), "GENERAL"),
+        "datos": ev.get("datos", {}),
+    }
+
+
+def normalizar_lista_evidencias(evidencias, modulo_defecto="desconocido"):
+    resultado = []
+
+    for ev in evidencias or []:
+        item = normalizar_evidencia_item(ev, modulo_defecto)
+        if item:
+            resultado.append(item)
+
+    return resultado
 
 def construir_evidencia_operacion(senal, ctx=None):
     """
@@ -25,7 +58,16 @@ def construir_evidencia_operacion(senal, ctx=None):
         "activo": normalizar(senal.get("activo")),
         "direccion": normalizar(senal.get("direccion")).lower(),
         "patron": normalizar(senal.get("patron")),
-
+        "tipo": normalizar(senal.get("tipo", ctx.get("tipo"))),
+        "tipo_setup": normalizar(senal.get("tipo_setup")),
+        "modo_entrada_setup": normalizar(senal.get("modo_entrada_setup")),
+        "calidad_setup": normalizar(senal.get("calidad_setup")),
+        "balance_setup": senal.get("balance_setup", 0),
+        
+        "accion_confirmacion_ia": normalizar(senal.get("accion_confirmacion_ia")),
+        "nivel_confirmacion_ia": normalizar(senal.get("nivel_confirmacion_ia")),
+        "indice_confirmacion_ia": senal.get("indice_confirmacion_ia", 0),
+        "motivo_ejecucion": normalizar(senal.get("motivo_ejecucion")),
         "puntaje": senal.get("puntaje", 0),
         "prioridad": senal.get("prioridad", 0),
         "score_final": senal.get("score_final", 0),
@@ -85,8 +127,14 @@ def construir_evidencia_operacion(senal, ctx=None):
         "razones_clasificador_setup": normalizar(
             senal.get("razones_clasificador_setup")
         ),
-        "pa_evidencias": senal.get("pa_evidencias", ctx.get("pa_evidencias", [])),
-        "mercado_evidencias": senal.get("mercado_evidencias", ctx.get("mercado_evidencias", [])),
+        "pa_evidencias": normalizar_lista_evidencias(
+            senal.get("pa_evidencias", ctx.get("pa_evidencias", [])),
+            "price_action"
+        ),
+        "mercado_evidencias": normalizar_lista_evidencias(
+            senal.get("mercado_evidencias", ctx.get("mercado_evidencias", [])),
+            "mercado"
+        ),
     }
 
     return evidencia

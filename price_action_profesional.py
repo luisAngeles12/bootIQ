@@ -392,7 +392,8 @@ def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resis
     # =========================
     if rechazo.get("confirmado"):
         evidencia = {
-            "fuente": "price_action",
+            "modulo": "price_action",
+            "categoria": "PRICE_ACTION",
             "tipo": rechazo.get("tipo", "RECHAZO_CONFIRMADO"),
             "direccion": rechazo_dir,
             "peso": 30,
@@ -412,7 +413,8 @@ def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resis
     # =========================
     if agotamiento.get("confirmado"):
         evidencia = {
-            "fuente": "price_action",
+            "modulo": "price_action",
+            "categoria": "PRICE_ACTION",
             "tipo": agotamiento.get("tipo", "AGOTAMIENTO_CONFIRMADO"),
             "direccion": agotamiento_dir,
             "peso": 26,
@@ -440,7 +442,8 @@ def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resis
     # =========================
     if impulso_dir != "NEUTRA":
         evidencia = {
-            "fuente": "price_action",
+            "modulo": "price_action",
+            "categoria": "PRICE_ACTION",    
             "tipo": impulso.get("tipo", "IMPULSO"),
             "direccion": impulso_dir,
             "peso": 18,
@@ -471,7 +474,8 @@ def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resis
     # =========================
     if contradicciones:
         evidencias.append({
-            "fuente": "price_action",
+            "modulo": "price_action",
+            "categoria": "PRICE_ACTION",
             "tipo": "CONTRADICCION_PA",
             "direccion": "NEUTRA",
             "peso": -22,
