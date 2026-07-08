@@ -16,7 +16,7 @@ PESOS_EVIDENCIA = {
     "pa_contra_call": 5,
     "pa_contra_put": 4,
     "choch_con_tendencia_debil": 3,
-    "impulso_alcista_fuerte_debil_historico": 3,
+    "impulso_alcista_fuerte_debil_historico": 1,
     "reaccion_confirmada": 3,
 
     # Riesgos que NO deben castigar fuerte
@@ -130,8 +130,8 @@ def calcular_ponderacion_estadistica(evidencia):
     # SCORE FINAL
     # =========================
     if score_final >= 190:
-        pesos.append(3)
-        motivos.append("Ponderación score_final alto (+3)")
+        pesos.append(1)
+        motivos.append("Ponderación score_final alto (+1)")
     elif score_final < 120:
         pesos.append(-2)
         motivos.append("Ponderación score_final bajo (-2)")

@@ -156,8 +156,17 @@ def rechazo_confirmado(opens, closes, highs, lows, soporte, resistencia, vol):
             "razon": "error rechazo confirmado: " + str(e)
         }
 def impulso_profesional(opens, closes, highs, lows, cantidad=5):
+    """
+    Lee impulso profesional.
+
+    Mejora:
+    - Mantiene impulso alcista fuerte porque el histórico lo favorece.
+    - Endurece impulso bajista fuerte porque venía flojo.
+    - Crea impulsos medios para no forzar todo como FUERTE.
+    - Detecta pérdida de fuerza para evitar entrar tarde.
+    """
     try:
-        if len(closes) < cantidad:
+        if len(closes) < cantidad + 1:
             return {
                 "direccion": "NEUTRA",
                 "fuerza": 0,
@@ -165,41 +174,140 @@ def impulso_profesional(opens, closes, highs, lows, cantidad=5):
                 "razon": "impulso: velas insuficientes"
             }
 
-        alcistas = 0
-        bajistas = 0
-        cuerpos_fuertes = 0
-        fuerza_total = 0
+        velas = []
 
         for i in range(-cantidad, 0):
             v = _vela(opens[i], closes[i], highs[i], lows[i])
 
-            fuerza_total += v["fuerza"]
+            velas.append({
+                "verde": v["verde"],
+                "roja": v["roja"],
+                "fuerza": v["fuerza"],
+                "cuerpo": v["cuerpo"],
+                "cierre_pos": v["cierre_pos"],
+                "mecha_sup_ratio": v["mecha_sup_ratio"],
+                "mecha_inf_ratio": v["mecha_inf_ratio"],
+                "close": closes[i],
+            })
 
-            if v["verde"]:
-                alcistas += 1
+        alcistas = sum(1 for v in velas if v["verde"])
+        bajistas = sum(1 for v in velas if v["roja"])
 
-            if v["roja"]:
-                bajistas += 1
+        cuerpos_fuertes = sum(1 for v in velas if v["fuerza"] >= 0.48)
+        cuerpos_medios = sum(1 for v in velas if v["fuerza"] >= 0.32)
 
-            if v["fuerza"] >= 0.48:
-                cuerpos_fuertes += 1
+        fuerza_promedio = sum(v["fuerza"] for v in velas) / cantidad
 
-        fuerza_promedio = fuerza_total / cantidad
+        cierres_altos = sum(1 for v in velas if v["cierre_pos"] >= 0.58)
+        cierres_bajos = sum(1 for v in velas if v["cierre_pos"] <= 0.42)
 
-        if alcistas >= 4 and cuerpos_fuertes >= 3 and fuerza_promedio >= 0.42:
+        mechas_superiores_altas = sum(1 for v in velas if v["mecha_sup_ratio"] >= 0.38)
+        mechas_inferiores_altas = sum(1 for v in velas if v["mecha_inf_ratio"] >= 0.38)
+
+        cierre_inicio = velas[0]["close"]
+        cierre_final = velas[-1]["close"]
+
+        desplazamiento = abs(cierre_final - cierre_inicio)
+
+        sube = cierre_final > cierre_inicio
+        baja = cierre_final < cierre_inicio
+
+        fuerza_inicio = sum(v["fuerza"] for v in velas[:2]) / 2
+        fuerza_final = sum(v["fuerza"] for v in velas[-2:]) / 2
+
+        fuerza_decrece = fuerza_final < fuerza_inicio * 0.82
+
+        # =========================
+        # IMPULSO ALCISTA
+        # =========================
+        impulso_alcista_fuerte = (
+            alcistas >= 4
+            and cuerpos_fuertes >= 3
+            and fuerza_promedio >= 0.42
+            and cierres_altos >= 3
+            and sube
+            and not fuerza_decrece
+        )
+
+        impulso_alcista_medio = (
+            alcistas >= 3
+            and cuerpos_medios >= 3
+            and fuerza_promedio >= 0.34
+            and cierres_altos >= 3
+            and sube
+        )
+
+        if impulso_alcista_fuerte:
             return {
                 "direccion": "CALL",
                 "fuerza": round(fuerza_promedio, 3),
                 "tipo": "IMPULSO_ALCISTA_FUERTE",
-                "razon": "impulso alcista fuerte: mayoría de velas verdes con cuerpo real"
+                "razon": "impulso alcista fuerte: avance limpio, cierres altos y fuerza sostenida"
             }
 
-        if bajistas >= 4 and cuerpos_fuertes >= 3 and fuerza_promedio >= 0.42:
+        if impulso_alcista_medio:
+            return {
+                "direccion": "CALL",
+                "fuerza": round(fuerza_promedio, 3),
+                "tipo": "IMPULSO_ALCISTA_MEDIO",
+                "razon": "impulso alcista medio: avance válido pero no dominante"
+            }
+
+        # =========================
+        # IMPULSO BAJISTA
+        # =========================
+        impulso_bajista_fuerte = (
+            bajistas >= 4
+            and cuerpos_fuertes >= 4
+            and fuerza_promedio >= 0.48
+            and cierres_bajos >= 4
+            and baja
+            and not fuerza_decrece
+            and mechas_inferiores_altas <= 1
+        )
+
+        impulso_bajista_medio = (
+            bajistas >= 3
+            and cuerpos_medios >= 3
+            and fuerza_promedio >= 0.36
+            and cierres_bajos >= 3
+            and baja
+            and mechas_inferiores_altas <= 2
+        )
+
+        if impulso_bajista_fuerte:
             return {
                 "direccion": "PUT",
                 "fuerza": round(fuerza_promedio, 3),
                 "tipo": "IMPULSO_BAJISTA_FUERTE",
-                "razon": "impulso bajista fuerte: mayoría de velas rojas con cuerpo real"
+                "razon": "impulso bajista fuerte: caída limpia, cierres bajos y poca absorción compradora"
+            }
+
+        if impulso_bajista_medio:
+            return {
+                "direccion": "PUT",
+                "fuerza": round(fuerza_promedio, 3),
+                "tipo": "IMPULSO_BAJISTA_MEDIO",
+                "razon": "impulso bajista medio: caída válida pero con fuerza moderada"
+            }
+
+        # =========================
+        # IMPULSO AGOTADO
+        # =========================
+        if sube and alcistas >= 3 and fuerza_decrece:
+            return {
+                "direccion": "CALL",
+                "fuerza": round(fuerza_promedio, 3),
+                "tipo": "IMPULSO_ALCISTA_AGOTANDOSE",
+                "razon": "impulso alcista con pérdida de fuerza"
+            }
+
+        if baja and bajistas >= 3 and fuerza_decrece:
+            return {
+                "direccion": "PUT",
+                "fuerza": round(fuerza_promedio, 3),
+                "tipo": "IMPULSO_BAJISTA_AGOTANDOSE",
+                "razon": "impulso bajista con pérdida de fuerza"
             }
 
         return {
@@ -216,7 +324,6 @@ def impulso_profesional(opens, closes, highs, lows, cantidad=5):
             "tipo": "ERROR",
             "razon": "error impulso profesional: " + str(e)
         }
-
 
 def agotamiento_profesional(opens, closes, highs, lows, soporte, resistencia, vol, cantidad=6):
     try:
@@ -375,7 +482,16 @@ def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resis
         vol,
         6
     )
-
+    rechazo_historico = rechazo_historico_inteligente(
+        opens,
+        closes,
+        highs,
+        lows,
+        soporte,
+        resistencia,
+        vol,
+        6
+    )
     direccion = "NEUTRA"
     tipo = "SIN_CONTEXTO_CLARO"
     fuerza = 0
@@ -386,6 +502,7 @@ def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resis
     rechazo_dir = rechazo.get("direccion", "NEUTRA")
     impulso_dir = impulso.get("direccion", "NEUTRA")
     agotamiento_dir = agotamiento.get("direccion", "NEUTRA")
+    rechazo_historico_dir = rechazo_historico.get("direccion", "NEUTRA")
 
     # =========================
     # EVIDENCIA: RECHAZO
@@ -468,7 +585,68 @@ def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resis
 
         else:
             contradicciones.append("impulso contrario a price action")
-
+    # =========================
+    # EVIDENCIA: RECHAZO HISTÓRICO
+    # =========================
+    if rechazo_historico_dir != "NEUTRA":
+        tipo_hist = rechazo_historico.get("tipo", "RECHAZO_HISTORICO")
+        fuerza_hist = rechazo_historico.get("fuerza", 0)
+    
+        es_confirmado_hist = tipo_hist in [
+            "RECHAZO_COMPRADOR_HISTORICO",
+            "RECHAZO_VENDEDOR_HISTORICO"
+        ]
+    
+        es_observado_hist = tipo_hist in [
+            "RECHAZO_COMPRADOR_OBSERVADO",
+            "RECHAZO_VENDEDOR_OBSERVADO"
+        ]
+    
+        if es_confirmado_hist:
+            peso_hist = 20
+            confirmada_hist = True
+        else:
+            peso_hist = 8
+            confirmada_hist = False
+    
+        evidencia = {
+            "modulo": "price_action",
+            "categoria": "PRICE_ACTION",
+            "tipo": tipo_hist,
+            "direccion": rechazo_historico_dir,
+            "peso": peso_hist,
+            "fuerza": fuerza_hist,
+            "confirmada": confirmada_hist,
+            "razon": rechazo_historico.get("razon", "")
+        }
+    
+        evidencias.append(evidencia)
+        razones.append(rechazo_historico.get("razon", ""))
+    
+        if es_confirmado_hist:
+            if direccion == "NEUTRA":
+                direccion = rechazo_historico_dir
+                tipo = tipo_hist
+                fuerza += min(0.42, fuerza_hist * 0.25)
+    
+            elif rechazo_historico_dir == direccion:
+                fuerza += min(0.22, fuerza_hist * 0.12)
+    
+            else:
+                contradicciones.append("rechazo histórico confirmado contradice price action")
+    
+        elif es_observado_hist:
+            if direccion == "NEUTRA":
+                direccion = rechazo_historico_dir
+                tipo = tipo_hist
+                fuerza += min(0.24, fuerza_hist * 0.18)
+    
+            elif rechazo_historico_dir == direccion:
+                fuerza += min(0.12, fuerza_hist * 0.08)
+    
+            else:
+                # Observado no debe forzar contradicción fuerte.
+                razones.append("rechazo histórico observado contrario, no dominante")
     # =========================
     # CONTRADICCIONES
     # =========================
@@ -495,10 +673,12 @@ def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resis
 
     # Compatibilidad: mantenemos la lógica actual.
     # Todavía no cambiamos comportamiento del bot.
-    if fuerza < 0.45:
+    if fuerza < 0.32:
         direccion = "NEUTRA"
         tipo = "SIN_CONTEXTO_CLARO"
-
+    elif fuerza < 0.45 and direccion != "NEUTRA":
+        if not tipo.endswith("_DEBIL") and not tipo.endswith("_OBSERVADO"):
+            tipo = tipo + "_DEBIL"
     return {
         "direccion": direccion,
         "tipo": tipo,
@@ -506,11 +686,20 @@ def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resis
         "rechazo": rechazo,
         "impulso": impulso,
         "agotamiento": agotamiento,
+        "rechazo_historico": rechazo_historico,
         "contradicciones": contradicciones,
         "evidencias": evidencias,
         "razon": " | ".join([r for r in razones if r])
     }
 def rechazo_historico_inteligente(opens, closes, highs, lows, soporte, resistencia, vol, velas=6):
+    """
+    Detecta rechazo histórico real.
+
+    Mejora:
+    - No basta con ver mechas.
+    - Exige zona + reacción + cambio de cierre + estructura mínima.
+    - Evita clasificar ruido como rechazo histórico.
+    """
     try:
         if len(closes) < velas + 2:
             return {
@@ -523,72 +712,133 @@ def rechazo_historico_inteligente(opens, closes, highs, lows, soporte, resistenc
         if vol <= 0:
             vol = abs(closes[-1]) * 0.0001
 
-        rechazos_compradores = 0
-        rechazos_vendedores = 0
-        cierres_altos = 0
-        cierres_bajos = 0
+        datos = []
 
         for i in range(-velas, 0):
-            o = opens[i]
-            c = closes[i]
-            h = highs[i]
-            l = lows[i]
+            v = _vela(opens[i], closes[i], highs[i], lows[i])
 
-            rango = h - l
-            if rango <= 0:
-                continue
+            datos.append({
+                "open": opens[i],
+                "close": closes[i],
+                "high": highs[i],
+                "low": lows[i],
+                "verde": v["verde"],
+                "roja": v["roja"],
+                "fuerza": v["fuerza"],
+                "cierre_pos": v["cierre_pos"],
+                "mecha_sup_ratio": v["mecha_sup_ratio"],
+                "mecha_inf_ratio": v["mecha_inf_ratio"],
+            })
 
-            cuerpo = abs(c - o)
-            mecha_sup = h - max(o, c)
-            mecha_inf = min(o, c) - l
+        rechazos_call = 0
+        rechazos_put = 0
+        cierres_call = 0
+        cierres_put = 0
+        velas_call = 0
+        velas_put = 0
 
-            cierre_pos = (c - l) / rango
+        for d in datos:
+            cerca_soporte = (
+                abs(d["close"] - soporte) <= vol * 1.25
+                or abs(d["low"] - soporte) <= vol * 1.25
+            )
 
-            cerca_soporte = abs(c - soporte) <= vol * 1.80 or abs(l - soporte) <= vol * 1.80
-            cerca_resistencia = abs(resistencia - c) <= vol * 1.80 or abs(resistencia - h) <= vol * 1.80
+            cerca_resistencia = (
+                abs(resistencia - d["close"]) <= vol * 1.25
+                or abs(resistencia - d["high"]) <= vol * 1.25
+            )
 
-            if cerca_soporte and mecha_inf / rango >= 0.35 and cierre_pos >= 0.55:
-                rechazos_compradores += 1
+            if (
+                cerca_soporte
+                and d["mecha_inf_ratio"] >= 0.42
+                and d["cierre_pos"] >= 0.58
+                and d["fuerza"] >= 0.16
+            ):
+                rechazos_call += 1
 
-            if cerca_resistencia and mecha_sup / rango >= 0.35 and cierre_pos <= 0.45:
-                rechazos_vendedores += 1
+            if (
+                cerca_resistencia
+                and d["mecha_sup_ratio"] >= 0.42
+                and d["cierre_pos"] <= 0.42
+                and d["fuerza"] >= 0.16
+            ):
+                rechazos_put += 1
 
-            if cierre_pos >= 0.65:
-                cierres_altos += 1
+            if d["cierre_pos"] >= 0.62:
+                cierres_call += 1
 
-            if cierre_pos <= 0.35:
-                cierres_bajos += 1
+            if d["cierre_pos"] <= 0.38:
+                cierres_put += 1
 
-        if rechazos_compradores >= 2 and cierres_altos >= 2:
+            if d["verde"]:
+                velas_call += 1
+
+            if d["roja"]:
+                velas_put += 1
+
+        primer_cierre = datos[0]["close"]
+        ultimo_cierre = datos[-1]["close"]
+
+        desplazamiento = abs(ultimo_cierre - primer_cierre)
+
+        sube = ultimo_cierre > primer_cierre
+        baja = ultimo_cierre < primer_cierre
+
+        fuerza_promedio = sum(d["fuerza"] for d in datos) / len(datos)
+
+        estructura_call = (
+            rechazos_call >= 2
+            and cierres_call >= 3
+            and velas_call >= 3
+            and sube
+            and desplazamiento >= vol * 0.55
+            and fuerza_promedio >= 0.18
+        )
+
+        estructura_put = (
+            rechazos_put >= 2
+            and cierres_put >= 3
+            and velas_put >= 3
+            and baja
+            and desplazamiento >= vol * 0.55
+            and fuerza_promedio >= 0.18
+        )
+
+        if estructura_call and not estructura_put:
+            fuerza = min(1, 0.35 + (rechazos_call * 0.12) + (fuerza_promedio * 0.35))
+
             return {
                 "direccion": "CALL",
                 "tipo": "RECHAZO_COMPRADOR_HISTORICO",
-                "fuerza": rechazos_compradores,
-                "razon": "rechazo comprador confirmado por varias velas previas"
+                "fuerza": round(fuerza, 3),
+                "razon": "rechazo comprador histórico real: zona + cierres altos + estructura alcista"
             }
 
-        if rechazos_vendedores >= 2 and cierres_bajos >= 2:
+        if estructura_put and not estructura_call:
+            fuerza = min(1, 0.35 + (rechazos_put * 0.12) + (fuerza_promedio * 0.35))
+
             return {
                 "direccion": "PUT",
                 "tipo": "RECHAZO_VENDEDOR_HISTORICO",
-                "fuerza": rechazos_vendedores,
-                "razon": "rechazo vendedor confirmado por varias velas previas"
+                "fuerza": round(fuerza, 3),
+                "razon": "rechazo vendedor histórico real: zona + cierres bajos + estructura bajista"
             }
 
-        if rechazos_compradores > rechazos_vendedores:
+        # Rechazo débil solo si hay evidencia, pero sin estructura completa.
+        if rechazos_call >= 2 and cierres_call >= 2 and velas_call >= 2:
             return {
                 "direccion": "CALL",
-                "tipo": "RECHAZO_COMPRADOR_DEBIL",
-                "fuerza": rechazos_compradores,
-                "razon": "hay rechazo comprador, pero no está plenamente confirmado"
+                "tipo": "RECHAZO_COMPRADOR_OBSERVADO",
+                "fuerza": round(min(0.45, 0.18 + rechazos_call * 0.08), 3),
+                "razon": "rechazo comprador observado, sin estructura completa"
             }
 
-        if rechazos_vendedores > rechazos_compradores:
+        if rechazos_put >= 2 and cierres_put >= 2 and velas_put >= 2:
             return {
                 "direccion": "PUT",
-                "tipo": "RECHAZO_VENDEDOR_DEBIL",
-                "fuerza": rechazos_vendedores,
-                "razon": "hay rechazo vendedor, pero no está plenamente confirmado"
+                "tipo": "RECHAZO_VENDEDOR_OBSERVADO",
+                "fuerza": round(min(0.45, 0.18 + rechazos_put * 0.08), 3),
+                "razon": "rechazo vendedor observado, sin estructura completa"
             }
 
         return {

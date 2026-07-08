@@ -14,6 +14,7 @@ from config import (
 )
 from utils import segundo_actual
 from mercado import obtener_velas
+from confirmacion_entrada import evaluar_confirmacion_entrada
 def contexto_fuerte_para_entrada(senal):
     try:
         if not PERMITIR_ENTRADA_CON_CONTEXTO_FUERTE:
@@ -849,7 +850,42 @@ def procesar_senales_pendientes(abrir_operacion):
                 else:
                     print("SEÑAL PENDIENTE BLOQUEADA:", activo, razon_punto)
                     continue
-
+            # =========================
+            # CEREBRO DE ENTRADA
+            # =========================
+            confirmacion = evaluar_confirmacion_entrada(
+                senal,
+                candles,
+                segundo
+            )
+            
+            senal["entrada_cerebro_accion"] = confirmacion.get("accion", "")
+            senal["entrada_cerebro_indice"] = confirmacion.get("indice", 0)
+            senal["entrada_cerebro_nivel"] = confirmacion.get("nivel", "")
+            senal["entrada_cerebro_motivos"] = " | ".join(
+                confirmacion.get("motivos", [])
+            )
+            
+            if confirmacion.get("accion") == "CANCELAR":
+                print(
+                    "SEÑAL PENDIENTE CANCELADA POR CEREBRO ENTRADA:",
+                    activo,
+                    confirmacion.get("indice"),
+                    "|",
+                    senal["entrada_cerebro_motivos"]
+                )
+                continue
+            
+            if confirmacion.get("accion") == "ESPERAR":
+                print(
+                    "SEÑAL PENDIENTE ESPERA POR CEREBRO ENTRADA:",
+                    activo,
+                    confirmacion.get("indice"),
+                    "|",
+                    senal["entrada_cerebro_motivos"]
+                )
+                restantes.append(senal)
+                continue
             # =========================
             # DECISIÓN DE ENTRADA
             # =========================

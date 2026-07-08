@@ -24,11 +24,8 @@ def _leer_lista(valor):
     return [x.strip().upper() for x in str(valor).split("|") if x.strip()]
 
 
-def _ajustar(confianza, valor, razones, motivo):
-    confianza += valor
-    signo = "+" if valor >= 0 else ""
-    razones.append(f"{signo}{valor}: {motivo}")
-    return confianza
+def _limitar(valor, minimo=0, maximo=100):
+    return max(minimo, min(maximo, valor))
 
 
 def _nivel_estado_desde_confianza(confianza):
@@ -43,15 +40,12 @@ def _nivel_estado_desde_confianza(confianza):
     return "BAJO", "PELIGROSO"
 
 
+def _agregar(razones, categoria, valor, motivo):
+    signo = "+" if valor >= 0 else ""
+    razones.append(f"{categoria} {signo}{valor}: {motivo}")
+
+
 def identificar_setup(senal):
-    """
-    Identifica familia, subtipo y protocolo base del setup.
-
-    Fase 6:
-    - Separamos la identidad del setup de la evaluación completa.
-    - Mantiene la misma lógica anterior para no alterar el backtest.
-    """
-
     tipo_setup = _txt(senal.get("tipo_setup", "INDEFINIDO"))
     patron = _txt(senal.get("patron", ""))
     direccion = _txt(senal.get("direccion", ""))
@@ -59,11 +53,7 @@ def identificar_setup(senal):
     pa_tipo = _txt(senal.get("pa_tipo", ""))
     pa_direccion = _txt(senal.get("pa_direccion", ""))
     mercado = _txt(senal.get("tipo_mercado", ""))
-    calidad_mercado = _txt(senal.get("calidad_mercado", ""))
     tendencia = _txt(senal.get("estado_tendencia", ""))
-    nivel_consenso = _txt(senal.get("nivel_consenso", ""))
-
-    balance_setup = _num(senal.get("balance_setup"))
 
     fortalezas = _leer_lista(senal.get("fortalezas_base", ""))
     riesgos = _leer_lista(senal.get("riesgos_base", ""))
@@ -82,63 +72,41 @@ def identificar_setup(senal):
     familia_setup = "INDEFINIDA"
     subtipo_setup = "INDEFINIDO"
     protocolo_sugerido = "PROTOCOLO_GENERICO"
-    confianza_setup = 50
-    razones = ["Base neutral: 50"]
-
-    # ==========================
-    # CLASIFICACIÓN BASE
-    # ==========================
 
     if _contiene(texto_total, "SWEEP", "LIQUIDITY", "LIQUIDEZ"):
         familia_setup = "REVERSIÓN"
         protocolo_sugerido = "PROTOCOLO_SWEEP"
 
-        if _contiene(pa_tipo, "AGOTAMIENTO", "RECHAZO") or _contiene(
-            " ".join(fortalezas),
-            "SWEEP_CON_RECHAZO_AGOTAMIENTO"
-        ):
+        if _contiene(pa_tipo, "AGOTAMIENTO", "RECHAZO"):
             subtipo_setup = "SWEEP_CON_RECHAZO_AGOTAMIENTO"
-            confianza_setup = _ajustar(confianza_setup, 10, razones, "Sweep con rechazo/agotamiento")
         elif _contiene(texto_total, "RUPTURA"):
             subtipo_setup = "SWEEP_RUPTURA_CONFIRMABLE"
-            confianza_setup = _ajustar(confianza_setup, 5, razones, "Sweep con ruptura confirmable")
         else:
             subtipo_setup = "SWEEP_SIMPLE"
-            confianza_setup = _ajustar(confianza_setup, 0, razones, "Sweep simple")
 
     elif _contiene(texto_total, "CHOCH", "CAMBIO_ESTRUCTURA"):
         familia_setup = "REVERSIÓN_ESTRUCTURAL"
         protocolo_sugerido = "PROTOCOLO_CHOCH"
 
-        if _contiene(" ".join(fortalezas), "CHOCH_CON_PA_A_FAVOR") or pa_direccion == direccion:
+        if pa_direccion == direccion:
             subtipo_setup = "CHOCH_CON_PA_A_FAVOR"
-            confianza_setup = _ajustar(confianza_setup, 4, razones, "CHOCH con PA alineado")
         elif _contiene(tendencia, "DEBIL", "DÉBIL"):
             subtipo_setup = "CHOCH_TENDENCIA_DEBIL"
-            confianza_setup = _ajustar(confianza_setup, -8, razones, "CHOCH en tendencia débil")
         else:
             subtipo_setup = "CHOCH_SIMPLE"
-            confianza_setup = _ajustar(confianza_setup, 2, razones, "CHOCH simple")
 
     elif _contiene(texto_total, "PULLBACK", "EMA", "RETROCESO"):
         familia_setup = "CONTINUACIÓN"
         protocolo_sugerido = "PROTOCOLO_PULLBACK"
 
-        if _contiene(" ".join(riesgos), "PULLBACK_TENDENCIA_INSUFICIENTE"):
+        if "PULLBACK_TENDENCIA_INSUFICIENTE" in riesgos:
             subtipo_setup = "PULLBACK_TENDENCIA_INSUFICIENTE"
-            confianza_setup = _ajustar(confianza_setup, -6, razones, "Pullback con tendencia insuficiente")
         elif _contiene(tendencia, "AGOTADA"):
             subtipo_setup = "PULLBACK_TENDENCIA_AGOTADA"
-            confianza_setup = _ajustar(confianza_setup, -12, razones, "Pullback con tendencia agotada")
-        elif calidad_mercado == "LIMPIO" and _contiene(" ".join(fortalezas), "TENDENCIA_A_FAVOR"):
+        elif "PULLBACK_CON_PA_Y_TENDENCIA" in fortalezas:
             subtipo_setup = "PULLBACK_CONTINUACION_LIMPIA"
-            confianza_setup = _ajustar(confianza_setup, 4, razones, "Pullback limpio con tendencia")
-        elif balance_setup >= 2 and nivel_consenso in ["PREMIUM", "ALTO", "MEDIO"]:
-            subtipo_setup = "PULLBACK_BALANCE_POSITIVO"
-            confianza_setup = _ajustar(confianza_setup, 3, razones, "Pullback con balance positivo")
         else:
             subtipo_setup = "PULLBACK_GENERICO"
-            confianza_setup = _ajustar(confianza_setup, -2, razones, "Pullback genérico")
 
     elif _contiene(texto_total, "SOPORTE", "RESISTENCIA", "ZONA", "RECHAZO"):
         familia_setup = "REACCIÓN_ZONA"
@@ -146,115 +114,38 @@ def identificar_setup(senal):
 
         if _contiene(pa_tipo, "RECHAZO") and pa_direccion == direccion:
             subtipo_setup = "ZONA_RECHAZO_CONFIRMADO"
-            confianza_setup = _ajustar(confianza_setup, 6, razones, "Zona con rechazo confirmado")
         elif _contiene(accion_precio, "SIN_RUPTURA"):
             subtipo_setup = "ZONA_SIN_RUPTURA"
-            confianza_setup = _ajustar(confianza_setup, -4, razones, "Zona sin ruptura")
         else:
             subtipo_setup = "ZONA_GENERICA"
-            confianza_setup = _ajustar(confianza_setup, 0, razones, "Zona genérica")
 
     elif _contiene(texto_total, "CONTINUACION", "CONTINUACIÓN", "TENDENCIA"):
         familia_setup = "CONTINUACIÓN"
         protocolo_sugerido = "PROTOCOLO_CONTINUACION"
 
-        if _contiene(tendencia, "FUERTE") and _contiene(
-            " ".join(fortalezas),
-            "CONTINUACION_CON_TENDENCIA_FUERTE"
-        ):
+        if _contiene(tendencia, "FUERTE"):
             subtipo_setup = "CONTINUACION_TENDENCIA_FUERTE"
-            confianza_setup = _ajustar(confianza_setup, 4, razones, "Continuación con tendencia fuerte")
         else:
             subtipo_setup = "CONTINUACION_SIMPLE"
-            confianza_setup = _ajustar(confianza_setup, -2, razones, "Continuación simple")
-
-    else:
-        confianza_setup = _ajustar(confianza_setup, -10, razones, "Setup indefinido")
 
     return {
         "familia_setup": familia_setup,
         "subtipo_setup": subtipo_setup,
         "protocolo_sugerido": protocolo_sugerido,
-        "confianza_setup": confianza_setup,
-        "razones": razones,
     }
 
 
-def clasificar_setup(senal):
+def calcular_confianza_setup_por_capas(senal, identidad_setup):
     direccion = _txt(senal.get("direccion", ""))
     accion_precio = _txt(senal.get("accion_precio", ""))
     pa_tipo = _txt(senal.get("pa_tipo", ""))
     pa_direccion = _txt(senal.get("pa_direccion", ""))
     calidad_mercado = _txt(senal.get("calidad_mercado", ""))
+    tipo_mercado = _txt(senal.get("tipo_mercado", ""))
+    tendencia = _txt(senal.get("estado_tendencia", ""))
     base_estrategia = _txt(senal.get("base_estrategia", ""))
     nivel_consenso = _txt(senal.get("nivel_consenso", ""))
-
     score_final = _num(senal.get("score_final"))
-
-    riesgos = _leer_lista(senal.get("riesgos_base", ""))
-
-    identidad_setup = identificar_setup(senal)
-
-    familia_setup = identidad_setup["familia_setup"]
-    subtipo_setup = identidad_setup["subtipo_setup"]
-    protocolo_sugerido = identidad_setup["protocolo_sugerido"]
-    confianza_setup = identidad_setup["confianza_setup"]
-    razones = identidad_setup["razones"]
-
-    # ==========================
-    # AJUSTES POR EVIDENCIA
-    # ==========================
-
-    if pa_direccion == direccion:
-        confianza_setup = _ajustar(confianza_setup, 6, razones, "PA alineado")
-    elif pa_direccion and pa_direccion not in ["NEUTRA", "SIN_DATO"] and pa_direccion != direccion:
-        confianza_setup = _ajustar(confianza_setup, -12, razones, "PA en contra")
-
-    if _contiene(pa_tipo, "IMPULSO", "RECHAZO") and pa_direccion == direccion:
-        confianza_setup = _ajustar(confianza_setup, 5, razones, "Impulso/rechazo a favor")
-
-    if nivel_consenso == "PREMIUM":
-        confianza_setup = _ajustar(confianza_setup, 4, razones, "Consenso premium")
-    elif nivel_consenso == "ALTO":
-        confianza_setup = _ajustar(confianza_setup, 3, razones, "Consenso alto")
-    elif nivel_consenso in ["BAJO", "MUY_BAJO"]:
-        confianza_setup = _ajustar(confianza_setup, -3, razones, "Consenso bajo")
-
-    if base_estrategia == "FUERTE":
-        confianza_setup = _ajustar(confianza_setup, 3, razones, "Base estrategia fuerte")
-    elif base_estrategia == "DEBIL":
-        confianza_setup = _ajustar(confianza_setup, -4, razones, "Base estrategia débil")
-
-    if score_final >= 200:
-        confianza_setup = _ajustar(confianza_setup, 3, razones, "Score final alto")
-    elif score_final and score_final < 120:
-        confianza_setup = _ajustar(confianza_setup, -4, razones, "Score final bajo")
-
-    if calidad_mercado == "SUCIO":
-        confianza_setup = _ajustar(confianza_setup, -10, razones, "Mercado sucio")
-
-    if "CALL_RESISTENCIA_CERCA_SIN_RUPTURA" in accion_precio and direccion == "CALL":
-        protocolo_sugerido = "PROTOCOLO_RUPTURA_RESISTENCIA"
-        confianza_setup = _ajustar(confianza_setup, -14, razones, "CALL contra resistencia sin ruptura")
-
-    if "PUT_SOPORTE_CERCA_SIN_RUPTURA" in accion_precio and direccion == "PUT":
-        confianza_setup = _ajustar(confianza_setup, 2, razones, "PUT soporte cercano aceptable")
-
-    if "PA_A_FAVOR_CALL_DEBIL" in riesgos:
-        confianza_setup = _ajustar(confianza_setup, -12, razones, "PA CALL débil histórico")
-
-    if "CHOCH_CON_TENDENCIA_DEBIL" in riesgos:
-        confianza_setup = _ajustar(confianza_setup, -10, razones, "CHOCH con tendencia débil")
-
-    if "CONTINUACION_TENDENCIA_INSUFICIENTE" in riesgos:
-        confianza_setup = _ajustar(confianza_setup, -8, razones, "Continuación con tendencia insuficiente")
-
-    if "REACCION_SIN_CONFIRMACION_FUERTE" in riesgos:
-        confianza_setup = _ajustar(confianza_setup, -6, razones, "Reacción sin confirmación fuerte")
-
-    # ==========================
-    # HISTÓRICO COMO AJUSTE SUAVE
-    # ==========================
 
     decision_aprendizaje = _txt(senal.get("decision_aprendizaje", ""))
     ajuste_aprendizaje = _num(
@@ -264,26 +155,296 @@ def clasificar_setup(senal):
         )
     )
 
+    riesgos = _leer_lista(senal.get("riesgos_base", ""))
+    fortalezas = _leer_lista(senal.get("fortalezas_base", ""))
+
+    familia = identidad_setup["familia_setup"]
+    subtipo = identidad_setup["subtipo_setup"]
+
+    razones = []
+
+    # ==========================
+    # 1. IDENTIDAD DEL SETUP
+    # Peso final: 30%
+    # ==========================
+    score_identidad = 50
+
+    if familia == "REVERSIÓN":
+        score_identidad = 58
+        _agregar(razones, "IDENTIDAD", 8, "setup de reversión")
+
+    if familia == "REVERSIÓN_ESTRUCTURAL":
+        score_identidad = 56
+        _agregar(razones, "IDENTIDAD", 6, "setup estructural")
+
+    if familia == "CONTINUACIÓN":
+        score_identidad = 52
+        _agregar(razones, "IDENTIDAD", 2, "setup de continuación")
+
+    if familia == "REACCIÓN_ZONA":
+        score_identidad = 54
+        _agregar(razones, "IDENTIDAD", 4, "setup de zona")
+
+    if subtipo in [
+        "SWEEP_CON_RECHAZO_AGOTAMIENTO",
+        "ZONA_RECHAZO_CONFIRMADO",
+        "PULLBACK_CONTINUACION_LIMPIA",
+        "CONTINUACION_TENDENCIA_FUERTE",
+    ]:
+        score_identidad += 12
+        _agregar(razones, "IDENTIDAD", 12, "subtipo fuerte confirmado")
+
+    elif subtipo in [
+        "SWEEP_RUPTURA_CONFIRMABLE",
+        "PULLBACK_GENERICO",
+        "CHOCH_SIMPLE",
+    ]:
+        score_identidad += 4
+        _agregar(razones, "IDENTIDAD", 4, "subtipo operable pero confirmable")
+
+    elif subtipo in [
+        "SWEEP_SIMPLE",
+        "ZONA_SIN_RUPTURA",
+        "CHOCH_CON_PA_A_FAVOR",
+    ]:
+        score_identidad -= 2
+        _agregar(razones, "IDENTIDAD", -2, "subtipo históricamente mixto")
+
+    elif subtipo in [
+        "PULLBACK_TENDENCIA_INSUFICIENTE",
+        "PULLBACK_TENDENCIA_AGOTADA",
+        "CONTINUACION_SIMPLE",
+    ]:
+        score_identidad -= 8
+        _agregar(razones, "IDENTIDAD", -8, "subtipo débil")
+
+    # ==========================
+    # 2. PRICE ACTION
+    # Peso final: 30%
+    # ==========================
+    score_pa = 50
+
+    if pa_direccion == direccion:
+        score_pa += 12
+        _agregar(razones, "PA", 12, "PA alineado con dirección")
+
+    elif pa_direccion and pa_direccion not in ["NEUTRA", "SIN_DATO"] and pa_direccion != direccion:
+        score_pa -= 18
+        _agregar(razones, "PA", -18, "PA contrario a la señal")
+
+    if _contiene(pa_tipo, "RECHAZO", "AGOTAMIENTO"):
+        score_pa += 12
+        _agregar(razones, "PA", 12, "rechazo/agote confirmado")
+
+    elif _contiene(pa_tipo, "IMPULSO"):
+        if pa_direccion == direccion:
+            score_pa += 8
+            _agregar(razones, "PA", 8, "impulso a favor")
+        else:
+            score_pa += 2
+            _agregar(razones, "PA", 2, "impulso no dominante")
+
+    elif pa_tipo == "SIN_CONTEXTO_CLARO":
+        score_pa -= 8
+        _agregar(razones, "PA", -8, "sin contexto claro")
+
+    if "PA_A_FAVOR_CALL_ALTA" in fortalezas:
+        score_pa += 14
+        _agregar(razones, "PA", 14, "PA CALL alta histórica")
+
+    if "REACCION_CONFIRMADA" in fortalezas:
+        score_pa += 8
+        _agregar(razones, "PA", 8, "reacción confirmada")
+
+    if "PA_A_FAVOR_PUT_DEBIL" in riesgos:
+        score_pa -= 12
+        _agregar(razones, "PA", -12, "PA PUT débil histórico")
+
+    if "PA_A_FAVOR_CALL_DEBIL" in riesgos:
+        score_pa -= 8
+        _agregar(razones, "PA", -8, "PA CALL débil histórico")
+
+    # ==========================
+    # 3. MERCADO
+    # Peso final: 20%
+    # ==========================
+    score_mercado = 50
+
+    if calidad_mercado == "NORMAL":
+        score_mercado += 6
+        _agregar(razones, "MERCADO", 6, "mercado normal operable")
+
+    elif calidad_mercado == "LIMPIO":
+        score_mercado += 2
+        _agregar(razones, "MERCADO", 2, "mercado limpio pero no siempre superior")
+
+    elif calidad_mercado == "SUCIO":
+        score_mercado -= 12
+        _agregar(razones, "MERCADO", -12, "mercado sucio")
+
+    if _contiene(tendencia, "AGOTADA"):
+        score_mercado -= 10
+        _agregar(razones, "MERCADO", -10, "tendencia agotada")
+
+    elif _contiene(tendencia, "FUERTE"):
+        score_mercado += 3
+        _agregar(razones, "MERCADO", 3, "tendencia fuerte")
+
+    elif _contiene(tendencia, "NORMAL"):
+        score_mercado += 5
+        _agregar(razones, "MERCADO", 5, "tendencia normal")
+
+    if "MERCADO_NO_VALIDADO" in riesgos:
+        score_mercado -= 6
+        _agregar(razones, "MERCADO", -6, "mercado no validado")
+
+    if "FUERZA_TENDENCIA_BAJA" in riesgos:
+        score_mercado -= 5
+        _agregar(razones, "MERCADO", -5, "fuerza tendencia baja")
+
+    # ==========================
+    # 4. APRENDIZAJE HISTÓRICO
+    # Peso final: 10%
+    # ==========================
+    score_aprendizaje = 50
+
     if decision_aprendizaje == "FAVORABLE":
-        confianza_setup = _ajustar(
-            confianza_setup,
-            min(6, max(3, ajuste_aprendizaje)),
-            razones,
-            "Aprendizaje histórico favorable"
-        )
+        ajuste = min(18, max(8, ajuste_aprendizaje))
+        score_aprendizaje += ajuste
+        _agregar(razones, "HISTÓRICO", ajuste, "aprendizaje favorable")
+
     elif decision_aprendizaje == "DEBIL":
-        confianza_setup = _ajustar(
-            confianza_setup,
-            max(-8, min(-3, ajuste_aprendizaje)),
-            razones,
-            "Aprendizaje histórico débil"
-        )
+        ajuste = max(-18, min(-8, ajuste_aprendizaje))
+        score_aprendizaje += ajuste
+        _agregar(razones, "HISTÓRICO", ajuste, "aprendizaje débil")
 
-    confianza_setup = max(0, min(100, round(confianza_setup, 2)))
+    else:
+        _agregar(razones, "HISTÓRICO", 0, "sin aprendizaje suficiente")
+
+    # ==========================
+    # 5. CONSENSO
+    # Peso final: 5%
+    # ==========================
+    score_consenso = 50
+
+    if nivel_consenso == "PREMIUM":
+        score_consenso += 10
+        _agregar(razones, "CONSENSO", 10, "consenso premium")
+
+    elif nivel_consenso == "ALTO":
+        score_consenso += 8
+        _agregar(razones, "CONSENSO", 8, "consenso alto")
+
+    elif nivel_consenso == "BUENO":
+        score_consenso -= 8
+        _agregar(razones, "CONSENSO", -8, "consenso bueno históricamente débil")
+
+    elif nivel_consenso == "MEDIO":
+        score_consenso -= 2
+        _agregar(razones, "CONSENSO", -2, "consenso medio")
+
+    elif nivel_consenso in ["BAJO", "MUY_BAJO"]:
+        score_consenso -= 4
+        _agregar(razones, "CONSENSO", -4, "consenso bajo")
+
+    # ==========================
+    # 6. SCORE FINAL / BASE
+    # Peso final: 5%
+    # ==========================
+    score_metricas = 50
+
+    if base_estrategia == "FUERTE":
+        score_metricas += 8
+        _agregar(razones, "MÉTRICAS", 8, "base estrategia fuerte")
+
+    elif base_estrategia == "DEBIL":
+        score_metricas -= 4
+        _agregar(razones, "MÉTRICAS", -4, "base estrategia débil")
+
+    if score_final >= 200:
+        score_metricas += 4
+        _agregar(razones, "MÉTRICAS", 4, "score final muy alto")
+
+    elif score_final >= 170:
+        score_metricas += 2
+        _agregar(razones, "MÉTRICAS", 2, "score final aceptable")
+
+    elif score_final and score_final < 120:
+        score_metricas -= 6
+        _agregar(razones, "MÉTRICAS", -6, "score final bajo")
+
+    # ==========================
+    # PENALIZACIONES ESTRUCTURALES
+    # No destruyen todo, solo ajustan.
+    # ==========================
+    penalizacion_extra = 0
+
+    if "REACCION_SIN_CONFIRMACION_FUERTE" in riesgos:
+        penalizacion_extra -= 8
+        _agregar(razones, "RIESGO", -8, "reacción sin confirmación fuerte")
+
+    if "CHOCH_CON_TENDENCIA_DEBIL" in riesgos:
+        penalizacion_extra -= 3
+        _agregar(razones, "RIESGO", -3, "CHOCH tendencia débil moderado")
+
+    if "CONTINUACION_TENDENCIA_INSUFICIENTE" in riesgos:
+        penalizacion_extra -= 5
+        _agregar(razones, "RIESGO", -5, "continuación con tendencia insuficiente")
+
+    if "CALL_RESISTENCIA_CERCA_SIN_RUPTURA" in accion_precio and direccion == "CALL":
+        penalizacion_extra -= 4
+        _agregar(razones, "RIESGO", -4, "CALL contra resistencia sin ruptura")
+
+    if "PUT_SOPORTE_CERCA_SIN_RUPTURA" in accion_precio and direccion == "PUT":
+        penalizacion_extra -= 2
+        _agregar(razones, "RIESGO", -2, "PUT contra soporte sin ruptura")
+
+    confianza = (
+        score_identidad * 0.30 +
+        score_pa * 0.30 +
+        score_mercado * 0.20 +
+        score_aprendizaje * 0.10 +
+        score_consenso * 0.05 +
+        score_metricas * 0.05
+    )
+
+    confianza += penalizacion_extra
+
+    confianza = round(_limitar(confianza), 2)
+
+    razones.append(
+        "RESUMEN_CAPAS: "
+        f"identidad={round(score_identidad, 2)}, "
+        f"pa={round(score_pa, 2)}, "
+        f"mercado={round(score_mercado, 2)}, "
+        f"historico={round(score_aprendizaje, 2)}, "
+        f"consenso={round(score_consenso, 2)}, "
+        f"metricas={round(score_metricas, 2)}, "
+        f"extra={round(penalizacion_extra, 2)}"
+    )
+
+    return confianza, razones
+
+
+def clasificar_setup(senal):
+    identidad_setup = identificar_setup(senal)
+
+    familia_setup = identidad_setup["familia_setup"]
+    subtipo_setup = identidad_setup["subtipo_setup"]
+    protocolo_sugerido = identidad_setup["protocolo_sugerido"]
+
+    confianza_setup, razones = calcular_confianza_setup_por_capas(
+        senal,
+        identidad_setup
+    )
+
+    direccion = _txt(senal.get("direccion", ""))
+    accion_precio = _txt(senal.get("accion_precio", ""))
+
+    if "CALL_RESISTENCIA_CERCA_SIN_RUPTURA" in accion_precio and direccion == "CALL":
+        protocolo_sugerido = "PROTOCOLO_RUPTURA_RESISTENCIA"
+
     nivel_setup, estado_setup = _nivel_estado_desde_confianza(confianza_setup)
-
-    if confianza_setup < 42:
-        protocolo_sugerido = protocolo_sugerido
 
     return {
         "familia_setup": familia_setup,
@@ -297,15 +458,6 @@ def clasificar_setup(senal):
 
 
 def aplicar_setup_decision(decision_bootiq):
-    """
-    Aplica clasificación de setup al contrato central DecisionBootIQ.
-
-    BootIQ V2:
-    - No decide operación final.
-    - No modifica señal plana.
-    - Solo escribe evidencia en decision_bootiq["setup"].
-    """
-
     try:
         identidad = decision_bootiq.get("identidad", {})
         estrategia = decision_bootiq.get("estrategia", {})

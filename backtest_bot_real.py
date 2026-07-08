@@ -391,6 +391,10 @@ def crear_registro_resultado(senal, velas, idx, idx_entrada, motivo_ejecucion, e
         "cerebro_unico_operar": senal.get("cerebro_unico_operar", False),
         "cerebro_unico_confianza": senal.get("cerebro_unico_confianza", 0),
         "cerebro_unico_riesgo": senal.get("cerebro_unico_riesgo", ""),
+        "ajuste_ponderacion": senal.get("ajuste_ponderacion", 0),
+        "motivos_ponderacion": senal.get("motivos_ponderacion", ""),
+        "pesos_aplicados": senal.get("pesos_aplicados", ""),
+        "confianza_final_cerebro": senal.get("confianza_final_cerebro", 0),
     }
 
     registro.update(decision_bootiq_plana)
@@ -644,7 +648,12 @@ def guardar_resultados(resultados):
         "bootiq_decision_unificada_accion",
         "bootiq_decision_unificada_score",
         "bootiq_decision_unificada_confianza",
-
+        
+        "ajuste_ponderacion",
+        "motivos_ponderacion",
+        "pesos_aplicados",
+        "confianza_final_cerebro",
+        
         "bootiq_resultado_estado_operacion",
         "bootiq_resultado_motivo_ejecucion",
         "bootiq_resultado_resultado",
@@ -845,6 +854,8 @@ def imprimir_resumen(resultados):
         ("POR EVIDENCIA MERCADO", "bootiq_evidencias_mercado"),
         ("POR CEREBRO UNICO DECISION", "cerebro_unico_decision"),
         ("POR CEREBRO UNICO RIESGO", "cerebro_unico_riesgo"),
+        ("POR AJUSTE PONDERACION", "ajuste_ponderacion"),
+        ("POR CONFIANZA FINAL CEREBRO", "confianza_final_cerebro"),
     ]
 
     imprimir_tabla_resumen(

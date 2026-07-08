@@ -104,6 +104,10 @@ def crear_decision_bootiq(senal=None, ctx=None):
             "razones": senal.get("decision_unificada_razones", ""),
             "advertencias": senal.get("decision_unificada_advertencias", ""),
             "bloqueos": senal.get("decision_unificada_bloqueos", ""),
+            "ajuste_ponderacion": senal.get("ajuste_ponderacion", 0),
+            "motivos_ponderacion": senal.get("motivos_ponderacion", ""),
+            "pesos_aplicados": senal.get("pesos_aplicados", ""),
+            "confianza_final_cerebro": senal.get("confianza_final_cerebro", 0),
         },
         "riesgos": {
             "riesgos_base": senal.get("riesgos_base", ""),
@@ -201,6 +205,19 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         senal["cerebro_unico_confianza"] = decision_cerebro.get("confianza", 0)
         senal["cerebro_unico_riesgo"] = decision_cerebro.get("riesgo_nivel", "")
         senal["cerebro_unico_motivos"] = " | ".join(decision_cerebro.get("motivos", []))
+        senal["ajuste_ponderacion"] = decision_cerebro.get("ajuste_ponderacion", 0)
+
+        ponderacion = decision_cerebro.get("ponderacion_estadistica", {})
+        
+        senal["motivos_ponderacion"] = " | ".join(
+            ponderacion.get("motivos_ponderacion", [])
+        )
+        
+        senal["pesos_aplicados"] = " | ".join(
+            str(x) for x in ponderacion.get("pesos_aplicados", [])
+        )
+        
+        senal["confianza_final_cerebro"] = decision_cerebro.get("confianza", 0)
 
         senal["pa_evidencias"] = evidencia.get("pa_evidencias", senal.get("pa_evidencias", []))
         senal["mercado_evidencias"] = evidencia.get("mercado_evidencias", senal.get("mercado_evidencias", []))
@@ -214,21 +231,22 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
             accion_sistema = "NO_OPERAR"
         
         senal["decision_unificada_score"] = decision_cerebro.get("confianza", 0)
+        senal["decision_unificada_score"] = decision_cerebro.get("confianza", 0)
         senal["decision_unificada_confianza"] = decision_cerebro.get("confianza", 0)
         senal["decision_unificada_razones"] = " | ".join(decision_cerebro.get("motivos", []))
         senal["decision_unificada_advertencias"] = ""
         senal["decision_unificada_bloqueos"] = ""
 
         decision = crear_decision_bootiq(senal, ctx)
-        decision["decision_unificada"] = {
+
+        decision["decision_unificada"].update({
             "accion": accion_sistema,
             "score": decision_cerebro.get("confianza", 0),
             "confianza": decision_cerebro.get("confianza", 0),
             "razones": " | ".join(decision_cerebro.get("motivos", [])),
             "advertencias": "",
             "bloqueos": "",
-        }
-
+        })
         return {
             "permitida": operar,
             "senal": senal,
