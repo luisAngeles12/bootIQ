@@ -24,7 +24,8 @@ def decidir_confirmacion(senal):
 
     fase4_decision = _txt(senal.get("fase4_decision"))
     fase4_confianza = _num(senal.get("fase4_confianza"), 50)
-
+    cerebro_decision = _txt(senal.get("cerebro_unico_decision"))
+    cerebro_confianza = _num(senal.get("cerebro_unico_confianza"), 0)
     modo_setup = _txt(senal.get("modo_entrada_setup"))
     calidad_setup = _txt(senal.get("calidad_setup"))
     protocolo = _txt(senal.get("protocolo_sugerido"))
@@ -58,13 +59,39 @@ def decidir_confirmacion(senal):
             "razones": ["Riesgo protocolo alto."],
             "razon": "Riesgo protocolo alto."
         }
+    if cerebro_decision == "operar" and cerebro_confianza >= 58:
+        razones.append("Cerebro único autoriza, pero requiere confirmación técnica.")
+        return {
+            "indice": cerebro_confianza,
+            "nivel": "ALTO",
+            "accion": "ESPERAR_2",
+            "razones": razones,
+            "razon": " | ".join(razones)
+        }
+    if cerebro_decision == "operar_con_protocolo" and cerebro_confianza >= 55:
+        razones.append("Cerebro único permite operación con protocolo.")
+        return {
+            "indice": cerebro_confianza,
+            "nivel": "ALTO",
+            "accion": "ESPERAR_2",
+            "razones": razones,
+            "razon": " | ".join(razones)
+        }
 
+    if cerebro_decision == "no_operar" and cerebro_confianza < 38:
+        return {
+            "indice": cerebro_confianza,
+            "nivel": "BAJO",
+            "accion": "CANCELAR",
+            "razones": ["Cerebro único descarta operación."],
+            "razon": "Cerebro único descarta operación."
+        }
     if fase4_confianza >= 70 and calidad_setup in ["premium", "buena", "alta"]:
-        razones.append("Confianza Fase 4 alta y setup fuerte.")
+        razones.append("Confianza Fase 4 alta y setup fuerte; requiere confirmación técnica.")
         return {
             "indice": fase4_confianza,
-            "nivel": "PREMIUM",
-            "accion": "ENTRAR",
+            "nivel": "ALTO",
+            "accion": "ESPERAR_2",
             "razones": razones,
             "razon": " | ".join(razones)
         }
@@ -119,6 +146,8 @@ def aplicar_confirmacion_decision(decision_bootiq):
             "calidad_setup": setup.get("calidad_setup", ""),
             "protocolo_sugerido": protocolo.get("protocolo_sugerido", ""),
             "riesgo_protocolo": protocolo.get("riesgo_protocolo", 50),
+            "cerebro_unico_decision": fase4.get("cerebro_unico_decision", ""),
+            "cerebro_unico_confianza": fase4.get("cerebro_unico_confianza", 0),
         }
 
         resultado = decidir_confirmacion(senal_temp)
