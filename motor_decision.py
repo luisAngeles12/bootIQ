@@ -502,11 +502,15 @@ def evaluar_decision_cerebro_unico(evidencia):
     # DECISIÓN FINAL ÚNICA RECALIBRADA
     # =========================
     
-    if riesgo_nivel == "EXTREMO":
+    if riesgo_nivel == "EXTREMO" and confianza < 52:
         decision = "NO_OPERAR"
         operar = False
-        motivos.append("Cerebro único: riesgo extremo.")
+        motivos.append("Cerebro único: riesgo extremo con confianza insuficiente.")
     
+    elif riesgo_nivel == "EXTREMO" and confianza >= 52:
+        decision = "OPERAR_CON_PROTOCOLO"
+        operar = True
+        motivos.append("Cerebro único: riesgo extremo compensado; solo protocolo estricto.")
     elif confianza >= 62 and riesgo_nivel in ["BAJO", "MEDIO"]:
         decision = "OPERAR"
         operar = True

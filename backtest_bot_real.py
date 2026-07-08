@@ -8,7 +8,7 @@ from motor_protocolos import buscar_entrada_confirmada
 from motor_setup import enriquecer_senal_con_setup, aplicar_setup_decision
 from contexto_mercado import detectar_tipo_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
 from motor_aprendizaje_historico import generar_aprendizaje_desde_resultados
-from decision_bootiq import crear_decision_bootiq, aplanar_decision_bootiq
+from decision_bootiq import crear_decision_bootiq, aplanar_decision_bootiq, aplicar_decision_unificada_a_senal
 from motor_decision_unificado import evaluar_decision_bootiq
 from motor_consenso import aplicar_consenso_decision
 from motor_confirmacion import aplicar_confirmacion_decision
@@ -456,14 +456,31 @@ def ejecutar_backtest(datasets):
             velas = senal["_velas"]
             idx = senal["_index"]
 
-            evaluacion_fase4 = evaluar_senal_fase4(senal)
-
-            senal["fase4_confianza"] = evaluacion_fase4.get("fase4_confianza", 50.0)
-            senal["fase4_decision"] = evaluacion_fase4.get("fase4_decision", "")
-            senal["fase4_modo"] = evaluacion_fase4.get("fase4_modo", "")
-            senal["fase4_debe_bloquear"] = evaluacion_fase4.get("fase4_debe_bloquear", False)
+            resultado_bootiq = aplicar_decision_unificada_a_senal(senal)
             
-            if evaluacion_fase4.get("fase4_debe_bloquear", False):
+            senal = resultado_bootiq["senal"]
+            
+            evaluacion_fase4 = {
+                "fase4_evaluada": senal.get("fase4_evaluada", True),
+                "fase4_permitir_operacion": senal.get("fase4_permitir_operacion", False),
+                "fase4_modo": senal.get("fase4_modo", ""),
+                "fase4_confianza": senal.get("fase4_confianza", 0),
+                "fase4_decision": senal.get("fase4_decision", ""),
+                "fase4_debe_bloquear": senal.get("fase4_debe_bloquear", True),
+                "fase4_motivo": senal.get("fase4_motivo", ""),
+            }
+            
+            decision_cerebro = senal.get("cerebro_unico_decision", "")
+            confianza_cerebro = float(senal.get("cerebro_unico_confianza", 0) or 0)
+            riesgo_cerebro = senal.get("cerebro_unico_riesgo", "")
+            
+            bloqueo_duro_cerebro = (
+                decision_cerebro == "NO_OPERAR"
+                and confianza_cerebro < 38
+                and riesgo_cerebro == "EXTREMO"
+            )
+            
+            if bloqueo_duro_cerebro:
                 resultados.append(
                     crear_registro_resultado(
                         senal=senal,

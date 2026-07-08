@@ -148,13 +148,21 @@ def _riesgo_cancelacion(senal):
     accion_ia = _txt(senal.get("accion_confirmacion_ia"))
     fase4_decision = _txt(senal.get("fase4_decision"))
 
-    if fase4_decision == "no_operar":
+    confianza_cerebro = _num(senal.get("cerebro_unico_confianza"), 0)
+    riesgo_cerebro = _txt(senal.get("cerebro_unico_riesgo"))
+    
+    bloqueo_duro_cerebro = (
+        fase4_decision == "no_operar"
+        and riesgo_cerebro == "extremo"
+        and confianza_cerebro < 38
+    )
+    
+    if bloqueo_duro_cerebro:
         return True, "CANCELADA_FASE4_NO_OPERAR"
-
+    
     if accion_ia == "cancelar":
-        if riesgo >= 85 or fase4_decision == "no_operar":
+        if riesgo >= 90 and bloqueo_duro_cerebro:
             return True, "CANCELADA_CONFIRMACION_IA"
-
     # Fase 6: no cancelar solo por confirmación IA.
     # Si Fase 4 permitió, el protocolo debe intentar confirmar técnicamente.
     if "no_operar" in modo or "cancelar" in modo:

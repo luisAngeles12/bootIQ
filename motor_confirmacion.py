@@ -119,9 +119,9 @@ def decidir_confirmacion(senal):
     return {
         "indice": fase4_confianza,
         "nivel": "BAJO",
-        "accion": "CANCELAR",
-        "razones": ["Confianza insuficiente para protocolo."],
-        "razon": "Confianza insuficiente para protocolo."
+        "accion": "ESPERAR_3",
+        "razones": ["Confianza baja; permitir solo protocolo estricto."],
+        "razon": "Confianza baja; permitir solo protocolo estricto."
     }
 
 def aplicar_confirmacion_decision(decision_bootiq):

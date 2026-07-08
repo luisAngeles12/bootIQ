@@ -199,7 +199,22 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
 
         accion = decision_cerebro.get("decision", "NO_OPERAR")
         operar = decision_cerebro.get("operar", False)
-
+        # =========================
+        # Sincronizar Cerebro Único con Fase 4
+        # =========================
+        
+        senal["fase4_evaluada"] = True
+        senal["fase4_confianza"] = decision_cerebro.get("confianza", 0)
+        
+        senal["fase4_decision"] = accion
+        
+        senal["fase4_permitir_operacion"] = operar
+        
+        senal["fase4_debe_bloquear"] = not operar
+        
+        senal["fase4_motivo"] = " | ".join(
+            decision_cerebro.get("motivos", [])
+        )
         senal["cerebro_unico_decision"] = accion
         senal["cerebro_unico_operar"] = operar
         senal["cerebro_unico_confianza"] = decision_cerebro.get("confianza", 0)
