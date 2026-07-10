@@ -13,7 +13,7 @@ from historial import (
     perdidas_consecutivas_activo,
     perdidas_consecutivas_patron
 )
-from estrategia import registrar_zona_operada
+from validaciones_estrategia import registrar_zona_operada
 
 
 def normalizar_resultado(resultado):
