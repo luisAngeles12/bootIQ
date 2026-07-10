@@ -500,3 +500,305 @@ def memoria_operativa(activo, direccion, patron):
     except Exception as e:
         print("Error en memoria operativa:", e)
         return True, "memoria no disponible"
+
+def validar_estrategia_por_mercado(senal, ctx):
+    if not senal:
+        return False, "señal vacía"
+
+    tipo_mercado = ctx.get("tipo_mercado", "INDEFINIDO")
+    calidad_mercado = ctx.get("calidad_mercado", "NORMAL")
+    patron = str(senal.get("patron", "")).lower()
+    direccion = senal.get("direccion", "")
+    puntaje = senal.get("puntaje", 0)
+
+    estado_tendencia = ctx.get("estado_tendencia", "INDEFINIDA")
+    direccion_tendencia = ctx.get("direccion_tendencia", "INDEFINIDA")
+
+    cerca_soporte = ctx.get("cerca_soporte", False)
+    cerca_resistencia = ctx.get("cerca_resistencia", False)
+
+    rechazo = ctx.get("rechazo", 0)
+    liquidity_sweep = ctx.get("liquidity_sweep", 0)
+    patron_vela = ctx.get("patron", 0)
+    regimen_mercado = ctx.get("regimen_mercado", "SIN_DATOS")
+    modo_mercado = ctx.get("modo_mercado", "SIN_DATOS")
+    riesgo_mercado = ctx.get("riesgo_mercado", "MEDIO")
+    direccion_senal = "ALCISTA" if direccion == "call" else "BAJISTA"
+    a_favor = direccion_senal == direccion_tendencia
+
+    tendencia_debil = "DEBIL" in estado_tendencia
+    tendencia_indefinida = estado_tendencia == "INDEFINIDA"
+    tendencia_agotada = "AGOTADA" in estado_tendencia
+
+    mercado_delicado = (
+        tipo_mercado == "RANGO"
+        or calidad_mercado == "SUCIO"
+        or tendencia_debil
+        or tendencia_indefinida
+    )
+    ruptura_confirmada = ctx.get("ruptura_confirmada", False)
+    confirmacion_fuerte = (
+        rechazo != 0
+        or patron_vela != 0
+        or liquidity_sweep != 0
+        or ruptura_confirmada
+        or puntaje >= 18
+    )
+
+    agotamiento_real_call = (
+        direccion == "call"
+        and cerca_soporte
+        and (
+            rechazo == 1
+            or patron_vela == 1
+            or liquidity_sweep == 1
+            or tendencia_agotada
+        )
+    )
+
+    agotamiento_real_put = (
+        direccion == "put"
+        and cerca_resistencia
+        and (
+            rechazo == -1
+            or patron_vela == -1
+            or liquidity_sweep == -1
+            or tendencia_agotada
+        )
+    )
+
+    agotamiento_real = agotamiento_real_call or agotamiento_real_put
+    
+    # =========================
+    # FILTRO MAESTRO DE MERCADO
+    # =========================
+    if regimen_mercado == "EXPANSION_PELIGROSA":
+        if "liquidity sweep" in patron and puntaje >= 25 and agotamiento_real:
+            return True, "mercado peligroso: solo sweep premium con agotamiento real"
+
+        return False, "mercado peligroso: señal bloqueada por régimen maestro"
+    if regimen_mercado == "RANGO_SUCIO":
+        if "liquidity sweep" in patron and puntaje >= 24:
+            return True, "rango sucio: sweep premium permitido"
+
+        return False, "rango sucio: señal bloqueada"
+    if regimen_mercado == "COMPRESION_PRE_RUPTURA":
+        if ruptura_confirmada and puntaje >= 22:
+            return True, "compresión resuelta: ruptura confirmada"
+
+        return False, "compresión: esperar ruptura confirmada"
+
+    if regimen_mercado == "TENDENCIA_SUCIA":
+        if "liquidity sweep" in patron and puntaje >= 23 and agotamiento_real:
+            return True, "tendencia sucia: sweep permitido solo con agotamiento"
+    
+        if "pullback alcista" in patron and direccion == "call" and puntaje >= 19 and a_favor:
+            return True, "tendencia sucia: pullback alcista permitido con puntaje alto"
+    
+        if "pullback bajista" in patron and direccion == "put" and puntaje >= 20 and a_favor:
+            return True, "tendencia sucia: pullback bajista permitido con puntaje alto"
+    
+        if "choch" in patron and puntaje < 22:
+            return False, "tendencia sucia: CHOCH débil bloqueado"
+        
+    if regimen_mercado == "TENDENCIA_LIMPIA":
+        if "pullback" in patron and not a_favor:
+            return False, "tendencia limpia: pullback contra tendencia bloqueado"
+
+        if "continuacion" in patron or "continuación" in patron:
+            if puntaje >= 16 and a_favor:
+                return True, "tendencia limpia: continuación permitida a favor"
+
+    if regimen_mercado == "RANGO_LIMPIO":
+        if "pullback" in patron:
+            return False, "rango limpio: pullback EMA bloqueado, preferir extremos"
+
+        if "liquidity sweep" in patron and puntaje >= 22:
+            return True, "rango limpio: sweep permitido"
+
+        if ("reaccion" in patron or "reacción" in patron) and agotamiento_real:
+            return True, "rango limpio: reacción en extremo permitida"
+
+    # =========================
+    # MERCADO CAÓTICO
+    # =========================
+    if calidad_mercado == "CAOTICO":
+        if puntaje >= 25 and agotamiento_real:
+            return True, "mercado caótico: solo señal premium con agotamiento real"
+
+        return False, "mercado caótico: señal bloqueada"
+
+    # =========================
+    # CHOCH
+    # =========================
+    if "choch" in patron:
+
+        if "choch alcista" in patron and direccion == "call":
+            if cerca_resistencia and puntaje < 19:
+                return False, "CHOCH CALL bloqueado: resistencia cerca requiere ruptura/retest o puntaje >= 22"
+
+        if "choch bajista" in patron and direccion == "put":
+            if cerca_soporte and puntaje < 19:
+                return False, "CHOCH PUT bloqueado: soporte cerca requiere ruptura/retest o puntaje >= 22"
+
+        if a_favor:
+            if mercado_delicado and puntaje < 18:
+                return False, "CHOCH bloqueado: mercado delicado requiere mínimo puntaje 18"
+
+            if puntaje >= 18 and confirmacion_fuerte:
+                return True, "CHOCH permitido a favor de tendencia con confirmación"
+            
+            if (
+                puntaje >= 20
+                and calidad_mercado in ["LIMPIO", "NORMAL"]
+                and tipo_mercado in ["TENDENCIA_ALCISTA", "TENDENCIA_BAJISTA"]
+                and a_favor
+            ):
+                return True, "CHOCH permitido por contexto fuerte aunque confirmación no sea perfecta"
+            
+            return False, "CHOCH bloqueado: sin confirmación fuerte"
+
+        # CHOCH contra tendencia
+        if not a_favor:
+            if puntaje >= 23 and agotamiento_real:
+                return True, "CHOCH contra tendencia permitido por agotamiento real"
+
+            return False, "CHOCH contra tendencia bloqueado"
+
+    # =========================
+    # PULLBACK
+    # =========================
+    if "pullback" in patron:
+        if calidad_mercado == "CAOTICO":
+            return False, "pullback bloqueado en mercado caótico"
+    
+        if not a_favor:
+            return False, "pullback fuera de contexto"
+    
+        if "pullback alcista" in patron:
+            if tipo_mercado != "TENDENCIA_ALCISTA":
+                return False, "pullback alcista requiere tendencia alcista"
+    
+            if calidad_mercado not in ["LIMPIO", "NORMAL"]:
+                return False, "pullback alcista requiere mercado operable"
+            
+            if estado_tendencia not in ["ALCISTA_NORMAL", "ALCISTA_FUERTE"]:
+                return False, "pullback alcista requiere tendencia alcista válida"
+            if puntaje < 16:
+                return False, "pullback alcista requiere mínimo 16 puntos"
+    
+            if rechazo != 1 and patron_vela != 1:
+                return False, "pullback alcista requiere rechazo o patrón alcista"
+    
+            return True, "pullback alcista permitido con filtro reforzado"
+    
+        if "pullback bajista" in patron:
+            if tipo_mercado != "TENDENCIA_BAJISTA":
+                return False, "pullback bajista requiere tendencia bajista"
+
+            if calidad_mercado not in ["LIMPIO", "NORMAL"]:
+                return False, "pullback bajista requiere mercado operable"
+
+            if estado_tendencia not in ["BAJISTA_NORMAL", "BAJISTA_FUERTE"]:
+                return False, "pullback bajista requiere tendencia bajista válida"
+
+            if puntaje < 18:
+                return False, "pullback bajista requiere mínimo 18 puntos"
+
+            if rechazo != -1 and patron_vela != -1:
+                return False, "pullback bajista requiere rechazo o patrón bajista"
+            if cerca_soporte and puntaje < 21:
+                return False, "pullback bajista bloqueado: demasiado cerca de soporte"
+            
+            if estado_tendencia != "BAJISTA_FUERTE" and puntaje < 20:
+                return False, "pullback bajista requiere tendencia bajista fuerte o puntaje alto"
+            return True, "pullback bajista permitido con filtro reforzado"
+    
+        return False, "pullback no reconocido"
+    # =========================
+    # BREAKOUT + RETEST
+    # =========================
+    if "breakout" in patron or "retest" in patron:
+        if puntaje >= 20:
+            return True, "breakout/retest permitido"
+
+        return False, "breakout/retest bloqueado: puntaje bajo"
+
+    # =========================
+    # LIQUIDITY SWEEP
+    # =========================
+    if "liquidity sweep" in patron:
+        if a_favor:
+            if mercado_delicado and puntaje < 21:
+                return False, "sweep bloqueado: mercado delicado requiere mínimo 21"
+
+            if puntaje >= 20 and confirmacion_fuerte:
+                return True, "sweep permitido a favor de tendencia"
+
+            return False, "sweep bloqueado: sin confirmación fuerte"
+
+        # Sweep contra tendencia:
+        # Solo permitir si hay agotamiento real.
+        if not a_favor:
+            if puntaje >= 24 and (
+                agotamiento_real
+                or rechazo != 0
+                or liquidity_sweep != 0
+            ):
+                return True, "sweep contra tendencia permitido por barrida/rechazo fuerte"
+        
+            return False, "sweep contra tendencia bloqueado: sin agotamiento suficiente"
+    # =========================
+    # TENDENCIA ALCISTA
+    # =========================
+    if tipo_mercado == "TENDENCIA_ALCISTA":
+        if direccion == "call":
+            return True, "CALL permitido a favor de tendencia alcista"
+
+        if direccion == "put":
+            if puntaje >= 24 and agotamiento_real_put:
+                return True, "PUT contra tendencia permitido por agotamiento alcista"
+
+            return False, "PUT bloqueado contra tendencia alcista"
+
+    # =========================
+    # TENDENCIA BAJISTA
+    # =========================
+    if tipo_mercado == "TENDENCIA_BAJISTA":
+        if direccion == "put":
+            return True, "PUT permitido a favor de tendencia bajista"
+
+        if direccion == "call":
+            if puntaje >= 24 and agotamiento_real_call:
+                return True, "CALL contra tendencia permitido por agotamiento bajista"
+
+            return False, "CALL bloqueado contra tendencia bajista"
+
+    # =========================
+    # COMPRESIÓN
+    # =========================
+    if tipo_mercado == "COMPRESION":
+        return False, "mercado en compresión: esperar ruptura"
+
+    # =========================
+    # EXPANSIÓN
+    # =========================
+    if tipo_mercado == "EXPANSION":
+        if puntaje >= 24 and confirmacion_fuerte:
+            return True, "señal premium permitida en expansión"
+
+        return False, "mercado en expansión: evitar perseguir precio"
+
+    # =========================
+    # INDEFINIDO
+    # =========================
+    if tipo_mercado == "INDEFINIDO":
+        if calidad_mercado in ["LIMPIO", "NORMAL"] and puntaje >= 20 and confirmacion_fuerte:
+            return True, "señal fuerte permitida en mercado indefinido operable"
+    
+        if "choch" in patron and puntaje >= 20 and calidad_mercado in ["LIMPIO", "NORMAL"]:
+            return True, "CHOCH permitido en indefinido operable"
+    
+        return False, "mercado indefinido: señal bloqueada"
+
+    return True, "mercado permitido"

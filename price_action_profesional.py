@@ -1,3 +1,21 @@
+# ============================================================
+# PESOS DE EVIDENCIA PRICE ACTION
+# ============================================================
+
+PESO_RECHAZO_CONFIRMADO = 30
+PESO_AGOTAMIENTO_CONFIRMADO = 26
+PESO_IMPULSO = 18
+PESO_RECHAZO_HISTORICO_CONFIRMADO = 20
+PESO_RECHAZO_HISTORICO_OBSERVADO = 8
+PESO_CONTRADICCION_PA = -22
+
+FACTOR_AGOTAMIENTO_ALINEADO = 0.70
+FACTOR_IMPULSO_ALINEADO = 0.45
+FACTOR_CONTRADICCION = 0.55
+
+FUERZA_MINIMA_CONTEXTO = 0.32
+FUERZA_MINIMA_NO_DEBIL = 0.45
+
 def _vela(o, c, h, l):
     rango = h - l
     cuerpo = abs(c - o)
@@ -21,7 +39,28 @@ def _vela(o, c, h, l):
         "cierre_pos": (c - l) / rango,
     }
 
+def crear_evidencia_pa(
+    tipo,
+    direccion,
+    peso,
+    fuerza,
+    confirmada,
+    razon
+):
+    """
+    Construye una evidencia estándar de Price Action.
+    """
 
+    return {
+        "modulo": "price_action",
+        "categoria": "PRICE_ACTION",
+        "tipo": tipo,
+        "direccion": direccion,
+        "peso": peso,
+        "fuerza": fuerza,
+        "confirmada": confirmada,
+        "razon": razon,
+    }
 def rechazo_confirmado(opens, closes, highs, lows, soporte, resistencia, vol):
     """
     Detecta rechazo real + confirmación.
@@ -453,7 +492,15 @@ def agotamiento_profesional(opens, closes, highs, lows, soporte, resistencia, vo
             "razon": "error agotamiento profesional: " + str(e)
         }
 
-def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resistencia, vol):
+def contexto_price_action_profesional(
+    opens,
+    closes,
+    highs,
+    lows,
+    soporte,
+    resistencia,
+    vol
+):
     rechazo = rechazo_confirmado(
         opens,
         closes,
@@ -461,7 +508,7 @@ def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resis
         lows,
         soporte,
         resistencia,
-        vol
+        vol,
     )
 
     impulso = impulso_profesional(
@@ -469,7 +516,7 @@ def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resis
         closes,
         highs,
         lows,
-        5
+        5,
     )
 
     agotamiento = agotamiento_profesional(
@@ -480,8 +527,9 @@ def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resis
         soporte,
         resistencia,
         vol,
-        6
+        6,
     )
+
     rechazo_historico = rechazo_historico_inteligente(
         opens,
         closes,
@@ -490,207 +538,22 @@ def contexto_price_action_profesional(opens, closes, highs, lows, soporte, resis
         soporte,
         resistencia,
         vol,
-        6
+        6,
     )
-    direccion = "NEUTRA"
-    tipo = "SIN_CONTEXTO_CLARO"
-    fuerza = 0
-    razones = []
-    contradicciones = []
-    evidencias = []
 
-    rechazo_dir = rechazo.get("direccion", "NEUTRA")
-    impulso_dir = impulso.get("direccion", "NEUTRA")
-    agotamiento_dir = agotamiento.get("direccion", "NEUTRA")
-    rechazo_historico_dir = rechazo_historico.get("direccion", "NEUTRA")
+    resultado = resolver_contexto_price_action(
+        rechazo=rechazo,
+        impulso=impulso,
+        agotamiento=agotamiento,
+        rechazo_historico=rechazo_historico,
+    )
 
-    # =========================
-    # EVIDENCIA: RECHAZO
-    # =========================
-    if rechazo.get("confirmado"):
-        evidencia = {
-            "modulo": "price_action",
-            "categoria": "PRICE_ACTION",
-            "tipo": rechazo.get("tipo", "RECHAZO_CONFIRMADO"),
-            "direccion": rechazo_dir,
-            "peso": 30,
-            "fuerza": rechazo.get("fuerza", 0),
-            "confirmada": True,
-            "razon": rechazo.get("razon", "")
-        }
-        evidencias.append(evidencia)
+    resultado["rechazo"] = rechazo
+    resultado["impulso"] = impulso
+    resultado["agotamiento"] = agotamiento
+    resultado["rechazo_historico"] = rechazo_historico
 
-        direccion = rechazo_dir
-        tipo = rechazo.get("tipo", "RECHAZO_CONFIRMADO")
-        fuerza += rechazo.get("fuerza", 0)
-        razones.append(rechazo.get("razon", ""))
-
-    # =========================
-    # EVIDENCIA: AGOTAMIENTO
-    # =========================
-    if agotamiento.get("confirmado"):
-        evidencia = {
-            "modulo": "price_action",
-            "categoria": "PRICE_ACTION",
-            "tipo": agotamiento.get("tipo", "AGOTAMIENTO_CONFIRMADO"),
-            "direccion": agotamiento_dir,
-            "peso": 26,
-            "fuerza": agotamiento.get("fuerza", 0),
-            "confirmada": True,
-            "razon": agotamiento.get("razon", "")
-        }
-        evidencias.append(evidencia)
-
-        if direccion == "NEUTRA":
-            direccion = agotamiento_dir
-            tipo = agotamiento.get("tipo", tipo)
-            fuerza += agotamiento.get("fuerza", 0)
-            razones.append(agotamiento.get("razon", ""))
-
-        elif agotamiento_dir == direccion:
-            fuerza += agotamiento.get("fuerza", 0) * 0.70
-            razones.append(agotamiento.get("razon", ""))
-
-        else:
-            contradicciones.append("agotamiento contradice rechazo")
-
-    # =========================
-    # EVIDENCIA: IMPULSO
-    # =========================
-    if impulso_dir != "NEUTRA":
-        evidencia = {
-            "modulo": "price_action",
-            "categoria": "PRICE_ACTION",    
-            "tipo": impulso.get("tipo", "IMPULSO"),
-            "direccion": impulso_dir,
-            "peso": 18,
-            "fuerza": impulso.get("fuerza", 0),
-            "confirmada": impulso.get("tipo", "") in [
-                "IMPULSO_ALCISTA_FUERTE",
-                "IMPULSO_BAJISTA_FUERTE"
-            ],
-            "razon": impulso.get("razon", "")
-        }
-        evidencias.append(evidencia)
-
-        razones.append(impulso.get("razon", ""))
-
-        if direccion == "NEUTRA":
-            direccion = impulso_dir
-            tipo = impulso.get("tipo")
-            fuerza += impulso.get("fuerza", 0)
-
-        elif impulso_dir == direccion:
-            fuerza += impulso.get("fuerza", 0) * 0.45
-
-        else:
-            contradicciones.append("impulso contrario a price action")
-    # =========================
-    # EVIDENCIA: RECHAZO HISTÓRICO
-    # =========================
-    if rechazo_historico_dir != "NEUTRA":
-        tipo_hist = rechazo_historico.get("tipo", "RECHAZO_HISTORICO")
-        fuerza_hist = rechazo_historico.get("fuerza", 0)
-    
-        es_confirmado_hist = tipo_hist in [
-            "RECHAZO_COMPRADOR_HISTORICO",
-            "RECHAZO_VENDEDOR_HISTORICO"
-        ]
-    
-        es_observado_hist = tipo_hist in [
-            "RECHAZO_COMPRADOR_OBSERVADO",
-            "RECHAZO_VENDEDOR_OBSERVADO"
-        ]
-    
-        if es_confirmado_hist:
-            peso_hist = 20
-            confirmada_hist = True
-        else:
-            peso_hist = 8
-            confirmada_hist = False
-    
-        evidencia = {
-            "modulo": "price_action",
-            "categoria": "PRICE_ACTION",
-            "tipo": tipo_hist,
-            "direccion": rechazo_historico_dir,
-            "peso": peso_hist,
-            "fuerza": fuerza_hist,
-            "confirmada": confirmada_hist,
-            "razon": rechazo_historico.get("razon", "")
-        }
-    
-        evidencias.append(evidencia)
-        razones.append(rechazo_historico.get("razon", ""))
-    
-        if es_confirmado_hist:
-            if direccion == "NEUTRA":
-                direccion = rechazo_historico_dir
-                tipo = tipo_hist
-                fuerza += min(0.42, fuerza_hist * 0.25)
-    
-            elif rechazo_historico_dir == direccion:
-                fuerza += min(0.22, fuerza_hist * 0.12)
-    
-            else:
-                contradicciones.append("rechazo histórico confirmado contradice price action")
-    
-        elif es_observado_hist:
-            if direccion == "NEUTRA":
-                direccion = rechazo_historico_dir
-                tipo = tipo_hist
-                fuerza += min(0.24, fuerza_hist * 0.18)
-    
-            elif rechazo_historico_dir == direccion:
-                fuerza += min(0.12, fuerza_hist * 0.08)
-    
-            else:
-                # Observado no debe forzar contradicción fuerte.
-                razones.append("rechazo histórico observado contrario, no dominante")
-    # =========================
-    # CONTRADICCIONES
-    # =========================
-    if contradicciones:
-        evidencias.append({
-            "modulo": "price_action",
-            "categoria": "PRICE_ACTION",
-            "tipo": "CONTRADICCION_PA",
-            "direccion": "NEUTRA",
-            "peso": -22,
-            "fuerza": 0,
-            "confirmada": True,
-            "razon": " | ".join(contradicciones)
-        })
-
-        fuerza *= 0.55
-        razones.append("contradicciones: " + " | ".join(contradicciones))
-
-        if fuerza < 0.55:
-            direccion = "NEUTRA"
-            tipo = "PA_CONTRADICTORIO"
-
-    fuerza = round(min(fuerza, 1), 3)
-
-    # Compatibilidad: mantenemos la lógica actual.
-    # Todavía no cambiamos comportamiento del bot.
-    if fuerza < 0.32:
-        direccion = "NEUTRA"
-        tipo = "SIN_CONTEXTO_CLARO"
-    elif fuerza < 0.45 and direccion != "NEUTRA":
-        if not tipo.endswith("_DEBIL") and not tipo.endswith("_OBSERVADO"):
-            tipo = tipo + "_DEBIL"
-    return {
-        "direccion": direccion,
-        "tipo": tipo,
-        "fuerza": fuerza,
-        "rechazo": rechazo,
-        "impulso": impulso,
-        "agotamiento": agotamiento,
-        "rechazo_historico": rechazo_historico,
-        "contradicciones": contradicciones,
-        "evidencias": evidencias,
-        "razon": " | ".join([r for r in razones if r])
-    }
+    return resultado
 def rechazo_historico_inteligente(opens, closes, highs, lows, soporte, resistencia, vol, velas=6):
     """
     Detecta rechazo histórico real.
@@ -855,3 +718,255 @@ def rechazo_historico_inteligente(opens, closes, highs, lows, soporte, resistenc
             "fuerza": 0,
             "razon": "error rechazo histórico: " + str(e)
         }
+    
+
+def resolver_contexto_price_action(
+    rechazo,
+    impulso,
+    agotamiento,
+    rechazo_historico
+):
+    """
+    Combina los diagnósticos internos de Price Action.
+
+    No detecta velas.
+    No consulta mercado.
+    Solo integra:
+    - rechazo confirmado
+    - impulso
+    - agotamiento
+    - rechazo histórico
+    """
+
+    direccion = "NEUTRA"
+    tipo = "SIN_CONTEXTO_CLARO"
+    fuerza = 0
+    razones = []
+    contradicciones = []
+    evidencias = []
+
+    rechazo_dir = rechazo.get("direccion", "NEUTRA")
+    impulso_dir = impulso.get("direccion", "NEUTRA")
+    agotamiento_dir = agotamiento.get("direccion", "NEUTRA")
+    rechazo_historico_dir = rechazo_historico.get("direccion", "NEUTRA")
+
+    # ========================================================
+    # RECHAZO CONFIRMADO
+    # ========================================================
+    if rechazo.get("confirmado"):
+        evidencias.append(
+            crear_evidencia_pa(
+                tipo=rechazo.get("tipo", "RECHAZO_CONFIRMADO"),
+                direccion=rechazo_dir,
+                peso=PESO_RECHAZO_CONFIRMADO,
+                fuerza=rechazo.get("fuerza", 0),
+                confirmada=True,
+                razon=rechazo.get("razon", ""),
+            )
+        )
+
+        direccion = rechazo_dir
+        tipo = rechazo.get("tipo", "RECHAZO_CONFIRMADO")
+        fuerza += rechazo.get("fuerza", 0)
+        razones.append(rechazo.get("razon", ""))
+
+    # ========================================================
+    # AGOTAMIENTO
+    # ========================================================
+    if agotamiento.get("confirmado"):
+        evidencias.append(
+            crear_evidencia_pa(
+                tipo=agotamiento.get("tipo", "AGOTAMIENTO_CONFIRMADO"),
+                direccion=agotamiento_dir,
+                peso=PESO_AGOTAMIENTO_CONFIRMADO,
+                fuerza=agotamiento.get("fuerza", 0),
+                confirmada=True,
+                razon=agotamiento.get("razon", ""),
+            )
+        )
+
+        if direccion == "NEUTRA":
+            direccion = agotamiento_dir
+            tipo = agotamiento.get("tipo", tipo)
+            fuerza += agotamiento.get("fuerza", 0)
+            razones.append(agotamiento.get("razon", ""))
+
+        elif agotamiento_dir == direccion:
+            fuerza += (
+                agotamiento.get("fuerza", 0)
+                * FACTOR_AGOTAMIENTO_ALINEADO
+            )
+            razones.append(agotamiento.get("razon", ""))
+
+        else:
+            contradicciones.append("agotamiento contradice rechazo")
+
+    # ========================================================
+    # IMPULSO
+    # ========================================================
+    if impulso_dir != "NEUTRA":
+        evidencias.append(
+            crear_evidencia_pa(
+                tipo=impulso.get("tipo", "IMPULSO"),
+                direccion=impulso_dir,
+                peso=PESO_IMPULSO,
+                fuerza=impulso.get("fuerza", 0),
+                confirmada=impulso.get("tipo", "") in [
+                    "IMPULSO_ALCISTA_FUERTE",
+                    "IMPULSO_BAJISTA_FUERTE",
+                ],
+                razon=impulso.get("razon", ""),
+            )
+        )
+
+        razones.append(impulso.get("razon", ""))
+
+        if direccion == "NEUTRA":
+            direccion = impulso_dir
+            tipo = impulso.get("tipo", "IMPULSO")
+            fuerza += impulso.get("fuerza", 0)
+
+        elif impulso_dir == direccion:
+            fuerza += (
+                impulso.get("fuerza", 0)
+                * FACTOR_IMPULSO_ALINEADO
+            )
+
+        else:
+            contradicciones.append("impulso contrario a price action")
+
+    # ========================================================
+    # RECHAZO HISTÓRICO
+    # ========================================================
+    if rechazo_historico_dir != "NEUTRA":
+        tipo_hist = rechazo_historico.get(
+            "tipo",
+            "RECHAZO_HISTORICO"
+        )
+
+        fuerza_hist = rechazo_historico.get("fuerza", 0)
+
+        es_confirmado_hist = tipo_hist in [
+            "RECHAZO_COMPRADOR_HISTORICO",
+            "RECHAZO_VENDEDOR_HISTORICO",
+        ]
+
+        es_observado_hist = tipo_hist in [
+            "RECHAZO_COMPRADOR_OBSERVADO",
+            "RECHAZO_VENDEDOR_OBSERVADO",
+        ]
+
+        if es_confirmado_hist:
+            peso_hist = PESO_RECHAZO_HISTORICO_CONFIRMADO
+            confirmada_hist = True
+        else:
+            peso_hist = PESO_RECHAZO_HISTORICO_OBSERVADO
+            confirmada_hist = False
+
+        evidencias.append(
+            crear_evidencia_pa(
+                tipo=tipo_hist,
+                direccion=rechazo_historico_dir,
+                peso=peso_hist,
+                fuerza=fuerza_hist,
+                confirmada=confirmada_hist,
+                razon=rechazo_historico.get("razon", ""),
+            )
+        )
+
+        razones.append(rechazo_historico.get("razon", ""))
+
+        if es_confirmado_hist:
+            if direccion == "NEUTRA":
+                direccion = rechazo_historico_dir
+                tipo = tipo_hist
+                fuerza += min(
+                    0.42,
+                    fuerza_hist * 0.25
+                )
+
+            elif rechazo_historico_dir == direccion:
+                fuerza += min(
+                    0.22,
+                    fuerza_hist * 0.12
+                )
+
+            else:
+                contradicciones.append(
+                    "rechazo histórico confirmado contradice price action"
+                )
+
+        elif es_observado_hist:
+            if direccion == "NEUTRA":
+                direccion = rechazo_historico_dir
+                tipo = tipo_hist
+                fuerza += min(
+                    0.24,
+                    fuerza_hist * 0.18
+                )
+
+            elif rechazo_historico_dir == direccion:
+                fuerza += min(
+                    0.12,
+                    fuerza_hist * 0.08
+                )
+
+            else:
+                razones.append(
+                    "rechazo histórico observado contrario, no dominante"
+                )
+
+    # ========================================================
+    # CONTRADICCIONES
+    # ========================================================
+    if contradicciones:
+        evidencias.append(
+            crear_evidencia_pa(
+                tipo="CONTRADICCION_PA",
+                direccion="NEUTRA",
+                peso=PESO_CONTRADICCION_PA,
+                fuerza=0,
+                confirmada=True,
+                razon=" | ".join(contradicciones),
+            )
+        )
+
+        fuerza *= FACTOR_CONTRADICCION
+
+        razones.append(
+            "contradicciones: "
+            + " | ".join(contradicciones)
+        )
+
+        if fuerza < 0.55:
+            direccion = "NEUTRA"
+            tipo = "PA_CONTRADICTORIO"
+
+    fuerza = round(min(fuerza, 1), 3)
+
+    # Compatibilidad exacta con el comportamiento actual.
+    if fuerza < FUERZA_MINIMA_CONTEXTO:
+        direccion = "NEUTRA"
+        tipo = "SIN_CONTEXTO_CLARO"
+
+    elif (
+        fuerza < FUERZA_MINIMA_NO_DEBIL
+        and direccion != "NEUTRA"
+    ):
+        if (
+            not tipo.endswith("_DEBIL")
+            and not tipo.endswith("_OBSERVADO")
+        ):
+            tipo = tipo + "_DEBIL"
+
+    return {
+        "direccion": direccion,
+        "tipo": tipo,
+        "fuerza": fuerza,
+        "contradicciones": contradicciones,
+        "evidencias": evidencias,
+        "razon": " | ".join(
+            razon for razon in razones
+            if razon
+        ),
+    }

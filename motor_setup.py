@@ -519,3 +519,243 @@ def enriquecer_senal_con_setup(senal):
     datos_setup = clasificar_setup(senal)
     senal.update(datos_setup)
     return senal
+
+def clasificar_setup_estrategico(senal, ctx):
+    """
+    Clasifica la oportunidad sin bloquearla.
+    Sirve para que BootIQ aprenda qué tipo de setup está viendo:
+    reversión, continuación, ruptura, rechazo, sweep, CHOCH o riesgo de zona.
+    """
+
+    patron = str(senal.get("patron", "")).lower()
+    direccion = str(senal.get("direccion", "")).lower()
+
+    tipo_mercado = ctx.get("tipo_mercado", "INDEFINIDO")
+    calidad_mercado = ctx.get("calidad_mercado", "NORMAL")
+    estado_tendencia = ctx.get("estado_tendencia", "INDEFINIDA")
+    direccion_tendencia = ctx.get("direccion_tendencia", "INDEFINIDA")
+    fuerza_tendencia = ctx.get("fuerza_tendencia", 0)
+
+    cerca_soporte = ctx.get("cerca_soporte", False)
+    cerca_resistencia = ctx.get("cerca_resistencia", False)
+
+    rechazo = ctx.get("rechazo", 0)
+    liquidity_sweep = ctx.get("liquidity_sweep", 0)
+    ruptura_confirmada = ctx.get("ruptura_confirmada", False)
+
+    pa_tipo = ctx.get("pa_tipo", "SIN_CONTEXTO_CLARO")
+    pa_direccion = ctx.get("pa_direccion", "NEUTRA")
+    pa_fuerza = ctx.get("pa_fuerza", 0)
+
+    puntaje = senal.get("puntaje", 0)
+
+    direccion_setup = "ALCISTA" if direccion == "call" else "BAJISTA"
+    a_favor_tendencia = direccion_setup == direccion_tendencia
+
+    tipo_setup = "INDEFINIDO"
+    calidad_setup = "MEDIA"
+    modo_entrada = "DIRECTA"
+    puntaje_extra = 0
+    riesgo_extra = 0
+    razones = []
+
+    # =========================
+    # UBICACIÓN EN ZONA
+    # =========================
+    if direccion == "call" and cerca_soporte:
+        razones.append("CALL ubicado cerca de soporte")
+        puntaje_extra += 2
+
+    if direccion == "put" and cerca_resistencia:
+        razones.append("PUT ubicado cerca de resistencia")
+        puntaje_extra += 2
+
+    if direccion == "call" and cerca_resistencia:
+        razones.append("CALL cerca de resistencia: requiere ruptura o impulso")
+        riesgo_extra += 2
+        modo_entrada = "ESPERAR_RUPTURA"
+
+    if direccion == "put" and cerca_soporte:
+        razones.append("PUT cerca de soporte: requiere ruptura o impulso")
+        riesgo_extra += 2
+        modo_entrada = "ESPERAR_RUPTURA"
+
+    # =========================
+    # RECHAZO
+    # =========================
+    if direccion == "call" and rechazo == 1:
+        tipo_setup = "RECHAZO_ALCISTA"
+        puntaje_extra += 3
+        razones.append("rechazo comprador detectado")
+
+    if direccion == "put" and rechazo == -1:
+        tipo_setup = "RECHAZO_BAJISTA"
+        puntaje_extra += 3
+        razones.append("rechazo vendedor detectado")
+
+    # =========================
+    # LIQUIDITY SWEEP
+    # =========================
+    if "liquidity sweep" in patron:
+        if direccion == "call":
+            tipo_setup = "SWEEP_ALCISTA"
+        else:
+            tipo_setup = "SWEEP_BAJISTA"
+
+        puntaje_extra += 2
+        razones.append("setup basado en barrida de liquidez")
+
+        if (
+            direccion == "call"
+            and cerca_soporte
+            and (rechazo == 1 or pa_direccion == "CALL")
+        ):
+            tipo_setup = "REVERSION_ALCISTA"
+            calidad_setup = "BUENA"
+            modo_entrada = "DIRECTA"
+            puntaje_extra += 4
+            razones.append("sweep alcista con soporte/rechazo: reversión válida")
+
+        elif (
+            direccion == "put"
+            and cerca_resistencia
+            and (rechazo == -1 or pa_direccion == "PUT")
+        ):
+            tipo_setup = "REVERSION_BAJISTA"
+            calidad_setup = "BUENA"
+            puntaje_extra += 4
+            razones.append("sweep bajista con resistencia/rechazo: reversión válida")
+
+        elif not a_favor_tendencia:
+            riesgo_extra += 2
+            razones.append("sweep contra tendencia sin confirmación completa")
+
+    # =========================
+    # CHOCH
+    # =========================
+    if "choch" in patron:
+        if direccion == "call":
+            tipo_setup = "CHOCH_ALCISTA"
+        else:
+            tipo_setup = "CHOCH_BAJISTA"
+
+        razones.append("setup de cambio de estructura")
+
+        if pa_direccion in ["CALL", "PUT"] and pa_direccion == direccion.upper():
+            puntaje_extra += 3
+            calidad_setup = "BUENA"
+            razones.append("CHOCH con price action profesional a favor")
+
+        if ruptura_confirmada:
+            puntaje_extra += 3
+            calidad_setup = "BUENA"
+            modo_entrada = "DIRECTA"
+            razones.append("CHOCH con ruptura confirmada")
+
+        if not a_favor_tendencia and fuerza_tendencia >= 60:
+            riesgo_extra += 3
+            razones.append("CHOCH contra tendencia fuerte")
+
+    # =========================
+    # PULLBACK / CONTINUACIÓN
+    # =========================
+    if "pullback" in patron or "continuacion" in patron or "continuación" in patron:
+        tipo_setup = "CONTINUACION"
+
+        if a_favor_tendencia:
+            puntaje_extra += 3
+            razones.append("continuación a favor de tendencia")
+
+        if fuerza_tendencia >= 60:
+            puntaje_extra += 3
+            calidad_setup = "BUENA"
+            razones.append("tendencia con fuerza suficiente")
+
+        if not a_favor_tendencia:
+            riesgo_extra += 4
+            calidad_setup = "DEBIL"
+            razones.append("pullback/continuación contra tendencia")
+
+    # =========================
+    # BREAKOUT / RETEST
+    # =========================
+    if "breakout" in patron or "retest" in patron:
+        tipo_setup = "RUPTURA_RETEST"
+
+        if ruptura_confirmada:
+            puntaje_extra += 4
+            calidad_setup = "BUENA"
+            modo_entrada = "DIRECTA"
+            razones.append("ruptura/retest confirmado")
+
+        else:
+            modo_entrada = "ESPERAR_CONFIRMACION"
+            riesgo_extra += 2
+            razones.append("ruptura/retest sin confirmación completa")
+
+    # =========================
+    # PRICE ACTION PROFESIONAL
+    # =========================
+    if pa_tipo in [
+        "RECHAZO_COMPRADOR_CONFIRMADO",
+        "RECHAZO_VENDEDOR_CONFIRMADO",
+        "AGOTAMIENTO_BAJISTA_CONFIRMADO",
+        "AGOTAMIENTO_ALCISTA_CONFIRMADO"
+    ]:
+        puntaje_extra += 4
+        calidad_setup = "BUENA"
+        razones.append("price action profesional confirma rechazo/agottamiento")
+
+    if pa_tipo in [
+        "IMPULSO_ALCISTA_FUERTE",
+        "IMPULSO_BAJISTA_FUERTE"
+    ]:
+        puntaje_extra += 2
+        razones.append("price action muestra impulso fuerte")
+
+    if pa_tipo == "SIN_CONTEXTO_CLARO":
+        riesgo_extra += 2
+        razones.append("price action sin contexto claro")
+
+    # =========================
+    # CALIDAD DEL MERCADO
+    # =========================
+    if calidad_mercado == "LIMPIO":
+        puntaje_extra += 2
+        razones.append("mercado limpio")
+
+    if calidad_mercado == "NORMAL":
+        razones.append("mercado normal operable")
+
+    if calidad_mercado in ["SUCIO", "CAOTICO"]:
+        riesgo_extra += 4
+        calidad_setup = "DEBIL"
+        razones.append("mercado sucio/caótico")
+
+    # =========================
+    # CLASIFICACIÓN FINAL
+    # =========================
+    balance = puntaje + puntaje_extra - riesgo_extra
+
+    if balance >= 26 and riesgo_extra <= 2:
+        calidad_setup = "PREMIUM"
+    elif balance >= 21 and riesgo_extra <= 4:
+        calidad_setup = "BUENA"
+    elif balance >= 16:
+        calidad_setup = "MEDIA"
+    else:
+        calidad_setup = "DEBIL"
+
+    if riesgo_extra >= 6 and calidad_setup != "PREMIUM":
+        modo_entrada = "NO_OPERAR"
+
+    return {
+        "tipo_setup": tipo_setup,
+        "calidad_setup": calidad_setup,
+        "modo_entrada": modo_entrada,
+        "puntaje_extra_setup": puntaje_extra,
+        "riesgo_extra_setup": riesgo_extra,
+        "balance_setup": balance,
+        "a_favor_tendencia": a_favor_tendencia,
+        "razones_setup": razones,
+    }    

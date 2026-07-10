@@ -19,9 +19,8 @@ from contexto_mercado import (
     diagnostico_maestro_mercado,
     diagnostico_calidad_mercado,
     diagnostico_tendencia_avanzada,
-    construir_evidencias_mercado,
 )
-
+from constructor_evidencia import construir_evidencias_mercado
 def fuerza_patron_vela(nombre_patron):
     try:
         texto = str(nombre_patron).lower()

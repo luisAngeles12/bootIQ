@@ -2,7 +2,7 @@ from indicadores import *
 from price_action import *
 from zonas import *
 from mercado import obtener_velas
-from motor_setup import enriquecer_senal_con_setup
+from motor_setup import (enriquecer_senal_con_setup,clasificar_setup_estrategico)
 
 import time
 import estado
@@ -10,13 +10,10 @@ import estado
 from contexto_mercado import (
     detectar_tipo_mercado,
     diagnostico_maestro_mercado,
-    validar_estrategia_por_mercado,
-    clasificar_setup_estrategico,
     diagnostico_calidad_mercado,
     diagnostico_tendencia_avanzada,
-    construir_evidencias_mercado,
 )
-
+from constructor_evidencia import construir_evidencias_mercado
 from contexto_grafico import (
     fuerza_patron_vela,
     leer_micro_contexto_profesional,
@@ -28,6 +25,7 @@ from validaciones_estrategia import (
     filtro_fatiga_y_ubicacion,
     vela_contraria_reciente,
     zona_ya_operada,
+    validar_estrategia_por_mercado,
 )
 
 from clasificador_senal import evaluar_confianza_price_action

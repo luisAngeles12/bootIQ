@@ -165,3 +165,134 @@ if __name__ == "__main__":
 
     evidencia = construir_evidencia_operacion(ejemplo_senal)
     imprimir_evidencia(evidencia)
+
+def construir_evidencias_mercado(ctx):
+    evidencias = []
+
+    tipo_mercado = ctx.get("tipo_mercado", "INDEFINIDO")
+    calidad = ctx.get("calidad_mercado", "SIN_DATOS")
+    score = ctx.get("score_mercado", 0)
+    estado = ctx.get("estado_tendencia", "INDEFINIDA")
+    fuerza = ctx.get("fuerza_tendencia", 0)
+    direccion_tendencia = ctx.get("direccion_tendencia", "INDEFINIDA")
+    regimen = ctx.get("regimen_mercado", "SIN_DATOS")
+    riesgo = ctx.get("riesgo_mercado", "MEDIO")
+
+    if direccion_tendencia == "ALCISTA":
+        direccion_ev = "CALL"
+    elif direccion_tendencia == "BAJISTA":
+        direccion_ev = "PUT"
+    else:
+        direccion_ev = "NEUTRA"
+
+    if tipo_mercado in ["TENDENCIA_ALCISTA", "TENDENCIA_BAJISTA"]:
+        evidencias.append({
+            "fuente": "mercado",
+            "tipo": tipo_mercado,
+            "direccion": direccion_ev,
+            "peso": 14 if fuerza >= 58 else 8,
+            "fuerza": fuerza,
+            "confirmada": fuerza >= 50,
+            "razon": "mercado en tendencia: " + estado
+        })
+
+    if calidad == "LIMPIO":
+        evidencias.append({
+            "fuente": "mercado",
+            "tipo": "MERCADO_LIMPIO",
+            "direccion": "NEUTRA",
+            "peso": 10,
+            "fuerza": score,
+            "confirmada": True,
+            "razon": "mercado limpio"
+        })
+
+    elif calidad == "NORMAL":
+        evidencias.append({
+            "fuente": "mercado",
+            "tipo": "MERCADO_NORMAL",
+            "direccion": "NEUTRA",
+            "peso": 5,
+            "fuerza": score,
+            "confirmada": True,
+            "razon": "mercado normal operable"
+        })
+
+    elif calidad in ["SUCIO", "CAOTICO"]:
+        evidencias.append({
+            "fuente": "mercado",
+            "tipo": "MERCADO_SUCIO",
+            "direccion": "NEUTRA",
+            "peso": -14,
+            "fuerza": score,
+            "confirmada": True,
+            "razon": "mercado sucio o caótico"
+        })
+
+    if "DEBIL" in estado:
+        evidencias.append({
+            "fuente": "mercado",
+            "tipo": "TENDENCIA_DEBIL",
+            "direccion": direccion_ev,
+            "peso": -8,
+            "fuerza": fuerza,
+            "confirmada": True,
+            "razon": "tendencia débil"
+        })
+
+    if "FUERTE" in estado:
+        evidencias.append({
+            "fuente": "mercado",
+            "tipo": "TENDENCIA_FUERTE",
+            "direccion": direccion_ev,
+            "peso": 10,
+            "fuerza": fuerza,
+            "confirmada": True,
+            "razon": "tendencia fuerte"
+        })
+
+    if "AGOTADA" in estado:
+        evidencias.append({
+            "fuente": "mercado",
+            "tipo": "TENDENCIA_AGOTADA",
+            "direccion": "NEUTRA",
+            "peso": -10,
+            "fuerza": fuerza,
+            "confirmada": True,
+            "razon": "tendencia agotada"
+        })
+
+    if regimen in ["EXPANSION_PELIGROSA", "RANGO_SUCIO"]:
+        evidencias.append({
+            "fuente": "mercado",
+            "tipo": regimen,
+            "direccion": "NEUTRA",
+            "peso": -18,
+            "fuerza": 0,
+            "confirmada": True,
+            "razon": "régimen de mercado riesgoso"
+        })
+
+    if regimen == "TENDENCIA_LIMPIA":
+        evidencias.append({
+            "fuente": "mercado",
+            "tipo": "TENDENCIA_LIMPIA",
+            "direccion": direccion_ev,
+            "peso": 12,
+            "fuerza": fuerza,
+            "confirmada": True,
+            "razon": "tendencia limpia favorable"
+        })
+
+    if riesgo == "ALTO":
+        evidencias.append({
+            "fuente": "mercado",
+            "tipo": "RIESGO_MERCADO_ALTO",
+            "direccion": "NEUTRA",
+            "peso": -12,
+            "fuerza": 0,
+            "confirmada": True,
+            "razon": "riesgo de mercado alto"
+        })
+
+    return evidencias
