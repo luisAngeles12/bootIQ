@@ -433,8 +433,7 @@ def ejecutar_backtest(datasets):
                 continue
 
             senal["tipo"] = tipo
-            senal = enriquecer_senal_con_setup(senal)
-
+     
             senal["_velas"] = velas
             senal["_index"] = i
             senales_ronda.append(senal)

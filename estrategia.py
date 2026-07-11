@@ -722,7 +722,6 @@ def evaluar_senal_candidata(activo, ctx, senal):
         x for x in [fortalezas_previas, fortalezas_nuevas]
         if x
     )
-    senal = enriquecer_senal_con_setup(senal)
 
     patron_lower = str(senal.get("patron", "")).lower()
     accion_precio = senal.get("accion_precio", "")
@@ -913,6 +912,9 @@ def evaluar_senal_candidata(activo, ctx, senal):
         "| ACCION:",
         senal.get("accion_precio")
     )
+    # Recalcular setup cuando la señal ya contiene
+    # todas las validaciones, riesgos y evidencias finales.
+    senal = enriquecer_senal_con_setup(senal)
     from decision_bootiq import aplicar_decision_unificada_a_senal
 
     resultado_bootiq = aplicar_decision_unificada_a_senal(
