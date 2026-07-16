@@ -9,7 +9,22 @@ def _num(v, default=0):
         return float(v or default)
     except Exception:
         return default
+def _bool(v, default=False):
+    if isinstance(v, bool):
+        return v
 
+    if v is None:
+        return default
+
+    texto = str(v).lower().strip()
+
+    if texto in ["true", "1", "si", "sí", "yes"]:
+        return True
+
+    if texto in ["false", "0", "no", "none", "null", ""]:
+        return False
+
+    return default
 
 def decidir_confirmacion(senal):
     """
@@ -26,9 +41,30 @@ def decidir_confirmacion(senal):
     fase4_confianza = _num(senal.get("fase4_confianza"), 50)
     cerebro_decision = _txt(senal.get("cerebro_unico_decision"))
     cerebro_confianza = _num(senal.get("cerebro_unico_confianza"), 0)
+    # Campo legacy: respaldo temporal.
     modo_setup = _txt(senal.get("modo_entrada_setup"))
+    
+    # Evidencias neutrales del setup.
+    riesgo_critico_setup = _bool(
+        senal.get("riesgo_estructural_critico_setup"),
+        default=("no_operar" in modo_setup or "cancelar" in modo_setup)
+    )
+    
+    requiere_ruptura_setup = _bool(
+        senal.get("requiere_ruptura_setup"),
+        default=("esperar_ruptura" in modo_setup)
+    )
+    
+    requiere_confirmacion_setup = _bool(
+        senal.get("requiere_confirmacion_setup"),
+        default=("esperar_confirmacion" in modo_setup)
+    )
+    
+    estado_operativo_setup = _txt(
+        senal.get("estado_operativo_setup")
+    )
+    
     calidad_setup = _txt(senal.get("calidad_setup"))
-    protocolo = _txt(senal.get("protocolo_sugerido"))
     riesgo_protocolo = _num(senal.get("riesgo_protocolo"), 50)
 
     razones = []
@@ -42,13 +78,13 @@ def decidir_confirmacion(senal):
             "razon": "Fase 4 indicó NO_OPERAR."
         }
 
-    if "no_operar" in modo_setup or "cancelar" in modo_setup:
+    if riesgo_critico_setup:
         return {
             "indice": fase4_confianza,
             "nivel": "BAJO",
             "accion": "CANCELAR",
-            "razones": ["Setup indicó NO_OPERAR."],
-            "razon": "Setup indicó NO_OPERAR."
+            "razones": ["Setup presenta riesgo estructural crítico."],
+            "razon": "Setup presenta riesgo estructural crítico."
         }
 
     if riesgo_protocolo >= 75:
@@ -142,7 +178,27 @@ def aplicar_confirmacion_decision(decision_bootiq):
         senal_temp = {
             "fase4_decision": fase4.get("fase4_decision", ""),
             "fase4_confianza": fase4.get("fase4_confianza", 50),
+            # Compatibilidad legacy.
             "modo_entrada_setup": setup.get("modo_entrada_setup", ""),
+            
+            # Evidencias neutrales nuevas.
+            "estado_operativo_setup": setup.get(
+                "estado_operativo_setup",
+                ""
+            ),
+            "riesgo_estructural_critico_setup": setup.get(
+                "riesgo_estructural_critico_setup",
+                None
+            ),
+            "requiere_ruptura_setup": setup.get(
+                "requiere_ruptura_setup",
+                None
+            ),
+            "requiere_confirmacion_setup": setup.get(
+                "requiere_confirmacion_setup",
+                None
+            ),
+            
             "calidad_setup": setup.get("calidad_setup", ""),
             "protocolo_sugerido": protocolo.get("protocolo_sugerido", ""),
             "riesgo_protocolo": protocolo.get("riesgo_protocolo", 50),

@@ -53,17 +53,53 @@ def construir_evidencia_operacion(senal, ctx=None):
     """
 
     ctx = ctx or {}
+    setup_completo = senal.get("setup_completo", {})
+    
+    if not isinstance(setup_completo, dict):
+        setup_completo = {}
 
     evidencia = {
         "activo": normalizar(senal.get("activo")),
         "direccion": normalizar(senal.get("direccion")).lower(),
         "patron": normalizar(senal.get("patron")),
         "tipo": normalizar(senal.get("tipo", ctx.get("tipo"))),
-        "tipo_setup": normalizar(senal.get("tipo_setup")),
-        "modo_entrada_setup": normalizar(senal.get("modo_entrada_setup")),
-        "calidad_setup": normalizar(senal.get("calidad_setup")),
-        "balance_setup": senal.get("balance_setup", 0),
+       
+        "tipo_setup": normalizar(
+            setup_completo.get(
+                "tipo_setup",
+                senal.get("tipo_setup")
+            )
+        ),
         
+        "modo_entrada_setup": normalizar(
+            setup_completo.get(
+                "modo_entrada_setup",
+                senal.get("modo_entrada_setup")
+            )
+        ),
+        
+        "calidad_setup": normalizar(
+            setup_completo.get(
+                "calidad_setup",
+                senal.get("calidad_setup")
+            )
+        ),
+        
+        "balance_setup": setup_completo.get(
+            "balance_setup",
+            senal.get("balance_setup", 0)
+        ),
+        
+        "puntaje_extra_setup": setup_completo.get(
+            "puntaje_extra_setup",
+            senal.get("puntaje_extra_setup", 0)
+        ),
+        
+        "riesgo_extra_setup": setup_completo.get(
+            "riesgo_extra_setup",
+            senal.get("riesgo_extra_setup", 0)
+        ),
+
         "accion_confirmacion_ia": normalizar(senal.get("accion_confirmacion_ia")),
         "nivel_confirmacion_ia": normalizar(senal.get("nivel_confirmacion_ia")),
         "indice_confirmacion_ia": senal.get("indice_confirmacion_ia", 0),
@@ -71,7 +107,27 @@ def construir_evidencia_operacion(senal, ctx=None):
         "puntaje": senal.get("puntaje", 0),
         "prioridad": senal.get("prioridad", 0),
         "score_final": senal.get("score_final", 0),
-
+        "estado_operativo_setup": normalizar(
+            setup_completo.get(
+                "estado_operativo_setup",
+                senal.get("estado_operativo_setup")
+            )
+        ),
+        
+        "requiere_ruptura_setup": setup_completo.get(
+            "requiere_ruptura_setup",
+            senal.get("requiere_ruptura_setup", False)
+        ),
+        
+        "requiere_confirmacion_setup": setup_completo.get(
+            "requiere_confirmacion_setup",
+            senal.get("requiere_confirmacion_setup", False)
+        ),
+        
+        "riesgo_estructural_critico_setup": setup_completo.get(
+            "riesgo_estructural_critico_setup",
+            senal.get("riesgo_estructural_critico_setup", False)
+        ),
         "consenso": senal.get("consenso", 0),
         "nivel_consenso": normalizar(senal.get("nivel_consenso")),
         "ajuste_consenso": senal.get("ajuste_consenso", 0),
@@ -118,12 +174,47 @@ def construir_evidencia_operacion(senal, ctx=None):
 
         "ruptura_confirmada": senal.get("ruptura_confirmada", False),
         "tipo_ruptura": normalizar(senal.get("tipo_ruptura")),
-        "familia_setup": normalizar(senal.get("familia_setup")),
-        "subtipo_setup": normalizar(senal.get("subtipo_setup")),
-        "protocolo_sugerido": normalizar(senal.get("protocolo_sugerido")),
-        "nivel_setup": normalizar(senal.get("nivel_setup")),
-        "estado_setup": normalizar(senal.get("estado_setup")),
-        "confianza_setup": senal.get("confianza_setup", 50),
+       
+        "familia_setup": normalizar(
+            setup_completo.get(
+                "familia_setup",
+                senal.get("familia_setup")
+            )
+        ),
+        
+        "subtipo_setup": normalizar(
+            setup_completo.get(
+                "subtipo_setup",
+                senal.get("subtipo_setup")
+            )
+        ),
+        
+        "protocolo_sugerido": normalizar(
+            setup_completo.get(
+                "protocolo_sugerido",
+                senal.get("protocolo_sugerido")
+            )
+        ),
+        
+        "nivel_setup": normalizar(
+            setup_completo.get(
+                "nivel_setup",
+                senal.get("nivel_setup")
+            )
+        ),
+        
+        "estado_setup": normalizar(
+            setup_completo.get(
+                "estado_setup",
+                senal.get("estado_setup")
+            )
+        ),
+        
+        "confianza_setup": setup_completo.get(
+            "confianza_setup",
+            senal.get("confianza_setup", 50)
+        ),
+
         "razones_clasificador_setup": normalizar(
             senal.get("razones_clasificador_setup")
         ),

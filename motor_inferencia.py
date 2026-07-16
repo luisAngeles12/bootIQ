@@ -5,47 +5,68 @@ def inferir_confianza(evidencia):
     """
     Motor de inferencia estadística.
 
-    Recibe evidencia estándar y busca conocimiento en varios niveles.
-    No bloquea directamente.
-    Solo estima confianza y explica por qué.
+    Recibe evidencia estándar y consulta el motor de confianza histórica.
+
+    Responsabilidad:
+    - conservar el resultado estadístico;
+    - exponer coincidencias y niveles utilizados;
+    - transportar el diagnóstico al cerebro;
+    - no bloquear ni decidir operaciones.
     """
 
     resultado = evaluar_senal(evidencia)
 
     confianza = resultado.get("confianza", 50.0)
-    decision = resultado.get("decision", "NEUTRA")
+    decision_original = resultado.get("decision", "NEUTRA")
     peso_final = resultado.get("peso_final", 1.0)
     coincidencias = resultado.get("coincidencias", [])
     motivos = resultado.get("motivos", [])
 
-    niveles_usados = [
+    niveles_evaluados = resultado.get("niveles_evaluados", 0)
+    niveles_descartados = resultado.get("niveles_descartados", 0)
+    cantidad_coincidencias = resultado.get(
+        "cantidad_coincidencias",
+        len(coincidencias)
+    )
+    campos_setup_disponibles = resultado.get(
+        "campos_setup_disponibles",
+        {}
+    )
+
+    # Evita repetir un mismo nivel cuando aparezca más de una coincidencia.
+    niveles_usados = list(dict.fromkeys(
         c.get("nivel")
         for c in coincidencias
         if c.get("nivel")
-    ]
+    ))
 
-    if not coincidencias:
-        return {
-            "confianza": confianza,
-            "decision": "SIN_EVIDENCIA",
-            "peso_final": peso_final,
-            "niveles_usados": [],
-            "coincidencias": [],
-            "motivos": [
-                "Sin coincidencias estadísticas suficientes. Se mantiene confianza base."
-            ]
-        }
-
-    return {
+    resultado_base = {
         "confianza": confianza,
-        "decision": decision,
         "peso_final": peso_final,
+        "decision_motor_confianza": decision_original,
         "niveles_usados": niveles_usados,
         "coincidencias": coincidencias,
-        "motivos": motivos
+        "motivos": motivos,
+        "niveles_evaluados": niveles_evaluados,
+        "niveles_descartados": niveles_descartados,
+        "cantidad_coincidencias": cantidad_coincidencias,
+        "campos_setup_disponibles": campos_setup_disponibles,
     }
 
+    if not coincidencias:
+        resultado_base["decision"] = "SIN_EVIDENCIA"
+        resultado_base["niveles_usados"] = []
+        resultado_base["coincidencias"] = []
+        resultado_base["motivos"] = [
+            "Sin coincidencias estadísticas suficientes. "
+            "Se mantiene confianza base."
+        ]
 
+        return resultado_base
+
+    resultado_base["decision"] = decision_original
+
+    return resultado_base
 def probar_motor_inferencia():
     ejemplos = [
         {
@@ -82,6 +103,22 @@ def probar_motor_inferencia():
         print("Decisión inferida:", resultado["decision"])
         print("Peso final:", resultado["peso_final"])
         print("Niveles usados:", resultado["niveles_usados"])
+        print(
+            "Niveles evaluados:",
+            resultado.get("niveles_evaluados", 0)
+        )
+        print(
+            "Niveles descartados:",
+            resultado.get("niveles_descartados", 0)
+        )
+        print(
+            "Coincidencias:",
+            resultado.get("cantidad_coincidencias", 0)
+        )
+        print(
+            "Campos setup disponibles:",
+            resultado.get("campos_setup_disponibles", {})
+        )
 
         for motivo in resultado["motivos"]:
             print("-", motivo)

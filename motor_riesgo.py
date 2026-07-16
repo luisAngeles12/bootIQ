@@ -7,7 +7,22 @@ def _num(v, default=0):
         return float(v or default)
     except Exception:
         return default
+def _bool(v, default=False):
+    if isinstance(v, bool):
+        return v
 
+    if v is None:
+        return default
+
+    texto = str(v).lower().strip()
+
+    if texto in ["true", "1", "si", "sí", "yes"]:
+        return True
+
+    if texto in ["false", "0", "no", "none", "null", ""]:
+        return False
+
+    return default
 
 def _direccion(senal):
     return _txt(senal.get("direccion"))
@@ -23,7 +38,29 @@ def evaluar_riesgo_protocolo(senal):
         riesgo = 0
         motivos = []
 
+        # Campo legacy: se conserva temporalmente como respaldo.
         modo = _txt(senal.get("modo_entrada_setup"))
+        
+        # Evidencias neutrales nuevas del motor de setup.
+        riesgo_critico_setup = _bool(
+            senal.get("riesgo_estructural_critico_setup"),
+            default=("no_operar" in modo or "cancelar" in modo)
+        ) 
+        
+        requiere_ruptura_setup = _bool(
+            senal.get("requiere_ruptura_setup"),
+            default=("esperar_ruptura" in modo)
+        )
+        
+        requiere_confirmacion_setup = _bool(
+            senal.get("requiere_confirmacion_setup"),
+            default=("esperar_confirmacion" in modo)
+        )
+        
+        estado_operativo_setup = _txt(
+            senal.get("estado_operativo_setup")
+        )
+        
         calidad = _txt(senal.get("calidad_setup"))
         balance = _num(senal.get("balance_setup"))
         score = _num(senal.get("score_final"))
@@ -40,9 +77,9 @@ def evaluar_riesgo_protocolo(senal):
         pa_direccion = _txt(senal.get("pa_direccion"))
         direccion = _direccion(senal)
 
-        if "no_operar" in modo or "cancelar" in modo:
+        if riesgo_critico_setup:
             riesgo += 45
-            motivos.append("modo entrada no operar/cancelar")
+            motivos.append("riesgo estructural crítico del setup")
 
         if calidad in ["baja", "muy_baja", "debil", "débil"]:
             riesgo += 35
@@ -153,7 +190,13 @@ def evaluar_riesgo_protocolo(senal):
             "riesgo": round(riesgo, 2),
             "nivel": nivel,
             "motivos": motivos,
-            "razon": " | ".join(motivos)
+            "razon": " | ".join(motivos),
+        
+            # Trazabilidad del setup.
+            "estado_operativo_setup": estado_operativo_setup,
+            "riesgo_estructural_critico_setup": riesgo_critico_setup,
+            "requiere_ruptura_setup": requiere_ruptura_setup,
+            "requiere_confirmacion_setup": requiere_confirmacion_setup,
         }
 
     except Exception as e:
@@ -205,8 +248,30 @@ def aplicar_riesgo_decision(decision_bootiq):
 
             "tipo_setup": setup.get("tipo_setup", ""),
             "calidad_setup": setup.get("calidad_setup", ""),
+            
+            # Compatibilidad legacy.
             "modo_entrada_setup": setup.get("modo_entrada_setup", ""),
+            
+            # Evidencias neutrales nuevas.
+            "estado_operativo_setup": setup.get(
+                "estado_operativo_setup",
+                ""
+            ),
+            "riesgo_estructural_critico_setup": setup.get(
+                "riesgo_estructural_critico_setup",
+                None
+            ),
+            "requiere_ruptura_setup": setup.get(
+                "requiere_ruptura_setup",
+                None
+            ),
+            "requiere_confirmacion_setup": setup.get(
+                "requiere_confirmacion_setup",
+                None
+            ),
+            
             "balance_setup": setup.get("balance_setup", 0),
+            
             "subtipo_setup": setup.get("subtipo_setup", ""),
             "estado_setup": setup.get("estado_setup", ""),
             "nivel_setup": setup.get("nivel_setup", ""),
@@ -224,13 +289,54 @@ def aplicar_riesgo_decision(decision_bootiq):
         if "protocolo" not in decision_bootiq:
             decision_bootiq["protocolo"] = {}
 
-        decision_bootiq["riesgos"]["riesgo_protocolo"] = resultado.get("riesgo", 100)
-        decision_bootiq["riesgos"]["nivel_riesgo_protocolo"] = resultado.get("nivel", "ERROR")
-        decision_bootiq["riesgos"]["razon_riesgo_protocolo"] = resultado.get("razon", "")
-
-        decision_bootiq["protocolo"]["riesgo_protocolo"] = resultado.get("riesgo", 100)
-        decision_bootiq["protocolo"]["nivel_riesgo_protocolo"] = resultado.get("nivel", "ERROR")
-        decision_bootiq["protocolo"]["razon_riesgo_protocolo"] = resultado.get("razon", "")
+        decision_bootiq["riesgos"]["riesgo_protocolo"] = resultado.get(
+            "riesgo",
+            100
+        )
+        decision_bootiq["riesgos"]["nivel_riesgo_protocolo"] = resultado.get(
+            "nivel",
+            "ERROR"
+        )
+        decision_bootiq["riesgos"]["razon_riesgo_protocolo"] = resultado.get(
+            "razon",
+            ""
+        )
+        decision_bootiq["riesgos"]["motivos_riesgo_protocolo"] = resultado.get(
+            "motivos",
+            []
+        )
+        decision_bootiq["riesgos"]["estado_operativo_setup"] = resultado.get(
+            "estado_operativo_setup",
+            ""
+        )
+        decision_bootiq["riesgos"]["riesgo_estructural_critico_setup"] = resultado.get(
+            "riesgo_estructural_critico_setup",
+            False
+        )
+        decision_bootiq["riesgos"]["requiere_ruptura_setup"] = resultado.get(
+            "requiere_ruptura_setup",
+            False
+        )
+        decision_bootiq["riesgos"]["requiere_confirmacion_setup"] = resultado.get(
+            "requiere_confirmacion_setup",
+            False
+        )
+        decision_bootiq["protocolo"]["riesgo_protocolo"] = resultado.get(
+            "riesgo",
+            100
+        )
+        decision_bootiq["protocolo"]["nivel_riesgo_protocolo"] = resultado.get(
+            "nivel",
+            "ERROR"
+        )
+        decision_bootiq["protocolo"]["razon_riesgo_protocolo"] = resultado.get(
+            "razon",
+            ""
+        )
+        decision_bootiq["protocolo"]["motivos_riesgo_protocolo"] = resultado.get(
+            "motivos",
+            []
+        )
 
         return decision_bootiq
 
@@ -243,5 +349,7 @@ def aplicar_riesgo_decision(decision_bootiq):
         decision_bootiq["riesgos"]["razon_riesgo_protocolo"] = (
             "error aplicando riesgo a DecisionBootIQ: " + str(e)
         )
-
+        decision_bootiq["riesgos"]["motivos_riesgo_protocolo"] = [
+            "error aplicando riesgo a DecisionBootIQ"
+        ]
         return decision_bootiq

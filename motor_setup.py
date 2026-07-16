@@ -516,10 +516,33 @@ def aplicar_setup_decision(decision_bootiq):
 
 
 def enriquecer_senal_con_setup(senal):
-    datos_setup = clasificar_setup(senal)
-    senal.update(datos_setup)
-    return senal
+    """
+    Ejecuta la capa contextual final y ensambla el contrato completo.
 
+    La capa estratégica debe haber sido calculada previamente.
+    No vuelve a modificar el puntaje de la señal.
+    """
+
+    setup_contextual = clasificar_setup(senal)
+
+    setup_estrategico = senal.get(
+        "_setup_estrategico",
+        {}
+    )
+
+    setup_completo = ensamblar_setup_completo(
+        setup_estrategico,
+        setup_contextual
+    )
+
+    # Mantener los campos contextuales actuales.
+    senal.update(setup_contextual)
+
+    # Guardar el contrato completo sin alterar
+    # los valores operativos ya aplicados.
+    senal["setup_completo"] = setup_completo
+
+    return senal
 def clasificar_setup_estrategico(senal, ctx):
     """
     Clasifica la oportunidad sin bloquearla.
@@ -749,6 +772,20 @@ def clasificar_setup_estrategico(senal, ctx):
     if riesgo_extra >= 6 and calidad_setup != "PREMIUM":
         modo_entrada = "NO_OPERAR"
 
+    requiere_ruptura = modo_entrada == "ESPERAR_RUPTURA"
+    requiere_confirmacion = modo_entrada == "ESPERAR_CONFIRMACION"
+    riesgo_estructural_critico = modo_entrada == "NO_OPERAR"
+
+    estado_operativo_setup = "LISTO"
+
+    if riesgo_estructural_critico:
+        estado_operativo_setup = "RIESGO_CRITICO"
+    elif requiere_ruptura:
+        estado_operativo_setup = "REQUIERE_RUPTURA"
+    elif requiere_confirmacion:
+        estado_operativo_setup = "REQUIERE_CONFIRMACION"
+
+
     return {
         "tipo_setup": tipo_setup,
         "calidad_setup": calidad_setup,
@@ -758,4 +795,274 @@ def clasificar_setup_estrategico(senal, ctx):
         "balance_setup": balance,
         "a_favor_tendencia": a_favor_tendencia,
         "razones_setup": razones,
-    }    
+
+        # Evidencia neutral para el Cerebro Único.
+        "estado_operativo_setup": estado_operativo_setup,
+        "requiere_ruptura_setup": requiere_ruptura,
+        "requiere_confirmacion_setup": requiere_confirmacion,
+        "riesgo_estructural_critico_setup": riesgo_estructural_critico,
+    }
+
+def construir_setup_completo(senal, ctx=None):
+    """
+    Construye el contrato completo del setup BootIQ.
+
+    Capa estratégica:
+    - clasifica el setup inicial;
+    - calcula ajuste y riesgo temprano;
+    - define requisitos operativos.
+
+    Capa contextual:
+    - clasifica familia y subtipo;
+    - calcula nivel, estado y confianza;
+    - propone el protocolo.
+
+    No modifica la señal original.
+    No decide la operación final.
+    """
+
+    ctx = ctx or {}
+
+    setup_estrategico = clasificar_setup_estrategico(
+        senal,
+        ctx
+    )
+
+    senal_temporal = senal.copy()
+
+    senal_temporal["tipo_setup"] = setup_estrategico.get(
+        "tipo_setup",
+        "INDEFINIDO"
+    )
+    senal_temporal["calidad_setup"] = setup_estrategico.get(
+        "calidad_setup",
+        "MEDIA"
+    )
+    senal_temporal["modo_entrada_setup"] = setup_estrategico.get(
+        "modo_entrada",
+        "DIRECTA"
+    )
+    senal_temporal["puntaje_extra_setup"] = setup_estrategico.get(
+        "puntaje_extra_setup",
+        0
+    )
+    senal_temporal["riesgo_extra_setup"] = setup_estrategico.get(
+        "riesgo_extra_setup",
+        0
+    )
+    senal_temporal["balance_setup"] = setup_estrategico.get(
+        "balance_setup",
+        0
+    )
+    senal_temporal["a_favor_tendencia"] = setup_estrategico.get(
+        "a_favor_tendencia",
+        False
+    )
+
+    senal_temporal["estado_operativo_setup"] = setup_estrategico.get(
+        "estado_operativo_setup",
+        "LISTO"
+    )
+    senal_temporal["requiere_ruptura_setup"] = setup_estrategico.get(
+        "requiere_ruptura_setup",
+        False
+    )
+    senal_temporal["requiere_confirmacion_setup"] = setup_estrategico.get(
+        "requiere_confirmacion_setup",
+        False
+    )
+    senal_temporal["riesgo_estructural_critico_setup"] = (
+        setup_estrategico.get(
+            "riesgo_estructural_critico_setup",
+            False
+        )
+    )
+
+    setup_contextual = clasificar_setup(senal_temporal)
+
+    return {
+        "estrategico": setup_estrategico,
+        "contextual": setup_contextual,
+
+        "tipo_setup": setup_estrategico.get(
+            "tipo_setup",
+            "INDEFINIDO"
+        ),
+        "calidad_setup": setup_estrategico.get(
+            "calidad_setup",
+            "MEDIA"
+        ),
+        "modo_entrada_setup": setup_estrategico.get(
+            "modo_entrada",
+            "DIRECTA"
+        ),
+        "puntaje_extra_setup": setup_estrategico.get(
+            "puntaje_extra_setup",
+            0
+        ),
+        "riesgo_extra_setup": setup_estrategico.get(
+            "riesgo_extra_setup",
+            0
+        ),
+        "balance_setup": setup_estrategico.get(
+            "balance_setup",
+            0
+        ),
+        "a_favor_tendencia": setup_estrategico.get(
+            "a_favor_tendencia",
+            False
+        ),
+        "razones_setup": setup_estrategico.get(
+            "razones_setup",
+            []
+        ),
+
+        "estado_operativo_setup": setup_estrategico.get(
+            "estado_operativo_setup",
+            "LISTO"
+        ),
+        "requiere_ruptura_setup": setup_estrategico.get(
+            "requiere_ruptura_setup",
+            False
+        ),
+        "requiere_confirmacion_setup": setup_estrategico.get(
+            "requiere_confirmacion_setup",
+            False
+        ),
+        "riesgo_estructural_critico_setup": setup_estrategico.get(
+            "riesgo_estructural_critico_setup",
+            False
+        ),
+
+        "familia_setup": setup_contextual.get(
+            "familia_setup",
+            "INDEFINIDA"
+        ),
+        "subtipo_setup": setup_contextual.get(
+            "subtipo_setup",
+            "INDEFINIDO"
+        ),
+        "protocolo_sugerido": setup_contextual.get(
+            "protocolo_sugerido",
+            "PROTOCOLO_GENERICO"
+        ),
+        "nivel_setup": setup_contextual.get(
+            "nivel_setup",
+            "BAJO"
+        ),
+        "estado_setup": setup_contextual.get(
+            "estado_setup",
+            "INMADURO"
+        ),
+        "confianza_setup": setup_contextual.get(
+            "confianza_setup",
+            0
+        ),
+        "razones_clasificador_setup": setup_contextual.get(
+            "razones_clasificador_setup",
+            []
+        ),
+    }
+
+def ensamblar_setup_completo(setup_estrategico, setup_contextual):
+    """
+    Une las dos capas del setup sin volver a clasificarlas.
+
+    No recalcula.
+    No modifica puntajes.
+    No decide.
+    Solo construye el contrato oficial del setup.
+    """
+
+    setup_estrategico = setup_estrategico or {}
+    setup_contextual = setup_contextual or {}
+
+    return {
+        "estrategico": setup_estrategico,
+        "contextual": setup_contextual,
+
+        # =========================
+        # CAPA ESTRATÉGICA
+        # =========================
+        "tipo_setup": setup_estrategico.get(
+            "tipo_setup",
+            "INDEFINIDO"
+        ),
+        "calidad_setup": setup_estrategico.get(
+            "calidad_setup",
+            "MEDIA"
+        ),
+        "modo_entrada_setup": setup_estrategico.get(
+            "modo_entrada",
+            "DIRECTA"
+        ),
+        "puntaje_extra_setup": setup_estrategico.get(
+            "puntaje_extra_setup",
+            0
+        ),
+        "riesgo_extra_setup": setup_estrategico.get(
+            "riesgo_extra_setup",
+            0
+        ),
+        "balance_setup": setup_estrategico.get(
+            "balance_setup",
+            0
+        ),
+        "a_favor_tendencia": setup_estrategico.get(
+            "a_favor_tendencia",
+            False
+        ),
+        "razones_setup": setup_estrategico.get(
+            "razones_setup",
+            []
+        ),
+
+        "estado_operativo_setup": setup_estrategico.get(
+            "estado_operativo_setup",
+            "LISTO"
+        ),
+        "requiere_ruptura_setup": setup_estrategico.get(
+            "requiere_ruptura_setup",
+            False
+        ),
+        "requiere_confirmacion_setup": setup_estrategico.get(
+            "requiere_confirmacion_setup",
+            False
+        ),
+        "riesgo_estructural_critico_setup": setup_estrategico.get(
+            "riesgo_estructural_critico_setup",
+            False
+        ),
+
+        # =========================
+        # CAPA CONTEXTUAL
+        # =========================
+        "familia_setup": setup_contextual.get(
+            "familia_setup",
+            "INDEFINIDA"
+        ),
+        "subtipo_setup": setup_contextual.get(
+            "subtipo_setup",
+            "INDEFINIDO"
+        ),
+        "protocolo_sugerido": setup_contextual.get(
+            "protocolo_sugerido",
+            "PROTOCOLO_GENERICO"
+        ),
+        "nivel_setup": setup_contextual.get(
+            "nivel_setup",
+            "BAJO"
+        ),
+        "estado_setup": setup_contextual.get(
+            "estado_setup",
+            "INMADURO"
+        ),
+        "confianza_setup": setup_contextual.get(
+            "confianza_setup",
+            0
+        ),
+        "razones_clasificador_setup": setup_contextual.get(
+            "razones_clasificador_setup",
+            []
+        ),
+    }

@@ -15,6 +15,23 @@ from config import (
 from utils import segundo_actual
 from mercado import obtener_velas
 from confirmacion_entrada import evaluar_confirmacion_entrada
+
+def _bool(v, default=False):
+    if isinstance(v, bool):
+        return v
+
+    if v is None:
+        return default
+
+    texto = str(v).lower().strip()
+
+    if texto in ["true", "1", "si", "sí", "yes"]:
+        return True
+
+    if texto in ["false", "0", "no", "none", "null", ""]:
+        return False
+
+    return default
 def contexto_fuerte_para_entrada(senal):
     try:
         if not PERMITIR_ENTRADA_CON_CONTEXTO_FUERTE:
@@ -572,7 +589,19 @@ def motivo_pendiente_por_accion_precio(senal):
     accion_precio = str(senal.get("accion_precio", "")).upper()
     tipo_setup = str(senal.get("tipo_setup", "")).upper()
     calidad_setup = str(senal.get("calidad_setup", "")).upper()
-    modo_setup = str(senal.get("modo_entrada_setup", "")).upper()
+    # Campo legacy: solo respaldo temporal.
+    modo_setup_legacy = str(
+        senal.get("modo_entrada_setup", "")
+    ).upper()
+    
+    # Evidencia neutral oficial del setup.
+    riesgo_critico_setup = _bool(
+        senal.get("riesgo_estructural_critico_setup"),
+        default=(
+            modo_setup_legacy == "NO_OPERAR"
+            or "CANCELAR" in modo_setup_legacy
+        )
+    )
     pa_tipo = str(senal.get("pa_tipo", "")).upper()
     pa_direccion = str(senal.get("pa_direccion", "")).upper()
     patron = str(senal.get("patron", "")).lower()
@@ -580,9 +609,8 @@ def motivo_pendiente_por_accion_precio(senal):
     # =========================
     # NO OPERAR
     # =========================
-    if modo_setup == "NO_OPERAR":
-        return "NO_OPERAR"
-
+    if riesgo_critico_setup:
+       return "NO_OPERAR"
     # =========================
     # RUPTURAS POR ZONA
     # =========================
@@ -1010,6 +1038,7 @@ def procesar_senales_pendientes(abrir_operacion):
             # =========================
             # VALIDAR MICROESTRUCTURA
             # =========================
+            razon_micro = "microestructura no requerida"
             if senal.get("entrada_confirmada", False):
                 ok_micro, razon_micro = validar_microestructura_entrada(
                     direccion,
@@ -1037,7 +1066,10 @@ def procesar_senales_pendientes(abrir_operacion):
                 "| micro:",
                 razon_micro
             )
-
+            # La señal ya superó todas las validaciones técnicas
+            # del flujo de pendientes.
+            if senal.get("requiere_protocolo_cerebro", False):
+                senal["protocolo_confirmado"] = True
             if abrir_operacion(senal):
                 abiertas += 1
 

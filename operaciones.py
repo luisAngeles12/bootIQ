@@ -33,6 +33,50 @@ def normalizar_resultado(resultado):
 
 
 def abrir_operacion(senal):
+    # ==========================================
+    # AUTORIZACIÓN FINAL DEL CEREBRO ÚNICO
+    # ==========================================
+    decision_cerebro = str(
+        senal.get(
+            "decision_unificada_accion",
+            senal.get("cerebro_unico_decision", "")
+        )
+    ).upper().strip()
+
+    protocolo_confirmado = bool(
+        senal.get("protocolo_confirmado", False)
+    )
+
+    if decision_cerebro == "NO_OPERAR":
+        print(
+            "OPERACIÓN BLOQUEADA POR CEREBRO ÚNICO:",
+            senal.get("activo", ""),
+            "| decisión: NO_OPERAR"
+        )
+        return False
+
+    if decision_cerebro not in [
+        "OPERAR",
+        "OPERAR_CON_PROTOCOLO"
+    ]:
+        print(
+            "OPERACIÓN BLOQUEADA: DECISIÓN INVÁLIDA O VACÍA:",
+            senal.get("activo", ""),
+            "| decisión:",
+            decision_cerebro or "VACÍA"
+        )
+        return False
+
+    if (
+        decision_cerebro == "OPERAR_CON_PROTOCOLO"
+        and not protocolo_confirmado
+    ):
+        print(
+            "OPERACIÓN BLOQUEADA: PROTOCOLO NO CONFIRMADO:",
+            senal.get("activo", "")
+        )
+        return False
+
     activo = senal["activo"]
     direccion = senal["direccion"]
     tipo = senal.get("tipo", "turbo")
@@ -82,21 +126,22 @@ def abrir_operacion(senal):
                 "| demora:",
                 demora_envio
             )
-            op = {
-                "order_id": order_id,
-                "activo": activo,
-                "tipo": tipo,
-                "direccion": direccion,
-                "puntaje": senal["puntaje"],
-                "patron": senal["patron"],
-                "rsi": senal["rsi"],
-                "razon": senal["razon"],
-                "hora_apertura": time.time(),
-                "balance_antes": balance_antes,
-                "segundo_entrada": segundo_despues,
-                "demora_envio": demora_envio,
-            }
-
+        
+        op = {
+            "order_id": order_id,
+            "activo": activo,
+            "tipo": tipo,
+            "direccion": direccion,
+            "puntaje": senal["puntaje"],
+            "patron": senal["patron"],
+            "rsi": senal["rsi"],
+            "razon": senal["razon"],
+            "hora_apertura": time.time(),
+            "balance_antes": balance_antes,
+            "segundo_entrada": segundo_despues,
+            "demora_envio": demora_envio,
+        }
+        
         estado.operaciones_abiertas.append(op)
         guardar_operaciones_pendientes()
 

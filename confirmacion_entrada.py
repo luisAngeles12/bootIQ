@@ -7,7 +7,22 @@ def _num(v, defecto=0):
         return float(v)
     except Exception:
         return defecto
+def _bool(v, default=False):
+    if isinstance(v, bool):
+        return v
 
+    if v is None:
+        return default
+
+    texto = str(v).lower().strip()
+
+    if texto in ["true", "1", "si", "sí", "yes"]:
+        return True
+
+    if texto in ["false", "0", "no", "none", "null", ""]:
+        return False
+
+    return default
 
 def _limitar(valor, minimo=0, maximo=100):
     return max(minimo, min(maximo, valor))
@@ -132,7 +147,19 @@ def evaluar_confirmacion_entrada(senal, candles, segundo=None):
     tipo_setup = _txt(senal.get("tipo_setup"))
     subtipo_setup = _txt(senal.get("subtipo_setup"))
     calidad_setup = _txt(senal.get("calidad_setup"))
-    modo_setup = _txt(senal.get("modo_entrada_setup"))
+    # Campo legacy utilizado únicamente como respaldo temporal.
+    modo_setup_legacy = _txt(
+        senal.get("modo_entrada_setup")
+    )
+    
+    # Evidencia neutral oficial del setup.
+    riesgo_critico_setup = _bool(
+        senal.get("riesgo_estructural_critico_setup"),
+        default=(
+            "no_operar" in modo_setup_legacy
+            or "cancelar" in modo_setup_legacy
+        )
+    )
     calidad = _txt(senal.get("calidad"))
     calidad_mercado = _txt(senal.get("calidad_mercado"))
     nivel_consenso = _txt(senal.get("nivel_consenso"))
@@ -194,10 +221,9 @@ def evaluar_confirmacion_entrada(senal, candles, segundo=None):
         indice += 3
         motivos.append("Setup de buena calidad.")
 
-    if modo_setup == "no_operar":
+    if riesgo_critico_setup:
         indice -= 12
-        motivos.append("Setup marcado como NO_OPERAR.")
-
+        motivos.append("Setup con riesgo estructural crítico.")
     if calidad_mercado in ["normal", "limpio"]:
         indice += 2
         motivos.append("Mercado operable.")

@@ -1,0 +1,405 @@
+def procesar_senales_pendientes(abrir_operacion):
+    import time
+    import estado
+    from config import (
+        CANDLE_TIME,
+        MAX_OPERACIONES_ABIERTAS,
+        VENTANA_ENTRADA_INICIO,
+        VENTANA_ENTRADA_FIN
+    )
+    from utils import segundo_actual
+    from entrada import (
+        decidir_entrada,
+        validar_vela_exacta_entrada,
+        validar_microestructura_entrada,
+        validar_punto_entrada_en_vela
+    )
+
+    if not estado.senales_pendientes:
+        return 0
+
+    abiertas = 0
+    restantes = []
+    vela_actual = int(time.time() // CANDLE_TIME)
+    segundo = segundo_actual()
+
+    for senal in estado.senales_pendientes:
+        try:
+            activo = senal["activo"]
+            direccion = senal["direccion"]
+            patron = str(senal.get("patron", "")).lower()
+            accion_precio = str(senal.get("accion_precio", "")).upper()
+            tipo_ruptura = str(senal.get("tipo_ruptura", "SIN_DATOS")).lower()
+            ruptura_confirmada = senal.get("ruptura_confirmada", False)
+            motivo_pendiente = senal.get("motivo_pendiente", "ENTRADA_NORMAL")
+            pullback_bajista_fuerte = es_pullback_bajista_fuerte(senal)
+
+            pendiente_por_ruptura = motivo_pendiente in [
+                "ESPERANDO_RUPTURA_RESISTENCIA",
+                "ESPERANDO_RUPTURA_SOPORTE"
+            ]
+
+            if len(estado.operaciones_abiertas) >= MAX_OPERACIONES_ABIERTAS:
+                restantes.append(senal)
+                continue
+
+            if any(op["activo"] == activo for op in estado.operaciones_abiertas):
+                continue
+
+            if vela_actual <= senal["vela_detectada"]:
+                restantes.append(senal)
+                continue
+
+            max_velas_pendiente = 3 if pendiente_por_ruptura else 2
+
+            if vela_actual - senal["vela_detectada"] > max_velas_pendiente:
+                print("SEÑAL PENDIENTE EXPIRADA:", activo)
+                continue
+
+            if segundo < VENTANA_ENTRADA_INICIO:
+                restantes.append(senal)
+                continue
+
+            if segundo > VENTANA_ENTRADA_FIN:
+                print("SEÑAL PENDIENTE CANCELADA POR TIEMPO:", activo)
+                continue
+
+            candles = estado.Iq.get_candles(
+                activo,
+                CANDLE_TIME,
+                5,
+                time.time()
+            )
+
+            if not candles or len(candles) < 4:
+                restantes.append(senal)
+                continue
+
+            candles = sorted(candles, key=lambda x: x["from"])
+
+            # =========================
+            # RESOLVER PENDIENTE POR ZONA
+            # =========================
+            if pendiente_por_ruptura:
+                from zonas import resolver_zona_pendiente
+
+                opens = [float(x["open"]) for x in candles]
+                closes = [float(x["close"]) for x in candles]
+                highs = [float(x["max"]) for x in candles]
+                lows = [float(x["min"]) for x in candles]
+
+                soporte = senal.get("soporte")
+                resistencia = senal.get("resistencia")
+                vol = senal.get("vol", 0)
+
+                if soporte is None or resistencia is None:
+                    print("SEÑAL PENDIENTE CANCELADA:", activo, "sin soporte/resistencia guardados")
+                    continue
+
+                resolucion = resolver_zona_pendiente(
+                    direccion,
+                    opens,
+                    closes,
+                    highs,
+                    lows,
+                    soporte,
+                    resistencia,
+                    vol
+                )
+
+                estado_resolucion = resolucion.get("estado")
+
+                if estado_resolucion == "CANCELAR":
+                    print("SEÑAL PENDIENTE CANCELADA:", activo, resolucion.get("razon", ""))
+                    continue
+
+                if estado_resolucion == "ESPERAR":
+                    restantes.append(senal)
+                    continue
+
+                if estado_resolucion == "OPERAR_CONTRARIO":
+                    nueva_direccion = resolucion.get("direccion")
+
+                    if nueva_direccion not in ["call", "put"]:
+                        print("SEÑAL CONTRARIA CANCELADA:", activo, "dirección inválida")
+                        continue
+
+                    direccion = nueva_direccion
+                    senal["direccion"] = nueva_direccion
+                    senal["entrada_confirmada"] = True
+                    senal["ruptura_confirmada"] = True
+                    senal["tipo_ruptura"] = resolucion.get("tipo", "RECHAZO_CONTRARIO")
+                    senal["razon_ruptura"] = resolucion.get("razon", "")
+                    senal["patron"] = "operación contraria por zona"
+                    senal["accion_precio"] = "OPERACION_CONTRARIA_ZONA"
+                    senal["motivo_pendiente"] = "RESUELTA_CONTRARIA"
+                    senal["razon"] = (
+                        senal.get("razon", "")
+                        + ", OPERACIÓN CONTRARIA: "
+                        + resolucion.get("razon", "")
+                    )
+
+                    ruptura_confirmada = True
+                    tipo_ruptura = str(senal.get("tipo_ruptura", "SIN_DATOS")).lower()
+                    accion_precio = ""
+
+                    print(
+                        "SEÑAL PENDIENTE CAMBIÓ A CONTRARIA:",
+                        activo,
+                        "→",
+                        nueva_direccion,
+                        "|",
+                        resolucion.get("razon", "")
+                    )
+
+                elif estado_resolucion == "OPERAR":
+                    senal["ruptura_confirmada"] = True
+                    senal["entrada_confirmada"] = True
+                    senal["tipo_ruptura"] = resolucion.get("tipo", "SIN_DATOS")
+                    senal["razon_ruptura"] = resolucion.get("razon", "")
+                    senal["motivo_pendiente"] = "RESUELTA_RUPTURA"
+
+                    ruptura_confirmada = True
+                    tipo_ruptura = str(senal.get("tipo_ruptura", "SIN_DATOS")).lower()
+
+                    print("SEÑAL PENDIENTE RESUELTA:", activo, resolucion.get("razon", ""))
+
+            # =========================
+            # VALIDAR PUNTO DE ENTRADA
+            # =========================
+            ok_punto, razon_punto = validar_punto_entrada_en_vela(
+                direccion,
+                candles
+            )
+
+            if not ok_punto:
+                if senal.get("entrada_confirmada", False):
+                    print(
+                        "SEÑAL PENDIENTE FLEXIBLE permitió punto por zona confirmada:",
+                        activo,
+                        razon_punto
+                    )
+
+                elif pendiente_por_ruptura and (
+                    "precio demasiado arriba" in razon_punto.lower()
+                    or "precio demasiado abajo" in razon_punto.lower()
+                ):
+                    print(
+                        "SEÑAL PENDIENTE FLEXIBLE permitió ruptura confirmada:",
+                        activo,
+                        razon_punto
+                    )
+
+                elif pullback_bajista_fuerte and (
+                    "vela verde sin rechazo real" in razon_punto.lower()
+                    or "precio demasiado abajo" in razon_punto.lower()
+                ):
+                    print(
+                        "SEÑAL PENDIENTE FLEXIBLE permitió punto pullback bajista:",
+                        activo,
+                        razon_punto
+                    )
+
+                else:
+                    print("SEÑAL PENDIENTE BLOQUEADA:", activo, razon_punto)
+                    continue
+            # =========================
+            # CEREBRO DE ENTRADA
+            # =========================
+            confirmacion = evaluar_confirmacion_entrada(
+                senal,
+                candles,
+                segundo
+            )
+            
+            senal["entrada_cerebro_accion"] = confirmacion.get("accion", "")
+            senal["entrada_cerebro_indice"] = confirmacion.get("indice", 0)
+            senal["entrada_cerebro_nivel"] = confirmacion.get("nivel", "")
+            senal["entrada_cerebro_motivos"] = " | ".join(
+                confirmacion.get("motivos", [])
+            )
+            
+            if confirmacion.get("accion") == "CANCELAR":
+                print(
+                    "SEÑAL PENDIENTE CANCELADA POR CEREBRO ENTRADA:",
+                    activo,
+                    confirmacion.get("indice"),
+                    "|",
+                    senal["entrada_cerebro_motivos"]
+                )
+                continue
+            
+            if confirmacion.get("accion") == "ESPERAR":
+                print(
+                    "SEÑAL PENDIENTE ESPERA POR CEREBRO ENTRADA:",
+                    activo,
+                    confirmacion.get("indice"),
+                    "|",
+                    senal["entrada_cerebro_motivos"]
+                )
+                restantes.append(senal)
+                continue
+            # =========================
+            # DECISIÓN DE ENTRADA
+            # =========================
+            decision, razon = decidir_entrada(
+                activo,
+                direccion,
+                candles,
+                None
+            )
+
+            if decision != "entrar":
+        
+                 razon_lower = razon.lower()
+             
+                 if (
+                     "precio demasiado arriba" in razon_lower
+                     or "precio demasiado abajo" in razon_lower
+                     or "alto en vela" in razon_lower
+                     or "bajo en vela" in razon_lower
+                     or "esperar retroceso" in razon_lower
+                     or "vela demasiado corrida" in razon_lower
+                 ):
+                     print(
+                         "SEÑAL PENDIENTE ESPERA RETEST:",
+                         activo,
+                         razon
+                     )
+             
+                     restantes.append(senal)
+                     continue
+             
+                 print(
+                     "SEÑAL PENDIENTE DESCARTADA:",
+                     activo,
+                     razon
+                 )
+             
+                 continue
+
+            # =========================
+            # BLOQUEO POR ZONA CONTRARIA
+            # =========================
+            zona_contraria_peligrosa = False
+
+            if direccion == "call" and "CALL_RESISTENCIA_CERCA_SIN_RUPTURA" in accion_precio:
+                zona_contraria_peligrosa = True
+
+            if direccion == "put" and "PUT_SOPORTE_CERCA_SIN_RUPTURA" in accion_precio:
+                zona_contraria_peligrosa = True
+
+            es_breakout_retest = (
+                "breakout" in patron
+                or "retest" in patron
+                or "ruptura" in patron
+                or "breakout" in tipo_ruptura
+                or "retest" in tipo_ruptura
+                or ruptura_confirmada
+                or senal.get("entrada_confirmada", False)
+            )
+
+            if zona_contraria_peligrosa and not es_breakout_retest:
+                confirmacion_fuerte = (
+                    "rechazo" in razon.lower()
+                    or "ruptura" in razon.lower()
+                    or "recuperación" in razon.lower()
+                    or "recuperacion" in razon.lower()
+                )
+
+                if not confirmacion_fuerte:
+                    print(
+                        "SEÑAL PENDIENTE BLOQUEADA:",
+                        activo,
+                        "zona contraria cerca sin ruptura/retest real"
+                    )
+                    continue
+
+            if zona_contraria_peligrosa and "continuación sana" in razon.lower():
+                if pendiente_por_ruptura and ruptura_confirmada:
+                    print(
+                        "SEÑAL PENDIENTE FLEXIBLE permitió continuación tras ruptura:",
+                        activo
+                    )
+                else:
+                    print(
+                        "SEÑAL PENDIENTE BLOQUEADA:",
+                        activo,
+                        "continuación sana no válida contra zona cercana"
+                    )
+                    continue
+
+            # =========================
+            # VALIDAR VELA EXACTA
+            # =========================
+            if senal.get("entrada_confirmada", False):
+                razon_vela = "ruptura/zona ya confirmada"
+            else:
+                ok_vela, razon_vela = validar_vela_exacta_entrada(
+                    activo,
+                    direccion
+                )
+
+                if not ok_vela:
+                    if pendiente_por_ruptura and ruptura_confirmada and (
+                        "cerca del máximo" in razon_vela.lower()
+                        or "cerca del mínimo" in razon_vela.lower()
+                    ):
+                        print("SEÑAL PENDIENTE ESPERA RETEST POR VELA TARDE:", activo, razon_vela)
+                        restantes.append(senal)
+                        continue
+
+                    elif pullback_bajista_fuerte and "sin rechazo" in razon_vela.lower():
+                        print(
+                            "SEÑAL PENDIENTE FLEXIBLE permitió vela pullback bajista:",
+                            activo,
+                            razon_vela
+                        )
+
+                    else:
+                        print("SEÑAL PENDIENTE BLOQUEADA:", activo, razon_vela)
+                        continue
+
+            # =========================
+            # VALIDAR MICROESTRUCTURA
+            # =========================
+            razon_micro = "microestructura no requerida"
+            if senal.get("entrada_confirmada", False):
+                ok_micro, razon_micro = validar_microestructura_entrada(
+                    direccion,
+                    [x["open"] for x in candles],
+                    [x["close"] for x in candles],
+                    [x["max"] for x in candles],
+                    [x["min"] for x in candles]
+                )
+            
+                if not ok_micro:
+                    print(
+                        "SEÑAL PENDIENTE BLOQUEADA POR MICRO:",
+                        activo,
+                        razon_micro
+                    )
+                    continue
+            print(
+                "SEÑAL PENDIENTE CONFIRMADA:",
+                activo,
+                direccion,
+                "|",
+                razon,
+                "| vela:",
+                razon_vela,
+                "| micro:",
+                razon_micro
+            )
+            # La señal ya superó todas las validaciones técnicas
+            # del flujo de pendientes.
+            if senal.get("requiere_protocolo_cerebro", False):
+                senal["protocolo_confirmado"] = True
+            if abrir_operacion(senal):
+                abiertas += 1
+
+        except Exception as e:
+            print("Error procesando señal pendiente:", e)
+
+    estado.senales_pendientes = restantes
+

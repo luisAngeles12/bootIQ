@@ -1,3 +1,21 @@
+
+"""
+LEGACY BOOTIQ — EVALUADOR FASE 4 ANTIGUO.
+
+Este módulo ya no participa en:
+- producción;
+- bot.py;
+- estrategia.py;
+- backtest_bot_real.py;
+- la decisión oficial del Cerebro Único.
+
+Ruta activa actual:
+    decision_bootiq.py
+        -> motor_decision.evaluar_decision_cerebro_unico()
+
+Se conserva temporalmente para referencia y compatibilidad histórica.
+No volver a importar en módulos activos.
+"""
 from constructor_evidencia import construir_evidencia_operacion
 from validador_fase4 import validar_operacion_fase4
 

@@ -3,15 +3,15 @@ import os
 
 import estado
 import estrategia
-from evaluador_fase4 import evaluar_senal_fase4
+from motor_setup import enriquecer_senal_con_setup
 from motor_protocolos import buscar_entrada_confirmada
-from motor_setup import enriquecer_senal_con_setup, aplicar_setup_decision
 from contexto_mercado import detectar_tipo_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
 from motor_aprendizaje_historico import generar_aprendizaje_desde_resultados
-from decision_bootiq import crear_decision_bootiq, aplanar_decision_bootiq, aplicar_decision_unificada_a_senal
-from motor_decision_unificado import evaluar_decision_bootiq
-from motor_consenso import aplicar_consenso_decision
-from motor_confirmacion import aplicar_confirmacion_decision
+from decision_bootiq import (
+    crear_decision_bootiq,
+    aplanar_decision_bootiq,
+    aplicar_decision_unificada_a_senal,
+)
 
 CARPETA_DATA = "data_backtest"
 SALIDA = "backtest_bot_real_resultados.csv"
@@ -199,7 +199,10 @@ def analizar_activo_con_ventana(activo, ventana):
     estrategia.obtener_velas = lambda activo_param: data
 
     try:
-        senal = estrategia.analizar_activo(activo)
+        senal = estrategia.analizar_activo(
+            activo,
+            modo_backtest_diagnostico=True
+        )
     finally:
         estrategia.obtener_velas = original_obtener_velas
 
@@ -269,23 +272,13 @@ def crear_registro_resultado(senal, velas, idx, idx_entrada, motivo_ejecucion, e
     # =========================
     # DECISION BOOTIQ V2
     # =========================
+    # La decisión ya fue calculada previamente por:
+    # aplicar_decision_unificada_a_senal()
+    #
+    # Aquí no se vuelve a evaluar.
+    # Solo se construye y aplana el contrato para el CSV.
+    
     decision_bootiq = crear_decision_bootiq(senal)
-    decision_bootiq = aplicar_consenso_decision(decision_bootiq)
-    decision_bootiq = aplicar_setup_decision(decision_bootiq)
-    decision_bootiq = aplicar_confirmacion_decision(decision_bootiq)
-
-    decision_unificada = evaluar_decision_bootiq(decision_bootiq)
-
-    senal["decision_unificada_accion"] = decision_unificada.get("accion", "")
-    senal["decision_unificada_score"] = decision_unificada.get("score", 0)
-    senal["decision_unificada_confianza"] = decision_unificada.get("confianza", "")
-    senal["decision_unificada_razones"] = " | ".join(decision_unificada.get("razones", []))
-    senal["decision_unificada_advertencias"] = " | ".join(decision_unificada.get("advertencias", []))
-    senal["decision_unificada_bloqueos"] = " | ".join(decision_unificada.get("bloqueos", []))
-
-    decision_bootiq = crear_decision_bootiq(senal)
-    decision_bootiq = aplicar_consenso_decision(decision_bootiq)
-    decision_bootiq = aplicar_confirmacion_decision(decision_bootiq)
     decision_bootiq_plana = aplanar_decision_bootiq(decision_bootiq)
 
     registro = {

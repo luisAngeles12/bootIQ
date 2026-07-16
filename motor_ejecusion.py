@@ -1,3 +1,20 @@
+
+def _bool(v, default=False):
+    if isinstance(v, bool):
+        return v
+
+    if v is None:
+        return default
+
+    texto = str(v).lower().strip()
+
+    if texto in ["true", "1", "si", "sí", "yes"]:
+        return True
+
+    if texto in ["false", "0", "no", "none", "null", ""]:
+        return False
+
+    return default
 def calcular_info_vela(vela):
     apertura = vela["open"]
     cierre = vela["close"]
@@ -105,25 +122,73 @@ def buscar_entrada_confirmada(velas, idx_senal, senal, max_espera=3):
 
     Si idx_entrada es None:
         la operación se cancela en backtest.
+
+    No decide la calidad general de la señal.
+    Solo ejecuta o espera según el contrato del setup
+    y la confirmación técnica de las velas.
     """
 
-    modo = str(senal.get("modo_entrada_setup", "DIRECTA")).upper()
-    tipo_setup = str(senal.get("tipo_setup", "")).upper()
-    calidad_setup = str(senal.get("calidad_setup", "")).upper()
-    direccion = str(senal.get("direccion", "")).lower()
+    # Compatibilidad temporal con señales antiguas.
+    modo_legacy = str(
+        senal.get("modo_entrada_setup", "DIRECTA")
+    ).upper()
 
-    if modo == "NO_OPERAR":
-        return None, "setup marcado como NO_OPERAR"
+    # Evidencias neutrales oficiales del setup.
+    riesgo_critico_setup = _bool(
+        senal.get("riesgo_estructural_critico_setup"),
+        default=(
+            modo_legacy == "NO_OPERAR"
+            or "CANCELAR" in modo_legacy
+        )
+    )
 
+    requiere_ruptura_setup = _bool(
+        senal.get("requiere_ruptura_setup"),
+        default=(modo_legacy == "ESPERAR_RUPTURA")
+    )
+
+    requiere_confirmacion_setup = _bool(
+        senal.get("requiere_confirmacion_setup"),
+        default=(modo_legacy == "ESPERAR_CONFIRMACION")
+    )
+
+    tipo_setup = str(
+        senal.get("tipo_setup", "")
+    ).upper()
+
+    calidad_setup = str(
+        senal.get("calidad_setup", "")
+    ).upper()
+
+    direccion = str(
+        senal.get("direccion", "")
+    ).lower()
+
+    # =========================
+    # RIESGO ESTRUCTURAL
+    # =========================
+    if riesgo_critico_setup:
+        return None, "setup con riesgo estructural crítico"
+
+    # =========================
+    # ENTRADA DIRECTA VALIDADA
+    # =========================
     directo, razon_directo = debe_entrar_directo(senal)
 
-    if modo == "DIRECTA" and directo:
+    setup_sin_espera_obligatoria = (
+        not requiere_ruptura_setup
+        and not requiere_confirmacion_setup
+    )
+
+    if setup_sin_espera_obligatoria and directo:
         return idx_senal, razon_directo
 
     # No castigamos todos los setups directos.
-    # Solo obligamos a confirmar los setups históricamente débiles o dudosos.
+    # Solo obligamos a confirmar los setups débiles,
+    # dudosos o que expresamente necesitan espera.
     requiere_confirmacion = (
-        modo in ["ESPERAR_RUPTURA", "ESPERAR_CONFIRMACION"]
+        requiere_ruptura_setup
+        or requiere_confirmacion_setup
         or calidad_setup == "MEDIA"
         or tipo_setup in [
             "SWEEP_ALCISTA",
@@ -137,7 +202,13 @@ def buscar_entrada_confirmada(velas, idx_senal, senal, max_espera=3):
     if not requiere_confirmacion:
         return idx_senal, "entrada directa permitida por setup"
 
-    limite = min(idx_senal + max_espera, len(velas) - 2)
+    # =========================
+    # BUSCAR CONFIRMACIÓN
+    # =========================
+    limite = min(
+        idx_senal + max_espera,
+        len(velas) - 2
+    )
 
     for idx in range(idx_senal + 1, limite + 1):
         vela = velas[idx]

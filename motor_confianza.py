@@ -65,7 +65,21 @@ def _nivel_usable(signal, campos):
 
 def evaluar_senal(signal, base_conocimiento=None):
     signal = normalizar_evidencia(signal)
-
+    campos_setup_disponibles = {
+        campo: signal.get(campo)
+        for campo in [
+            "tipo_setup",
+            "calidad_setup",
+            "modo_entrada_setup",
+            "balance_setup",
+            "familia_setup",
+            "subtipo_setup",
+            "nivel_setup",
+            "estado_setup",
+            "confianza_setup",
+        ]
+        if _campo_valido(signal, campo)
+    }
     if base_conocimiento is None:
         base_conocimiento = cargar_base_conocimiento()
 
@@ -75,12 +89,19 @@ def evaluar_senal(signal, base_conocimiento=None):
             "decision": "SIN_BASE_CONOCIMIENTO",
             "peso_final": 1.0,
             "motivos": ["No se encontró base_conocimiento.json"],
-            "coincidencias": []
+            "coincidencias": [],
+            "niveles_evaluados": 0,
+            "niveles_descartados": 0,
+            "cantidad_coincidencias": 0,
+            "campos_setup_disponibles": campos_setup_disponibles,
         }
 
     motivos = []
     pesos = []
     coincidencias = []
+    
+    niveles_evaluados = 0
+    niveles_descartados = 0
 
     niveles = base_conocimiento.get("niveles", {})
 
@@ -88,8 +109,9 @@ def evaluar_senal(signal, base_conocimiento=None):
         campos = datos_nivel.get("campos", [])
 
         if not _nivel_usable(signal, campos):
+            niveles_descartados += 1
             continue
-
+        niveles_evaluados += 1
         clave = construir_clave_normalizada(signal, campos)
 
         for grupo in ["fuertes", "debiles", "neutras"]:
@@ -121,9 +143,15 @@ def evaluar_senal(signal, base_conocimiento=None):
             "confianza": CONFIANZA_BASE,
             "decision": "SIN_EVIDENCIA_ESTADISTICA",
             "peso_final": 1.0,
-            "motivos": ["No hay coincidencias suficientes en la base de conocimiento."],
-            "coincidencias": []
-        }
+            "motivos": [
+                "No hay coincidencias suficientes en la base de conocimiento."
+            ],
+            "coincidencias": [],
+            "niveles_evaluados": niveles_evaluados,
+            "niveles_descartados": niveles_descartados,
+            "cantidad_coincidencias": 0,
+            "campos_setup_disponibles": campos_setup_disponibles,
+     }
 
     peso_final = aplicar_pesos(pesos)
     confianza = calcular_confianza_desde_peso(peso_final)
@@ -140,7 +168,11 @@ def evaluar_senal(signal, base_conocimiento=None):
         "decision": decision,
         "peso_final": peso_final,
         "motivos": motivos,
-        "coincidencias": coincidencias
+        "coincidencias": coincidencias,
+        "niveles_evaluados": niveles_evaluados,
+        "niveles_descartados": niveles_descartados,
+        "cantidad_coincidencias": len(coincidencias),
+        "campos_setup_disponibles": campos_setup_disponibles,
     }
 
 

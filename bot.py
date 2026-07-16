@@ -232,13 +232,101 @@ def main():
         for senal in senales:
             if len(estado.operaciones_abiertas) >= MAX_OPERACIONES_ABIERTAS:
                 break
-
-            if any(op["activo"] == senal["activo"] for op in estado.operaciones_abiertas):
+        
+            if any(
+                op["activo"] == senal["activo"]
+                for op in estado.operaciones_abiertas
+            ):
                 continue
-
+        
             if senal.get("prioridad", 0) < MIN_PRIORIDAD_OPERAR:
-               continue
-
+                continue
+        
+            # ==========================================
+            # AUTORIZACIÓN DEL CEREBRO ÚNICO
+            # ==========================================
+            decision_cerebro = str(
+                senal.get(
+                    "decision_unificada_accion",
+                    senal.get("cerebro_unico_decision", "")
+                )
+            ).upper().strip()
+        
+            # Defensa adicional.
+            # Normalmente estrategia.py ya elimina estas señales.
+            if decision_cerebro == "NO_OPERAR":
+                print(
+                    "SEÑAL BLOQUEADA POR CEREBRO ÚNICO:",
+                    senal.get("activo", ""),
+                    senal.get("patron", "")
+                )
+                continue
+        
+            # Una decisión desconocida nunca debe llegar al broker.
+            if decision_cerebro not in [
+                "OPERAR",
+                "OPERAR_CON_PROTOCOLO"
+            ]:
+                print(
+                    "SEÑAL SIN AUTORIZACIÓN VÁLIDA:",
+                    senal.get("activo", ""),
+                    "| decisión:",
+                    decision_cerebro or "VACÍA"
+                )
+                continue
+        
+            # ==========================================
+            # OPERAR CON PROTOCOLO
+            # ==========================================
+            # Esta señal nunca puede abrirse directamente.
+            # Debe pasar obligatoriamente por pendientes.
+            if decision_cerebro == "OPERAR_CON_PROTOCOLO":
+                motivo = motivo_pendiente_por_accion_precio(senal)
+        
+                if not motivo or motivo == "ENTRADA_NORMAL":
+                    motivo = "CEREBRO_UNICO_REQUIERE_PROTOCOLO"
+        
+                if motivo in [
+                    "ESPERANDO_RUPTURA_RESISTENCIA",
+                    "ESPERANDO_RUPTURA_SOPORTE",
+                    "ESPERANDO_CONFIRMACION_RECHAZO"
+                ]:
+                    if (
+                        senal.get("soporte") is None
+                        or senal.get("resistencia") is None
+                    ):
+                        print(
+                            "PENDIENTE NO GUARDADA:",
+                            senal["activo"],
+                            "sin soporte/resistencia"
+                        )
+                        continue
+        
+                senal["requiere_protocolo_cerebro"] = True
+                senal["protocolo_confirmado"] = False
+        
+                guardar_senal_pendiente(
+                    senal,
+                    motivo
+                )
+        
+                print(
+                    "SEÑAL ENVIADA A PROTOCOLO:",
+                    senal.get("activo", ""),
+                    "| motivo:",
+                    motivo
+                )
+        
+                time.sleep(0.02)
+                continue
+        
+            # ==========================================
+            # OPERAR
+            # ==========================================
+            # El cerebro autoriza, pero la entrada todavía
+            # debe respetar las validaciones técnicas actuales.
+            senal["requiere_protocolo_cerebro"] = False
+        
             if entrada_rapida_disponible(senal):
                 if abrir_operacion(senal):
                     estado.metricas_ronda["entradas_abiertas"] += 1
@@ -246,24 +334,30 @@ def main():
                     operaciones_desde_resumen_mercado += 1
             else:
                 motivo = motivo_pendiente_por_accion_precio(senal)
-            
+        
                 if motivo in [
                     "ESPERANDO_RUPTURA_RESISTENCIA",
                     "ESPERANDO_RUPTURA_SOPORTE",
                     "ESPERANDO_CONFIRMACION_RECHAZO"
                 ]:
-                    if senal.get("soporte") is None or senal.get("resistencia") is None:
+                    if (
+                        senal.get("soporte") is None
+                        or senal.get("resistencia") is None
+                    ):
                         print(
                             "PENDIENTE NO GUARDADA:",
                             senal["activo"],
                             "sin soporte/resistencia"
                         )
                         continue
-            
-                guardar_senal_pendiente(senal, motivo)
-
+        
+                guardar_senal_pendiente(
+                    senal,
+                    motivo
+                )
+        
             time.sleep(0.02)
-
+        
         if abiertas_ahora > 0:
             print("Operaciones abiertas en esta ronda:", abiertas_ahora)
 

@@ -1,5 +1,21 @@
 # motor_decision_unificado.py
+"""
+LEGACY BOOTIQ V1/V2.
 
+Este módulo ya no participa en la decisión de producción
+ni en el backtest oficial.
+
+Cerebro activo:
+    decision_bootiq.py
+        -> motor_decision.evaluar_decision_cerebro_unico()
+
+No volver a importar este módulo en:
+    bot.py
+    estrategia.py
+    entrada.py
+    operaciones.py
+    backtest_bot_real.py
+"""
 
 def _num(v, default=0):
     try:

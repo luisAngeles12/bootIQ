@@ -605,7 +605,10 @@ def evaluar_senal_candidata(activo, ctx, senal):
         return None
 
     setup = clasificar_setup_estrategico(senal, ctx)
-
+    # Conservar la salida completa de la capa estratégica.
+    # Se utilizará después para construir el contrato final
+    # sin recalcular esta capa.
+    senal["_setup_estrategico"] = setup.copy()
     senal["tipo_setup"] = setup.get("tipo_setup", "INDEFINIDO")
     senal["calidad_setup"] = setup.get("calidad_setup", "MEDIA")
     senal["modo_entrada_setup"] = setup.get("modo_entrada", "DIRECTA")
@@ -614,7 +617,25 @@ def evaluar_senal_candidata(activo, ctx, senal):
     senal["balance_setup"] = setup.get("balance_setup", 0)
     senal["a_favor_tendencia"] = setup.get("a_favor_tendencia", False)
     senal["razones_setup"] = " | ".join(setup.get("razones_setup", []))
-
+    senal["estado_operativo_setup"] = setup.get(
+        "estado_operativo_setup",
+        "LISTO"
+    )
+    
+    senal["requiere_ruptura_setup"] = setup.get(
+        "requiere_ruptura_setup",
+        False
+    )
+    
+    senal["requiere_confirmacion_setup"] = setup.get(
+        "requiere_confirmacion_setup",
+        False
+    )
+    
+    senal["riesgo_estructural_critico_setup"] = setup.get(
+        "riesgo_estructural_critico_setup",
+        False
+    )
     senal["puntaje"] = senal.get("puntaje", 0) + setup.get("puntaje_extra_setup", 0)
 
     if setup.get("riesgo_extra_setup", 0) >= 4:
@@ -923,11 +944,28 @@ def evaluar_senal_candidata(activo, ctx, senal):
     )
 
     senal = resultado_bootiq["senal"]
-    if senal.get("decision_unificada_accion") == "NO_OPERAR":
-      return None
+
+    # En producción, una señal descartada por el Cerebro Único
+    # no continúa hacia la ejecución.
+    #
+    # En backtest diagnóstico sí debe devolverse para medir:
+    # - bloqueos correctos;
+    # - WIN bloqueadas;
+    # - LOSS bloqueadas;
+    # - precisión del cerebro.
+    modo_diagnostico = bool(
+        ctx.get("_modo_backtest_diagnostico", False)
+    )
+    
+    if (
+        senal.get("decision_unificada_accion") == "NO_OPERAR"
+        and not modo_diagnostico
+    ):
+        return None
+    
     return senal
 
-def analizar_activo(activo):
+def analizar_activo(activo, modo_backtest_diagnostico=False):
     """
     Orquestador principal del análisis por activo.
 
@@ -948,7 +986,9 @@ def analizar_activo(activo):
         return None
 
     ctx = preparar_contexto_mercado(activo, ctx)
-
+    ctx["_modo_backtest_diagnostico"] = bool(
+        modo_backtest_diagnostico
+    )
     if not validar_contexto_base(activo, ctx):
         return None
 

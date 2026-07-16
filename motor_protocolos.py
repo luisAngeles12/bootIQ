@@ -12,7 +12,22 @@ def _num(v, default=0):
     except Exception:
         return default
 
+def _bool(v, default=False):
+    if isinstance(v, bool):
+        return v
 
+    if v is None:
+        return default
+
+    texto = str(v).lower().strip()
+
+    if texto in ["true", "1", "si", "sí", "yes"]:
+        return True
+
+    if texto in ["false", "0", "no", "none", "null", ""]:
+        return False
+
+    return default
 def _direccion(senal):
     return _txt(senal.get("direccion"))
 
@@ -137,35 +152,53 @@ def _tipo_protocolo(senal):
 
 def _riesgo_cancelacion(senal):
     """
-    Refactor Fase 6:
-    El protocolo ya no vuelve a decidir calidad general.
-    Solo cancela bloqueos técnicos/críticos.
+    El protocolo no decide la calidad general de la operación.
+
+    Solo cancela por:
+    - bloqueo duro del cerebro;
+    - riesgo estructural crítico del setup;
+    - calidad extremadamente baja;
+    - riesgo de protocolo crítico.
     """
 
+    # Campo legacy: respaldo temporal.
     modo = _txt(senal.get("modo_entrada_setup"))
+
+    # Evidencia neutral nueva del setup.
+    riesgo_critico_setup = _bool(
+        senal.get("riesgo_estructural_critico_setup"),
+        default=("no_operar" in modo or "cancelar" in modo)
+    )
+
     calidad = _txt(senal.get("calidad_setup"))
     riesgo = _num(senal.get("riesgo_protocolo"), 50)
     accion_ia = _txt(senal.get("accion_confirmacion_ia"))
     fase4_decision = _txt(senal.get("fase4_decision"))
 
-    confianza_cerebro = _num(senal.get("cerebro_unico_confianza"), 0)
-    riesgo_cerebro = _txt(senal.get("cerebro_unico_riesgo"))
-    
+    confianza_cerebro = _num(
+        senal.get("cerebro_unico_confianza"),
+        0
+    )
+    riesgo_cerebro = _txt(
+        senal.get("cerebro_unico_riesgo")
+    )
+
     bloqueo_duro_cerebro = (
         fase4_decision == "no_operar"
         and riesgo_cerebro == "extremo"
         and confianza_cerebro < 38
     )
-    
+
     if bloqueo_duro_cerebro:
         return True, "CANCELADA_FASE4_NO_OPERAR"
-    
+
     if accion_ia == "cancelar":
         if riesgo >= 90 and bloqueo_duro_cerebro:
             return True, "CANCELADA_CONFIRMACION_IA"
-    # Fase 6: no cancelar solo por confirmación IA.
-    # Si Fase 4 permitió, el protocolo debe intentar confirmar técnicamente.
-    if "no_operar" in modo or "cancelar" in modo:
+
+    # Ya no se interpreta NO_OPERAR directamente.
+    # Se utiliza la evidencia neutral generada por motor_setup.
+    if riesgo_critico_setup:
         return True, "CANCELADA_SETUP_NO_OPERAR"
 
     if calidad in ["muy_baja", "baja"]:
@@ -175,16 +208,54 @@ def _riesgo_cancelacion(senal):
         return True, "CANCELADA_RIESGO_PROTOCOLO_CRITICO"
 
     return False, ""
-
 def _entrada_directa_permitida(senal):
     calidad = _txt(senal.get("calidad_setup"))
+
+    # Campo legacy: respaldo temporal.
     modo = _txt(senal.get("modo_entrada_setup"))
+
+    # Evidencias neutrales nuevas.
+    requiere_ruptura = _bool(
+        senal.get("requiere_ruptura_setup"),
+        default=("esperar_ruptura" in modo)
+    )
+
+    requiere_confirmacion = _bool(
+        senal.get("requiere_confirmacion_setup"),
+        default=("esperar_confirmacion" in modo)
+    )
+
+    riesgo_critico = _bool(
+        senal.get("riesgo_estructural_critico_setup"),
+        default=("no_operar" in modo or "cancelar" in modo)
+    )
+
     balance = _num(senal.get("balance_setup"))
     score = _num(senal.get("score_final"))
     nivel_consenso = _txt(senal.get("nivel_consenso"))
     subtipo = _txt(senal.get("subtipo_setup"))
 
-    if "directa" not in modo:
+    # Una entrada no puede ser directa si el setup exige
+    # ruptura, confirmación o presenta riesgo crítico.
+    if riesgo_critico:
+        return False
+
+    if requiere_ruptura:
+        return False
+
+    if requiere_confirmacion:
+        return False
+
+    # Compatibilidad temporal:
+    # una señal antigua sin campos neutrales solo será directa
+    # cuando el modo legacy también lo indique.
+    tiene_campos_neutrales = (
+        senal.get("requiere_ruptura_setup") is not None
+        or senal.get("requiere_confirmacion_setup") is not None
+        or senal.get("riesgo_estructural_critico_setup") is not None
+    )
+
+    if not tiene_campos_neutrales and "directa" not in modo:
         return False
 
     if subtipo in [
@@ -205,8 +276,6 @@ def _entrada_directa_permitida(senal):
         return True
 
     return False
-
-
 def _protocolo_sweep(velas, idx, senal):
     direccion = _direccion(senal)
     subtipo = _txt(senal.get("subtipo_setup"))

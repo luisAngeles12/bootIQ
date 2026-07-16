@@ -219,6 +219,36 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         senal["cerebro_unico_operar"] = operar
         senal["cerebro_unico_confianza"] = decision_cerebro.get("confianza", 0)
         senal["cerebro_unico_riesgo"] = decision_cerebro.get("riesgo_nivel", "")
+        
+        # =========================
+        # COMPATIBILIDAD LEGACY
+        # =========================
+        # Estos campos ya no representan otra decisión.
+        # Son alias de la decisión oficial del Cerebro Único.
+        
+        senal["decision_unificada_accion"] = accion
+        
+        senal["decision_unificada_confianza"] = decision_cerebro.get(
+            "confianza",
+            0
+        )
+        
+        senal["decision_unificada_score"] = decision_cerebro.get(
+            "score",
+            decision_cerebro.get("confianza", 0)
+        )
+        
+        senal["decision_unificada_razones"] = " | ".join(
+            str(x) for x in decision_cerebro.get("motivos", [])
+        )
+        
+        senal["decision_unificada_advertencias"] = " | ".join(
+            str(x) for x in decision_cerebro.get("advertencias", [])
+        )
+        
+        senal["decision_unificada_bloqueos"] = " | ".join(
+            str(x) for x in decision_cerebro.get("bloqueos", [])
+        )
         senal["cerebro_unico_motivos"] = " | ".join(decision_cerebro.get("motivos", []))
         senal["ajuste_ponderacion"] = decision_cerebro.get("ajuste_ponderacion", 0)
 
