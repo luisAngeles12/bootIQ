@@ -306,6 +306,8 @@ def evaluar_estrategia_decision(evidencia):
         "motivos": motivos,
         "familias_detectadas": familias_detectadas,
     }
+
+
 def calcular_confianza_cerebro(
     confianza_base,
     ajuste_aprendizaje,
@@ -617,6 +619,8 @@ def sugerir_modo_ejecucion(confianza, riesgo_nivel, evidencia):
         return "ENTRADA_CONFIRMADA"
 
     return "PROTOCOLO_ESTRICTO"
+
+
 def evaluar_decision(evidencia):
     """
     Ruta legacy conservada temporalmente para validador_fase4.py.
@@ -772,6 +776,7 @@ def evaluar_decision(evidencia):
 #       -> entrada.py
 #       -> operaciones.py
 # ============================================================
+
 def evaluar_decision_cerebro_unico(evidencia):
     """
     Cerebro único BootIQ.
@@ -791,16 +796,11 @@ def evaluar_decision_cerebro_unico(evidencia):
     resultado_estrategia = evaluar_estrategia_decision(evidencia)
 
     confianza_base = resultado_inferencia.get("confianza", 50.0)
-
     ajuste_aprendizaje = aprendizaje.get(
         "ajuste_confianza_aprendizaje",
         0,
     )
-
-    ajuste_ponderacion = ponderacion.get(
-        "ajuste_ponderacion",
-        0,
-    )
+    ajuste_ponderacion = ponderacion.get("ajuste_ponderacion", 0)
 
     ajuste_evidencias = (
         resultado_pa.get("ajuste", 0)
@@ -816,16 +816,8 @@ def evaluar_decision_cerebro_unico(evidencia):
     )
 
     confianza = resultado_confianza["confianza"]
-
-    riesgo_nivel = riesgo_compuesto.get(
-        "riesgo_nivel",
-        "BAJO",
-    )
-
-    riesgo_puntos = riesgo_compuesto.get(
-        "riesgo_puntos",
-        0,
-    )
+    riesgo_nivel = riesgo_compuesto.get("riesgo_nivel", "BAJO")
+    riesgo_puntos = riesgo_compuesto.get("riesgo_puntos", 0)
 
     resultado_decision = clasificar_decision_final(
         confianza=confianza,
@@ -836,62 +828,19 @@ def evaluar_decision_cerebro_unico(evidencia):
     operar = resultado_decision["operar"]
 
     motivos = []
+    motivos.extend(resultado_inferencia.get("motivos", []))
+    motivos.extend(riesgo_compuesto.get("motivos_riesgo", []))
 
-    motivos.extend(
-        resultado_inferencia.get(
-            "motivos",
-            [],
-        )
-    )
-
-    motivos.extend(
-        riesgo_compuesto.get(
-            "motivos_riesgo",
-            [],
-        )
-    )
-
-    motivo_aprendizaje = aprendizaje.get(
-        "motivo_aprendizaje",
-        "",
-    )
-
+    motivo_aprendizaje = aprendizaje.get("motivo_aprendizaje", "")
     if motivo_aprendizaje:
         motivos.append(motivo_aprendizaje)
 
-    motivos.extend(
-        resultado_pa.get(
-            "motivos",
-            [],
-        )
-    )
+    motivos.extend(resultado_pa.get("motivos", []))
+    motivos.extend(resultado_mercado.get("motivos", []))
+    motivos.extend(resultado_estrategia.get("motivos", []))
+    motivos.extend(ponderacion.get("motivos_ponderacion", []))
 
-    motivos.extend(
-        resultado_mercado.get(
-            "motivos",
-            [],
-        )
-    )
-
-    motivos.extend(
-        resultado_estrategia.get(
-            "motivos",
-            [],
-        )
-    )
-
-    motivos.extend(
-        ponderacion.get(
-            "motivos_ponderacion",
-            [],
-        )
-    )
-
-    motivo_decision = resultado_decision.get(
-        "motivo",
-        "",
-    )
-
+    motivo_decision = resultado_decision.get("motivo", "")
     if motivo_decision:
         motivos.append(motivo_decision)
 
@@ -900,10 +849,7 @@ def evaluar_decision_cerebro_unico(evidencia):
         "decision": decision,
         "confianza": confianza,
         "confianza_base": confianza_base,
-        "ajuste_evidencias": round(
-            ajuste_evidencias,
-            2,
-        ),
+        "ajuste_evidencias": round(ajuste_evidencias, 2),
         "resultado_price_action": resultado_pa,
         "resultado_mercado": resultado_mercado,
         "resultado_estrategia": resultado_estrategia,

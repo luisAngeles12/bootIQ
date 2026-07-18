@@ -1,16 +1,32 @@
+"""
+BACKTEST OFICIAL BOOTIQ — CEREBRO UNICO.
+
+Responsabilidad:
+- cargar y seleccionar datasets;
+- crear ventanas históricas;
+- obtener señales desde estrategia.py;
+- consultar una sola vez DecisionBootIQ/Cerebro Único;
+- respetar NO_OPERAR inmediatamente;
+- usar motor_protocolos.py solo para OPERAR_CON_PROTOCOLO;
+- simular operaciones autorizadas;
+- registrar resultados hipotéticos de señales canceladas;
+- generar CSV, aprendizaje y reportes.
+
+Este archivo no decide, no recalcula confianza y no aplica Fase 4 como
+autoridad independiente.
+"""
+
 import csv
 import os
 
 import estado
 import estrategia
-from motor_setup import enriquecer_senal_con_setup
 from motor_protocolos import buscar_entrada_confirmada
 from contexto_mercado import detectar_tipo_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
 from motor_aprendizaje_historico import generar_aprendizaje_desde_resultados
 from decision_bootiq import (
     crear_decision_bootiq,
     aplanar_decision_bootiq,
-    aplicar_decision_unificada_a_senal,
 )
 
 CARPETA_DATA = "data_backtest"
@@ -19,6 +35,7 @@ SALIDA = "backtest_bot_real_resultados.csv"
 MAX_ACTIVOS_ANALIZAR = 20
 LIMITE_DATASETS = 160
 PASO_RONDA = 1
+BUILD_ID = "BOOTIQ_BACKTEST_V4_SIN_DOBLE_DECISION_2026_07_17"
 
 
 def leer_csv_velas(ruta):
@@ -259,27 +276,56 @@ def resultado_binario(velas, index_entrada, direccion):
         "low_siguiente": low_siguiente,
     }
 
-def crear_registro_resultado(senal, velas, idx, idx_entrada, motivo_ejecucion, evaluacion_fase4, estado_operacion):
+def _texto(valor):
+    if isinstance(valor, list):
+        return " | ".join(str(x) for x in valor)
+    if valor is None:
+        return ""
+    return str(valor)
+
+
+def crear_registro_resultado(
+    senal,
+    velas,
+    idx,
+    idx_entrada,
+    motivo_ejecucion,
+    estado_operacion,
+    decision_bootiq=None,
+):
+    """
+    Construye una fila del CSV sin volver a evaluar la señal.
+
+    Para señales canceladas se calcula un resultado hipotético usando la vela
+    inmediatamente posterior a la señal. Ese resultado sirve para medir la
+    calidad del filtro, pero no convierte la señal en una operación ejecutada.
+    """
+
     if idx_entrada is None:
         idx_entrada = idx
+
+    if idx_entrada + 1 >= len(velas):
+        raise IndexError(
+            "No existe una vela posterior para calcular el resultado."
+        )
 
     info_resultado = resultado_binario(
         velas,
         idx_entrada,
-        senal["direccion"]
+        senal.get("direccion", ""),
     )
 
-    # =========================
-    # DECISION BOOTIQ V2
-    # =========================
-    # La decisión ya fue calculada previamente por:
-    # aplicar_decision_unificada_a_senal()
-    #
-    # Aquí no se vuelve a evaluar.
-    # Solo se construye y aplana el contrato para el CSV.
-    
-    decision_bootiq = crear_decision_bootiq(senal)
+    decision_bootiq = (
+        decision_bootiq
+        if isinstance(decision_bootiq, dict)
+        else {}
+    )
     decision_bootiq_plana = aplanar_decision_bootiq(decision_bootiq)
+
+    decision_oficial = str(
+        senal.get("cerebro_unico_decision", "NO_OPERAR")
+        or "NO_OPERAR"
+    ).upper().strip()
 
     registro = {
         "tipo": senal.get("tipo", ""),
@@ -294,7 +340,9 @@ def crear_registro_resultado(senal, velas, idx, idx_entrada, motivo_ejecucion, e
         "consenso": senal.get("consenso", 0),
         "nivel_consenso": senal.get("nivel_consenso", ""),
         "ajuste_consenso": senal.get("ajuste_consenso", 0),
-        "razones_consenso": senal.get("razones_consenso", ""),
+        "razones_consenso": _texto(
+            senal.get("razones_consenso", "")
+        ),
         "calidad": senal.get("calidad", ""),
         "rsi": senal.get("rsi", ""),
 
@@ -306,43 +354,77 @@ def crear_registro_resultado(senal, velas, idx, idx_entrada, motivo_ejecucion, e
         "direccion_tendencia": senal.get("direccion_tendencia", ""),
 
         "accion_precio": senal.get("accion_precio", ""),
-        "razon_accion_precio": senal.get("razon_accion_precio", ""),
+        "razon_accion_precio": _texto(
+            senal.get("razon_accion_precio", "")
+        ),
         "pa_tipo": senal.get("pa_tipo", ""),
         "pa_direccion": senal.get("pa_direccion", ""),
         "pa_fuerza": senal.get("pa_fuerza", 0),
-        "pa_razon": senal.get("pa_razon", ""),
+        "pa_razon": _texto(senal.get("pa_razon", "")),
 
         "base_estrategia": senal.get("base_estrategia", ""),
-        "riesgos_base": senal.get("riesgos_base", ""),
-        "fortalezas_base": senal.get("fortalezas_base", ""),
+        "riesgos_base": _texto(senal.get("riesgos_base", "")),
+        "fortalezas_base": _texto(
+            senal.get("fortalezas_base", "")
+        ),
 
-        "ruptura_confirmada": senal.get("ruptura_confirmada", False),
+        "ruptura_confirmada": senal.get(
+            "ruptura_confirmada", False
+        ),
         "tipo_ruptura": senal.get("tipo_ruptura", ""),
-        "razon_ruptura": senal.get("razon_ruptura", ""),
+        "razon_ruptura": _texto(
+            senal.get("razon_ruptura", "")
+        ),
 
         "tipo_setup": senal.get("tipo_setup", "INDEFINIDO"),
         "calidad_setup": senal.get("calidad_setup", "MEDIA"),
-        "modo_entrada_setup": senal.get("modo_entrada_setup", "DIRECTA"),
-        "puntaje_extra_setup": senal.get("puntaje_extra_setup", 0),
-        "riesgo_extra_setup": senal.get("riesgo_extra_setup", 0),
+        "modo_entrada_setup": senal.get(
+            "modo_entrada_setup", "DIRECTA"
+        ),
+        "puntaje_extra_setup": senal.get(
+            "puntaje_extra_setup", 0
+        ),
+        "riesgo_extra_setup": senal.get(
+            "riesgo_extra_setup", 0
+        ),
         "balance_setup": senal.get("balance_setup", 0),
-        "a_favor_tendencia": senal.get("a_favor_tendencia", False),
-        "razones_setup": senal.get("razones_setup", ""),
+        "a_favor_tendencia": senal.get(
+            "a_favor_tendencia", False
+        ),
+        "razones_setup": _texto(
+            senal.get("razones_setup", "")
+        ),
         "familia_setup": senal.get("familia_setup", ""),
         "subtipo_setup": senal.get("subtipo_setup", ""),
-        "protocolo_sugerido": senal.get("protocolo_sugerido", ""),
+        "protocolo_sugerido": senal.get(
+            "protocolo_sugerido", ""
+        ),
         "nivel_setup": senal.get("nivel_setup", ""),
         "estado_setup": senal.get("estado_setup", ""),
         "confianza_setup": senal.get("confianza_setup", 0),
-        "razones_clasificador_setup": senal.get("razones_clasificador_setup", ""),
+        "razones_clasificador_setup": _texto(
+            senal.get("razones_clasificador_setup", "")
+        ),
         "riesgo_protocolo": senal.get("riesgo_protocolo", 0),
-        "nivel_riesgo_protocolo": senal.get("nivel_riesgo_protocolo", ""),
-        "razon_riesgo_protocolo": senal.get("razon_riesgo_protocolo", ""),
+        "nivel_riesgo_protocolo": senal.get(
+            "nivel_riesgo_protocolo", ""
+        ),
+        "razon_riesgo_protocolo": _texto(
+            senal.get("razon_riesgo_protocolo", "")
+        ),
 
-        "indice_confirmacion_ia": senal.get("indice_confirmacion_ia", 0),
-        "nivel_confirmacion_ia": senal.get("nivel_confirmacion_ia", ""),
-        "accion_confirmacion_ia": senal.get("accion_confirmacion_ia", ""),
-        "razon_confirmacion_ia": senal.get("razon_confirmacion_ia", ""),
+        "indice_confirmacion_ia": senal.get(
+            "indice_confirmacion_ia", 0
+        ),
+        "nivel_confirmacion_ia": senal.get(
+            "nivel_confirmacion_ia", ""
+        ),
+        "accion_confirmacion_ia": senal.get(
+            "accion_confirmacion_ia", ""
+        ),
+        "razon_confirmacion_ia": _texto(
+            senal.get("razon_confirmacion_ia", "")
+        ),
 
         "idx_senal": idx,
         "idx_entrada": idx_entrada,
@@ -350,51 +432,144 @@ def crear_registro_resultado(senal, velas, idx, idx_entrada, motivo_ejecucion, e
         "estado_operacion": estado_operacion,
         "espera_velas": idx_entrada - idx,
 
-        "fase4_evaluada": evaluacion_fase4.get("fase4_evaluada", False),
-        "fase4_permitir_operacion": evaluacion_fase4.get("fase4_permitir_operacion", True),
-        "fase4_modo": evaluacion_fase4.get("fase4_modo", ""),
-        "fase4_confianza": evaluacion_fase4.get("fase4_confianza", 50.0),
-        "fase4_decision": evaluacion_fase4.get("fase4_decision", ""),
-        "fase4_debe_bloquear": evaluacion_fase4.get("fase4_debe_bloquear", False),
-        "fase4_motivo": evaluacion_fase4.get("fase4_motivo", ""),
+        # Campos oficiales del Cerebro Único.
+        "cerebro_unico_decision": decision_oficial,
+        "cerebro_unico_decision_legacy": senal.get(
+            "cerebro_unico_decision_legacy", decision_oficial
+        ),
+        "cerebro_unico_operar": bool(
+            senal.get("cerebro_unico_operar", False)
+        ),
+        "cerebro_unico_confianza": senal.get(
+            "cerebro_unico_confianza", 0
+        ),
+        "cerebro_unico_requiere_protocolo": bool(
+            senal.get(
+                "cerebro_unico_requiere_protocolo", False
+            )
+        ),
+        "cerebro_unico_modo_ejecucion": senal.get(
+            "cerebro_unico_modo_ejecucion", "BLOQUEADA"
+        ),
+        "cerebro_unico_bloquear_por_riesgo": bool(
+            senal.get(
+                "cerebro_unico_bloquear_por_riesgo", False
+            )
+        ),
+        "cerebro_unico_riesgo": senal.get(
+            "cerebro_unico_riesgo", ""
+        ),
+        "cerebro_unico_riesgo_puntos": senal.get(
+            "cerebro_unico_riesgo_puntos", 0
+        ),
+        "cerebro_unico_motivos": _texto(
+            senal.get("cerebro_unico_motivos", "")
+        ),
+
+        # Alias legacy. Solo reflejan al Cerebro Único.
+        "fase4_evaluada": senal.get("fase4_evaluada", True),
+        "fase4_permitir_operacion": bool(
+            senal.get(
+                "fase4_permitir_operacion",
+                senal.get("cerebro_unico_operar", False),
+            )
+        ),
+        "fase4_modo": senal.get(
+            "fase4_modo",
+            senal.get(
+                "cerebro_unico_modo_ejecucion", "BLOQUEADA"
+            ),
+        ),
+        "fase4_confianza": senal.get(
+            "fase4_confianza",
+            senal.get("cerebro_unico_confianza", 0),
+        ),
+        "fase4_decision": senal.get(
+            "fase4_decision", decision_oficial
+        ),
+        "fase4_debe_bloquear": bool(
+            senal.get(
+                "fase4_debe_bloquear",
+                not senal.get("cerebro_unico_operar", False),
+            )
+        ),
+        "fase4_motivo": _texto(
+            senal.get(
+                "fase4_motivo",
+                senal.get("cerebro_unico_motivos", ""),
+            )
+        ),
 
         "resultado": info_resultado["resultado"],
         "resultado_hipotetico": info_resultado["resultado"],
-
         "precio_entrada": velas[idx_entrada]["close"],
         "precio_cierre": velas[idx_entrada + 1]["close"],
-
         "movimiento": info_resultado["movimiento"],
-        "distancia_resultado": info_resultado["distancia_resultado"],
+        "distancia_resultado": info_resultado[
+            "distancia_resultado"
+        ],
         "excursion_favor": info_resultado["excursion_favor"],
         "excursion_contra": info_resultado["excursion_contra"],
-        "fuerza_cierre_siguiente": info_resultado["fuerza_cierre_siguiente"],
+        "fuerza_cierre_siguiente": info_resultado[
+            "fuerza_cierre_siguiente"
+        ],
         "open_siguiente": info_resultado["open_siguiente"],
         "close_siguiente": info_resultado["close_siguiente"],
         "high_siguiente": info_resultado["high_siguiente"],
         "low_siguiente": info_resultado["low_siguiente"],
-        "decision_unificada_accion": senal.get("decision_unificada_accion", ""),
-        "decision_unificada_score": senal.get("decision_unificada_score", 0),
-        "decision_unificada_confianza": senal.get("decision_unificada_confianza", ""),
-        "decision_unificada_razones": senal.get("decision_unificada_razones", ""),
-        "decision_unificada_advertencias": senal.get("decision_unificada_advertencias", ""),
-        "decision_unificada_bloqueos": senal.get("decision_unificada_bloqueos", ""),
-        "razon": senal.get("razon", ""),
-        "cerebro_unico_decision": senal.get("cerebro_unico_decision", ""),
-        "cerebro_unico_operar": senal.get("cerebro_unico_operar", False),
-        "cerebro_unico_confianza": senal.get("cerebro_unico_confianza", 0),
-        "cerebro_unico_riesgo": senal.get("cerebro_unico_riesgo", ""),
-        "ajuste_ponderacion": senal.get("ajuste_ponderacion", 0),
-        "motivos_ponderacion": senal.get("motivos_ponderacion", ""),
-        "pesos_aplicados": senal.get("pesos_aplicados", ""),
-        "confianza_final_cerebro": senal.get("confianza_final_cerebro", 0),
+
+        "decision_unificada_accion": senal.get(
+            "decision_unificada_accion", decision_oficial
+        ),
+        "decision_unificada_score": senal.get(
+            "decision_unificada_score", 0
+        ),
+        "decision_unificada_confianza": senal.get(
+            "decision_unificada_confianza", 0
+        ),
+        "decision_unificada_razones": _texto(
+            senal.get("decision_unificada_razones", "")
+        ),
+        "decision_unificada_advertencias": _texto(
+            senal.get("decision_unificada_advertencias", "")
+        ),
+        "decision_unificada_bloqueos": _texto(
+            senal.get("decision_unificada_bloqueos", "")
+        ),
+        "razon": _texto(senal.get("razon", "")),
+        "ajuste_ponderacion": senal.get(
+            "ajuste_ponderacion", 0
+        ),
+        "motivos_ponderacion": _texto(
+            senal.get("motivos_ponderacion", "")
+        ),
+        "pesos_aplicados": _texto(
+            senal.get("pesos_aplicados", "")
+        ),
+        "confianza_final_cerebro": senal.get(
+            "confianza_final_cerebro",
+            senal.get("cerebro_unico_confianza", 0),
+        ),
     }
 
     registro.update(decision_bootiq_plana)
-
     return registro
 
+
 def ejecutar_backtest(datasets):
+    """
+    Orquestador oficial del backtest BootIQ.
+
+    Flujo:
+        estrategia -> DecisionBootIQ/Cerebro Único
+        -> cancelación inmediata de NO_OPERAR
+        -> protocolo solo cuando sea requerido
+        -> entrada directa cuando sea autorizada
+        -> simulación y registro
+
+    Este archivo no crea decisiones propias.
+    """
+
     resultados = []
 
     if not datasets:
@@ -402,7 +577,6 @@ def ejecutar_backtest(datasets):
         return resultados
 
     max_len = min(len(d["velas"]) for d in datasets)
-
     total_rondas = len(range(180, max_len - 2, PASO_RONDA))
     ronda = 0
 
@@ -425,100 +599,195 @@ def ejecutar_backtest(datasets):
             if senal is None:
                 continue
 
+            if not isinstance(senal, dict):
+                continue
+
             senal["tipo"] = tipo
-     
             senal["_velas"] = velas
             senal["_index"] = i
             senales_ronda.append(senal)
 
-        senales_ronda = sorted(
-            senales_ronda,
+        senales_ronda.sort(
             key=lambda x: (
                 x.get("score_final", 0),
                 x.get("prioridad", 0),
-                x.get("puntaje", 0)
+                x.get("puntaje", 0),
             ),
-            reverse=True
+            reverse=True,
         )
 
         if ronda % 100 == 0:
-            print("Ronda:", ronda, "Señales:", len(senales_ronda))
+            print(
+                "Ronda:",
+                ronda,
+                "Señales:",
+                len(senales_ronda),
+            )
 
         for senal in senales_ronda[:MAX_ACTIVOS_ANALIZAR]:
             velas = senal["_velas"]
             idx = senal["_index"]
 
-            resultado_bootiq = aplicar_decision_unificada_a_senal(senal)
-            
-            senal = resultado_bootiq["senal"]
-            
-            evaluacion_fase4 = {
-                "fase4_evaluada": senal.get("fase4_evaluada", True),
-                "fase4_permitir_operacion": senal.get("fase4_permitir_operacion", False),
-                "fase4_modo": senal.get("fase4_modo", ""),
-                "fase4_confianza": senal.get("fase4_confianza", 0),
-                "fase4_decision": senal.get("fase4_decision", ""),
-                "fase4_debe_bloquear": senal.get("fase4_debe_bloquear", True),
-                "fase4_motivo": senal.get("fase4_motivo", ""),
+            # La señal ya viene evaluada por estrategia.py usando el contexto
+            # real de mercado. Aquí NO se vuelve a llamar al Cerebro Único.
+            decision_bootiq = crear_decision_bootiq(senal)
+
+            decision_oficial = str(
+                senal.get(
+                    "cerebro_unico_decision",
+                    senal.get("decision_unificada_accion", "NO_OPERAR"),
+                )
+                or "NO_OPERAR"
+            ).upper().strip()
+
+            operar = bool(
+                senal.get(
+                    "cerebro_unico_operar",
+                    decision_oficial in {"OPERAR", "OPERAR_CON_PROTOCOLO"},
+                )
+            )
+
+            requiere_protocolo = bool(
+                senal.get(
+                    "cerebro_unico_requiere_protocolo",
+                    decision_oficial == "OPERAR_CON_PROTOCOLO",
+                )
+            )
+
+            modo_por_decision = {
+                "OPERAR": "DIRECTA",
+                "OPERAR_CON_PROTOCOLO": "PROTOCOLO",
+                "NO_OPERAR": "BLOQUEADA",
+                "ERROR": "BLOQUEADA",
             }
-            
-            decision_cerebro = senal.get("cerebro_unico_decision", "")
-            confianza_cerebro = float(senal.get("cerebro_unico_confianza", 0) or 0)
-            riesgo_cerebro = senal.get("cerebro_unico_riesgo", "")
-            
-            bloqueo_duro_cerebro = (
-                decision_cerebro == "NO_OPERAR"
-                and confianza_cerebro < 38
-                and riesgo_cerebro == "EXTREMO"
-            )
-            
-            if bloqueo_duro_cerebro:
+
+            modo_ejecucion = str(
+                senal.get(
+                    "cerebro_unico_modo_ejecucion",
+                    modo_por_decision.get(decision_oficial, "BLOQUEADA"),
+                )
+                or modo_por_decision.get(decision_oficial, "BLOQUEADA")
+            ).upper().strip()
+
+            # Normaliza contratos antiguos incompletos sin crear otra decisión.
+            if decision_oficial == "OPERAR":
+                operar = True
+                requiere_protocolo = False
+                modo_ejecucion = "DIRECTA"
+            elif decision_oficial == "OPERAR_CON_PROTOCOLO":
+                operar = True
+                requiere_protocolo = True
+                modo_ejecucion = "PROTOCOLO"
+            else:
+                operar = False
+                requiere_protocolo = False
+                modo_ejecucion = "BLOQUEADA"
+
+            senal["cerebro_unico_operar"] = operar
+            senal["cerebro_unico_requiere_protocolo"] = requiere_protocolo
+            senal["cerebro_unico_modo_ejecucion"] = modo_ejecucion
+
+            # Cierre seguro ante cualquier inconsistencia.
+            if (
+                not operar
+                or decision_oficial in {"NO_OPERAR", "ERROR"}
+                or modo_ejecucion == "BLOQUEADA"
+            ):
                 resultados.append(
                     crear_registro_resultado(
                         senal=senal,
                         velas=velas,
                         idx=idx,
                         idx_entrada=idx,
-                        motivo_ejecucion="CANCELADA_FASE4",
-                        evaluacion_fase4=evaluacion_fase4,
-                        estado_operacion="CANCELADA_FASE4"
+                        motivo_ejecucion=(
+                            "CANCELADA_CEREBRO_UNICO_"
+                            + decision_oficial
+                        ),
+                        estado_operacion="CANCELADA_CEREBRO",
+                        decision_bootiq=decision_bootiq,
                     )
                 )
                 continue
 
-            idx_entrada, motivo_ejecucion = buscar_entrada_confirmada(
-                velas,
-                idx,
-                senal
-            )
+            # Solo las operaciones condicionadas pasan al protocolo.
+            if (
+                requiere_protocolo
+                or decision_oficial == "OPERAR_CON_PROTOCOLO"
+                or modo_ejecucion == "PROTOCOLO"
+            ):
+                idx_entrada, motivo_ejecucion = (
+                    buscar_entrada_confirmada(
+                        velas,
+                        idx,
+                        senal,
+                    )
+                )
 
-            if idx_entrada is None:
+                if idx_entrada is None:
+                    resultados.append(
+                        crear_registro_resultado(
+                            senal=senal,
+                            velas=velas,
+                            idx=idx,
+                            idx_entrada=idx,
+                            motivo_ejecucion=motivo_ejecucion,
+                            estado_operacion=(
+                                "CANCELADA_PROTOCOLO"
+                            ),
+                            decision_bootiq=decision_bootiq,
+                        )
+                    )
+                    continue
+
                 resultados.append(
                     crear_registro_resultado(
                         senal=senal,
                         velas=velas,
                         idx=idx,
-                        idx_entrada=idx,
+                        idx_entrada=idx_entrada,
                         motivo_ejecucion=motivo_ejecucion,
-                        evaluacion_fase4=evaluacion_fase4,
-                        estado_operacion="CANCELADA_PROTOCOLO"
+                        estado_operacion="OPERADA_PROTOCOLO",
+                        decision_bootiq=decision_bootiq,
                     )
                 )
                 continue
 
+            # OPERAR directo: no debe pasar por motor_protocolos.py.
+            if decision_oficial == "OPERAR":
+                resultados.append(
+                    crear_registro_resultado(
+                        senal=senal,
+                        velas=velas,
+                        idx=idx,
+                        idx_entrada=idx,
+                        motivo_ejecucion=(
+                            "OPERACION_DIRECTA_CEREBRO_UNICO"
+                        ),
+                        estado_operacion="OPERADA_DIRECTA",
+                        decision_bootiq=decision_bootiq,
+                    )
+                )
+                continue
+
+            # Toda salida no reconocida se bloquea.
             resultados.append(
                 crear_registro_resultado(
                     senal=senal,
                     velas=velas,
                     idx=idx,
-                    idx_entrada=idx_entrada,
-                    motivo_ejecucion=motivo_ejecucion,
-                    evaluacion_fase4=evaluacion_fase4,
-                    estado_operacion="OPERADA"
+                    idx_entrada=idx,
+                    motivo_ejecucion=(
+                        "CANCELADA_SALIDA_CEREBRO_NO_RECONOCIDA_"
+                        + decision_oficial
+                    ),
+                    estado_operacion="CANCELADA_CEREBRO",
+                    decision_bootiq=decision_bootiq,
                 )
             )
 
     return resultados
+
+
 def guardar_resultados(resultados):
     campos = [
         "tipo",
@@ -741,55 +1010,92 @@ def imprimir_tabla_resumen(titulo, filas, limite=20):
             "| winrate:", str(winrate) + "%"
         )
 
-def imprimir_resumen_fase4(resultados):
+def imprimir_impacto_cerebro(resultados):
     if not resultados:
         return
 
-    evaluadas = [r for r in resultados if str(r.get("fase4_evaluada", "")).lower() == "true" or r.get("fase4_evaluada") is True]
-
-    permitidas = [
-        r for r in resultados
-        if str(r.get("fase4_permitir_operacion", "")).lower() == "true"
-        or r.get("fase4_permitir_operacion") is True
-    ]
-
-    bloqueadas = [
-        r for r in resultados
-        if str(r.get("fase4_debe_bloquear", "")).lower() == "true"
-        or r.get("fase4_debe_bloquear") is True
-    ]
-
     def calcular_wr(filas):
         total = len(filas)
-        wins = sum(1 for r in filas if r.get("resultado") == "WIN")
+        wins = sum(
+            1 for r in filas if r.get("resultado") == "WIN"
+        )
         losses = total - wins
         wr = round((wins / total) * 100, 2) if total else 0
         return total, wins, losses, wr
 
-    total_original, wins_original, losses_original, wr_original = calcular_wr(resultados)
-    total_permitidas, wins_permitidas, losses_permitidas, wr_permitidas = calcular_wr(permitidas)
-    total_bloqueadas, wins_bloqueadas, losses_bloqueadas, wr_bloqueadas = calcular_wr(bloqueadas)
+    autorizadas = [
+        r for r in resultados
+        if r.get("cerebro_unico_operar") is True
+    ]
+    rechazadas = [
+        r for r in resultados
+        if r.get("cerebro_unico_operar") is not True
+    ]
+    directas = [
+        r for r in resultados
+        if r.get("estado_operacion") == "OPERADA_DIRECTA"
+    ]
+    por_protocolo = [
+        r for r in resultados
+        if r.get("estado_operacion") == "OPERADA_PROTOCOLO"
+    ]
+    canceladas_protocolo = [
+        r for r in resultados
+        if r.get("estado_operacion") == "CANCELADA_PROTOCOLO"
+    ]
 
-    precision_bloqueo = round((losses_bloqueadas / total_bloqueadas) * 100, 2) if total_bloqueadas else 0
+    total, wins, losses, wr = calcular_wr(resultados)
+    a_total, a_win, a_loss, a_wr = calcular_wr(autorizadas)
+    r_total, r_win, r_loss, r_wr = calcular_wr(rechazadas)
+    d_total, d_win, d_loss, d_wr = calcular_wr(directas)
+    p_total, p_win, p_loss, p_wr = calcular_wr(por_protocolo)
+    cp_total, cp_win, cp_loss, cp_wr = calcular_wr(
+        canceladas_protocolo
+    )
 
-    print("\n===== IMPACTO FASE 4 =====")
-    print("Operaciones originales:", total_original)
-    print("WIN originales:", wins_original)
-    print("LOSS originales:", losses_original)
-    print("Winrate original:", str(wr_original) + "%")
+    precision_bloqueo = (
+        round((r_loss / r_total) * 100, 2)
+        if r_total
+        else 0
+    )
+
+    print("\n===== IMPACTO CEREBRO UNICO =====")
+    print("Señales evaluadas:", total)
+    print("WIN hipotéticos:", wins)
+    print("LOSS hipotéticos:", losses)
+    print("Winrate universo:", str(wr) + "%")
     print("----------------------------")
-    print("Operaciones evaluadas Fase 4:", len(evaluadas))
-    print("Permitidas por Fase 4:", total_permitidas)
-    print("WIN permitidas:", wins_permitidas)
-    print("LOSS permitidas:", losses_permitidas)
-    print("Winrate permitidas:", str(wr_permitidas) + "%")
+    print("Autorizadas:", a_total)
+    print("WIN autorizadas:", a_win)
+    print("LOSS autorizadas:", a_loss)
+    print("Winrate autorizadas:", str(a_wr) + "%")
     print("----------------------------")
-    print("Bloqueadas por Fase 4:", total_bloqueadas)
-    print("WIN bloqueadas:", wins_bloqueadas)
-    print("LOSS bloqueadas:", losses_bloqueadas)
-    print("Winrate bloqueadas:", str(wr_bloqueadas) + "%")
+    print("Rechazadas:", r_total)
+    print("WIN rechazadas:", r_win)
+    print("LOSS rechazadas:", r_loss)
+    print("Winrate rechazadas:", str(r_wr) + "%")
     print("Precisión del bloqueo:", str(precision_bloqueo) + "%")
-    print("==========================\n")
+    print("----------------------------")
+    print(
+        "Operadas directas:",
+        d_total,
+        "| winrate:",
+        str(d_wr) + "%",
+    )
+    print(
+        "Operadas por protocolo:",
+        p_total,
+        "| winrate:",
+        str(p_wr) + "%",
+    )
+    print(
+        "Canceladas por protocolo:",
+        cp_total,
+        "| winrate hipotético:",
+        str(cp_wr) + "%",
+    )
+    print("================================\n")
+
 
 def clasificar_indice_confirmacion_ia(valor):
     try:
@@ -807,7 +1113,10 @@ def clasificar_indice_confirmacion_ia(valor):
         return "45_59_BAJO"
     return "0_44_MUY_BAJO"
 def imprimir_resumen(resultados):
-    operadas = [r for r in resultados if r.get("estado_operacion") == "OPERADA"]
+    operadas = [
+        r for r in resultados
+        if str(r.get("estado_operacion", "")).startswith("OPERADA")
+    ]
     for r in resultados:
         r["rango_indice_confirmacion_ia"] = clasificar_indice_confirmacion_ia(
             r.get("indice_confirmacion_ia", 0)
@@ -824,10 +1133,10 @@ def imprimir_resumen(resultados):
     print("Perdidas:", losses)
     print("Winrate:", wr, "%")
     print("============================\n")
-    imprimir_resumen_fase4(resultados)
+    imprimir_impacto_cerebro(resultados)
     print("Total señales evaluadas:", len(resultados))
     print("Operadas:", len(operadas))
-    print("Canceladas Fase 4:", len([r for r in resultados if r.get("estado_operacion") == "CANCELADA_FASE4"]))
+    print("Canceladas Cerebro:", len([r for r in resultados if r.get("estado_operacion") == "CANCELADA_CEREBRO"]))
     print("Canceladas Protocolo:", len([r for r in resultados if r.get("estado_operacion") == "CANCELADA_PROTOCOLO"]))
     reportes = [
         ("POR ESTRATEGIA", "patron"),
@@ -863,6 +1172,14 @@ def imprimir_resumen(resultados):
         ("POR EVIDENCIA MERCADO", "bootiq_evidencias_mercado"),
         ("POR CEREBRO UNICO DECISION", "cerebro_unico_decision"),
         ("POR CEREBRO UNICO RIESGO", "cerebro_unico_riesgo"),
+        (
+            "POR CEREBRO UNICO MODO EJECUCION",
+            "cerebro_unico_modo_ejecucion",
+        ),
+        (
+            "POR CEREBRO UNICO REQUIERE PROTOCOLO",
+            "cerebro_unico_requiere_protocolo",
+        ),
         ("POR AJUSTE PONDERACION", "ajuste_ponderacion"),
         ("POR CONFIANZA FINAL CEREBRO", "confianza_final_cerebro"),
     ]
@@ -892,6 +1209,7 @@ def imprimir_resumen(resultados):
         limite=30
     )
 def main():
+    print("BUILD:", BUILD_ID)
     reset_estado()
 
     datasets = cargar_datasets()
