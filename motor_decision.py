@@ -312,12 +312,17 @@ def evaluar_estrategia_decision(evidencia):
                 "penalización estadística leve."
             )
         if "pullback_con_pa_y_tendencia" in fortalezas_base:
-            ajuste += 3
-            motivos.append("Estrategia: pullback con PA y tendencia.")
+            ajuste += 1
+            motivos.append(
+                "Estrategia: pullback con PA y tendencia; "
+                "bono moderado por muestra limitada."
+            )
 
         if "pullback_balance_positivo" in subtipo_setup:
-            ajuste += 2
-            motivos.append("Estrategia: pullback con balance positivo.")
+            motivos.append(
+                "Estrategia: pullback con balance positivo, "
+                "sin bono adicional para evitar duplicación."
+            )
 
     es_sweep = (
         "sweep" in patron
@@ -342,9 +347,10 @@ def evaluar_estrategia_decision(evidencia):
             )
 
         if "sweep_ruptura_confirmable" in subtipo_setup:
-            ajuste += 1
-            motivos.append("Estrategia: sweep con ruptura confirmable.")
-
+            motivos.append(
+                "Estrategia: sweep con ruptura confirmable, "
+                "sin bono automático."
+            )
     if (
         "call_resistencia_sin_ruptura" in riesgos_base
         or "call_resistencia" in accion_precio

@@ -271,29 +271,55 @@ def calcular_confianza_setup_por_capas(senal, identidad_setup):
     score_mercado = 50
 
     if calidad_mercado == "NORMAL":
-        score_mercado += 6
-        _agregar(razones, "MERCADO", 6, "mercado normal operable")
-
+        _agregar(
+            razones,
+            "MERCADO",
+            0,
+            "mercado normal operable sin bono automático"
+        )
+    
     elif calidad_mercado == "LIMPIO":
-        score_mercado += 2
-        _agregar(razones, "MERCADO", 2, "mercado limpio pero no siempre superior")
-
+        score_mercado -= 2
+        _agregar(
+            razones,
+            "MERCADO",
+            -2,
+            "mercado limpio históricamente no superior"
+        )
+    
     elif calidad_mercado == "SUCIO":
         score_mercado -= 12
-        _agregar(razones, "MERCADO", -12, "mercado sucio")
-
+        _agregar(
+            razones,
+            "MERCADO",
+            -12,
+            "mercado sucio"
+        )
     if _contiene(tendencia, "AGOTADA"):
         score_mercado -= 10
-        _agregar(razones, "MERCADO", -10, "tendencia agotada")
-
+        _agregar(
+            razones,
+            "MERCADO",
+            -10,
+            "tendencia agotada"
+        )
+    
     elif _contiene(tendencia, "FUERTE"):
-        score_mercado += 3
-        _agregar(razones, "MERCADO", 3, "tendencia fuerte")
-
+        _agregar(
+            razones,
+            "MERCADO",
+            0,
+            "tendencia fuerte sin bono automático"
+        )
+    
     elif _contiene(tendencia, "NORMAL"):
-        score_mercado += 5
-        _agregar(razones, "MERCADO", 5, "tendencia normal")
-
+        score_mercado += 3
+        _agregar(
+            razones,
+            "MERCADO",
+            3,
+            "tendencia normal más estable"
+        )
     if "MERCADO_NO_VALIDADO" in riesgos:
         score_mercado -= 6
         _agregar(razones, "MERCADO", -6, "mercado no validado")
@@ -564,7 +590,12 @@ def clasificar_setup_estrategico(senal, ctx):
 
     rechazo = ctx.get("rechazo", 0)
     liquidity_sweep = ctx.get("liquidity_sweep", 0)
-    ruptura_confirmada = ctx.get("ruptura_confirmada", False)
+    ruptura_confirmada = bool(
+       senal.get(
+           "ruptura_confirmada",
+           ctx.get("ruptura_confirmada", False)
+       )
+    )   
 
     pa_tipo = ctx.get("pa_tipo", "SIN_CONTEXTO_CLARO")
     pa_direccion = ctx.get("pa_direccion", "NEUTRA")
@@ -690,10 +721,10 @@ def clasificar_setup_estrategico(senal, ctx):
             razones.append("continuación a favor de tendencia")
 
         if fuerza_tendencia >= 60:
-            puntaje_extra += 3
-            calidad_setup = "BUENA"
-            razones.append("tendencia con fuerza suficiente")
-
+            puntaje_extra += 1
+            razones.append(
+                "tendencia con fuerza suficiente, bono moderado"
+            )
         if not a_favor_tendencia:
             riesgo_extra += 4
             calidad_setup = "DEBIL"
@@ -733,8 +764,9 @@ def clasificar_setup_estrategico(senal, ctx):
         "IMPULSO_ALCISTA_FUERTE",
         "IMPULSO_BAJISTA_FUERTE"
     ]:
-        puntaje_extra += 2
-        razones.append("price action muestra impulso fuerte")
+        razones.append(
+            "price action muestra impulso fuerte sin bono automático"
+        )
 
     if pa_tipo == "SIN_CONTEXTO_CLARO":
         riesgo_extra += 2
@@ -744,11 +776,15 @@ def clasificar_setup_estrategico(senal, ctx):
     # CALIDAD DEL MERCADO
     # =========================
     if calidad_mercado == "LIMPIO":
-        puntaje_extra += 2
-        razones.append("mercado limpio")
-
+        riesgo_extra += 1
+        razones.append(
+            "mercado limpio sin ventaja histórica automática"
+        )
+    
     if calidad_mercado == "NORMAL":
-        razones.append("mercado normal operable")
+        razones.append(
+            "mercado normal operable sin bono automático"
+        )
 
     if calidad_mercado in ["SUCIO", "CAOTICO"]:
         riesgo_extra += 4
