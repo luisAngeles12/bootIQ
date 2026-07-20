@@ -96,22 +96,26 @@ def evaluar_price_action_decision(evidencia):
 
 def evaluar_mercado_decision(evidencia):
     """
-    Evalúa únicamente las evidencias de mercado.
+    Especialista de contexto de mercado.
 
     No decide la operación.
     No bloquea.
     No modifica la evidencia.
-    Solo devuelve ajuste, motivos y tipos detectados.
+
+    Evalúa el régimen y la calidad general del mercado.
+    Price Action y estrategia son responsables de evaluar
+    la dirección concreta de la operación.
     """
 
-    direccion = _txt(evidencia.get("direccion", ""))
-    mercado_evidencias = evidencia.get("mercado_evidencias", [])
+    mercado_evidencias = evidencia.get(
+        "mercado_evidencias",
+        [],
+    )
 
     if not isinstance(mercado_evidencias, list):
         mercado_evidencias = []
 
     tipos_mercado = set()
-    ajuste_evidencias = 0.0
     motivos = []
     evidencias_validas = 0
 
@@ -120,69 +124,136 @@ def evaluar_mercado_decision(evidencia):
             continue
 
         evidencias_validas += 1
-        tipo = _txt(ev.get("tipo", ""))
+
+        tipo = _txt(
+            ev.get("tipo", "")
+        )
 
         if tipo:
             tipos_mercado.add(tipo)
 
-    if (
-        direccion == "call"
-        and "tendencia_alcista" in tipos_mercado
-        and "mercado_normal" in tipos_mercado
-    ):
-        ajuste_evidencias += 3
+    ajuste = 0.0
+
+    # ========================================================
+    # TIPO PRINCIPAL DE MERCADO
+    # ========================================================
+
+    if "mercado_rango" in tipos_mercado:
+        ajuste += 3
+
         motivos.append(
-            "Mercado: CALL alineado con tendencia alcista normal."
+            "Mercado: rango con rendimiento histórico favorable."
         )
 
-    if (
-        direccion == "call"
-        and "tendencia_alcista" in tipos_mercado
-        and "tendencia_limpia" in tipos_mercado
-    ):
-        ajuste_evidencias += 2
-        motivos.append("Mercado: CALL con tendencia limpia.")
+    elif "mercado_normal" in tipos_mercado:
+        motivos.append(
+            "Mercado: calidad normal operable, sin bono automático."
+        )
 
-    if (
-        direccion == "put"
-        and "tendencia_bajista" in tipos_mercado
-        and "mercado_normal" in tipos_mercado
-        and "tendencia_fuerte" in tipos_mercado
-        and "tendencia_limpia" in tipos_mercado
-    ):
-        ajuste_evidencias += 4
-        motivos.append("Mercado: PUT bajista fuerte y limpio.")
+    # ========================================================
+    # CALIDAD
+    # ========================================================
 
-    if (
-        direccion == "put"
-        and "tendencia_bajista" in tipos_mercado
-        and "mercado_normal" in tipos_mercado
-        and "tendencia_limpia" not in tipos_mercado
-    ):
-        ajuste_evidencias -= 4
-        motivos.append("Mercado: PUT bajista normal sin limpieza.")
+    if "mercado_limpio" in tipos_mercado:
+        ajuste -= 2
 
-    if "tendencia_debil" in tipos_mercado:
-        ajuste_evidencias -= 3
-        motivos.append("Mercado: tendencia débil.")
-
-    if "tendencia_agotada" in tipos_mercado:
-        ajuste_evidencias -= 3
-        motivos.append("Mercado: tendencia agotada.")
+        motivos.append(
+            "Mercado: clasificación LIMPIO no mostró ventaja histórica."
+        )
 
     if "mercado_sucio" in tipos_mercado:
-        ajuste_evidencias -= 4
-        motivos.append("Mercado: sucio o caótico.")
+        ajuste -= 4
+
+        motivos.append(
+            "Mercado: contexto sucio o caótico."
+        )
+
+    # ========================================================
+    # ESTADO DE TENDENCIA
+    # ========================================================
+
+    if (
+        "tendencia_alcista" in tipos_mercado
+        and "tendencia_fuerte" in tipos_mercado
+    ):
+        ajuste -= 3
+
+        motivos.append(
+            "Mercado: tendencia alcista fuerte históricamente débil."
+        )
+
+    if "tendencia_agotada" in tipos_mercado:
+        ajuste -= 3
+
+        motivos.append(
+            "Mercado: tendencia agotada."
+        )
+
+    # TENDENCIA_DEBIL queda como diagnóstico.
+    # El backtest no justificó una penalización automática.
+
+    if "tendencia_debil" in tipos_mercado:
+        motivos.append(
+            "Mercado: tendencia débil sin penalización automática."
+        )
+
+    # TENDENCIA_LIMPIA queda como diagnóstico.
+    # No se premia automáticamente.
+
+    if "tendencia_limpia" in tipos_mercado:
+        motivos.append(
+            "Mercado: tendencia limpia sin bono automático."
+        )
+
+    # ========================================================
+    # RÉGIMEN Y RIESGO
+    # ========================================================
+
+    if "expansion_peligrosa" in tipos_mercado:
+        ajuste -= 4
+
+        motivos.append(
+            "Mercado: expansión peligrosa."
+        )
+
+    if "rango_sucio" in tipos_mercado:
+        ajuste -= 4
+
+        motivos.append(
+            "Mercado: rango sucio."
+        )
+
+    if "riesgo_mercado_alto" in tipos_mercado:
+        ajuste -= 3
+
+        motivos.append(
+            "Mercado: riesgo general alto."
+        )
+
+    # ========================================================
+    # SCORE DE MERCADO
+    # Valores deliberadamente moderados.
+    # ========================================================
+
+    if "score_mercado_alto" in tipos_mercado:
+        motivos.append(
+            "Mercado: score alto sin bono automático."
+        )
+
+    if "score_mercado_bajo" in tipos_mercado:
+        ajuste -= 2
+
+        motivos.append(
+            "Mercado: score bajo."
+        )
 
     return {
-        "ajuste": round(ajuste_evidencias, 2),
+        "ajuste": round(ajuste, 2),
         "motivos": motivos,
         "tipos_mercado": sorted(tipos_mercado),
         "total_evidencias": len(mercado_evidencias),
         "evidencias_validas": evidencias_validas,
     }
-
-
 def evaluar_estrategia_decision(evidencia):
     """
     Evalúa la estrategia, el setup, las zonas y los riesgos estructurales.

@@ -258,44 +258,131 @@ if __name__ == "__main__":
     imprimir_evidencia(evidencia)
 
 def construir_evidencias_mercado(ctx):
+    """
+    Construye evidencias descriptivas del contexto de mercado.
+
+    No decide.
+    No bloquea.
+    No calcula la confianza final.
+
+    Cada evidencia representa una característica diferente del mercado.
+    """
+
+    ctx = ctx or {}
     evidencias = []
 
-    tipo_mercado = ctx.get("tipo_mercado", "INDEFINIDO")
-    calidad = ctx.get("calidad_mercado", "SIN_DATOS")
-    score = ctx.get("score_mercado", 0)
-    estado = ctx.get("estado_tendencia", "INDEFINIDA")
-    fuerza = ctx.get("fuerza_tendencia", 0)
-    direccion_tendencia = ctx.get("direccion_tendencia", "INDEFINIDA")
-    regimen = ctx.get("regimen_mercado", "SIN_DATOS")
-    riesgo = ctx.get("riesgo_mercado", "MEDIO")
+    tipo_mercado = str(
+        ctx.get("tipo_mercado", "INDEFINIDO") or "INDEFINIDO"
+    ).upper().strip()
+
+    calidad = str(
+        ctx.get("calidad_mercado", "SIN_DATOS") or "SIN_DATOS"
+    ).upper().strip()
+
+    estado = str(
+        ctx.get("estado_tendencia", "INDEFINIDA") or "INDEFINIDA"
+    ).upper().strip()
+
+    direccion_tendencia = str(
+        ctx.get("direccion_tendencia", "INDEFINIDA") or "INDEFINIDA"
+    ).upper().strip()
+
+    regimen = str(
+        ctx.get("regimen_mercado", "SIN_DATOS") or "SIN_DATOS"
+    ).upper().strip()
+
+    riesgo = str(
+        ctx.get("riesgo_mercado", "MEDIO") or "MEDIO"
+    ).upper().strip()
+
+    score = normalizar_numero(
+        ctx.get("score_mercado", 0),
+        0,
+    )
+
+    fuerza = normalizar_numero(
+        ctx.get("fuerza_tendencia", 0),
+        0,
+    )
 
     if direccion_tendencia == "ALCISTA":
         direccion_ev = "CALL"
+
     elif direccion_tendencia == "BAJISTA":
         direccion_ev = "PUT"
+
     else:
         direccion_ev = "NEUTRA"
 
-    if tipo_mercado in ["TENDENCIA_ALCISTA", "TENDENCIA_BAJISTA"]:
+    # ========================================================
+    # TIPO PRINCIPAL DE MERCADO
+    # ========================================================
+
+    if tipo_mercado == "TENDENCIA_ALCISTA":
         evidencias.append({
             "fuente": "mercado",
-            "tipo": tipo_mercado,
-            "direccion": direccion_ev,
-            "peso": 14 if fuerza >= 58 else 8,
+            "tipo": "TENDENCIA_ALCISTA",
+            "direccion": "CALL",
+            "peso": 6,
             "fuerza": fuerza,
-            "confirmada": fuerza >= 50,
-            "razon": "mercado en tendencia: " + estado
+            "confirmada": fuerza >= 45,
+            "razon": "mercado con tendencia alcista",
+            "categoria": "TIPO_MERCADO",
         })
+
+    elif tipo_mercado == "TENDENCIA_BAJISTA":
+        evidencias.append({
+            "fuente": "mercado",
+            "tipo": "TENDENCIA_BAJISTA",
+            "direccion": "PUT",
+            "peso": 6,
+            "fuerza": fuerza,
+            "confirmada": fuerza >= 45,
+            "razon": "mercado con tendencia bajista",
+            "categoria": "TIPO_MERCADO",
+        })
+
+    elif tipo_mercado == "RANGO":
+        evidencias.append({
+            "fuente": "mercado",
+            "tipo": "MERCADO_RANGO",
+            "direccion": "NEUTRA",
+            "peso": 8,
+            "fuerza": score,
+            "confirmada": True,
+            "razon": "mercado operando dentro de un rango",
+            "categoria": "TIPO_MERCADO",
+        })
+
+    elif tipo_mercado == "COMPRESION":
+        evidencias.append({
+            "fuente": "mercado",
+            "tipo": "MERCADO_COMPRESION",
+            "direccion": "NEUTRA",
+            "peso": -4,
+            "fuerza": score,
+            "confirmada": True,
+            "razon": "mercado en compresión",
+            "categoria": "TIPO_MERCADO",
+        })
+
+    # ========================================================
+    # CALIDAD DEL MERCADO
+    # ========================================================
 
     if calidad == "LIMPIO":
         evidencias.append({
             "fuente": "mercado",
             "tipo": "MERCADO_LIMPIO",
             "direccion": "NEUTRA",
-            "peso": 10,
+            "peso": 0,
             "fuerza": score,
             "confirmada": True,
-            "razon": "mercado limpio"
+            "razon": (
+                "mercado clasificado como limpio; "
+                "no implica fortaleza automática"
+            ),
+            "categoria": "CALIDAD_MERCADO",
         })
 
     elif calidad == "NORMAL":
@@ -303,10 +390,11 @@ def construir_evidencias_mercado(ctx):
             "fuente": "mercado",
             "tipo": "MERCADO_NORMAL",
             "direccion": "NEUTRA",
-            "peso": 5,
+            "peso": 2,
             "fuerza": score,
             "confirmada": True,
-            "razon": "mercado normal operable"
+            "razon": "mercado normal y operable",
+            "categoria": "CALIDAD_MERCADO",
         })
 
     elif calidad in ["SUCIO", "CAOTICO"]:
@@ -314,21 +402,30 @@ def construir_evidencias_mercado(ctx):
             "fuente": "mercado",
             "tipo": "MERCADO_SUCIO",
             "direccion": "NEUTRA",
-            "peso": -14,
+            "peso": -10,
             "fuerza": score,
             "confirmada": True,
-            "razon": "mercado sucio o caótico"
+            "razon": "mercado sucio o caótico",
+            "categoria": "CALIDAD_MERCADO",
         })
+
+    # ========================================================
+    # ESTADO DE LA TENDENCIA
+    # ========================================================
 
     if "DEBIL" in estado:
         evidencias.append({
             "fuente": "mercado",
             "tipo": "TENDENCIA_DEBIL",
             "direccion": direccion_ev,
-            "peso": -8,
+            "peso": 0,
             "fuerza": fuerza,
             "confirmada": True,
-            "razon": "tendencia débil"
+            "razon": (
+                "tendencia débil detectada; "
+                "se conserva como diagnóstico"
+            ),
+            "categoria": "ESTADO_TENDENCIA",
         })
 
     if "FUERTE" in estado:
@@ -336,54 +433,114 @@ def construir_evidencias_mercado(ctx):
             "fuente": "mercado",
             "tipo": "TENDENCIA_FUERTE",
             "direccion": direccion_ev,
-            "peso": 10,
+            "peso": 0,
             "fuerza": fuerza,
             "confirmada": True,
-            "razon": "tendencia fuerte"
+            "razon": (
+                "tendencia fuerte detectada; "
+                "sin bono automático"
+            ),
+            "categoria": "ESTADO_TENDENCIA",
         })
 
     if "AGOTADA" in estado:
         evidencias.append({
             "fuente": "mercado",
             "tipo": "TENDENCIA_AGOTADA",
-            "direccion": "NEUTRA",
-            "peso": -10,
+            "direccion": direccion_ev,
+            "peso": -6,
             "fuerza": fuerza,
             "confirmada": True,
-            "razon": "tendencia agotada"
+            "razon": "tendencia con señales de agotamiento",
+            "categoria": "ESTADO_TENDENCIA",
         })
 
-    if regimen in ["EXPANSION_PELIGROSA", "RANGO_SUCIO"]:
-        evidencias.append({
-            "fuente": "mercado",
-            "tipo": regimen,
-            "direccion": "NEUTRA",
-            "peso": -18,
-            "fuerza": 0,
-            "confirmada": True,
-            "razon": "régimen de mercado riesgoso"
-        })
+    # ========================================================
+    # RÉGIMEN DEL MERCADO
+    # ========================================================
 
     if regimen == "TENDENCIA_LIMPIA":
         evidencias.append({
             "fuente": "mercado",
             "tipo": "TENDENCIA_LIMPIA",
             "direccion": direccion_ev,
-            "peso": 12,
+            "peso": 0,
             "fuerza": fuerza,
             "confirmada": True,
-            "razon": "tendencia limpia favorable"
+            "razon": (
+                "régimen de tendencia limpia; "
+                "sin premio automático"
+            ),
+            "categoria": "REGIMEN_MERCADO",
         })
+
+    elif regimen == "EXPANSION_PELIGROSA":
+        evidencias.append({
+            "fuente": "mercado",
+            "tipo": "EXPANSION_PELIGROSA",
+            "direccion": "NEUTRA",
+            "peso": -10,
+            "fuerza": score,
+            "confirmada": True,
+            "razon": "expansión de mercado potencialmente peligrosa",
+            "categoria": "REGIMEN_MERCADO",
+        })
+
+    elif regimen == "RANGO_SUCIO":
+        evidencias.append({
+            "fuente": "mercado",
+            "tipo": "RANGO_SUCIO",
+            "direccion": "NEUTRA",
+            "peso": -10,
+            "fuerza": score,
+            "confirmada": True,
+            "razon": "rango desordenado o sucio",
+            "categoria": "REGIMEN_MERCADO",
+        })
+
+    # ========================================================
+    # SCORE DE MERCADO
+    # Umbrales provisionales para comprobarlos en backtest.
+    # ========================================================
+
+    if score >= 70:
+        evidencias.append({
+            "fuente": "mercado",
+            "tipo": "SCORE_MERCADO_ALTO",
+            "direccion": "NEUTRA",
+            "peso": 2,
+            "fuerza": score,
+            "confirmada": True,
+            "razon": "score de mercado alto",
+            "categoria": "SCORE_MERCADO",
+        })
+
+    elif 0 < score < 45:
+        evidencias.append({
+            "fuente": "mercado",
+            "tipo": "SCORE_MERCADO_BAJO",
+            "direccion": "NEUTRA",
+            "peso": -4,
+            "fuerza": score,
+            "confirmada": True,
+            "razon": "score de mercado bajo",
+            "categoria": "SCORE_MERCADO",
+        })
+
+    # ========================================================
+    # RIESGO DEL MERCADO
+    # ========================================================
 
     if riesgo == "ALTO":
         evidencias.append({
             "fuente": "mercado",
             "tipo": "RIESGO_MERCADO_ALTO",
             "direccion": "NEUTRA",
-            "peso": -12,
-            "fuerza": 0,
+            "peso": -8,
+            "fuerza": score,
             "confirmada": True,
-            "razon": "riesgo de mercado alto"
+            "razon": "riesgo de mercado alto",
+            "categoria": "RIESGO_MERCADO",
         })
 
     return evidencias
