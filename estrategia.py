@@ -942,8 +942,110 @@ def evaluar_senal_candidata(activo, ctx, senal):
         senal,
         ctx
     )
-
+    
     senal = resultado_bootiq["senal"]
+    
+    # Auditoría completa del Cerebro Único.
+    resultado_cerebro = resultado_bootiq.get("resultado", {})
+    
+    if not isinstance(resultado_cerebro, dict):
+        resultado_cerebro = {}
+    
+    resultado_confianza = resultado_cerebro.get(
+        "resultado_confianza",
+        {},
+    )
+    
+    if not isinstance(resultado_confianza, dict):
+        resultado_confianza = {}
+    
+    resultado_pa = resultado_cerebro.get(
+        "resultado_price_action",
+        {},
+    )
+    
+    if not isinstance(resultado_pa, dict):
+        resultado_pa = {}
+    
+    resultado_mercado = resultado_cerebro.get(
+        "resultado_mercado",
+        {},
+    )
+    
+    if not isinstance(resultado_mercado, dict):
+        resultado_mercado = {}
+    
+    resultado_estrategia = resultado_cerebro.get(
+        "resultado_estrategia",
+        {},
+    )
+    
+    if not isinstance(resultado_estrategia, dict):
+        resultado_estrategia = {}
+    
+    senal["auditoria_confianza_base"] = resultado_confianza.get(
+        "confianza_base",
+        resultado_cerebro.get("confianza_base", 50),
+    )
+    
+    senal["auditoria_ajuste_aprendizaje"] = resultado_confianza.get(
+        "ajuste_aprendizaje",
+        resultado_cerebro.get(
+            "ajuste_confianza_aprendizaje",
+            0,
+        ),
+    )
+    
+    senal["auditoria_ajuste_price_action"] = resultado_pa.get(
+        "ajuste",
+        0,
+    )
+    
+    senal["auditoria_ajuste_mercado"] = resultado_mercado.get(
+        "ajuste",
+        0,
+    )
+    
+    senal["auditoria_ajuste_estrategia"] = (
+        resultado_estrategia.get("ajuste", 0)
+    )
+    
+    senal["auditoria_ajuste_evidencias"] = resultado_confianza.get(
+        "ajuste_evidencias",
+        resultado_cerebro.get("ajuste_evidencias", 0),
+    )
+    
+    senal["auditoria_ajuste_ponderacion"] = resultado_confianza.get(
+        "ajuste_ponderacion",
+        resultado_cerebro.get("ajuste_ponderacion", 0),
+    )
+    
+    senal["auditoria_confianza_antes_ponderacion"] = (
+        resultado_confianza.get(
+            "confianza_antes_ponderacion",
+            0,
+        )
+    )
+    
+    senal["auditoria_confianza_final"] = resultado_confianza.get(
+        "confianza",
+        resultado_cerebro.get("confianza", 0),
+    )
+    
+    senal["auditoria_motivos_price_action"] = " | ".join(
+        str(x)
+        for x in resultado_pa.get("motivos", [])
+    )
+    
+    senal["auditoria_motivos_mercado"] = " | ".join(
+        str(x)
+        for x in resultado_mercado.get("motivos", [])
+    )
+    
+    senal["auditoria_motivos_estrategia"] = " | ".join(
+        str(x)
+        for x in resultado_estrategia.get("motivos", [])
+    )
 
     # En producción, una señal descartada por el Cerebro Único
     # no continúa hacia la ejecución.

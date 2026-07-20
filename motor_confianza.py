@@ -17,7 +17,7 @@ AJUSTE_MAXIMO_CONFIANZA = 12.0
 AJUSTE_MINIMO_CONFIANZA = -12.0
 
 # Muestra mínima para que una coincidencia pueda afectar la confianza.
-MIN_MUESTRA_NIVEL = 8
+MIN_MUESTRA_NIVEL = 20
 
 # Una coincidencia individual no puede producir un ajuste extremo.
 AJUSTE_MAXIMO_POR_NIVEL = 4.0
@@ -92,19 +92,28 @@ def _nivel_usable(signal, campos):
 
 
 def _confiabilidad_muestra(total):
+    """
+    Reduce el impacto de muestras pequeñas.
+
+    Una coincidencia necesita al menos 20 operaciones para modificar
+    la confianza. Su influencia aumenta progresivamente según la muestra.
+    """
+
     total = _entero(total, 0)
 
     if total < MIN_MUESTRA_NIVEL:
         return 0.0, "INSUFICIENTE"
 
-    if total < 20:
-        return 0.45, "BAJA"
+    if total < 40:
+        return 0.35, "BAJA"
 
-    if total < 50:
-        return 0.70, "MEDIA"
+    if total < 80:
+        return 0.60, "MEDIA"
+
+    if total < 150:
+        return 0.80, "MEDIA_ALTA"
 
     return 1.0, "ALTA"
-
 
 def _ajuste_desde_combinacion(combinacion, grupo):
     """
@@ -145,13 +154,17 @@ def _ajuste_desde_combinacion(combinacion, grupo):
 
     # El grupo funciona como control de coherencia, no como segunda fuente
     # de impacto. Se corrige el signo si la etiqueta contradice el winrate.
-    if grupo == "fuertes":
-        distancia = max(0.0, distancia)
-    elif grupo == "debiles":
-        distancia = min(0.0, distancia)
-    else:
-        distancia = _limitar(distancia, -0.75, 0.75)
-
+    # El rendimiento observado determina el signo del ajuste.
+    # El grupo se conserva únicamente para auditoría.
+    #
+    # No se fuerza una combinación "fuerte" a ser positiva ni una
+    # combinación "débil" a ser negativa, porque las etiquetas pueden
+    # estar desactualizadas o estadísticamente invertidas.
+    distancia = _limitar(
+        distancia,
+        AJUSTE_MINIMO_POR_NIVEL,
+        AJUSTE_MAXIMO_POR_NIVEL,
+    )
     ajuste = distancia * factor_muestra
     ajuste = _limitar(
         ajuste,

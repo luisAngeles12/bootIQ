@@ -24,10 +24,7 @@ import estrategia
 from motor_protocolos import buscar_entrada_confirmada
 from contexto_mercado import detectar_tipo_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
 from motor_aprendizaje_historico import generar_aprendizaje_desde_resultados
-from decision_bootiq import (
-    crear_decision_bootiq,
-    aplanar_decision_bootiq,
-)
+
 
 CARPETA_DATA = "data_backtest"
 SALIDA = "backtest_bot_real_resultados.csv"
@@ -36,7 +33,8 @@ MAX_ACTIVOS_ANALIZAR = 20
 LIMITE_DATASETS = 160
 PASO_RONDA = 1
 BUILD_ID = "BOOTIQ_BACKTEST_V4_SIN_DOBLE_DECISION_2026_07_17"
-
+ACTUALIZAR_APRENDIZAJE = False
+DATASETS_USADOS_BACKTEST = 0
 
 def leer_csv_velas(ruta):
     velas = []
@@ -62,7 +60,7 @@ def leer_csv_velas(ruta):
 def cargar_datasets():
     datasets = []
 
-    for archivo in os.listdir(CARPETA_DATA):
+    for archivo in sorted(os.listdir(CARPETA_DATA)):
         if not archivo.endswith(".csv"):
             continue
 
@@ -164,8 +162,10 @@ def seleccionar_top_datasets(datasets, limite=20):
 
     evaluados = sorted(
         evaluados,
-        key=lambda x: x.get("score_filtro_dataset", 0),
-        reverse=True
+        key=lambda x: (
+            -float(x.get("score_filtro_dataset", 0)),
+            str(x.get("activo", "")).upper(),
+        ),
     )
 
     seleccionados = evaluados[:limite]
@@ -304,23 +304,41 @@ def crear_registro_resultado(
     if idx_entrada is None:
         idx_entrada = idx
 
-    if idx_entrada + 1 >= len(velas):
+    if idx + 1 >= len(velas):
         raise IndexError(
-            "No existe una vela posterior para calcular el resultado."
+            "No existe una vela posterior a la señal para "
+            "calcular el resultado hipotético."
         )
 
+    if idx_entrada + 1 >= len(velas):
+        raise IndexError(
+            "No existe una vela posterior a la entrada para "
+            "calcular el resultado real."
+        )
+
+    direccion = senal.get("direccion", "")
+
+    # Resultado fijo del universo:
+    # siempre se calcula desde la vela donde nació la señal.
+    info_hipotetico = resultado_binario(
+        velas,
+        idx,
+        direccion,
+    )
+
+    # Resultado de la entrada usada por la operación.
+    # Para canceladas, idx_entrada normalmente será igual a idx.
     info_resultado = resultado_binario(
         velas,
         idx_entrada,
-        senal.get("direccion", ""),
+        direccion,
     )
-
     decision_bootiq = (
         decision_bootiq
         if isinstance(decision_bootiq, dict)
         else {}
     )
-    decision_bootiq_plana = aplanar_decision_bootiq(decision_bootiq)
+    decision_bootiq_plana = {}
 
     decision_oficial = str(
         senal.get("cerebro_unico_decision", "NO_OPERAR")
@@ -501,9 +519,15 @@ def crear_registro_resultado(
         ),
 
         "resultado": info_resultado["resultado"],
-        "resultado_hipotetico": info_resultado["resultado"],
+        "resultado_hipotetico": info_hipotetico["resultado"],
+
+        "fecha_senal": velas[idx]["from"],
+        "precio_entrada_hipotetico": velas[idx]["close"],
+        "precio_cierre_hipotetico": velas[idx + 1]["close"],
+
         "precio_entrada": velas[idx_entrada]["close"],
         "precio_cierre": velas[idx_entrada + 1]["close"],
+
         "movimiento": info_resultado["movimiento"],
         "distancia_resultado": info_resultado[
             "distancia_resultado"
@@ -549,6 +573,69 @@ def crear_registro_resultado(
         "confianza_final_cerebro": senal.get(
             "confianza_final_cerebro",
             senal.get("cerebro_unico_confianza", 0),
+        ),
+         # ==================================================
+        # AUDITORÍA INTERNA DEL CEREBRO ÚNICO
+        # ==================================================
+
+        "auditoria_confianza_base": senal.get(
+            "auditoria_confianza_base",
+            0,
+        ),
+
+        "auditoria_ajuste_aprendizaje": senal.get(
+            "auditoria_ajuste_aprendizaje",
+            0,
+        ),
+
+        "auditoria_ajuste_price_action": senal.get(
+            "auditoria_ajuste_price_action",
+            0,
+        ),
+
+        "auditoria_ajuste_mercado": senal.get(
+            "auditoria_ajuste_mercado",
+            0,
+        ),
+
+        "auditoria_ajuste_estrategia": senal.get(
+            "auditoria_ajuste_estrategia",
+            0,
+        ),
+
+        "auditoria_ajuste_evidencias": senal.get(
+            "auditoria_ajuste_evidencias",
+            0,
+        ),
+
+        "auditoria_ajuste_ponderacion": senal.get(
+            "auditoria_ajuste_ponderacion",
+            0,
+        ),
+
+        "auditoria_confianza_antes_ponderacion": senal.get(
+            "auditoria_confianza_antes_ponderacion",
+            0,
+        ),
+
+        "auditoria_confianza_final": senal.get(
+            "auditoria_confianza_final",
+            senal.get("cerebro_unico_confianza", 0),
+        ),
+
+        "auditoria_motivos_price_action": senal.get(
+            "auditoria_motivos_price_action",
+            "",
+        ),
+
+        "auditoria_motivos_mercado": senal.get(
+            "auditoria_motivos_mercado",
+            "",
+        ),
+
+        "auditoria_motivos_estrategia": senal.get(
+            "auditoria_motivos_estrategia",
+            "",
         ),
     }
 
@@ -630,7 +717,7 @@ def ejecutar_backtest(datasets):
 
             # La señal ya viene evaluada por estrategia.py usando el contexto
             # real de mercado. Aquí NO se vuelve a llamar al Cerebro Único.
-            decision_bootiq = crear_decision_bootiq(senal)
+            decision_bootiq = {}
 
             decision_oficial = str(
                 senal.get(
@@ -859,6 +946,18 @@ def guardar_resultados(resultados):
         "motivo_ejecucion",
         "estado_operacion",
         "espera_velas",
+
+        "cerebro_unico_decision",
+        "cerebro_unico_decision_legacy",
+        "cerebro_unico_operar",
+        "cerebro_unico_confianza",
+        "cerebro_unico_requiere_protocolo",
+        "cerebro_unico_modo_ejecucion",
+        "cerebro_unico_bloquear_por_riesgo",
+        "cerebro_unico_riesgo",
+        "cerebro_unico_riesgo_puntos",
+        "cerebro_unico_motivos",
+
         "fase4_evaluada",
         "fase4_permitir_operacion",
         "fase4_modo",
@@ -869,9 +968,11 @@ def guardar_resultados(resultados):
 
         "resultado",
         "resultado_hipotetico",
+        "fecha_senal",
+        "precio_entrada_hipotetico",
+        "precio_cierre_hipotetico",
         "precio_entrada",
         "precio_cierre",
-
         "movimiento",
         "distancia_resultado",
         "excursion_favor",
@@ -932,6 +1033,19 @@ def guardar_resultados(resultados):
         "pesos_aplicados",
         "confianza_final_cerebro",
         
+        "auditoria_confianza_base",
+        "auditoria_ajuste_aprendizaje",
+        "auditoria_ajuste_price_action",
+        "auditoria_ajuste_mercado",
+        "auditoria_ajuste_estrategia",
+        "auditoria_ajuste_evidencias",
+        "auditoria_ajuste_ponderacion",
+        "auditoria_confianza_antes_ponderacion",
+        "auditoria_confianza_final",
+        "auditoria_motivos_price_action",
+        "auditoria_motivos_mercado",
+        "auditoria_motivos_estrategia",
+
         "bootiq_resultado_estado_operacion",
         "bootiq_resultado_motivo_ejecucion",
         "bootiq_resultado_resultado",
@@ -942,29 +1056,76 @@ def guardar_resultados(resultados):
         writer.writeheader()
         writer.writerows(resultados)
 
-def resumen_por_campo(resultados, campo):
+def resumen_por_campo(
+    resultados,
+    campo,
+    campo_resultado="resultado_hipotetico",
+):
+    """
+    Agrupa registros por un campo y calcula el winrate usando
+    el resultado indicado.
+
+    Por defecto utiliza resultado_hipotetico, porque los reportes
+    generales deben medir la calidad de la señal original.
+    """
+
     grupos = {}
 
     for r in resultados:
         clave = r.get(campo, "")
 
         if clave not in grupos:
-            grupos[clave] = {"total": 0, "win": 0}
+            grupos[clave] = {
+                "total": 0,
+                "win": 0,
+            }
 
         grupos[clave]["total"] += 1
 
-        if r["resultado"] == "WIN":
+        if r.get(campo_resultado) == "WIN":
             grupos[clave]["win"] += 1
 
     filas = []
 
-    for clave, d in grupos.items():
-        wr = round((d["win"] / d["total"]) * 100, 2)
-        filas.append((clave, d["total"], d["win"], d["total"] - d["win"], wr))
+    for clave, datos in grupos.items():
+        total = datos["total"]
+        wins = datos["win"]
+        losses = total - wins
 
-    return sorted(filas, key=lambda x: x[4], reverse=True)
+        winrate = (
+            round((wins / total) * 100, 2)
+            if total
+            else 0
+        )
 
-def resumen_por_lista(resultados, campo):
+        filas.append(
+            (
+                clave,
+                total,
+                wins,
+                losses,
+                winrate,
+            )
+        )
+
+    return sorted(
+        filas,
+        key=lambda x: x[4],
+        reverse=True,
+    )
+
+def resumen_por_lista(
+    resultados,
+    campo,
+    campo_resultado="resultado_hipotetico",
+):
+    """
+    Descompone valores separados por | y calcula su rendimiento.
+
+    Por defecto usa resultado_hipotetico para no mezclar la entrada
+    original con la entrada confirmada por protocolo.
+    """
+
     grupos = {}
 
     for r in resultados:
@@ -982,21 +1143,44 @@ def resumen_por_lista(resultados, campo):
                 continue
 
             if item not in grupos:
-                grupos[item] = {"total": 0, "win": 0}
+                grupos[item] = {
+                    "total": 0,
+                    "win": 0,
+                }
 
             grupos[item]["total"] += 1
 
-            if r["resultado"] == "WIN":
+            if r.get(campo_resultado) == "WIN":
                 grupos[item]["win"] += 1
 
     filas = []
 
-    for clave, d in grupos.items():
-        wr = round((d["win"] / d["total"]) * 100, 2) if d["total"] else 0
-        filas.append((clave, d["total"], d["win"], d["total"] - d["win"], wr))
+    for clave, datos in grupos.items():
+        total = datos["total"]
+        wins = datos["win"]
+        losses = total - wins
 
-    return sorted(filas, key=lambda x: x[1], reverse=True)
+        winrate = (
+            round((wins / total) * 100, 2)
+            if total
+            else 0
+        )
 
+        filas.append(
+            (
+                clave,
+                total,
+                wins,
+                losses,
+                winrate,
+            )
+        )
+
+    return sorted(
+        filas,
+        key=lambda x: x[1],
+        reverse=True,
+    )
 
 def imprimir_tabla_resumen(titulo, filas, limite=20):
     print("\n=====", titulo, "=====")
@@ -1014,15 +1198,15 @@ def imprimir_impacto_cerebro(resultados):
     if not resultados:
         return
 
-    def calcular_wr(filas):
-        total = len(filas)
-        wins = sum(
-            1 for r in filas if r.get("resultado") == "WIN"
-        )
-        losses = total - wins
-        wr = round((wins / total) * 100, 2) if total else 0
-        return total, wins, losses, wr
-
+    def calcular_wr(filas, campo="resultado"):
+         total = len(filas)
+         wins = sum(
+             1 for r in filas
+             if r.get(campo) == "WIN"
+         )
+         losses = total - wins
+         wr = round((wins / total) * 100, 2) if total else 0
+         return total, wins, losses, wr
     autorizadas = [
         r for r in resultados
         if r.get("cerebro_unico_operar") is True
@@ -1044,13 +1228,40 @@ def imprimir_impacto_cerebro(resultados):
         if r.get("estado_operacion") == "CANCELADA_PROTOCOLO"
     ]
 
-    total, wins, losses, wr = calcular_wr(resultados)
-    a_total, a_win, a_loss, a_wr = calcular_wr(autorizadas)
-    r_total, r_win, r_loss, r_wr = calcular_wr(rechazadas)
-    d_total, d_win, d_loss, d_wr = calcular_wr(directas)
-    p_total, p_win, p_loss, p_wr = calcular_wr(por_protocolo)
+    # Universo y decisiones del Cerebro:
+    # se evalúan desde la señal original.
+    total, wins, losses, wr = calcular_wr(
+        resultados,
+        campo="resultado_hipotetico",
+    )
+    
+    a_total, a_win, a_loss, a_wr = calcular_wr(
+        autorizadas,
+        campo="resultado_hipotetico",
+    )
+    
+    r_total, r_win, r_loss, r_wr = calcular_wr(
+        rechazadas,
+        campo="resultado_hipotetico",
+    )
+    
+    # Operaciones ejecutadas:
+    # se evalúan desde la entrada real.
+    d_total, d_win, d_loss, d_wr = calcular_wr(
+        directas,
+        campo="resultado",
+    )
+    
+    p_total, p_win, p_loss, p_wr = calcular_wr(
+        por_protocolo,
+        campo="resultado",
+    )
+    
+    # Canceladas por protocolo:
+    # se evalúan hipotéticamente desde la señal original.
     cp_total, cp_win, cp_loss, cp_wr = calcular_wr(
-        canceladas_protocolo
+        canceladas_protocolo,
+        campo="resultado_hipotetico",
     )
 
     precision_bloqueo = (
@@ -1126,7 +1337,7 @@ def imprimir_resumen(resultados):
     losses = total - wins
     wr = round((wins / total) * 100, 2) if total else 0
     print("\n===== BACKTEST BOT REAL =====")
-    print("Datasets:", LIMITE_DATASETS)
+    print("Datasets:", DATASETS_USADOS_BACKTEST)
     print("Paso ronda:", PASO_RONDA)
     print("Total operaciones:", total)
     print("Ganadas:", wins)
@@ -1153,12 +1364,10 @@ def imprimir_resumen(resultados):
         ("POR ESTADO SETUP", "estado_setup"),
         ("POR CALIDAD SETUP", "calidad_setup"),
         ("POR MODO ENTRADA SETUP", "modo_entrada_setup"),
-        ("POR MOTIVO EJECUCION", "motivo_ejecucion"),
         ("POR NIVEL RIESGO PROTOCOLO", "nivel_riesgo_protocolo"),
         ("POR NIVEL CONFIRMACION IA", "nivel_confirmacion_ia"),
         ("POR ACCION CONFIRMACION IA", "accion_confirmacion_ia"),
         ("POR INDICE CONFIRMACION IA", "rango_indice_confirmacion_ia"),
-        ("POR ESPERA VELAS", "espera_velas"),
         ("POR SCORE FINAL", "score_final"),
         ("POR NIVEL CONSENSO", "nivel_consenso"),
         ("POR DECISION BOOTIQ", "decision_unificada_accion"),
@@ -1182,21 +1391,105 @@ def imprimir_resumen(resultados):
         ),
         ("POR AJUSTE PONDERACION", "ajuste_ponderacion"),
         ("POR CONFIANZA FINAL CEREBRO", "confianza_final_cerebro"),
+        (
+            "AUDITORIA POR CONFIANZA BASE",
+            "auditoria_confianza_base",
+        ),
+        (
+            "AUDITORIA POR AJUSTE APRENDIZAJE",
+            "auditoria_ajuste_aprendizaje",
+        ),
+        (
+            "AUDITORIA POR AJUSTE PRICE ACTION",
+            "auditoria_ajuste_price_action",
+        ),
+        (
+            "AUDITORIA POR AJUSTE MERCADO",
+            "auditoria_ajuste_mercado",
+        ),
+        (
+            "AUDITORIA POR AJUSTE ESTRATEGIA",
+            "auditoria_ajuste_estrategia",
+        ),
+        (
+            "AUDITORIA POR AJUSTE EVIDENCIAS",
+            "auditoria_ajuste_evidencias",
+        ),
+        (
+            "AUDITORIA POR AJUSTE PONDERACION",
+            "auditoria_ajuste_ponderacion",
+        ),
+        (
+            "AUDITORIA CONFIANZA ANTES PONDERACION",
+            "auditoria_confianza_antes_ponderacion",
+        ),
+        (
+            "AUDITORIA CONFIANZA FINAL",
+            "auditoria_confianza_final",
+        ),
     ]
 
     imprimir_tabla_resumen(
         "POR ESTADO OPERACION",
-        resumen_por_campo(resultados, "estado_operacion"),
-        limite=10
+        resumen_por_campo(
+            resultados,
+            "estado_operacion",
+            campo_resultado="resultado",
+        ),
+        limite=10,
     )
 
     for titulo, campo in reportes:
         imprimir_tabla_resumen(
             titulo,
-            resumen_por_campo(resultados, campo),
-            limite=20
+            resumen_por_campo(
+                resultados,
+                campo,
+                campo_resultado="resultado_hipotetico",
+            ),
+            limite=20,
         )
 
+    # Reportes de ejecución real.
+    imprimir_tabla_resumen(
+        "POR MOTIVO EJECUCION",
+        resumen_por_campo(
+            resultados,
+            "motivo_ejecucion",
+            campo_resultado="resultado",
+        ),
+        limite=30,
+    )
+
+    imprimir_tabla_resumen(
+        "POR ESPERA VELAS",
+        resumen_por_campo(
+            resultados,
+            "espera_velas",
+            campo_resultado="resultado",
+        ),
+        limite=20,
+    )
+
+    imprimir_tabla_resumen(
+        "POR RIESGOS BASE",
+        resumen_por_lista(
+            resultados,
+            "riesgos_base",
+            campo_resultado="resultado_hipotetico",
+        ),
+        limite=30,
+    )
+
+    imprimir_tabla_resumen(
+        "POR FORTALEZAS BASE",
+        resumen_por_lista(
+            resultados,
+            "fortalezas_base",
+            campo_resultado="resultado_hipotetico",
+        ),
+        limite=30,
+    )
     imprimir_tabla_resumen(
         "POR RIESGOS BASE",
         resumen_por_lista(resultados, "riesgos_base"),
@@ -1214,13 +1507,21 @@ def main():
 
     datasets = cargar_datasets()
     datasets = seleccionar_top_datasets(datasets, limite=MAX_ACTIVOS_ANALIZAR)
+    global DATASETS_USADOS_BACKTEST
+    DATASETS_USADOS_BACKTEST = len(datasets)
     print("Datasets cargados:", len(datasets))
     print("Ejecutando backtest usando analizar_activo() real...")
 
     resultados = ejecutar_backtest(datasets)
 
     guardar_resultados(resultados)
-    generar_aprendizaje_desde_resultados(resultados)
+    if ACTUALIZAR_APRENDIZAJE:
+        generar_aprendizaje_desde_resultados(resultados)
+    else:
+        print(
+            "Aprendizaje histórico congelado: "
+            "no se sobrescribió durante esta prueba."
+        )
     imprimir_resumen(resultados)
 
     print("Archivo generado:", SALIDA)

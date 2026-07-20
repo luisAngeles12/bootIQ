@@ -16,21 +16,33 @@ from motor_consenso import aplicar_consenso_senal
 from motor_candidatos import crear_candidato
 
 def crear_senal_profesional(activo, direccion, estrategia, puntaje, rsi, razones, ctx=None):
-    calidad, prioridad = clasificar_senal_profesional(puntaje, razones, estrategia, rsi)
-
-    if prioridad <= 0:
-        return None
-
+    calidad, prioridad = clasificar_senal_profesional(
+        puntaje,
+        razones,
+        estrategia,
+        rsi,
+    )
+    
     permitido, razon_memoria = memoria_operativa(
         activo,
         direccion,
-        estrategia
+        estrategia,
     )
-
+    
+    # Estos datos ya no bloquean la señal.
+    # Se conservan como evidencia para motor_decision.py.
+    riesgos_predecision = []
+    
+    if prioridad <= 0:
+        riesgos_predecision.append(
+            "PRIORIDAD_NO_POSITIVA"
+        )
+    
     if not permitido:
-        print("Señal bloqueada por memoria:", activo, razon_memoria)
-        return None
-
+        riesgos_predecision.append(
+            "MEMORIA_OPERATIVA_DESFAVORABLE"
+        )
+    
     razones.append("calidad " + calidad)
     razones.append(razon_memoria)
 
@@ -43,6 +55,11 @@ def crear_senal_profesional(activo, direccion, estrategia, puntaje, rsi, razones
         "razon": ", ".join(razones),
         "calidad": calidad,
         "prioridad": prioridad,
+        "prioridad_original": prioridad,
+        "prioridad_no_positiva": prioridad <= 0,
+        "memoria_permite": bool(permitido),
+        "razon_memoria": razon_memoria,
+        "riesgos_predecision": riesgos_predecision,
         "accion_precio": (
             ctx.get("accion_precio_call", "SIN_DATOS")
             if ctx and direccion == "call"
@@ -80,9 +97,15 @@ def motor_estrategias_profesional(ctx):
 
     activos_malos = activos_bloqueables()
 
-    if activo in activos_malos:
-        return None
-
+    activo_bloqueable_historico = (
+        activo in activos_malos
+    )
+    
+    razon_activo_historico = (
+        "ACTIVO_HISTORICAMENTE_DEBIL"
+        if activo_bloqueable_historico
+        else ""
+    )
     direccion_presion = ctx.get("direccion_presion", "NEUTRA")
     razon_presion = ctx.get("razon_presion", "")
     fuerza_presion = ctx.get("fuerza_presion", 0)
@@ -827,8 +850,31 @@ def motor_estrategias_profesional(ctx):
         return None
 
     for s in senales:
+        s["activo_bloqueable_historico"] = (
+            activo_bloqueable_historico
+        )
+    
+        s["razon_activo_historico"] = (
+            razon_activo_historico
+        )
+    
+        if activo_bloqueable_historico:
+            riesgos = list(
+                s.get("riesgos_predecision", [])
+            )
+    
+            if (
+                "ACTIVO_HISTORICAMENTE_DEBIL"
+                not in riesgos
+            ):
+                riesgos.append(
+                    "ACTIVO_HISTORICAMENTE_DEBIL"
+                )
+    
+            s["riesgos_predecision"] = riesgos
+    
         s = aplicar_consenso_senal(s, ctx)
-        s["score_final"] = score_final_senal_profesional(s) 
+        s["score_final"] = score_final_senal_profesional(s)
     senales = sorted(
         senales,
         key=lambda x: (

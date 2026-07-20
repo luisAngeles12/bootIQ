@@ -10,54 +10,72 @@ def _num(v, defecto=0):
 
 
 PESOS_EVIDENCIA = {
-    # Fortalezas históricas
-    "pa_a_favor_call_alta": 8,
-    "rechazo_vendedor_confirmado_debil_historico": 5,
-    "choch_con_tendencia_debil": 3,
-    "impulso_alcista_fuerte_debil_historico": 1,
-    "reaccion_confirmada": 3,
+    # ========================================================
+    # FORTALEZAS CON RESULTADOS FAVORABLES
+    # ========================================================
 
-    # Contradicciones direccionales
-    # PA contrario nunca debe aumentar la confianza.
-    "pa_contra_call": -5,
-    "pa_contra_put": -5,
+    "pa_a_favor_put_media": 3,
+    
+    # Estas fortalezas continúan registrándose, pero el backtest
+    # actual no demuestra una ventaja positiva.
+    "choch_con_pa_valido": 0,
+    "rechazo_comprador_confirmado": 0,
+    "reaccion_confirmada": 0,
+    "impulso_bajista_fuerte": 0,
 
-    # Riesgos que no deben castigar fuerte
+    # ========================================================
+    # FORTALEZAS SIN VENTAJA DEMOSTRADA
+    # Se conservan como evidencia, pero no modifican confianza.
+    # ========================================================
+
+    "pa_a_favor_put_alta": 0,
+    "pa_a_favor_call_media": 0,
+    "pa_a_favor_call_alta": 0,
+    "pullback_con_pa_y_tendencia": 0,
+    "sweep_con_pa_valido": 0,
+    "continuacion_con_pa_valido": 0,
+
+    # ========================================================
+    # RIESGOS QUE EL BACKTEST NO DEMUESTRA COMO NEGATIVOS
+    # No deben castigar hasta validar fuera de muestra.
+    # ========================================================
+
     "call_resistencia_sin_ruptura": 0,
-    "accion_precio_no_validada": 0,
-    "ubicacion_fatiga_no_validada": 0,
+    "put_soporte_sin_ruptura": 0,
+    "sin_contexto_claro": 0,
+    "contra_tendencia": 0,
+    "sweep_sin_confirmacion_pa": 0,
+    "sweep_con_confirmacion_pa_debil": 0,
     "vela_contraria_reciente": 0,
+    "mercado_no_validado": 0,
+    "fuerza_tendencia_baja": 0,
+    "ubicacion_fatiga_no_validada": 0,
+    "continuacion_tendencia_insuficiente": 0,
+    "zona_sr_no_validada": 0,
 
-    # Riesgos moderados
-    "mercado_no_validado": -4,
-    "sin_contexto_claro": -3,
-    "put_soporte_sin_ruptura": -3,
-    "sweep_sin_confirmacion_pa": -3,
-    "sweep_con_confirmacion_pa_debil": -2,
+    # ========================================================
+    # RIESGOS CON DESEMPEÑO DÉBIL OBSERVADO
+    # Penalizaciones pequeñas y limitadas.
+    # ========================================================
 
-    # Riesgos fuertes
-    "reaccion_sin_confirmacion_fuerte": -8,
-    "pa_a_favor_put_debil": -6,
-    "pa_a_favor_call_debil": -6,
+    "accion_precio_no_validada": -1,
+    "choch_sin_pa_valido": -1,
+    "pa_a_favor_put_debil": -1,
+    "pa_a_favor_call_debil": -1,
+    "pa_contra_put": -1,
+    "pa_contra_call": -1,
+    "pullback_tendencia_insuficiente": -1,
+    "tendencia_fuerte_no_confiable": -1,
+    "rechazo_vendedor_confirmado_debil_historico": -1,
+
+    # Riesgo más débil entre los grupos con muestra relevante.
+    "reaccion_sin_confirmacion_fuerte": -2,
 }
-
 
 # Compatibilidad temporal.
 # Estos pesos deben revisarse posteriormente con la base estadística,
 # porque un peso fijo por activo puede provocar sobreajuste.
-PESOS_ACTIVOS = {
-    "cocoa-otc": 4,
-    "suiusd-otc": 4,
-    "injusd-otc": 4,
-    "ondousd-otc": 3,
-    "usdvnd-otc": 3,
-    "eurgbp-otc": 2,
-
-    "fb-otc": -5,
-    "eurthb-otc": -6,
-    "fartcoinusd-otc": -6,
-    "cardano-otc": -3,
-}
+PESOS_ACTIVOS = {}
 
 
 def _registrar_ajuste(
@@ -159,6 +177,7 @@ def calcular_ponderacion_estadistica(evidencia):
     direccion = _txt(evidencia.get("direccion"))
     tipo_setup = _txt(evidencia.get("tipo_setup"))
     subtipo_setup = _txt(evidencia.get("subtipo_setup"))
+    protocolo = _txt(evidencia.get("protocolo_sugerido"))
     riesgos_base = _txt(evidencia.get("riesgos_base"))
     fortalezas_base = _txt(evidencia.get("fortalezas_base"))
 
@@ -186,90 +205,39 @@ def calcular_ponderacion_estadistica(evidencia):
             motivo=f"Ponderación activo: {activo} ({peso:+})",
         )
 
-    # =========================
-    # CONSENSO
-    # =========================
-    if nivel_consenso == "alto":
-        _registrar_ajuste(
-            clave="consenso:alto",
-            peso=4,
-            pesos=pesos,
-            motivos=motivos,
-            claves_aplicadas=claves_aplicadas,
-            motivo="Ponderación consenso: ALTO (+4)",
+    # El consenso se conserva para auditoría, pero temporalmente
+    # no modifica la confianza.
+    #
+    # El backtest actual muestra una relación inversa:
+    # MEDIO/BAJO superan a ALTO/BUENO/PREMIUM.
+    # Hasta recalibrar motor_consenso.py con datos fuera de muestra,
+    # aplicar puntos aquí introduciría selección inversa.
+    if nivel_consenso:
+        motivos.append(
+            f"Consenso observado sin ajuste estadístico: "
+            f"{nivel_consenso.upper()} (+0)"
         )
-
-    elif nivel_consenso == "premium":
-        _registrar_ajuste(
-            clave="consenso:premium",
-            peso=3,
-            pesos=pesos,
-            motivos=motivos,
-            claves_aplicadas=claves_aplicadas,
-            motivo="Ponderación consenso: PREMIUM (+3)",
-        )
-
-    elif nivel_consenso == "bueno":
-        _registrar_ajuste(
-            clave="consenso:bueno",
-            peso=-3,
-            pesos=pesos,
-            motivos=motivos,
-            claves_aplicadas=claves_aplicadas,
-            motivo=(
-                "Ponderación consenso: "
-                "BUENO débil histórico (-3)"
-            ),
-        )
-
-    elif nivel_consenso == "medio":
-        _registrar_ajuste(
-            clave="consenso:medio",
-            peso=-1,
-            pesos=pesos,
-            motivos=motivos,
-            claves_aplicadas=claves_aplicadas,
-            motivo="Ponderación consenso: MEDIO (-1)",
-        )
-
     # =========================
     # SCORE FINAL
     # =========================
-    if score_final >= 190:
-        _registrar_ajuste(
-            clave="score_final:alto",
-            peso=1,
-            pesos=pesos,
-            motivos=motivos,
-            claves_aplicadas=claves_aplicadas,
-            motivo="Ponderación score_final alto (+1)",
+    # score_final se conserva para trazabilidad.
+    # No se usa todavía como ajuste porque mezcla puntaje,
+    # prioridad y consenso en escalas diferentes.
+    if score_final:
+        motivos.append(
+            f"Score final observado sin ajuste: {score_final:.2f} (+0)"
         )
-
-    elif score_final < 120:
-        _registrar_ajuste(
-            clave="score_final:bajo",
-            peso=-2,
-            pesos=pesos,
-            motivos=motivos,
-            claves_aplicadas=claves_aplicadas,
-            motivo="Ponderación score_final bajo (-2)",
-        )
-
+    
     # =========================
     # CONFIRMACIÓN IA
     # =========================
-    # Se utiliza únicamente el índice numérico para evitar contar
-    # tres veces la misma evaluación mediante acción, nivel e índice.
-    if 45 <= indice_confirmacion <= 59:
-        _registrar_ajuste(
-            clave="confirmacion_ia:45_59",
-            peso=2,
-            pesos=pesos,
-            motivos=motivos,
-            claves_aplicadas=claves_aplicadas,
-            motivo="Ponderación índice IA 45-59 (+2)",
+    # La confirmación IA pertenece al protocolo de entrada.
+    # Se conserva para auditoría, pero no modifica la confianza.
+    if indice_confirmacion:
+        motivos.append(
+            f"Índice de confirmación IA observado: "
+            f"{indice_confirmacion:.2f} (+0)"
         )
-
     # =========================
     # PRICE ACTION
     # =========================
@@ -320,55 +288,22 @@ def calcular_ponderacion_estadistica(evidencia):
     # =========================
     # SETUP
     # =========================
-    # Se conservan temporalmente hasta revisar motor_setup.py
-    # y verificar qué ajustes ya están representados en su confianza.
-    if "reversion_alcista" in tipo_setup:
-        _registrar_ajuste(
-            clave="setup:reversion_alcista",
-            peso=5,
-            pesos=pesos,
-            motivos=motivos,
-            claves_aplicadas=claves_aplicadas,
-            motivo=(
-                "Ponderación setup: reversión alcista "
-                "fuerte histórica (+5)"
-            ),
+    # Setup y protocolo se mantienen en trazabilidad.
+    # No reciben puntos manuales porque varias categorías tienen
+    # muestras pequeñas o resultados contradictorios.
+    if tipo_setup:
+        motivos.append(
+            f"Tipo de setup observado: {tipo_setup.upper()} (+0)"
         )
-
-    if "rechazo_alcista" in tipo_setup:
-        _registrar_ajuste(
-            clave="setup:rechazo_alcista",
-            peso=4,
-            pesos=pesos,
-            motivos=motivos,
-            claves_aplicadas=claves_aplicadas,
-            motivo="Ponderación setup: rechazo alcista (+4)",
+    
+    if subtipo_setup:
+        motivos.append(
+            f"Subtipo de setup observado: {subtipo_setup.upper()} (+0)"
         )
-
-    if "sweep_ruptura_confirmable" in subtipo_setup:
-        _registrar_ajuste(
-            clave="subtipo:sweep_ruptura_confirmable",
-            peso=2,
-            pesos=pesos,
-            motivos=motivos,
-            claves_aplicadas=claves_aplicadas,
-            motivo=(
-                "Ponderación subtipo: "
-                "sweep ruptura confirmable (+2)"
-            ),
-        )
-
-    if "choch_con_pa_a_favor" in subtipo_setup:
-        _registrar_ajuste(
-            clave="subtipo:choch_con_pa_a_favor",
-            peso=-2,
-            pesos=pesos,
-            motivos=motivos,
-            claves_aplicadas=claves_aplicadas,
-            motivo=(
-                "Ponderación subtipo: CHOCH con PA "
-                "a favor débil histórico (-2)"
-            ),
+    
+    if protocolo:
+        motivos.append(
+            f"Protocolo sugerido observado: {protocolo.upper()} (+0)"
         )
 
     # =========================
@@ -417,12 +352,15 @@ def calcular_ponderacion_estadistica(evidencia):
 
     # Límite temporal de seguridad.
     # Evita que la ponderación domine por completo la confianza base.
-    ajuste_total = max(-15, min(15, ajuste_total))
+    ajuste_total = max(-6, min(6, ajuste_total))
 
     return {
         "ajuste_ponderacion": round(ajuste_total, 2),
         "motivos_ponderacion": motivos,
         "pesos_aplicados": pesos,
+        "cantidad_pesos_aplicados": len(pesos),
+        "limite_ajuste": 6,
+        "version_ponderacion": "BOOTIQ_PONDERACION_2.0_CONTROLADA",
     }
 
 

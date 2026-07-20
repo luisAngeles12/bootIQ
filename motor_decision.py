@@ -214,9 +214,9 @@ def evaluar_estrategia_decision(evidencia):
         familias_detectadas.append("CHOCH")
 
         if "choch_con_pa_a_favor" in subtipo_setup:
-            ajuste += 2
-            motivos.append("Estrategia: CHOCH con PA a favor.")
-
+             motivos.append(
+                 "Estrategia: CHOCH con PA a favor, sin ajuste automático."
+             )
         if "choch_con_tendencia_debil" in riesgos_base:
             ajuste -= 5
             motivos.append("Estrategia: CHOCH con tendencia débil.")
@@ -235,11 +235,11 @@ def evaluar_estrategia_decision(evidencia):
         familias_detectadas.append("PULLBACK")
 
         if "pullback_tendencia_insuficiente" in riesgos_base:
-            ajuste -= 4
+            ajuste -= 1
             motivos.append(
-                "Estrategia: pullback con tendencia insuficiente."
+                "Estrategia: pullback con tendencia insuficiente; "
+                "penalización estadística leve."
             )
-
         if "pullback_con_pa_y_tendencia" in fortalezas_base:
             ajuste += 3
             motivos.append("Estrategia: pullback con PA y tendencia.")
@@ -259,13 +259,15 @@ def evaluar_estrategia_decision(evidencia):
         familias_detectadas.append("SWEEP")
 
         if "sweep_sin_confirmacion_pa" in riesgos_base:
-            ajuste -= 4
-            motivos.append("Estrategia: sweep sin confirmación PA.")
+            motivos.append(
+                "Estrategia: sweep sin confirmación PA, "
+                "sin penalización automática."
+            )
 
         if "sweep_con_confirmacion_pa_debil" in riesgos_base:
-            ajuste -= 3
             motivos.append(
-                "Estrategia: sweep con confirmación PA débil."
+                "Estrategia: sweep con confirmación PA débil, "
+                "sin penalización automática."
             )
 
         if "sweep_ruptura_confirmable" in subtipo_setup:
@@ -276,29 +278,32 @@ def evaluar_estrategia_decision(evidencia):
         "call_resistencia_sin_ruptura" in riesgos_base
         or "call_resistencia" in accion_precio
     ):
-        ajuste -= 5
         motivos.append(
-            "Estrategia: CALL cerca de resistencia sin ruptura."
+            "Estrategia: CALL cerca de resistencia sin ruptura, "
+            "sin penalización automática."
         )
 
     if (
         "put_soporte_sin_ruptura" in riesgos_base
         or "put_soporte" in accion_precio
     ):
-        ajuste -= 2
-        motivos.append("Estrategia: PUT cerca de soporte sin ruptura.")
+        motivos.append(
+            "Estrategia: PUT cerca de soporte sin ruptura, "
+            "sin penalización automática."
+        )
 
     if (
         "reaccion_confirmada" in fortalezas_base
         or "zona_rechazo_confirmado" in subtipo_setup
     ):
-        ajuste += 2
-        motivos.append("Estrategia: reacción/zona confirmada.")
-
-    if "continuacion_tendencia_insuficiente" in riesgos_base:
-        ajuste -= 3
         motivos.append(
-            "Estrategia: continuación con tendencia insuficiente."
+            "Estrategia: reacción/zona confirmada, "
+            "sin bono automático."
+        )
+    if "continuacion_tendencia_insuficiente" in riesgos_base:
+        motivos.append(
+            "Estrategia: continuación con tendencia insuficiente, "
+            "sin penalización automática."
         )
 
     return {
@@ -349,56 +354,43 @@ def calcular_confianza_cerebro(
 
 def clasificar_decision_final(confianza, riesgo_nivel):
     """
-    Traduce confianza y riesgo a la única decisión operativa oficial.
+    Traduce la confianza final a la decisión operativa oficial.
+
+    El riesgo se conserva en el diagnóstico, pero temporalmente no controla
+    la decisión porque las categorías BAJO, MEDIO, ALTO y EXTREMO todavía
+    muestran comportamiento estadístico invertido en el backtest.
     """
 
     confianza = _num(confianza, 0.0)
     riesgo_nivel = str(riesgo_nivel or "BAJO").upper().strip()
 
-    if riesgo_nivel == "EXTREMO" and confianza < 52:
-        return {
-            "decision": "NO_OPERAR",
-            "operar": False,
-            "motivo": (
-                "Cerebro único: riesgo extremo con confianza insuficiente."
-            ),
-        }
-
-    if riesgo_nivel == "EXTREMO" and confianza >= 52:
-        return {
-            "decision": "OPERAR_CON_PROTOCOLO",
-            "operar": True,
-            "motivo": (
-                "Cerebro único: riesgo extremo compensado; "
-                "solo protocolo estricto."
-            ),
-        }
-
-    if confianza >= 62 and riesgo_nivel in ["BAJO", "MEDIO"]:
+    if confianza >= 62:
         return {
             "decision": "OPERAR",
             "operar": True,
             "motivo": (
-                "Cerebro único: confianza alta y riesgo aceptable."
+                "Cerebro único: confianza alta; "
+                "entrada directa autorizada."
             ),
         }
 
-    if confianza >= 48:
+    if confianza >= 55:
         return {
             "decision": "OPERAR_CON_PROTOCOLO",
             "operar": True,
             "motivo": (
-                "Cerebro único: confianza media, requiere protocolo."
+                "Cerebro único: confianza intermedia; "
+                "requiere confirmación del protocolo."
             ),
         }
 
     return {
         "decision": "NO_OPERAR",
         "operar": False,
-        "motivo": "Cerebro único: confianza insuficiente.",
+        "motivo": (
+            "Cerebro único: confianza inferior al mínimo operativo."
+        ),
     }
-
-
 # ============================================================
 # LEGACY BOOTIQ — MOTOR DE DECISIÓN ANTERIOR
 # ============================================================

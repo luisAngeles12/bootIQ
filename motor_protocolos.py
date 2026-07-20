@@ -330,33 +330,45 @@ def _protocolo_choch(velas, idx, senal):
     direccion = _direccion(senal)
     subtipo = _txt(senal.get("subtipo_setup"))
 
-    # CHOCH con PA a favor: esperar mínimo 2 velas
     if subtipo == "choch_con_pa_a_favor":
         for j in range(idx + 1, min(idx + 5, len(velas) - 1)):
-            if _ruptura_micro(velas, j, direccion) and _impulso(velas[j], direccion):
-                return j, "PROTOCOLO_CHOCH_PA_FAVOR_RUPTURA_IMPULSO_ESPERA_2"
-
-        for j in range(idx + 2, min(idx + 6, len(velas) - 1)):
-            if _pullback_recuperado(velas, j, direccion) and _impulso(velas[j], direccion):
-                return j, "PROTOCOLO_CHOCH_PA_FAVOR_PULLBACK_IMPULSO_ESPERA_2"
+            if (
+                _ruptura_micro(velas, j, direccion)
+                and _impulso(velas[j], direccion)
+            ):
+                return (
+                    j,
+                    "PROTOCOLO_CHOCH_PA_FAVOR_RUPTURA_IMPULSO_ESPERA_2",
+                )
 
         return None, "CANCELADA_CHOCH_PA_FAVOR_SIN_CONFIRMACION"
 
-    # CHOCH con tendencia débil: esperar confirmación real
     if subtipo == "choch_tendencia_debil":
         for j in range(idx + 1, min(idx + 6, len(velas) - 1)):
-            if _ruptura_micro(velas, j, direccion) and _impulso(velas[j], direccion):
-                return j, "PROTOCOLO_CHOCH_TENDENCIA_DEBIL_RUPTURA_IMPULSO_ESPERA_2"
+            if (
+                _ruptura_micro(velas, j, direccion)
+                and _impulso(velas[j], direccion)
+            ):
+                return (
+                    j,
+                    "PROTOCOLO_CHOCH_TENDENCIA_DEBIL_"
+                    "RUPTURA_IMPULSO_ESPERA_2",
+                )
 
         return None, "CANCELADA_CHOCH_TENDENCIA_DEBIL"
 
-    # CHOCH genérico: no entrar en idx ni idx+1
     for j in range(idx + 2, min(idx + 5, len(velas) - 1)):
-        if _ruptura_micro(velas, j, direccion) and _impulso(velas[j], direccion):
+        if (
+            _ruptura_micro(velas, j, direccion)
+            and _impulso(velas[j], direccion)
+        ):
             return j, "PROTOCOLO_CHOCH_RUPTURA_IMPULSO_ESPERA_2"
 
     for j in range(idx + 2, min(idx + 6, len(velas) - 1)):
-        if _pullback_recuperado(velas, j, direccion) and _impulso(velas[j], direccion):
+        if (
+            _pullback_recuperado(velas, j, direccion)
+            and _impulso(velas[j], direccion)
+        ):
             return j, "PROTOCOLO_CHOCH_PULLBACK_CON_IMPULSO_ESPERA_2"
 
     return None, "CANCELADA_CHOCH_SIN_RUPTURA_REAL"
@@ -378,14 +390,14 @@ def _protocolo_pullback(velas, idx, senal):
         return None, "CANCELADA_PULLBACK_MERCADO_SUCIO"
 
     # Si Fase 4 / confirmación IA ya viene fuerte, no exigir confirmación perfecta.
-    if accion_ia == "entrar" or nivel_ia in ["premium", "alto"]:
-        for j in range(idx + 1, min(idx + 5, len(velas) - 1)):
-            recuperado = _pullback_recuperado(velas, j, direccion)
-            rechazo = _rechazo(velas[j], direccion)
-            impulso = _impulso(velas[j], direccion)
+    # if accion_ia == "entrar" or nivel_ia in ["premium", "alto"]:
+    #     for j in range(idx + 1, min(idx + 5, len(velas) - 1)):
+    #         recuperado = _pullback_recuperado(velas, j, direccion)
+    #         rechazo = _rechazo(velas[j], direccion)
+    #         impulso = _impulso(velas[j], direccion)
 
-            if recuperado and (rechazo or impulso):
-                return j, "PROTOCOLO_PULLBACK_IA_FUERTE_RECUPERACION"
+    #         if recuperado and (rechazo or impulso):
+    #             return j, "PROTOCOLO_PULLBACK_IA_FUERTE_RECUPERACION"
 
     for j in range(idx + 1, min(idx + 6, len(velas) - 1)):
         recuperado = _pullback_recuperado(velas, j, direccion)
@@ -425,11 +437,10 @@ def _protocolo_reaccion_zona(velas, idx, senal):
         return None, "CANCELADA_ZONA_SIN_RUPTURA"
 
     if subtipo == "zona_rechazo_confirmado":
-        for j in range(idx, min(idx + 4, len(velas) - 1)):
-            if _rechazo(velas[j], direccion):
-                return j, "PROTOCOLO_ZONA_RECHAZO_CONFIRMADO"
-
-        return None, "CANCELADA_ZONA_RECHAZO_NO_VALIDADO"
+        return (
+            idx,
+            "PROTOCOLO_ZONA_RECHAZO_CONFIRMADO_ENTRADA_INMEDIATA",
+        )
 
     if subtipo == "zona_generica":
         for j in range(idx, min(idx + 4, len(velas) - 1)):
@@ -443,7 +454,6 @@ def _protocolo_reaccion_zona(velas, idx, senal):
             return j, "PROTOCOLO_ZONA_RECHAZO"
 
     return None, "CANCELADA_ZONA_SIN_RECHAZO"
-
 
 def _protocolo_continuacion(velas, idx, senal):
     direccion = _direccion(senal)
@@ -495,14 +505,10 @@ def buscar_entrada_confirmada(velas, idx, senal):
     protocolo_sugerido = _txt(senal.get("protocolo_sugerido"))
 
     if protocolo_sugerido == "protocolo_ruptura_resistencia":
-        direccion = _direccion(senal)
-
-        for j in range(idx + 1, min(idx + 4, len(velas) - 1)):
-            if _ruptura_micro(velas, j, direccion) and _impulso(velas[j], direccion):
-                return j, "PROTOCOLO_RUPTURA_RESISTENCIA_CONFIRMADA"
-
-        return None, "CANCELADA_RUPTURA_RESISTENCIA_NO_CONFIRMADA"
-
+        return (
+            idx,
+            "PROTOCOLO_RUPTURA_RESISTENCIA_ENTRADA_INMEDIATA",
+        )
     protocolo = _tipo_protocolo(senal)
 
     if protocolo == "SWEEP":
