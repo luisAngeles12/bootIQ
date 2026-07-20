@@ -5,7 +5,7 @@ from collections import defaultdict
 RUTA_APRENDIZAJE = "aprendizaje_historico_bootiq.csv"
 
 # Una muestra menor no modifica la confianza.
-MIN_MUESTRA = 8
+MIN_MUESTRA = 12
 
 # Umbrales de rendimiento histórico.
 UMBRAL_BUENO = 58.0
@@ -119,10 +119,8 @@ def _confiabilidad_muestra(total):
 
 def _calcular_ajuste(total, winrate):
     """
-    Convierte el rendimiento histórico en un ajuste moderado.
-
-    El ajuste crece gradualmente con la diferencia frente a una zona neutra,
-    pero siempre queda limitado entre -5 y +5.
+    Convierte el rendimiento histórico en un ajuste moderado,
+    ponderado también por la confiabilidad de la muestra.
     """
 
     total = _entero(total, 0)
@@ -131,18 +129,31 @@ def _calcular_ajuste(total, winrate):
     if total < MIN_MUESTRA:
         return 0.0, "MUESTRA_INSUFICIENTE"
 
+    # El ajuste completo solo se permite con una muestra sólida.
+    if total < 15:
+        factor_muestra = 0.40
+    elif total < 30:
+        factor_muestra = 0.65
+    elif total < 50:
+        factor_muestra = 0.85
+    else:
+        factor_muestra = 1.00
+
     if winrate >= UMBRAL_BUENO:
         diferencia = winrate - UMBRAL_BUENO
-        ajuste = 2.0 + min(3.0, diferencia / 6.0)
+        ajuste_base = 2.0 + min(3.0, diferencia / 6.0)
+        ajuste = ajuste_base * factor_muestra
+
         return _limitar_ajuste(ajuste), "FAVORABLE"
 
     if winrate <= UMBRAL_MALO:
         diferencia = UMBRAL_MALO - winrate
-        ajuste = -(2.0 + min(3.0, diferencia / 6.0))
+        ajuste_base = -(2.0 + min(3.0, diferencia / 6.0))
+        ajuste = ajuste_base * factor_muestra
+
         return _limitar_ajuste(ajuste), "DEBIL"
 
     return 0.0, "NEUTRO"
-
 
 def cargar_aprendizaje(ruta=RUTA_APRENDIZAJE):
     """

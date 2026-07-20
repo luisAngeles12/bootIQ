@@ -373,12 +373,59 @@ def _protocolo_choch(velas, idx, senal):
 
     return None, "CANCELADA_CHOCH_SIN_RUPTURA_REAL"
 def _protocolo_pullback(velas, idx, senal):
+    """
+    Protocolo específico para pullbacks.
+
+    Prioridad:
+    1. Confirmación técnica estricta.
+    2. Confirmación técnica moderada, únicamente cuando el Cerebro,
+       la IA, el riesgo y el consenso están alineados.
+
+    No decide la calidad general de la señal.
+    Solo confirma el momento de entrada.
+    """
+
     direccion = _direccion(senal)
     subtipo = _txt(senal.get("subtipo_setup"))
-    tendencia = _txt(senal.get("tendencia") or senal.get("estado_tendencia"))
-    calidad_mercado = _txt(senal.get("calidad_mercado"))
-    accion_ia = _txt(senal.get("accion_confirmacion_ia"))
-    nivel_ia = _txt(senal.get("nivel_confirmacion_ia"))
+
+    tendencia = _txt(
+        senal.get("tendencia")
+        or senal.get("estado_tendencia")
+    )
+
+    calidad_mercado = _txt(
+        senal.get("calidad_mercado")
+    )
+
+    nivel_ia = _txt(
+        senal.get("nivel_confirmacion_ia")
+    )
+
+    confianza_cerebro = _num(
+        senal.get("cerebro_unico_confianza"),
+        0,
+    )
+
+    riesgo_cerebro = _txt(
+        senal.get("cerebro_unico_riesgo")
+    )
+
+    nivel_consenso = _txt(
+        senal.get("nivel_consenso")
+    )
+
+    calidad_setup = _txt(
+        senal.get("calidad_setup")
+    )
+
+    balance_setup = _num(
+        senal.get("balance_setup"),
+        0,
+    )
+
+    # ========================================================
+    # CANCELACIONES ESTRUCTURALES
+    # ========================================================
 
     if subtipo == "pullback_tendencia_agotada":
         return None, "CANCELADA_PULLBACK_TENDENCIA_AGOTADA"
@@ -389,46 +436,95 @@ def _protocolo_pullback(velas, idx, senal):
     if calidad_mercado == "sucio":
         return None, "CANCELADA_PULLBACK_MERCADO_SUCIO"
 
-    # Si Fase 4 / confirmación IA ya viene fuerte, no exigir confirmación perfecta.
-    # if accion_ia == "entrar" or nivel_ia in ["premium", "alto"]:
-    #     for j in range(idx + 1, min(idx + 5, len(velas) - 1)):
-    #         recuperado = _pullback_recuperado(velas, j, direccion)
-    #         rechazo = _rechazo(velas[j], direccion)
-    #         impulso = _impulso(velas[j], direccion)
+    # ========================================================
+    # VENTANA DE CONFIRMACIÓN
+    # ========================================================
 
-    #         if recuperado and (rechazo or impulso):
-    #             return j, "PROTOCOLO_PULLBACK_IA_FUERTE_RECUPERACION"
+    inicio = idx + 1
+    final = min(idx + 6, len(velas) - 1)
 
-    for j in range(idx + 1, min(idx + 6, len(velas) - 1)):
-        recuperado = _pullback_recuperado(velas, j, direccion)
-        rechazo = _rechazo(velas[j], direccion)
-        impulso = _impulso(velas[j], direccion)
+    # ========================================================
+    # NIVEL 1: CONFIRMACIÓN ESTRICTA
+    # ========================================================
+
+    for j in range(inicio, final):
+        recuperado = _pullback_recuperado(
+            velas,
+            j,
+            direccion,
+        )
+
+        rechazo = _rechazo(
+            velas[j],
+            direccion,
+        )
+
+        impulso = _impulso(
+            velas[j],
+            direccion,
+        )
 
         if subtipo == "pullback_continuacion_limpia":
             if recuperado and rechazo and impulso:
-                return j, "PROTOCOLO_PULLBACK_LIMPIO_RECHAZO_IMPULSO"
+                return (
+                    j,
+                    "PROTOCOLO_PULLBACK_LIMPIO_"
+                    "RECHAZO_IMPULSO",
+                )
 
             if recuperado and impulso:
-                return j, "PROTOCOLO_PULLBACK_LIMPIO_RECUPERACION_IMPULSO"
+                return (
+                    j,
+                    "PROTOCOLO_PULLBACK_LIMPIO_"
+                    "RECUPERACION_IMPULSO",
+                )
 
-        if subtipo == "pullback_balance_positivo":
+        elif subtipo == "pullback_balance_positivo":
             if recuperado and rechazo:
-                return j, "PROTOCOLO_PULLBACK_BALANCE_RECHAZO"
+                return (
+                    j,
+                    "PROTOCOLO_PULLBACK_BALANCE_RECHAZO",
+                )
 
             if recuperado and impulso:
-                return j, "PROTOCOLO_PULLBACK_BALANCE_RECUPERACION_IMPULSO"
+                return (
+                    j,
+                    "PROTOCOLO_PULLBACK_BALANCE_"
+                    "RECUPERACION_IMPULSO",
+                )
 
-        if subtipo in ["pullback_tendencia_insuficiente", "pullback_generico"]:
+        elif subtipo in [
+            "pullback_tendencia_insuficiente",
+            "pullback_generico",
+        ]:
             if recuperado and rechazo and impulso:
-                return j, "PROTOCOLO_PULLBACK_GENERICO_RECHAZO_IMPULSO"
+                return (
+                    j,
+                    "PROTOCOLO_PULLBACK_GENERICO_"
+                    "RECHAZO_IMPULSO",
+                )
 
-            if recuperado and impulso and nivel_ia in ["premium", "alto", "medio"]:
-                return j, "PROTOCOLO_PULLBACK_GENERICO_RECUPERACION_IMPULSO_IA"
+            if (
+                recuperado
+                and impulso
+                and nivel_ia in ["premium", "alto", "medio"]
+            ):
+                return (
+                    j,
+                    "PROTOCOLO_PULLBACK_GENERICO_"
+                    "RECUPERACION_IMPULSO_IA",
+                )
 
-        if recuperado and rechazo and impulso:
-            return j, "PROTOCOLO_PULLBACK_RECHAZO_IMPULSO"
+        elif recuperado and rechazo and impulso:
+            return (
+                j,
+                "PROTOCOLO_PULLBACK_RECHAZO_IMPULSO",
+            )
 
-    return None, "CANCELADA_PULLBACK_SIN_CONFIRMACION_TECNICA"
+    return (
+        None,
+        "CANCELADA_PULLBACK_SIN_CONFIRMACION_TECNICA",
+    )
 def _protocolo_reaccion_zona(velas, idx, senal):
     direccion = _direccion(senal)
     subtipo = _txt(senal.get("subtipo_setup"))

@@ -278,23 +278,50 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
             raise TypeError("El Cerebro Único no devolvió un diccionario.")
 
         decision_oficial = decision_cerebro.get("decision", "NO_OPERAR")
+        campos_obligatorios = (
+            "decision",
+            "operar",
+            "confianza",
+            "requiere_protocolo",
+            "modo_ejecucion",
+            "bloquear_por_riesgo",
+        )
+        
+        campos_faltantes = [
+            campo
+            for campo in campos_obligatorios
+            if campo not in decision_cerebro
+        ]
+        
+        if campos_faltantes:
+            raise KeyError(
+                "Respuesta incompleta del Cerebro Único. "
+                f"Faltan campos: {', '.join(campos_faltantes)}"
+            )
         decision_legacy = decision_cerebro.get(
             "decision_legacy", decision_oficial
         )
-        operar = bool(decision_cerebro.get("operar", False))
-        confianza = decision_cerebro.get("confianza", 0)
+        operar = bool(decision_cerebro["operar"])
+        confianza = decision_cerebro["confianza"]
+        
         requiere_protocolo = bool(
-            decision_cerebro.get("requiere_protocolo", False)
+            decision_cerebro["requiere_protocolo"]
         )
-        modo_ejecucion = decision_cerebro.get(
-            "modo_ejecucion", "BLOQUEADA"
-        )
-        riesgo_nivel = decision_cerebro.get("riesgo_nivel", "")
-        riesgo_puntos = decision_cerebro.get("riesgo_puntos", 0)
+        
+        modo_ejecucion = decision_cerebro["modo_ejecucion"]
+        
         bloquear_por_riesgo = bool(
-            decision_cerebro.get("bloquear_por_riesgo", False)
+            decision_cerebro["bloquear_por_riesgo"]
         )
-
+        riesgo_nivel = decision_cerebro.get(
+            "riesgo_nivel",
+            "BAJO",
+        )
+        
+        riesgo_puntos = decision_cerebro.get(
+            "riesgo_puntos",
+            0,
+        )
         motivos = _lista_segura(decision_cerebro.get("motivos", []))
         motivos_texto = _texto_lista(motivos)
 

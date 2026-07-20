@@ -433,9 +433,8 @@ def clasificar_decision_final(confianza, riesgo_nivel):
     """
     Traduce la confianza final a la decisión operativa oficial.
 
-    El riesgo se conserva en el diagnóstico, pero temporalmente no controla
-    la decisión porque las categorías BAJO, MEDIO, ALTO y EXTREMO todavía
-    muestran comportamiento estadístico invertido en el backtest.
+    Esta función define también el modo de ejecución y si la señal
+    requiere protocolo. No ejecuta el protocolo.
     """
 
     confianza = _num(confianza, 0.0)
@@ -444,7 +443,11 @@ def clasificar_decision_final(confianza, riesgo_nivel):
     if confianza >= 62:
         return {
             "decision": "OPERAR",
+            "decision_legacy": "OPERAR_DIRECTO_O_CONFIRMADO",
             "operar": True,
+            "requiere_protocolo": False,
+            "modo_ejecucion": "DIRECTA",
+            "bloquear_por_riesgo": False,
             "motivo": (
                 "Cerebro único: confianza alta; "
                 "entrada directa autorizada."
@@ -454,7 +457,11 @@ def clasificar_decision_final(confianza, riesgo_nivel):
     if confianza >= 55:
         return {
             "decision": "OPERAR_CON_PROTOCOLO",
+            "decision_legacy": "OPERAR_CON_CONFIRMACION",
             "operar": True,
+            "requiere_protocolo": True,
+            "modo_ejecucion": "PROTOCOLO",
+            "bloquear_por_riesgo": False,
             "motivo": (
                 "Cerebro único: confianza intermedia; "
                 "requiere confirmación del protocolo."
@@ -463,31 +470,15 @@ def clasificar_decision_final(confianza, riesgo_nivel):
 
     return {
         "decision": "NO_OPERAR",
+        "decision_legacy": "NO_OPERAR",
         "operar": False,
+        "requiere_protocolo": False,
+        "modo_ejecucion": "BLOQUEADA",
+        "bloquear_por_riesgo": False,
         "motivo": (
             "Cerebro único: confianza inferior al mínimo operativo."
         ),
     }
-# ============================================================
-# LEGACY BOOTIQ — MOTOR DE DECISIÓN ANTERIOR
-# ============================================================
-# Las siguientes funciones solo pertenecen a la antigua ruta:
-#
-#   validador_fase4.py
-#       -> evaluar_decision()
-#
-# Esa ruta ya no participa en producción ni en el backtest oficial.
-#
-# No volver a utilizar estas funciones en módulos activos:
-#   - limitar_peso
-#   - aplicar_reglas_generales
-#   - regla_bloqueo_duro_contextual
-#   - sugerir_modo_ejecucion
-#   - evaluar_decision
-#
-# Cerebro oficial activo:
-#   evaluar_decision_cerebro_unico()
-# ============================================================
 
 def limitar_peso(peso):
     return max(PESO_MINIMO_DECISION, min(PESO_MAXIMO_DECISION, peso))
@@ -895,6 +886,24 @@ def evaluar_decision_cerebro_unico(evidencia):
 
     decision = resultado_decision["decision"]
     operar = resultado_decision["operar"]
+    
+    decision_legacy = resultado_decision.get(
+        "decision_legacy",
+        decision,
+    )
+    
+    requiere_protocolo = bool(
+        resultado_decision.get("requiere_protocolo", False)
+    )
+    
+    modo_ejecucion = resultado_decision.get(
+        "modo_ejecucion",
+        "BLOQUEADA",
+    )
+    
+    bloquear_por_riesgo = bool(
+        resultado_decision.get("bloquear_por_riesgo", False)
+    )
 
     motivos = []
     motivos.extend(resultado_inferencia.get("motivos", []))
@@ -916,6 +925,10 @@ def evaluar_decision_cerebro_unico(evidencia):
     return {
         "operar": operar,
         "decision": decision,
+        "decision_legacy": decision_legacy,
+        "requiere_protocolo": requiere_protocolo,
+        "modo_ejecucion": modo_ejecucion,
+        "bloquear_por_riesgo": bloquear_por_riesgo,
         "confianza": confianza,
         "confianza_base": confianza_base,
         "ajuste_evidencias": round(ajuste_evidencias, 2),
