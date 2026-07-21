@@ -448,15 +448,59 @@ def resultado_binario(velas, index_entrada, direccion):
         "high_siguiente": high_siguiente,
         "low_siguiente": low_siguiente,
     }
+def _tipos_evidencias(valor):
+    """
+    Convierte una lista de evidencias estructuradas en una cadena
+    con los tipos utilizados, apta para CSV y auditoría.
+    """
 
+    if not isinstance(valor, list):
+        return ""
+
+    tipos = []
+
+    for evidencia in valor:
+        if not isinstance(evidencia, dict):
+            continue
+
+        tipo = str(evidencia.get("tipo", "") or "").strip()
+
+        if tipo and tipo not in tipos:
+            tipos.append(tipo)
+
+    return " | ".join(tipos)
 def _texto(valor):
     if isinstance(valor, list):
         return " | ".join(str(x) for x in valor)
+
     if valor is None:
         return ""
+
     return str(valor)
+def _tipos_evidencias(evidencias):
+    """
+    Convierte evidencias estructuradas en una cadena:
+    TIPO_1 | TIPO_2 | TIPO_3
+    """
 
+    if not isinstance(evidencias, list):
+        return ""
 
+    tipos = []
+
+    for evidencia in evidencias:
+        if not isinstance(evidencia, dict):
+            continue
+
+        tipo = str(
+            evidencia.get("tipo", "")
+            or ""
+        ).strip()
+
+        if tipo and tipo not in tipos:
+            tipos.append(tipo)
+
+    return " | ".join(tipos)
 def crear_registro_resultado(
     senal,
     velas,
@@ -552,7 +596,27 @@ def crear_registro_resultado(
         "pa_direccion": senal.get("pa_direccion", ""),
         "pa_fuerza": senal.get("pa_fuerza", 0),
         "pa_razon": _texto(senal.get("pa_razon", "")),
+        "bootiq_evidencias_price_action": _tipos_evidencias(
+            senal.get("pa_evidencias", [])
+        ),
+        
+        "bootiq_evidencias_mercado": _tipos_evidencias(
+            senal.get("mercado_evidencias", [])
+        ),
+        # Evidencias estructuradas utilizadas por el Cerebro Único.
+        "evidencia_pa": _tipos_evidencias(
+            senal.get("pa_evidencias", [])
+        ),
+        "evidencia_mercado": _tipos_evidencias(
+            senal.get("mercado_evidencias", [])
+        ),
+         "pa_evidencias_detalle": _texto(
+            senal.get("pa_evidencias", [])
+        ),
 
+        "mercado_evidencias_detalle": _texto(
+            senal.get("mercado_evidencias", [])
+        ),
         "base_estrategia": senal.get("base_estrategia", ""),
         "riesgos_base": _texto(senal.get("riesgos_base", "")),
         "fortalezas_base": _texto(
@@ -1078,7 +1142,8 @@ def guardar_resultados(resultados):
         "pa_direccion",
         "pa_fuerza",
         "pa_razon",
-
+        "bootiq_evidencias_price_action",
+        "bootiq_evidencias_mercado",
         # =========================
         # NUEVO DIAGNOSTICO BASE
         # =========================

@@ -370,6 +370,11 @@ def leer_contexto_grafico(activo):
         "pa_tipo": pa_profesional.get("tipo", "SIN_CONTEXTO_CLARO"),
         "pa_fuerza": pa_profesional.get("fuerza", 0),
         "pa_razon": pa_profesional.get("razon", ""),
+        # Evidencias estructuradas generadas por Price Action.
+        "pa_evidencias": pa_profesional.get(
+            "evidencias",
+            [],
+        ),
         "rechazo_hist": rechazo_hist,
         "rechazo_hist_direccion": rechazo_hist.get("direccion", "NEUTRA"),
         "rechazo_hist_tipo": rechazo_hist.get("tipo", "SIN_RECHAZO_HISTORICO"),
@@ -989,6 +994,27 @@ def evaluar_senal_candidata(activo, ctx, senal):
     senal["estado_tendencia"] = ctx.get("estado_tendencia", "INDEFINIDA")
     senal["fuerza_tendencia"] = ctx.get("fuerza_tendencia", 0)
     senal["direccion_tendencia"] = ctx.get("direccion_tendencia", "INDEFINIDA")
+    # ========================================================
+    # EVIDENCIAS ESTRUCTURADAS
+    # ========================================================
+    
+    pa_evidencias = ctx.get("pa_evidencias", [])
+    
+    if not isinstance(pa_evidencias, list):
+        pa_evidencias = []
+    
+    mercado_evidencias = ctx.get(
+        "mercado_evidencias",
+        [],
+    )
+    
+    if not isinstance(mercado_evidencias, list):
+        mercado_evidencias = []
+    
+    senal["pa_evidencias"] = list(pa_evidencias)
+    senal["mercado_evidencias"] = list(
+        mercado_evidencias
+    )
     senal["soporte"] = ctx["soporte"]
     senal["resistencia"] = ctx["resistencia"]
     senal["vol"] = ctx["vol"]
