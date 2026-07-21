@@ -9,7 +9,117 @@ def _texto_lista(valor):
         return ""
     return str(valor)
 
+def validar_contrato_cerebro(decision_cerebro):
+    """
+    Verifica que la respuesta del Cerebro Único cumpla el contrato
+    estructural y que sus campos sean coherentes entre sí.
 
+    No modifica la decisión.
+    No recalcula confianza.
+    No crea bloqueos nuevos.
+    """
+
+    if not isinstance(decision_cerebro, dict):
+        raise TypeError(
+            "El Cerebro Único no devolvió un diccionario."
+        )
+
+    campos_obligatorios = (
+        "decision",
+        "operar",
+        "confianza",
+        "requiere_protocolo",
+        "modo_ejecucion",
+        "bloquear_por_riesgo",
+    )
+
+    campos_faltantes = [
+        campo
+        for campo in campos_obligatorios
+        if campo not in decision_cerebro
+    ]
+
+    if campos_faltantes:
+        raise KeyError(
+            "Respuesta incompleta del Cerebro Único. "
+            f"Faltan campos: {', '.join(campos_faltantes)}"
+        )
+
+    decision = str(
+        decision_cerebro.get("decision", "")
+    ).upper().strip()
+
+    operar = bool(decision_cerebro.get("operar", False))
+
+    requiere_protocolo = bool(
+        decision_cerebro.get("requiere_protocolo", False)
+    )
+
+    modo_ejecucion = str(
+        decision_cerebro.get("modo_ejecucion", "")
+    ).upper().strip()
+
+    contratos_validos = {
+        "OPERAR": {
+            "operar": True,
+            "requiere_protocolo": False,
+            "modo_ejecucion": "DIRECTA",
+        },
+        "OPERAR_CON_PROTOCOLO": {
+            "operar": True,
+            "requiere_protocolo": True,
+            "modo_ejecucion": "PROTOCOLO",
+        },
+        "NO_OPERAR": {
+            "operar": False,
+            "requiere_protocolo": False,
+            "modo_ejecucion": "BLOQUEADA",
+        },
+    }
+
+    if decision not in contratos_validos:
+        raise ValueError(
+            f"Decisión oficial desconocida: {decision}"
+        )
+
+    esperado = contratos_validos[decision]
+
+    if operar != esperado["operar"]:
+        raise ValueError(
+            f"Contrato incoherente: {decision} tiene "
+            f"operar={operar}."
+        )
+
+    if (
+        requiere_protocolo
+        != esperado["requiere_protocolo"]
+    ):
+        raise ValueError(
+            f"Contrato incoherente: {decision} tiene "
+            f"requiere_protocolo={requiere_protocolo}."
+        )
+
+    if modo_ejecucion != esperado["modo_ejecucion"]:
+        raise ValueError(
+            f"Contrato incoherente: {decision} tiene "
+            f"modo_ejecucion={modo_ejecucion}."
+        )
+
+    try:
+        confianza = float(
+            decision_cerebro.get("confianza", 0)
+        )
+    except (TypeError, ValueError):
+        raise TypeError(
+            "La confianza del Cerebro Único no es numérica."
+        )
+
+    if not 0 <= confianza <= 100:
+        raise ValueError(
+            f"Confianza fuera de rango: {confianza}"
+        )
+
+    return True
 def crear_decision_bootiq(senal=None, ctx=None):
     """
     Contrato central de decisión BootIQ.
@@ -383,16 +493,47 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         senal["pesos_aplicados"] = pesos_aplicados
         senal["confianza_final_cerebro"] = confianza
 
-        senal["pa_evidencias"] = evidencia.get(
-            "pa_evidencias", senal.get("pa_evidencias", [])
+        senal["pa_evidencias"] = decision_cerebro.get(
+            "pa_evidencias",
+            evidencia.get(
+                "pa_evidencias",
+                senal.get("pa_evidencias", []),
+            ),
         )
-        senal["mercado_evidencias"] = evidencia.get(
-            "mercado_evidencias", senal.get("mercado_evidencias", [])
+        
+        senal["mercado_evidencias"] = decision_cerebro.get(
+            "mercado_evidencias",
+            evidencia.get(
+                "mercado_evidencias",
+                senal.get("mercado_evidencias", []),
+            ),
         )
         senal["evidencia_operacion"] = evidencia
 
         decision = crear_decision_bootiq(senal, ctx)
-
+        # =====================================================
+        # Sincronizar evidencias oficiales del contrato BootIQ
+        # =====================================================
+        
+        senal["pa_evidencias"] = _lista_segura(
+            evidencia.get("pa_evidencias")
+        )
+        
+        senal["mercado_evidencias"] = _lista_segura(
+            evidencia.get("mercado_evidencias")
+        )
+        
+        senal["setup_evidencias"] = _lista_segura(
+            evidencia.get("setup_evidencias")
+        )
+        
+        senal["riesgo_evidencias"] = _lista_segura(
+            evidencia.get("riesgo_evidencias")
+        )
+        
+        senal["historial_evidencias"] = _lista_segura(
+            evidencia.get("historial_evidencias")
+        )
         return {
             "permitida": operar,
             "requiere_protocolo": requiere_protocolo,

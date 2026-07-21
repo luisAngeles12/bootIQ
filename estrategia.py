@@ -569,41 +569,117 @@ def preparar_contexto_mercado(activo, ctx):
         return ctx
 
 def validar_contexto_base(activo, ctx):
-    calidad = ctx.get("calidad_mercado", "SIN_DATOS")
-    score = ctx.get("score_mercado", 0)
-    tendencia_estado = ctx.get("estado_tendencia", "INDEFINIDA")
+    """
+    Diagnostica el contexto base del activo.
+
+    No bloquea.
+    No coloca cooldown.
+    No decide si se opera.
+
+    Convierte las condiciones desfavorables en evidencias
+    para que el Cerebro Único tome la decisión final.
+    """
+
+    calidad = str(
+        ctx.get("calidad_mercado", "SIN_DATOS")
+    ).upper()
+
+    score = float(
+        ctx.get("score_mercado", 0) or 0
+    )
+
+    tendencia_estado = str(
+        ctx.get("estado_tendencia", "INDEFINIDA")
+    ).upper()
+
+    riesgos_contexto = []
+
+    mercado_evidencias = ctx.get("mercado_evidencias", [])
+
+    if not isinstance(mercado_evidencias, list):
+        mercado_evidencias = []
+
+    def agregar_evidencia(tipo, razon):
+        mercado_evidencias.append({
+            "tipo": tipo,
+            "razon": razon,
+            "origen": "validar_contexto_base",
+        })
 
     if calidad not in ["LIMPIO", "NORMAL"]:
-        estado.cooldown_activos[activo] = time.time() + 600
-        return False
+        riesgos_contexto.append("MERCADO_SUCIO")
+
+        agregar_evidencia(
+            "mercado_sucio",
+            "Calidad de mercado no limpia o normal.",
+        )
 
     if score < 52:
-        estado.cooldown_activos[activo] = time.time() + 600
-        return False
+        riesgos_contexto.append("SCORE_MERCADO_BAJO")
+
+        agregar_evidencia(
+            "score_mercado_bajo",
+            "Score de mercado inferior a 52.",
+        )
 
     if "DEBIL" in tendencia_estado and score < 62:
-        estado.cooldown_activos[activo] = time.time() + 600
-        return False
+        riesgos_contexto.append("TENDENCIA_DEBIL")
+
+        agregar_evidencia(
+            "tendencia_debil",
+            "Tendencia débil con score de mercado inferior a 62.",
+        )
 
     if tendencia_estado == "INDEFINIDA":
-        estado.cooldown_activos[activo] = time.time() + 600
-        return False
+        riesgos_contexto.append("TENDENCIA_INDEFINIDA")
 
+        agregar_evidencia(
+            "tendencia_indefinida",
+            "No existe una tendencia suficientemente definida.",
+        )
+
+    ctx["riesgos_contexto_base"] = riesgos_contexto
+    ctx["contexto_base_valido"] = not bool(riesgos_contexto)
+    ctx["mercado_evidencias"] = mercado_evidencias
+
+    # Siempre continúa.
+    # El Cerebro Único decidirá.
     return True
-
 def evaluar_senal_candidata(activo, ctx, senal):
     if senal is None:
         return None
 
-    if estrategia_en_cooldown(senal.get("patron", "")):
+    en_cooldown = estrategia_en_cooldown(
+        senal.get("patron", "")
+    )
+    
+    senal["estrategia_en_cooldown"] = bool(en_cooldown)
+    
+    if en_cooldown:
         print(
             senal["direccion"].upper(),
-            "bloqueado por cooldown de estrategia:",
+            "estrategia en cooldown enviada como evidencia:",
             activo,
             senal.get("patron", "")
         )
-        return None
-
+    
+        riesgos_actuales = str(
+            senal.get("riesgos_base", "")
+        ).strip("|")
+    
+        senal["riesgos_base"] = "|".join(
+            x for x in [
+                riesgos_actuales,
+                "ESTRATEGIA_EN_COOLDOWN",
+            ]
+            if x
+        )
+    
+        senal["razon"] = (
+            str(senal.get("razon", ""))
+            + ", estrategia actualmente en cooldown; "
+            + "enviada al Cerebro Único como evidencia"
+        )
     setup = clasificar_setup_estrategico(senal, ctx)
     # Conservar la salida completa de la capa estratégica.
     # Se utilizará después para construir el contrato final

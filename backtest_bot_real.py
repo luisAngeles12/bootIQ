@@ -32,10 +32,41 @@ SALIDA = "backtest_bot_real_resultados.csv"
 MAX_ACTIVOS_ANALIZAR = 20
 LIMITE_DATASETS = 160
 PASO_RONDA = 1
+
+# ============================================================
+# MODOS OFICIALES DEL BACKTEST
+# ============================================================
+
+MODO_BACKTEST_FILTRADO = "FILTRADO"
+MODO_BACKTEST_DIAGNOSTICO = "DIAGNOSTICO_COMPLETO"
+
+# Cambiar únicamente esta línea para comparar universos.
+MODO_BACKTEST = MODO_BACKTEST_FILTRADO
+
 BUILD_ID = "BOOTIQ_BACKTEST_V4_SIN_DOBLE_DECISION_2026_07_17"
 ACTUALIZAR_APRENDIZAJE = False
 DATASETS_USADOS_BACKTEST = 0
+AUDITORIA_DATASETS = {
+    "cargados": 0,
+    "validos_tecnicamente": 0,
+    "compatibles_filtro": 0,
+    "seleccionados": 0,
+    "excluidos": {},
+}
+def reset_auditoria_datasets():
+    AUDITORIA_DATASETS["cargados"] = 0
+    AUDITORIA_DATASETS["validos_tecnicamente"] = 0
+    AUDITORIA_DATASETS["compatibles_filtro"] = 0
+    AUDITORIA_DATASETS["seleccionados"] = 0
+    AUDITORIA_DATASETS["excluidos"] = {}
 
+
+def registrar_exclusion_dataset(motivo):
+    motivo = str(motivo or "MOTIVO_DESCONOCIDO").upper().strip()
+
+    AUDITORIA_DATASETS["excluidos"][motivo] = (
+        AUDITORIA_DATASETS["excluidos"].get(motivo, 0) + 1
+    )
 def leer_csv_velas(ruta):
     velas = []
 
@@ -79,44 +110,86 @@ def cargar_datasets():
     return datasets[:LIMITE_DATASETS]
 
 def evaluar_estabilidad_dataset(dataset):
-    velas = dataset["velas"]
+    """
+    Diagnostica un dataset y calcula su score de selección.
+
+    En modo FILTRADO puede marcarlo como no compatible.
+    En modo DIAGNOSTICO_COMPLETO conserva todos los datasets
+    técnicamente válidos, aunque el mercado sea deficiente.
+    """
+
+    velas = dataset.get("velas", [])
+    activo = str(dataset.get("activo", "") or "").strip()
+
+    if not activo:
+        return None, "ACTIVO_VACIO"
 
     if len(velas) < 180:
-        return None
+        return None, "VELAS_INSUFICIENTES"
 
     ventana = velas[-180:]
 
-    tipo_mercado, _ = detectar_tipo_mercado(ventana)
-    diagnostico = diagnostico_calidad_mercado(ventana)
-    tendencia = diagnostico_tendencia_avanzada(ventana)
+    try:
+        tipo_mercado, _ = detectar_tipo_mercado(ventana)
+        diagnostico = diagnostico_calidad_mercado(ventana)
+        tendencia = diagnostico_tendencia_avanzada(ventana)
+    except Exception as exc:
+        dataset["error_diagnostico_dataset"] = str(exc)
+        return None, "ERROR_DIAGNOSTICO_MERCADO"
 
-    calidad = diagnostico.get("calidad", "SIN_DATOS")
-    score = diagnostico.get("score", 0)
-    estado_tendencia = tendencia.get("estado_tendencia", "INDEFINIDA")
-    fuerza_tendencia = tendencia.get("fuerza_tendencia", 0)
+    diagnostico = (
+        diagnostico if isinstance(diagnostico, dict) else {}
+    )
+    tendencia = (
+        tendencia if isinstance(tendencia, dict) else {}
+    )
 
-    activo = dataset.get("activo", "")
+    calidad = str(
+        diagnostico.get("calidad", "SIN_DATOS")
+    ).upper().strip()
+
+    try:
+        score = float(diagnostico.get("score", 0) or 0)
+    except (TypeError, ValueError):
+        score = 0.0
+
+    estado_tendencia = str(
+        tendencia.get("estado_tendencia", "INDEFINIDA")
+    ).upper().strip()
+
+    try:
+        fuerza_tendencia = float(
+            tendencia.get("fuerza_tendencia", 0) or 0
+        )
+    except (TypeError, ValueError):
+        fuerza_tendencia = 0.0
+
+    motivo_filtro = ""
 
     if "-op" in activo.lower():
-        return None
+        motivo_filtro = "ACTIVO_OP_NO_COMPATIBLE"
 
-    if "/" in activo:
-        return None
+    elif "/" in activo:
+        motivo_filtro = "FORMATO_ACTIVO_NO_COMPATIBLE"
 
-    if calidad not in ["LIMPIO", "NORMAL"]:
-        return None
+    elif calidad not in {"LIMPIO", "NORMAL"}:
+        motivo_filtro = "CALIDAD_MERCADO_NO_COMPATIBLE"
 
-    if score < 52:
-        return None
+    elif score < 52:
+        motivo_filtro = "SCORE_MERCADO_MENOR_52"
 
-    if estado_tendencia == "INDEFINIDA":
-        return None
+    elif estado_tendencia == "INDEFINIDA":
+        motivo_filtro = "TENDENCIA_INDEFINIDA"
 
-    if "DEBIL" in estado_tendencia and score < 62:
-        return None
+    elif "DEBIL" in estado_tendencia and score < 62:
+        motivo_filtro = "TENDENCIA_DEBIL_SCORE_MENOR_62"
 
-    if tipo_mercado == "RANGO" and "FUERTE" not in estado_tendencia and "NORMAL" not in estado_tendencia:
-        return None
+    elif (
+        tipo_mercado == "RANGO"
+        and "FUERTE" not in estado_tendencia
+        and "NORMAL" not in estado_tendencia
+    ):
+        motivo_filtro = "RANGO_SIN_TENDENCIA_COMPATIBLE"
 
     score_filtro = score
 
@@ -132,14 +205,20 @@ def evaluar_estabilidad_dataset(dataset):
     if "NORMAL" in estado_tendencia:
         score_filtro += 15
 
-    if tipo_mercado in ["TENDENCIA_ALCISTA", "TENDENCIA_BAJISTA"]:
+    if tipo_mercado in {
+        "TENDENCIA_ALCISTA",
+        "TENDENCIA_BAJISTA",
+    }:
         score_filtro += 15
 
     if tipo_mercado == "RANGO":
         score_filtro -= 5
 
-    if "-OTC" in activo:
+    if "-OTC" in activo.upper():
         score_filtro += 5
+    # Mantener el filtro oficial original del backtest.
+    if not motivo_filtro and score_filtro < 55:
+        motivo_filtro = "SCORE_FILTRO_MENOR_55"
 
     dataset["score_filtro_dataset"] = score_filtro
     dataset["tipo_mercado_dataset"] = tipo_mercado
@@ -148,17 +227,53 @@ def evaluar_estabilidad_dataset(dataset):
     dataset["estado_tendencia_dataset"] = estado_tendencia
     dataset["fuerza_tendencia_dataset"] = fuerza_tendencia
 
-    return dataset
+    dataset["compatible_filtro_dataset"] = not bool(
+        motivo_filtro
+    )
+    dataset["motivo_exclusion_dataset"] = motivo_filtro
 
+    if (
+        MODO_BACKTEST == MODO_BACKTEST_FILTRADO
+        and motivo_filtro
+    ):
+        return None, motivo_filtro
+
+    return dataset, motivo_filtro
 
 def seleccionar_top_datasets(datasets, limite=20):
+    reset_auditoria_datasets()
+
+    AUDITORIA_DATASETS["cargados"] = len(datasets)
+
     evaluados = []
 
     for dataset in datasets:
-        evaluado = evaluar_estabilidad_dataset(dataset)
+        evaluado, motivo = evaluar_estabilidad_dataset(dataset)
 
-        if evaluado is not None:
-            evaluados.append(evaluado)
+        if evaluado is None:
+            registrar_exclusion_dataset(motivo)
+            continue
+
+        AUDITORIA_DATASETS["validos_tecnicamente"] += 1
+
+        if evaluado.get("compatible_filtro_dataset") is True:
+            AUDITORIA_DATASETS["compatibles_filtro"] += 1
+
+        # Bloqueo real del modo filtrado.
+        if MODO_BACKTEST == MODO_BACKTEST_FILTRADO:
+            if evaluado.get("compatible_filtro_dataset") is not True:
+                registrar_exclusion_dataset(
+                    evaluado.get(
+                        "motivo_exclusion_dataset",
+                        motivo or "NO_COMPATIBLE_FILTRO",
+                    )
+                )
+                continue
+
+        elif motivo:
+            registrar_exclusion_dataset(motivo)
+
+        evaluados.append(evaluado)
 
     evaluados = sorted(
         evaluados,
@@ -168,20 +283,34 @@ def seleccionar_top_datasets(datasets, limite=20):
         ),
     )
 
-    seleccionados = evaluados[:limite]
+    if MODO_BACKTEST == MODO_BACKTEST_FILTRADO:
+        seleccionados = evaluados[:limite]
+    else:
+        seleccionados = evaluados[:LIMITE_DATASETS]
+
+    AUDITORIA_DATASETS["seleccionados"] = len(seleccionados)
 
     print("\n===== DATASETS SELECCIONADOS PARA BACKTEST =====")
+    print("Modo:", MODO_BACKTEST)
     print("Total datasets cargados:", len(datasets))
-    print("Datasets compatibles:", len(evaluados))
+    print(
+        "Datasets válidos técnicamente:",
+        AUDITORIA_DATASETS["validos_tecnicamente"],
+    )
+    print(
+        "Compatibles con filtro oficial:",
+        AUDITORIA_DATASETS["compatibles_filtro"],
+    )
     print("Datasets usados:", len(seleccionados))
 
     for d in seleccionados:
         print(
             d["activo"],
-            "| tipo:",
-            d.get("tipo", "N/A"),
-            "| filtro:",
-            round(d.get("score_filtro_dataset", 0), 2),
+            "| tipo:", d.get("tipo", "N/A"),
+            "| filtro:", round(
+                d.get("score_filtro_dataset", 0),
+                2,
+            ),
             "| mercado:",
             d.get("tipo_mercado_dataset", "N/A"),
             "| calidad:",
@@ -191,10 +320,54 @@ def seleccionar_top_datasets(datasets, limite=20):
             "| tendencia:",
             d.get("estado_tendencia_dataset", "N/A"),
             "| fuerza:",
-            round(d.get("fuerza_tendencia_dataset", 0), 2)
+            round(
+                d.get("fuerza_tendencia_dataset", 0),
+                2,
+            ),
+            "| compatible:",
+            d.get("compatible_filtro_dataset", False),
+            "| exclusión:",
+            d.get("motivo_exclusion_dataset", ""),
         )
 
     return seleccionados
+def imprimir_auditoria_datasets():
+    print("\n===== AUDITORIA DE DATASETS =====")
+    print("Modo ejecutado:", MODO_BACKTEST)
+    print(
+        "Datasets cargados:",
+        AUDITORIA_DATASETS["cargados"],
+    )
+    print(
+        "Válidos técnicamente:",
+        AUDITORIA_DATASETS["validos_tecnicamente"],
+    )
+    print(
+        "Compatibles con filtro:",
+        AUDITORIA_DATASETS["compatibles_filtro"],
+    )
+    print(
+        "Datasets seleccionados:",
+        AUDITORIA_DATASETS["seleccionados"],
+    )
+
+    print("\nExclusiones detectadas:")
+
+    exclusiones = AUDITORIA_DATASETS["excluidos"]
+
+    if not exclusiones:
+        print("Ninguna exclusión registrada.")
+        return
+
+    for motivo, cantidad in sorted(
+        exclusiones.items(),
+        key=lambda item: (-item[1], item[0]),
+    ):
+        print(
+            motivo,
+            "| total:",
+            cantidad,
+        )
 def reset_estado():
     estado.cooldown_activos = {}
     estado.zonas_operadas = {}
@@ -1506,15 +1679,24 @@ def main():
     reset_estado()
 
     datasets = cargar_datasets()
-    datasets = seleccionar_top_datasets(datasets, limite=MAX_ACTIVOS_ANALIZAR)
+    datasets = seleccionar_top_datasets(
+        datasets,
+        limite=MAX_ACTIVOS_ANALIZAR
+    )
+
+    # Auditoría de los datasets seleccionados
+    imprimir_auditoria_datasets()
+
     global DATASETS_USADOS_BACKTEST
     DATASETS_USADOS_BACKTEST = len(datasets)
+
     print("Datasets cargados:", len(datasets))
     print("Ejecutando backtest usando analizar_activo() real...")
 
     resultados = ejecutar_backtest(datasets)
 
     guardar_resultados(resultados)
+
     if ACTUALIZAR_APRENDIZAJE:
         generar_aprendizaje_desde_resultados(resultados)
     else:
@@ -1522,10 +1704,9 @@ def main():
             "Aprendizaje histórico congelado: "
             "no se sobrescribió durante esta prueba."
         )
+
     imprimir_resumen(resultados)
 
     print("Archivo generado:", SALIDA)
-
-
 if __name__ == "__main__":
     main()

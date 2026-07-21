@@ -54,6 +54,49 @@ def construir_evidencia_operacion(senal, ctx=None):
 
     ctx = ctx or {}
     setup_completo = senal.get("setup_completo", {})
+    # ========================================================
+    # CONSTRUIR EVIDENCIAS DE MERCADO SI NO VIENEN GENERADAS
+    # ========================================================
+
+    contexto_evidencias = dict(ctx)
+
+    campos_contexto = (
+        "tipo_mercado",
+        "calidad_mercado",
+        "score_mercado",
+        "estado_tendencia",
+        "fuerza_tendencia",
+        "direccion_tendencia",
+        "regimen_mercado",
+        "riesgo_mercado",
+    )
+
+    for campo in campos_contexto:
+        valor_senal = senal.get(campo)
+
+        if valor_senal not in (None, ""):
+            contexto_evidencias[campo] = valor_senal
+
+    mercado_evidencias_raw = senal.get(
+        "mercado_evidencias",
+        ctx.get("mercado_evidencias", []),
+    )
+
+    if not isinstance(mercado_evidencias_raw, list):
+        mercado_evidencias_raw = []
+
+    if not mercado_evidencias_raw:
+        mercado_evidencias_raw = construir_evidencias_mercado(
+            contexto_evidencias
+        )
+
+    pa_evidencias_raw = senal.get(
+        "pa_evidencias",
+        ctx.get("pa_evidencias", []),
+    )
+
+    if not isinstance(pa_evidencias_raw, list):
+        pa_evidencias_raw = []
     
     if not isinstance(setup_completo, dict):
         setup_completo = {}
@@ -219,11 +262,12 @@ def construir_evidencia_operacion(senal, ctx=None):
             senal.get("razones_clasificador_setup")
         ),
         "pa_evidencias": normalizar_lista_evidencias(
-            senal.get("pa_evidencias", ctx.get("pa_evidencias", [])),
+            pa_evidencias_raw,
             "price_action"
         ),
+        
         "mercado_evidencias": normalizar_lista_evidencias(
-            senal.get("mercado_evidencias", ctx.get("mercado_evidencias", [])),
+            mercado_evidencias_raw,
             "mercado"
         ),
     }

@@ -8,6 +8,13 @@ UMBRAL_OPERAR_DIRECTO = 65.0
 UMBRAL_OPERAR_NORMAL = 50.0
 UMBRAL_PROTOCOLO_ESTRICTO = 38.0
 
+# ============================================================
+# UMBRALES OFICIALES DEL CEREBRO ÚNICO
+# ============================================================
+
+UMBRAL_CEREBRO_OPERAR = 62.0
+UMBRAL_CEREBRO_PROTOCOLO = 55.0
+
 PESO_MINIMO_DECISION = 0.55
 PESO_MAXIMO_DECISION = 1.30
 
@@ -431,16 +438,51 @@ def calcular_confianza_cerebro(
 
 def clasificar_decision_final(confianza, riesgo_nivel):
     """
-    Traduce la confianza final a la decisión operativa oficial.
+    Traduce la confianza y el riesgo final a la decisión
+    operativa oficial del Cerebro Único.
 
-    Esta función define también el modo de ejecución y si la señal
-    requiere protocolo. No ejecuta el protocolo.
+    Esta es la única función que define:
+    - si se permite operar;
+    - si se requiere protocolo;
+    - el modo de ejecución;
+    - si existe bloqueo por riesgo.
+
+    Los módulos externos solamente informan.
+    No ejecuta protocolos ni operaciones.
     """
 
     confianza = _num(confianza, 0.0)
-    riesgo_nivel = str(riesgo_nivel or "BAJO").upper().strip()
 
-    if confianza >= 62:
+    riesgo_nivel = str(
+        riesgo_nivel or "BAJO"
+    ).upper().strip()
+
+    # ========================================================
+    # BLOQUEO OFICIAL POR RIESGO EXTREMO
+    # ========================================================
+    # detector_riesgo_compuesto.py solamente calcula el riesgo.
+    # La decisión de bloquear pertenece al Cerebro Único.
+    # ========================================================
+
+    if riesgo_nivel == "EXTREMO":
+        return {
+            "decision": "NO_OPERAR",
+            "decision_legacy": "NO_OPERAR",
+            "operar": False,
+            "requiere_protocolo": False,
+            "modo_ejecucion": "BLOQUEADA",
+            "bloquear_por_riesgo": True,
+            "motivo": (
+                "Cerebro único: operación rechazada "
+                "por riesgo extremo."
+            ),
+        }
+
+    # ========================================================
+    # CONFIANZA ALTA
+    # ========================================================
+
+    if confianza >= UMBRAL_CEREBRO_OPERAR:
         return {
             "decision": "OPERAR",
             "decision_legacy": "OPERAR_DIRECTO_O_CONFIRMADO",
@@ -454,7 +496,11 @@ def clasificar_decision_final(confianza, riesgo_nivel):
             ),
         }
 
-    if confianza >= 55:
+    # ========================================================
+    # CONFIANZA INTERMEDIA
+    # ========================================================
+
+    if confianza >= UMBRAL_CEREBRO_PROTOCOLO:
         return {
             "decision": "OPERAR_CON_PROTOCOLO",
             "decision_legacy": "OPERAR_CON_CONFIRMACION",
@@ -468,6 +514,10 @@ def clasificar_decision_final(confianza, riesgo_nivel):
             ),
         }
 
+    # ========================================================
+    # CONFIANZA INSUFICIENTE
+    # ========================================================
+
     return {
         "decision": "NO_OPERAR",
         "decision_legacy": "NO_OPERAR",
@@ -476,10 +526,10 @@ def clasificar_decision_final(confianza, riesgo_nivel):
         "modo_ejecucion": "BLOQUEADA",
         "bloquear_por_riesgo": False,
         "motivo": (
-            "Cerebro único: confianza inferior al mínimo operativo."
+            "Cerebro único: confianza inferior "
+            "al mínimo operativo."
         ),
     }
-
 def limitar_peso(peso):
     return max(PESO_MINIMO_DECISION, min(PESO_MAXIMO_DECISION, peso))
 
@@ -921,6 +971,21 @@ def evaluar_decision_cerebro_unico(evidencia):
     motivo_decision = resultado_decision.get("motivo", "")
     if motivo_decision:
         motivos.append(motivo_decision)
+        motivo_decision = resultado_decision.get("motivo", "")
+    if motivo_decision:
+        motivos.append(motivo_decision)
+
+    # ========================================================
+    # EVIDENCIAS OFICIALES UTILIZADAS POR EL CEREBRO
+    # ========================================================
+
+    pa_evidencias = evidencia.get("pa_evidencias", [])
+    if not isinstance(pa_evidencias, list):
+        pa_evidencias = []
+
+    mercado_evidencias = evidencia.get("mercado_evidencias", [])
+    if not isinstance(mercado_evidencias, list):
+        mercado_evidencias = []
 
     return {
         "operar": operar,
@@ -929,6 +994,8 @@ def evaluar_decision_cerebro_unico(evidencia):
         "requiere_protocolo": requiere_protocolo,
         "modo_ejecucion": modo_ejecucion,
         "bloquear_por_riesgo": bloquear_por_riesgo,
+        "pa_evidencias": pa_evidencias,
+        "mercado_evidencias": mercado_evidencias,
         "confianza": confianza,
         "confianza_base": confianza_base,
         "ajuste_evidencias": round(ajuste_evidencias, 2),
