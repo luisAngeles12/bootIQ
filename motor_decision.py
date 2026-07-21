@@ -969,12 +969,9 @@ def evaluar_decision_cerebro_unico(evidencia):
     motivos.extend(ponderacion.get("motivos_ponderacion", []))
 
     motivo_decision = resultado_decision.get("motivo", "")
-    if motivo_decision:
-        motivos.append(motivo_decision)
-        motivo_decision = resultado_decision.get("motivo", "")
-    if motivo_decision:
-        motivos.append(motivo_decision)
 
+    if motivo_decision:
+        motivos.append(motivo_decision)
     # ========================================================
     # EVIDENCIAS OFICIALES UTILIZADAS POR EL CEREBRO
     # ========================================================

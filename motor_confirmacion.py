@@ -46,42 +46,12 @@ def _resultado(indice, nivel, accion, razon):
 
 def decidir_confirmacion(senal):
     """
-    Traduce la decisión previa del Cerebro Único en una instrucción
-    de confirmación para motor_protocolos.
+    Define únicamente el nivel de confirmación técnica.
 
-    Este motor:
-
-    - No decide la calidad general de la operación.
-    - No recalcula estrategia, setup, contexto ni consenso.
-    - No reemplaza la decisión del Cerebro Único.
-    - Solo determina cuán estricta debe ser la confirmación técnica.
-
-    Jerarquía:
-
-    1. Riesgo estructural crítico del setup.
-    2. Riesgo crítico propio del protocolo.
-    3. Decisión final del Cerebro Único.
-    4. Requisitos técnicos neutrales del setup.
-    5. Fase 4 como evidencia secundaria.
+    No decide si la operación es buena.
+    No reevalúa al Cerebro Único.
+    No utiliza Fase 4 para autorizar o rechazar.
     """
-
-    fase4_decision = _txt(
-        senal.get("fase4_decision")
-    )
-
-    fase4_confianza = _num(
-        senal.get("fase4_confianza"),
-        50,
-    )
-
-    cerebro_decision = _txt(
-        senal.get("cerebro_unico_decision")
-    )
-
-    cerebro_confianza = _num(
-        senal.get("cerebro_unico_confianza"),
-        0,
-    )
 
     modo_setup = _txt(
         senal.get("modo_entrada_setup")
@@ -109,155 +79,74 @@ def decidir_confirmacion(senal):
         senal.get("estado_operativo_setup")
     )
 
-    calidad_setup = _txt(
-        senal.get("calidad_setup")
-    )
-
     riesgo_protocolo = _num(
         senal.get("riesgo_protocolo"),
         50,
     )
 
-    # ========================================================
-    # 1. CANCELACIONES TÉCNICAS DURAS
-    # ========================================================
-
-    # Esta no es una decisión general de calidad.
-    # Es una incompatibilidad estructural directa del setup.
     if riesgo_critico_setup:
         return _resultado(
-            indice=max(cerebro_confianza, fase4_confianza),
+            indice=0,
             nivel="BAJO",
             accion="CANCELAR",
             razon=(
-                "Setup presenta riesgo estructural crítico; "
-                "no existe entrada técnica segura."
+                "El protocolo detectó incompatibilidad "
+                "estructural crítica para la entrada."
             ),
         )
 
-    # El umbral debe coincidir con motor_protocolos.py.
     if riesgo_protocolo >= 85:
         return _resultado(
-            indice=max(cerebro_confianza, fase4_confianza),
+            indice=0,
             nivel="BAJO",
             accion="CANCELAR",
             razon=(
-                "Riesgo de protocolo crítico igual o superior a 85."
+                "Riesgo técnico del protocolo igual "
+                "o superior a 85."
             ),
         )
 
-    # ========================================================
-    # 2. RESPETAR DECISIÓN FINAL DEL CEREBRO
-    # ========================================================
-
-    if cerebro_decision == "no_operar":
-        return _resultado(
-            indice=cerebro_confianza,
-            nivel="BAJO",
-            accion="CANCELAR",
-            razon=(
-                "Cerebro Único mantiene decisión final NO_OPERAR."
-            ),
-        )
-
-    # ========================================================
-    # 3. RIESGO ALTO NO CRÍTICO
-    # ========================================================
-
-    # Entre 75 y 84 no se cancela automáticamente.
-    # Se exige la confirmación más estricta.
     if riesgo_protocolo >= 75:
         return _resultado(
-            indice=max(cerebro_confianza, fase4_confianza),
+            indice=40,
             nivel="MEDIO",
             accion="ESPERAR_3",
             razon=(
-                "Riesgo de protocolo alto, pero no crítico; "
-                "requiere confirmación técnica estricta."
+                "Riesgo técnico alto; requiere "
+                "confirmación estricta."
             ),
         )
-
-    # ========================================================
-    # 4. REQUISITOS EXPLÍCITOS DEL SETUP
-    # ========================================================
 
     if requiere_ruptura_setup:
         return _resultado(
-            indice=max(cerebro_confianza, fase4_confianza),
+            indice=50,
             nivel="MEDIO",
             accion="ESPERAR_3",
             razon=(
-                "El setup exige ruptura técnica antes de entrar."
+                "El setup requiere una ruptura técnica."
             ),
         )
-
-    if requiere_confirmacion_setup:
-        if cerebro_confianza >= 58:
-            return _resultado(
-                indice=cerebro_confianza,
-                nivel="ALTO",
-                accion="ESPERAR_2",
-                razon=(
-                    "Cerebro Único autoriza y el setup exige "
-                    "confirmación técnica."
-                ),
-            )
-
-        return _resultado(
-            indice=max(cerebro_confianza, fase4_confianza),
-            nivel="MEDIO",
-            accion="ESPERAR_3",
-            razon=(
-                "El setup exige confirmación y la confianza "
-                "requiere validación estricta."
-            ),
-        )
-
-    # ========================================================
-    # 5. DECISIÓN OPERATIVA DEL CEREBRO
-    # ========================================================
-
-    if (
-        cerebro_decision == "operar"
-        and cerebro_confianza >= 58
-    ):
-        return _resultado(
-            indice=cerebro_confianza,
-            nivel="ALTO",
-            accion="ESPERAR_2",
-            razon=(
-                "Cerebro Único autoriza la operación; "
-                "se solicita confirmación técnica normal."
-            ),
-        )
-
-    if (
-        cerebro_decision == "operar_con_protocolo"
-        and cerebro_confianza >= 55
-    ):
-        return _resultado(
-            indice=cerebro_confianza,
-            nivel="ALTO",
-            accion="ESPERAR_2",
-            razon=(
-                "Cerebro Único autoriza con protocolo de entrada."
-            ),
-        )
-
-    # ========================================================
-    # 6. ESTADO OPERATIVO DEL SETUP
-    # ========================================================
 
     if estado_operativo_setup in [
         "esperar_ruptura",
         "ruptura_pendiente",
     ]:
         return _resultado(
-            indice=max(cerebro_confianza, fase4_confianza),
+            indice=50,
             nivel="MEDIO",
             accion="ESPERAR_3",
             razon=(
-                "Estado operativo del setup requiere ruptura."
+                "El estado técnico requiere ruptura."
+            ),
+        )
+
+    if requiere_confirmacion_setup:
+        return _resultado(
+            indice=60,
+            nivel="ALTO",
+            accion="ESPERAR_2",
+            razon=(
+                "El setup requiere confirmación técnica normal."
             ),
         )
 
@@ -266,76 +155,20 @@ def decidir_confirmacion(senal):
         "confirmacion_pendiente",
     ]:
         return _resultado(
-            indice=max(cerebro_confianza, fase4_confianza),
-            nivel="MEDIO",
-            accion="ESPERAR_3",
-            razon=(
-                "Estado operativo del setup requiere confirmación."
-            ),
-        )
-
-    # ========================================================
-    # 7. FASE 4 COMO EVIDENCIA SECUNDARIA
-    # ========================================================
-
-    # Fase 4 ya no cancela por sí sola si el Cerebro autorizó.
-    if fase4_decision == "no_operar":
-        return _resultado(
-            indice=max(cerebro_confianza, fase4_confianza),
-            nivel="MEDIO",
-            accion="ESPERAR_3",
-            razon=(
-                "Fase 4 fue desfavorable, pero el Cerebro Único "
-                "autorizó; se exige confirmación estricta."
-            ),
-        )
-
-    if (
-        fase4_confianza >= 70
-        and calidad_setup in [
-            "premium",
-            "buena",
-            "alta",
-        ]
-    ):
-        return _resultado(
-            indice=fase4_confianza,
+            indice=60,
             nivel="ALTO",
             accion="ESPERAR_2",
             razon=(
-                "Fase 4 presenta confianza alta y setup fuerte."
-            ),
-        )
-
-    if fase4_confianza >= 55:
-        return _resultado(
-            indice=fase4_confianza,
-            nivel="ALTO",
-            accion="ESPERAR_2",
-            razon=(
-                "Confianza Fase 4 aceptable; "
-                "requiere confirmación técnica normal."
-            ),
-        )
-
-    if fase4_confianza >= 42:
-        return _resultado(
-            indice=fase4_confianza,
-            nivel="MEDIO",
-            accion="ESPERAR_3",
-            razon=(
-                "Confianza Fase 4 media-baja; "
-                "requiere protocolo estricto."
+                "El estado técnico requiere confirmación."
             ),
         )
 
     return _resultado(
-        indice=max(cerebro_confianza, fase4_confianza),
-        nivel="BAJO",
-        accion="ESPERAR_3",
+        indice=65,
+        nivel="ALTO",
+        accion="ESPERAR_2",
         razon=(
-            "Evidencia limitada; únicamente se permite "
-            "confirmación técnica estricta."
+            "Se aplica confirmación técnica normal."
         ),
     )
 
@@ -354,25 +187,12 @@ def aplicar_confirmacion_decision(decision_bootiq):
     try:
         setup = decision_bootiq.get("setup", {})
         protocolo = decision_bootiq.get("protocolo", {})
-        fase4 = decision_bootiq.get("fase4", {})
 
         senal_temp = {
-            "fase4_decision": fase4.get(
-                "fase4_decision",
-                "",
-            ),
-            "fase4_confianza": fase4.get(
-                "fase4_confianza",
-                50,
-            ),
-
-            # Compatibilidad legacy.
             "modo_entrada_setup": setup.get(
                 "modo_entrada_setup",
                 "",
             ),
-
-            # Evidencias neutrales del setup.
             "estado_operativo_setup": setup.get(
                 "estado_operativo_setup",
                 "",
@@ -389,31 +209,11 @@ def aplicar_confirmacion_decision(decision_bootiq):
                 "requiere_confirmacion_setup",
                 None,
             ),
-
-            "calidad_setup": setup.get(
-                "calidad_setup",
-                "",
-            ),
-            "protocolo_sugerido": protocolo.get(
-                "protocolo_sugerido",
-                "",
-            ),
             "riesgo_protocolo": protocolo.get(
                 "riesgo_protocolo",
                 50,
             ),
-
-            # Se mantienen aquí por compatibilidad con el contrato actual.
-            "cerebro_unico_decision": fase4.get(
-                "cerebro_unico_decision",
-                "",
-            ),
-            "cerebro_unico_confianza": fase4.get(
-                "cerebro_unico_confianza",
-                0,
-            ),
         }
-
         resultado = decidir_confirmacion(senal_temp)
 
         decision_bootiq.setdefault(

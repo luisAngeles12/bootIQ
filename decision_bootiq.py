@@ -252,10 +252,10 @@ def crear_decision_bootiq(senal=None, ctx=None):
             "fase4_motivo": senal.get("fase4_motivo", ""),
         },
         "decision_unificada": {
-            "accion": senal.get("decision_unificada_accion", ""),
+            "accion": senal.get("cerebro_unico_decision", ""),
             "accion_legacy": senal.get("decision_unificada_accion_legacy", ""),
-            "score": senal.get("decision_unificada_score", 0),
-            "confianza": senal.get("decision_unificada_confianza", 0),
+            "score": senal.get("cerebro_unico_confianza", 0),
+            "confianza": senal.get("cerebro_unico_confianza", 0),
             "razones": senal.get("decision_unificada_razones", ""),
             "advertencias": senal.get(
                 "decision_unificada_advertencias", ""
@@ -384,30 +384,11 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         evidencia = construir_evidencia_operacion(senal, ctx)
         decision_cerebro = evaluar_decision_cerebro_unico(evidencia)
 
-        if not isinstance(decision_cerebro, dict):
-            raise TypeError("El Cerebro Único no devolvió un diccionario.")
-
-        decision_oficial = decision_cerebro.get("decision", "NO_OPERAR")
-        campos_obligatorios = (
-            "decision",
-            "operar",
-            "confianza",
-            "requiere_protocolo",
-            "modo_ejecucion",
-            "bloquear_por_riesgo",
-        )
+        validar_contrato_cerebro(decision_cerebro)
         
-        campos_faltantes = [
-            campo
-            for campo in campos_obligatorios
-            if campo not in decision_cerebro
-        ]
-        
-        if campos_faltantes:
-            raise KeyError(
-                "Respuesta incompleta del Cerebro Único. "
-                f"Faltan campos: {', '.join(campos_faltantes)}"
-            )
+        decision_oficial = str(
+            decision_cerebro["decision"]
+        ).upper().strip()
         decision_legacy = decision_cerebro.get(
             "decision_legacy", decision_oficial
         )
@@ -510,30 +491,46 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         )
         senal["evidencia_operacion"] = evidencia
 
-        decision = crear_decision_bootiq(senal, ctx)
         # =====================================================
         # Sincronizar evidencias oficiales del contrato BootIQ
         # =====================================================
         
         senal["pa_evidencias"] = _lista_segura(
-            evidencia.get("pa_evidencias")
+            evidencia.get(
+                "pa_evidencias",
+                senal.get("pa_evidencias", []),
+            )
         )
         
         senal["mercado_evidencias"] = _lista_segura(
-            evidencia.get("mercado_evidencias")
+            evidencia.get(
+                "mercado_evidencias",
+                senal.get("mercado_evidencias", []),
+            )
         )
         
         senal["setup_evidencias"] = _lista_segura(
-            evidencia.get("setup_evidencias")
+            evidencia.get(
+                "setup_evidencias",
+                senal.get("setup_evidencias", []),
+            )
         )
         
         senal["riesgo_evidencias"] = _lista_segura(
-            evidencia.get("riesgo_evidencias")
+            evidencia.get(
+                "riesgo_evidencias",
+                senal.get("riesgo_evidencias", []),
+            )
         )
         
         senal["historial_evidencias"] = _lista_segura(
-            evidencia.get("historial_evidencias")
+            evidencia.get(
+                "historial_evidencias",
+                senal.get("historial_evidencias", []),
+            )
         )
+        
+        decision = crear_decision_bootiq(senal, ctx)
         return {
             "permitida": operar,
             "requiere_protocolo": requiere_protocolo,

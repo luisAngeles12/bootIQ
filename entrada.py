@@ -4,16 +4,10 @@ from config import (
     CANDLE_TIME,
     VENTANA_ENTRADA_INICIO,
     VENTANA_ENTRADA_FIN,
-    PUNTAJE_SENAL_PREMIUM,
-    PUNTAJE_CONTEXTO_FUERTE,
-    CALIDADES_OPERABLES,
-    CALIDADES_MERCADO_OPERABLES,
     FUERZA_MAXIMA_VELA_NORMAL,
-    SEGUNDO_MAXIMO_VELA_CORRIDA,
-    PERMITIR_ENTRADA_CON_CONTEXTO_FUERTE
+    SEGUNDO_MAXIMO_VELA_CORRIDA
 )
 from utils import segundo_actual
-from mercado import obtener_velas
 from confirmacion_entrada import evaluar_confirmacion_entrada
 
 def _bool(v, default=False):
@@ -32,37 +26,7 @@ def _bool(v, default=False):
         return False
 
     return default
-def contexto_fuerte_para_entrada(senal):
-    try:
-        if not PERMITIR_ENTRADA_CON_CONTEXTO_FUERTE:
-            return False
 
-        puntaje = senal.get("puntaje", 0)
-        prioridad = senal.get("prioridad", 0)
-        calidad = senal.get("calidad", "")
-        calidad_mercado = senal.get("calidad_mercado", "")
-
-        return (
-            puntaje >= PUNTAJE_CONTEXTO_FUERTE
-            and prioridad >= 3
-            and calidad in CALIDADES_OPERABLES
-            and calidad_mercado in CALIDADES_MERCADO_OPERABLES
-        )
-
-    except Exception:
-        return False
-
-
-def senal_premium_para_entrada(senal):
-    try:
-        return (
-            senal.get("puntaje", 0) >= PUNTAJE_SENAL_PREMIUM
-            and senal.get("calidad") == "A+"
-            and senal.get("calidad_mercado") in CALIDADES_MERCADO_OPERABLES
-        )
-
-    except Exception:
-        return False
 def es_pullback_bajista_fuerte(senal):
     try:
         return (
@@ -75,72 +39,6 @@ def es_pullback_bajista_fuerte(senal):
         )
     except Exception:
         return False
-def detectar_intencion_en_entrada(activo, direccion_original):
-    try:
-        candles = estado.Iq.get_candles(activo, CANDLE_TIME, 5, time.time())
-
-        if not candles or len(candles) < 4:
-            return direccion_original, "sin cambio"
-
-        candles = sorted(candles, key=lambda x: x["from"])
-
-        v = candles[-1]
-        a = candles[-2]
-
-        o = float(v["open"])
-        c = float(v["close"])
-        h = float(v["max"])
-        l = float(v["min"])
-
-        ao = float(a["open"])
-        ac = float(a["close"])
-        ah = float(a["max"])
-        al = float(a["min"])
-
-        rango = h - l
-        cuerpo = abs(c - o)
-
-        if rango <= 0:
-            return direccion_original, "sin cambio"
-
-        fuerza = cuerpo / rango
-        mecha_sup = h - max(o, c)
-        mecha_inf = min(o, c) - l
-
-        vela_roja = c < o
-        vela_verde = c > o
-
-        rechazo_vendedor = (
-            mecha_sup >= cuerpo * 1.8
-            and vela_roja
-            and fuerza >= 0.22
-        )
-
-        rechazo_comprador = (
-            mecha_inf >= cuerpo * 1.8
-            and vela_verde
-            and fuerza >= 0.22
-        )
-
-        pierde_minimo_anterior = c < al and vela_roja and fuerza >= 0.30
-        rompe_maximo_anterior = c > ah and vela_verde and fuerza >= 0.30
-
-        # Si esperaba CALL, pero aparece rechazo vendedor fuerte, cambia a PUT.
-        if direccion_original == "call":
-            if rechazo_vendedor or pierde_minimo_anterior:
-                return "put", "cambio a PUT por intención bajista"
-
-        # Si esperaba PUT, pero aparece rechazo comprador fuerte, cambia a CALL.
-        if direccion_original == "put":
-            if rechazo_comprador or rompe_maximo_anterior:
-                return "call", "cambio a CALL por intención alcista"
-
-        return direccion_original, "sin cambio"
-
-    except Exception as e:
-        print("Error detectando intención:", activo, e)
-        return direccion_original, "sin cambio"
-
 
 def validar_vela_exacta_entrada(activo, direccion):
     try:
@@ -307,7 +205,6 @@ def decidir_entrada(activo, direccion, candles, precio_referencia):
         h = float(vela_actual["max"])
         l = float(vela_actual["min"])
 
-        ao = float(vela_anterior["open"])
         ac = float(vela_anterior["close"])
         ah = float(vela_anterior["max"])
         al = float(vela_anterior["min"])
@@ -610,7 +507,7 @@ def motivo_pendiente_por_accion_precio(senal):
     # NO OPERAR
     # =========================
     if riesgo_critico_setup:
-       return "NO_OPERAR"
+        return "CANCELAR_PROTOCOLO_RIESGO_CRITICO"
     # =========================
     # RUPTURAS POR ZONA
     # =========================
@@ -709,6 +606,15 @@ def procesar_senales_pendientes(abrir_operacion):
             motivo_pendiente = senal.get("motivo_pendiente", "ENTRADA_NORMAL")
             pullback_bajista_fuerte = es_pullback_bajista_fuerte(senal)
 
+            # El protocolo puede cancelar una señal, pero nunca cambiar
+            # la decisión ni la dirección definida por el Cerebro Único.
+            if motivo_pendiente == "CANCELAR_PROTOCOLO_RIESGO_CRITICO":
+                print(
+                    "SEÑAL PENDIENTE CANCELADA POR RIESGO CRÍTICO DE SETUP:",
+                    activo,
+                )
+                continue
+
             pendiente_por_ruptura = motivo_pendiente in [
                 "ESPERANDO_RUPTURA_RESISTENCIA",
                 "ESPERANDO_RUPTURA_SOPORTE"
@@ -793,39 +699,16 @@ def procesar_senales_pendientes(abrir_operacion):
                     continue
 
                 if estado_resolucion == "OPERAR_CONTRARIO":
-                    nueva_direccion = resolucion.get("direccion")
-
-                    if nueva_direccion not in ["call", "put"]:
-                        print("SEÑAL CONTRARIA CANCELADA:", activo, "dirección inválida")
-                        continue
-
-                    direccion = nueva_direccion
-                    senal["direccion"] = nueva_direccion
-                    senal["entrada_confirmada"] = True
-                    senal["ruptura_confirmada"] = True
-                    senal["tipo_ruptura"] = resolucion.get("tipo", "RECHAZO_CONTRARIO")
-                    senal["razon_ruptura"] = resolucion.get("razon", "")
-                    senal["patron"] = "operación contraria por zona"
-                    senal["accion_precio"] = "OPERACION_CONTRARIA_ZONA"
-                    senal["motivo_pendiente"] = "RESUELTA_CONTRARIA"
-                    senal["razon"] = (
-                        senal.get("razon", "")
-                        + ", OPERACIÓN CONTRARIA: "
-                        + resolucion.get("razon", "")
-                    )
-
-                    ruptura_confirmada = True
-                    tipo_ruptura = str(senal.get("tipo_ruptura", "SIN_DATOS")).lower()
-                    accion_precio = ""
-
+                    # Una confirmación de entrada no puede invertir CALL/PUT.
+                    # La nueva dirección tendría que volver a ser evaluada
+                    # por el Cerebro Único como una señal distinta.
                     print(
-                        "SEÑAL PENDIENTE CAMBIÓ A CONTRARIA:",
+                        "SEÑAL PENDIENTE CANCELADA POR DIRECCIÓN CONTRARIA:",
                         activo,
-                        "→",
-                        nueva_direccion,
                         "|",
-                        resolucion.get("razon", "")
+                        resolucion.get("razon", ""),
                     )
+                    continue
 
                 elif estado_resolucion == "OPERAR":
                     senal["ruptura_confirmada"] = True
@@ -1141,154 +1024,3 @@ def validar_punto_entrada_en_vela(direccion, candles):
     except Exception as e:
         print("Error validando punto de entrada:", e)
         return False, "error punto entrada"
-def entrada_rapida_disponible(senal):
-    activo = senal["activo"]
-    direccion = senal["direccion"]
-    motivo = senal.get("motivo_pendiente", "")
-    accion_precio = str(senal.get("accion_precio", "")).upper()
-    
-    if motivo in [
-        "ESPERANDO_RUPTURA_RESISTENCIA",
-        "ESPERANDO_RUPTURA_SOPORTE",
-        "ESPERANDO_CONFIRMACION_RECHAZO"
-    ]:
-        print(
-            "Entrada rápida bloqueada:",
-            activo,
-            "señal requiere confirmación pendiente"
-        )
-        return False
-    
-    if accion_precio in [
-        "CALL_RESISTENCIA_CERCA_SIN_RUPTURA",
-        "PUT_SOPORTE_CERCA_SIN_RUPTURA",
-        "RECHAZO_COMPRADOR_SOPORTE",
-        "RECHAZO_VENDEDOR_RESISTENCIA"
-    ]:
-        print(
-            "Entrada rápida bloqueada:",
-            activo,
-            "zona/rechazo requiere confirmación"
-        )
-        return False
-    try:
-        segundo = segundo_actual()
-
-        if segundo < VENTANA_ENTRADA_INICIO or segundo > VENTANA_ENTRADA_FIN + 8:
-            print("Entrada rápida cancelada:", activo, "fuera de ventana segura:", segundo)
-            return False
-
-        candles = estado.Iq.get_candles(
-            activo,
-            CANDLE_TIME,
-            5,
-            time.time()
-        )
-
-        if not candles or len(candles) < 4:
-            return False
-
-        candles = sorted(candles, key=lambda x: x["from"])
-        senal_premium = senal_premium_para_entrada(senal)
-        contexto_fuerte = contexto_fuerte_para_entrada(senal)
-        pullback_bajista_fuerte = es_pullback_bajista_fuerte(senal)
-        ok_punto, razon_punto = validar_punto_entrada_en_vela(
-            direccion,
-            candles
-        )
-        
-        if not ok_punto:
-            if pullback_bajista_fuerte and (
-                "precio demasiado abajo" in razon_punto.lower()
-              ):
-                print("Entrada rápida espera mejor punto pullback bajista:", activo, razon_punto)
-                return False
-            else:
-                 print("Entrada rápida bloqueada:", activo, razon_punto)
-                 return False
-        actual = candles[-1]
-
-        o = float(actual["open"])
-        c = float(actual["close"])
-        h = float(actual["max"])
-        l = float(actual["min"])
-
-        rango = h - l
-        cuerpo = abs(c - o)
-
-        if rango <= 0:
-            return False
-
-        fuerza = cuerpo / rango
-
-        cerca_high = (h - c) <= rango * 0.08
-        cerca_low = (c - l) <= rango * 0.08
-
-        
-        
-        if fuerza >= FUERZA_MAXIMA_VELA_NORMAL and segundo > SEGUNDO_MAXIMO_VELA_CORRIDA and not senal_premium:
-            print("Entrada rápida cancelada:", activo, "vela corrida | fuerza:", round(fuerza, 2))
-            return False
-
-        if direccion == "call" and cerca_high and fuerza >= 0.68 and not senal_premium:
-            print("Entrada rápida cancelada:", activo, "CALL cerca del máximo")
-            return False
-
-        if direccion == "put" and cerca_low and fuerza >= 0.68 and not senal_premium:
-            if pullback_bajista_fuerte and fuerza <= 0.62:
-                print("Entrada rápida flexible permitió PUT cerca del mínimo:", activo)
-            else:
-                print("Entrada rápida cancelada:", activo, "PUT cerca del mínimo")
-                return False
-        decision, razon = decidir_entrada(
-            activo,
-            direccion,
-            candles,
-            None
-        )
-
-        if decision != "entrar":
-            return False
-
-        ok_vela, razon_vela = validar_vela_exacta_entrada(
-            activo,
-            direccion
-        )
-
-        if not ok_vela:
-            if contexto_fuerte and "liquidity sweep" in str(senal.get("patron", "")).lower() and (
-                "sin recuperación" in razon_vela.lower()
-                or "sin rechazo" in razon_vela.lower()
-            ):
-                print("Entrada rápida flexible permitida:", activo, razon_vela)
-            else:
-                print("Entrada rápida bloqueada:", activo, razon_vela)
-                return False
-        ok_micro, razon_micro = validar_microestructura_entrada(
-            direccion,
-            [x["open"] for x in candles],
-            [x["close"] for x in candles],
-            [x["max"] for x in candles],
-            [x["min"] for x in candles]
-        )
-
-        if not ok_micro:
-          print("Entrada rápida bloqueada:", activo, razon_micro)
-          return False
-        print(
-            "Entrada rápida aprobada:",
-            activo,
-            direccion,
-            "| segundo:",
-            segundo,
-            "| fuerza:",
-            round(fuerza, 2),
-            "|",
-            razon
-        )
-
-        return True
-
-    except Exception as e:
-        print("Error en entrada rápida:", activo, e)
-        return False

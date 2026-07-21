@@ -7,22 +7,6 @@ def _num(v, defecto=0):
         return float(v)
     except Exception:
         return defecto
-def _bool(v, default=False):
-    if isinstance(v, bool):
-        return v
-
-    if v is None:
-        return default
-
-    texto = str(v).lower().strip()
-
-    if texto in ["true", "1", "si", "sí", "yes"]:
-        return True
-
-    if texto in ["false", "0", "no", "none", "null", ""]:
-        return False
-
-    return default
 
 def _limitar(valor, minimo=0, maximo=100):
     return max(minimo, min(maximo, valor))
@@ -125,12 +109,17 @@ def _analizar_microestructura(candles):
 
 def evaluar_confirmacion_entrada(senal, candles, segundo=None):
     """
-    Cerebro de entrada BootIQ.
-
-    No abre operaciones.
-    No guarda pendientes.
-    No bloquea por sí solo.
-    Solo evalúa si la entrada actual conviene.
+    Confirmador técnico de entrada BootIQ.
+    
+    No decide la estrategia.
+    No cambia la dirección.
+    No reevalúa la decisión del Cerebro Único.
+    No abre operaciones ni guarda pendientes.
+    
+    Solo determina si el momento actual permite:
+    - ENTRAR
+    - ESPERAR
+    - CANCELAR el protocolo
     """
 
     if not candles or len(candles) < 4:
@@ -142,32 +131,25 @@ def evaluar_confirmacion_entrada(senal, candles, segundo=None):
         }
 
     direccion = _txt(senal.get("direccion"))
+    if direccion not in ["call", "put"]:
+        return {
+            "accion": "CANCELAR",
+            "indice": 0,
+            "nivel": "SIN_DATOS",
+            "motivos": ["Dirección inválida para confirmar entrada."]
+        }
     patron = _txt(senal.get("patron"))
     accion_precio = _txt(senal.get("accion_precio"))
     tipo_setup = _txt(senal.get("tipo_setup"))
     subtipo_setup = _txt(senal.get("subtipo_setup"))
-    calidad_setup = _txt(senal.get("calidad_setup"))
-    # Campo legacy utilizado únicamente como respaldo temporal.
-    modo_setup_legacy = _txt(
-        senal.get("modo_entrada_setup")
+    
+    ruptura_confirmada = bool(
+        senal.get("ruptura_confirmada", False)
     )
     
-    # Evidencia neutral oficial del setup.
-    riesgo_critico_setup = _bool(
-        senal.get("riesgo_estructural_critico_setup"),
-        default=(
-            "no_operar" in modo_setup_legacy
-            or "cancelar" in modo_setup_legacy
-        )
+    entrada_confirmada = bool(
+        senal.get("entrada_confirmada", False)
     )
-    calidad = _txt(senal.get("calidad"))
-    calidad_mercado = _txt(senal.get("calidad_mercado"))
-    nivel_consenso = _txt(senal.get("nivel_consenso"))
-    decision_cerebro = _txt(senal.get("cerebro_unico_decision"))
-    confianza_cerebro = _num(senal.get("cerebro_unico_confianza", 0))
-    motivo_pendiente = _txt(senal.get("motivo_pendiente"))
-    ruptura_confirmada = bool(senal.get("ruptura_confirmada", False))
-    entrada_confirmada = bool(senal.get("entrada_confirmada", False))
 
     vela = _analizar_vela_actual(candles)
     micro = _analizar_microestructura(candles)
@@ -183,58 +165,6 @@ def evaluar_confirmacion_entrada(senal, candles, segundo=None):
     indice = 50
     motivos = []
 
-    # =========================
-    # BASE DEL CEREBRO
-    # =========================
-    if decision_cerebro == "operar":
-        indice += 10
-        motivos.append("Cerebro único favorece operar.")
-
-    elif decision_cerebro == "operar_con_protocolo":
-        indice += 4
-        motivos.append("Cerebro único permite con protocolo.")
-
-    elif decision_cerebro == "no_operar":
-        indice -= 12
-        motivos.append("Cerebro único no favorece entrada.")
-
-    if confianza_cerebro >= 70:
-        indice += 6
-        motivos.append("Confianza del cerebro alta.")
-
-    elif confianza_cerebro >= 55:
-        indice += 3
-        motivos.append("Confianza del cerebro aceptable.")
-
-    elif confianza_cerebro and confianza_cerebro < 40:
-        indice -= 6
-        motivos.append("Confianza del cerebro baja.")
-
-    # =========================
-    # SETUP / CONTEXTO
-    # =========================
-    if calidad == "a+":
-        indice += 3
-        motivos.append("Calidad de señal A+.")
-
-    if calidad_setup in ["premium", "buena"]:
-        indice += 3
-        motivos.append("Setup de buena calidad.")
-
-    if riesgo_critico_setup:
-        indice -= 12
-        motivos.append("Setup con riesgo estructural crítico.")
-    if calidad_mercado in ["normal", "limpio"]:
-        indice += 2
-        motivos.append("Mercado operable.")
-
-    if nivel_consenso in ["alto", "premium"]:
-        indice += 4
-        motivos.append("Consenso alto/premium.")
-
-    elif nivel_consenso in ["bajo", "muy_bajo"]:
-        indice -= 3
-        motivos.append("Consenso bajo.")
 
     # =========================
     # CONFIRMACIÓN POR VELA

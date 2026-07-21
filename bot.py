@@ -7,7 +7,6 @@ from config import (
     MAX_OPERACIONES_ABIERTAS,
     VENTANA_ENTRADA_INICIO,
     VENTANA_ENTRADA_FIN,
-    MIN_PRIORIDAD_OPERAR
 )
 from utils import segundo_actual,registrar_bloqueo, imprimir_resumen_ronda, reiniciar_metricas_ronda
 from conexion import conectar
@@ -15,7 +14,6 @@ from historial import asegurar_historial_csv, cargar_operaciones_pendientes
 from mercado import obtener_activos
 from estrategia import analizar_activo
 from entrada import (
-    entrada_rapida_disponible,
     guardar_senal_pendiente,
     procesar_senales_pendientes,
     motivo_pendiente_por_accion_precio
@@ -239,19 +237,15 @@ def main():
             ):
                 continue
         
-            if senal.get("prioridad", 0) < MIN_PRIORIDAD_OPERAR:
-                continue
-        
             # ==========================================
             # AUTORIZACIÓN DEL CEREBRO ÚNICO
             # ==========================================
             decision_cerebro = str(
                 senal.get(
-                    "decision_unificada_accion",
-                    senal.get("cerebro_unico_decision", "")
+                    "cerebro_unico_decision",
+                    senal.get("decision_unificada_accion", "")
                 )
             ).upper().strip()
-        
             # Defensa adicional.
             # Normalmente estrategia.py ya elimina estas señales.
             if decision_cerebro == "NO_OPERAR":
@@ -321,41 +315,27 @@ def main():
                 continue
         
             # ==========================================
-            # OPERAR
+            # OPERAR — EJECUCIÓN DIRECTA AUTORIZADA
             # ==========================================
-            # El cerebro autoriza, pero la entrada todavía
-            # debe respetar las validaciones técnicas actuales.
+            # El Cerebro Único ya evaluó estrategia,
+            # mercado, Price Action, confianza y riesgo.
+            #
+            # bot.py no vuelve a decidir ni envía esta
+            # señal a protocolo.
             senal["requiere_protocolo_cerebro"] = False
-        
-            if entrada_rapida_disponible(senal):
-                if abrir_operacion(senal):
-                    estado.metricas_ronda["entradas_abiertas"] += 1
-                    abiertas_ahora += 1
-                    operaciones_desde_resumen_mercado += 1
+            senal["protocolo_confirmado"] = False
+            
+            if abrir_operacion(senal):
+                estado.metricas_ronda["entradas_abiertas"] += 1
+                abiertas_ahora += 1
+                operaciones_desde_resumen_mercado += 1
             else:
-                motivo = motivo_pendiente_por_accion_precio(senal)
-        
-                if motivo in [
-                    "ESPERANDO_RUPTURA_RESISTENCIA",
-                    "ESPERANDO_RUPTURA_SOPORTE",
-                    "ESPERANDO_CONFIRMACION_RECHAZO"
-                ]:
-                    if (
-                        senal.get("soporte") is None
-                        or senal.get("resistencia") is None
-                    ):
-                        print(
-                            "PENDIENTE NO GUARDADA:",
-                            senal["activo"],
-                            "sin soporte/resistencia"
-                        )
-                        continue
-        
-                guardar_senal_pendiente(
-                    senal,
-                    motivo
+                print(
+                    "OPERACIÓN DIRECTA NO EJECUTADA:",
+                    senal.get("activo", ""),
+                    "| decisión:",
+                    decision_cerebro
                 )
-        
             time.sleep(0.02)
         
         if abiertas_ahora > 0:

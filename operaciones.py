@@ -19,7 +19,10 @@ from validaciones_estrategia import registrar_zona_operada
 def normalizar_resultado(resultado):
     try:
         resultado = round(float(resultado), 2)
-
+        print(
+            "RESULTADO BRUTO IQ:",
+            resultado
+        )
         if resultado > MONTO_BASE * 1.2:
             return round(MONTO_BASE * 0.87, 2)
 
@@ -37,10 +40,7 @@ def abrir_operacion(senal):
     # AUTORIZACIÓN FINAL DEL CEREBRO ÚNICO
     # ==========================================
     decision_cerebro = str(
-        senal.get(
-            "decision_unificada_accion",
-            senal.get("cerebro_unico_decision", "")
-        )
+        senal.get("cerebro_unico_decision", "")
     ).upper().strip()
 
     protocolo_confirmado = bool(
@@ -77,9 +77,39 @@ def abrir_operacion(senal):
         )
         return False
 
-    activo = senal["activo"]
-    direccion = senal["direccion"]
-    tipo = senal.get("tipo", "turbo")
+    activo = str(
+        senal.get("activo", "")
+    ).strip()
+    
+    direccion = str(
+        senal.get("direccion", "")
+    ).lower().strip()
+    
+    tipo = str(
+        senal.get("tipo", "turbo")
+    ).lower().strip()
+    
+    puntaje = senal.get("puntaje", 0)
+    patron = senal.get("patron", "")
+    rsi = senal.get("rsi", "")
+    razon = senal.get("razon", "")
+    if not activo:
+        print("OPERACIÓN NO ENVIADA: ACTIVO VACÍO")
+        return False
+    
+    if direccion not in ["call", "put"]:
+        print(
+            "OPERACIÓN NO ENVIADA: DIRECCIÓN INVÁLIDA:",
+            direccion or "VACÍA"
+        )
+        return False
+    
+    if tipo not in ["turbo", "binary", "digital"]:
+        print(
+            "OPERACIÓN NO ENVIADA: TIPO NO SOPORTADO:",
+            tipo or "VACÍO"
+        )
+        return False
     from utils import segundo_actual
     segundo_antes = segundo_actual()
     tiempo_antes = time.time()
@@ -132,10 +162,10 @@ def abrir_operacion(senal):
             "activo": activo,
             "tipo": tipo,
             "direccion": direccion,
-            "puntaje": senal["puntaje"],
-            "patron": senal["patron"],
-            "rsi": senal["rsi"],
-            "razon": senal["razon"],
+            "puntaje": puntaje,
+            "patron": patron,
+            "rsi": rsi,
+            "razon": razon,
             "hora_apertura": time.time(),
             "balance_antes": balance_antes,
             "segundo_entrada": segundo_despues,
@@ -165,11 +195,13 @@ def abrir_operacion(senal):
             "activo": activo,
             "tipo": tipo,
             "direccion": direccion,
-            "puntaje": senal["puntaje"],
-            "patron": senal["patron"],
-            "rsi": senal["rsi"],
+
+            "puntaje": puntaje,
+            "patron": patron,
+            "rsi": rsi,
+            "razon": razon,
+
             "resultado": "",
-            "razon": senal["razon"],
             "segundo_entrada": segundo_despues,
             "demora_envio": demora_envio,
         })
@@ -177,8 +209,9 @@ def abrir_operacion(senal):
         print("OPERACIÓN ABIERTA:", activo, tipo, direccion)
         print("ID:", order_id)
         print("Operaciones abiertas:", len(estado.operaciones_abiertas))
-        print("Puntaje:", senal["puntaje"])
-        print("Patrón:", senal["patron"])
+
+        print("Puntaje:", puntaje)
+        print("Patrón:", patron)
         print("Segundo entrada:", segundo_despues, "| demora envío:", demora_envio)
 
         estado.cooldown_activos[activo] = time.time()
@@ -273,28 +306,50 @@ def revisar_operaciones_abiertas():
                 op["order_id"],
                 resultado
             )
+            bloqueo_activo_aplicado = False
+
             if resultado < 0:
+            
                 if perdidas_consecutivas_activo(op["activo"], 3):
-                    estado.cooldown_activos[op["activo"]] = time.time() + 1800
-                    print("ACTIVO BLOQUEADO 30 MIN POR 3 PÉRDIDAS:", op["activo"])
+            
+                    estado.cooldown_activos[op["activo"]] = (
+                        time.time() + 1800
+                    )
+            
+                    bloqueo_activo_aplicado = True
+            
+                    print(
+                        "ACTIVO BLOQUEADO 30 MIN POR 3 PÉRDIDAS:",
+                        op["activo"]
+                    )
             
                 if not hasattr(estado, "cooldown_estrategias"):
                     estado.cooldown_estrategias = {}
             
                 if perdidas_consecutivas_patron(op["patron"], 3):
-                    estado.cooldown_estrategias[op["patron"]] = time.time() + 1800
-                    print("ESTRATEGIA BLOQUEADA 30 MIN POR 3 PÉRDIDAS:", op["patron"])
+            
+                    estado.cooldown_estrategias[op["patron"]] = (
+                        time.time() + 1800
+                    )
+            
+                    print(
+                        "ESTRATEGIA BLOQUEADA 30 MIN POR 3 PÉRDIDAS:",
+                        op["patron"]
+                    )
+            
             print(
                 "OPERACIÓN CERRADA:",
                 op["activo"],
                 op["tipo"],
                 op["direccion"]
             )
+            
             print("Resultado real por order_id:", resultado)
-
-            estado.cooldown_activos[op["activo"]] = time.time()
+            
+            if not bloqueo_activo_aplicado:
+                estado.cooldown_activos[op["activo"]] = time.time()
+            
             continue
-
         # No cerrar por balance.
         # Si IQ no devuelve el resultado por order_id, queda pendiente.
         print(
