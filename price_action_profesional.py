@@ -833,8 +833,23 @@ def resolver_contexto_price_action(
             )
 
         else:
-            contradicciones.append("impulso contrario a price action")
 
+            hay_reversion_confirmada = (
+                rechazo.get("confirmado", False)
+                or agotamiento.get("confirmado", False)
+            )
+
+            if hay_reversion_confirmada:
+
+                razones.append(
+                    "impulso previo contrario compatible con reversión confirmada"
+                )
+
+            else:
+
+                contradicciones.append(
+                    "impulso contrario a price action"
+                )
     # ========================================================
     # RECHAZO HISTÓRICO
     # ========================================================

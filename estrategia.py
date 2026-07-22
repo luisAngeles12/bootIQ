@@ -432,12 +432,12 @@ def diagnosticar_base_estrategia(senal, ctx):
         else:
             riesgo("PA_A_FAVOR_" + direccion.upper() + "_DEBIL")
 
-        # No todo PA confirmado es fortaleza. Solo dejamos los que mostraron mejor comportamiento.
-        if pa_tipo in ["RECHAZO_COMPRADOR_CONFIRMADO", "IMPULSO_BAJISTA_FUERTE"]:
-            fortaleza(pa_tipo)
+        # # No todo PA confirmado es fortaleza. Solo dejamos los que mostraron mejor comportamiento.
+        # if pa_tipo in ["RECHAZO_COMPRADOR_CONFIRMADO", "IMPULSO_BAJISTA_FUERTE"]:
+        #     fortaleza(pa_tipo)
 
-        if pa_tipo in ["IMPULSO_ALCISTA_FUERTE", "RECHAZO_VENDEDOR_CONFIRMADO"]:
-            riesgo(pa_tipo + "_DEBIL_HISTORICO")
+        # if pa_tipo in ["IMPULSO_ALCISTA_FUERTE", "RECHAZO_VENDEDOR_CONFIRMADO"]:
+        #     riesgo(pa_tipo + "_DEBIL_HISTORICO")
 
         # TENDENCIA
         tendencia_a_favor = (
