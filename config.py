@@ -6,7 +6,7 @@ EMAIL = "luisangelestejada@gmail.com"
 PASSWORD = "R@putim120799"
 
 MODO_CUENTA = "PRACTICE"  # PRACTICE o REAL
-TIPOS_MERCADO = ["binary", "digital", "turbo"]  # Tipos de mercado a operar
+TIPOS_MERCADO = ["turbo"]  # Tipos de mercado a operar
 MONTO_BASE = 25
 TIEMPO_EXPIRACION = 1
 CANDLE_TIME = 60
