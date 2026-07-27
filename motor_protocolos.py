@@ -551,6 +551,75 @@ def _protocolo_reaccion_zona(velas, idx, senal):
 
     return None, "CANCELADA_ZONA_SIN_RECHAZO"
 
+def _protocolo_ruptura_resistencia(velas, idx, senal):
+    """
+    Confirma una ruptura real antes de autorizar la entrada.
+
+    El protocolo no entra en la vela original porque la señal fue
+    clasificada precisamente como pendiente de ruptura.
+    """
+
+    direccion = _direccion(senal)
+
+    if direccion not in ["call", "put"]:
+        return None, "CANCELADA_RUPTURA_DIRECCION_INVALIDA"
+
+    inicio = idx + 1
+    final = min(idx + 5, len(velas) - 1)
+
+    # Nivel 1: ruptura acompañada de impulso.
+    for j in range(inicio, final):
+        if (
+            _ruptura_micro(velas, j, direccion)
+            and _impulso(velas[j], direccion)
+        ):
+            return (
+                j,
+                "PROTOCOLO_RUPTURA_RESISTENCIA_CONFIRMADA_IMPULSO",
+            )
+
+    # Nivel 2: ruptura seguida de conservación del nivel.
+    for j in range(inicio, final):
+        if not _ruptura_micro(velas, j, direccion):
+            continue
+
+        if j + 1 >= len(velas) - 1:
+            continue
+
+        vela_ruptura = velas[j]
+        vela_confirmacion = velas[j + 1]
+
+        if direccion == "call":
+            conserva_nivel = (
+                vela_confirmacion["close"]
+                >= vela_ruptura["close"]
+            )
+            confirma_direccion = (
+                vela_confirmacion["close"]
+                > vela_confirmacion["open"]
+            )
+
+        else:
+            conserva_nivel = (
+                vela_confirmacion["close"]
+                <= vela_ruptura["close"]
+            )
+            confirma_direccion = (
+                vela_confirmacion["close"]
+                < vela_confirmacion["open"]
+            )
+
+        if conserva_nivel and confirma_direccion:
+            return (
+                j + 1,
+                "PROTOCOLO_RUPTURA_RESISTENCIA_CONFIRMADA_CONTINUIDAD",
+            )
+
+    return (
+        None,
+        "CANCELADA_RUPTURA_RESISTENCIA_NO_CONFIRMADA",
+    )
+
 def _protocolo_continuacion(velas, idx, senal):
     direccion = _direccion(senal)
 
@@ -600,10 +669,15 @@ def buscar_entrada_confirmada(velas, idx, senal):
 
     protocolo_sugerido = _txt(senal.get("protocolo_sugerido"))
 
+    protocolo_sugerido = _txt(
+        senal.get("protocolo_sugerido")
+    )
+    
     if protocolo_sugerido == "protocolo_ruptura_resistencia":
-        return (
+        return _protocolo_ruptura_resistencia(
+            velas,
             idx,
-            "PROTOCOLO_RUPTURA_RESISTENCIA_ENTRADA_INMEDIATA",
+            senal,
         )
     protocolo = _tipo_protocolo(senal)
 

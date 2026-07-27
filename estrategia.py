@@ -717,11 +717,22 @@ def evaluar_senal_candidata(activo, ctx, senal):
         "riesgo_estructural_critico_setup",
         False
     )
-    senal["puntaje"] = senal.get("puntaje", 0) + setup.get("puntaje_extra_setup", 0)
-
-    if setup.get("riesgo_extra_setup", 0) >= 4:
-        senal["puntaje"] -= 2
-
+    # ==========================================================
+    # BOOTIQ V3 — EL SETUP SOLO APORTA EVIDENCIA
+    # ==========================================================
+    # estrategia.py no modifica el puntaje de la señal.
+    #
+    # Los valores del setup ya fueron almacenados en:
+    # - puntaje_extra_setup
+    # - riesgo_extra_setup
+    # - balance_setup
+    # - calidad_setup
+    # - modo_entrada_setup
+    #
+    # El Cerebro Único será responsable de interpretar
+    # estos valores y convertirlos en confianza o decisión.
+    senal["puntaje_antes_setup"] = senal.get("puntaje", 0)
+    senal["setup_modifico_puntaje"] = False
     ok_mercado, razon_validacion_mercado = validar_estrategia_por_mercado(
         senal,
         ctx
@@ -828,27 +839,113 @@ def evaluar_senal_candidata(activo, ctx, senal):
     patron_lower = str(senal.get("patron", "")).lower()
     accion_precio = senal.get("accion_precio", "")
 
+    # ==========================================================
+    # BOOTIQ V3 — EVIDENCIAS CHOCH SIN ALTERAR PUNTAJE
+    # ==========================================================
+    evidencias_estrategia = senal.get("estrategia_evidencias", [])
+    
+    if not isinstance(evidencias_estrategia, list):
+        evidencias_estrategia = []
+    
     if "choch" in patron_lower:
         if accion_precio in ["CALL_ZONA_NEUTRA", "PUT_ZONA_NEUTRA"]:
-            senal["puntaje"] += 2
-            senal["razon"] += ", CHOCH en zona neutra"
-
-        if accion_precio == "RECHAZO_COMPRADOR_SOPORTE" and senal["direccion"] == "call":
-            senal["puntaje"] += 4
-            senal["razon"] += ", CHOCH apoyado por rechazo comprador en soporte"
-
-        if accion_precio == "RECHAZO_VENDEDOR_RESISTENCIA" and senal["direccion"] == "put":
-            senal["puntaje"] += 4
-            senal["razon"] += ", CHOCH apoyado por rechazo vendedor en resistencia"
-
-        if accion_precio == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA" and senal["direccion"] == "call":
-            senal["puntaje"] -= 3
-            senal["razon"] += ", CHOCH cerca de resistencia sin ruptura: penalizado, no bloqueado"
-
-        if accion_precio == "PUT_SOPORTE_CERCA_SIN_RUPTURA" and senal["direccion"] == "put":
-            senal["puntaje"] -= 3
-            senal["razon"] += ", CHOCH cerca de soporte sin ruptura: penalizado, no bloqueado"
-
+            evidencias_estrategia.append({
+                "modulo": "estrategia",
+                "fuente": "estrategia",
+                "tipo": "CHOCH_ZONA_NEUTRA",
+                "direccion": senal.get("direccion", "neutra").upper(),
+                "peso": 0,
+                "fuerza": 0,
+                "confirmada": True,
+                "razon": "CHOCH detectado en zona neutra.",
+                "categoria": "ESTRATEGIA_PRICE_ACTION",
+                "datos": {
+                    "accion_precio": accion_precio,
+                    "ajuste_anterior": 2,
+                },
+            })
+    
+        if (
+            accion_precio == "RECHAZO_COMPRADOR_SOPORTE"
+            and senal["direccion"] == "call"
+        ):
+            evidencias_estrategia.append({
+                "modulo": "estrategia",
+                "fuente": "estrategia",
+                "tipo": "CHOCH_RECHAZO_COMPRADOR_SOPORTE",
+                "direccion": "CALL",
+                "peso": 0,
+                "fuerza": 0,
+                "confirmada": True,
+                "razon": "CHOCH apoyado por rechazo comprador en soporte.",
+                "categoria": "ESTRATEGIA_PRICE_ACTION",
+                "datos": {
+                    "accion_precio": accion_precio,
+                    "ajuste_anterior": 4,
+                },
+            })
+    
+        if (
+            accion_precio == "RECHAZO_VENDEDOR_RESISTENCIA"
+            and senal["direccion"] == "put"
+        ):
+            evidencias_estrategia.append({
+                "modulo": "estrategia",
+                "fuente": "estrategia",
+                "tipo": "CHOCH_RECHAZO_VENDEDOR_RESISTENCIA",
+                "direccion": "PUT",
+                "peso": 0,
+                "fuerza": 0,
+                "confirmada": True,
+                "razon": "CHOCH apoyado por rechazo vendedor en resistencia.",
+                "categoria": "ESTRATEGIA_PRICE_ACTION",
+                "datos": {
+                    "accion_precio": accion_precio,
+                    "ajuste_anterior": 4,
+                },
+            })
+    
+        if (
+            accion_precio == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA"
+            and senal["direccion"] == "call"
+        ):
+            evidencias_estrategia.append({
+                "modulo": "estrategia",
+                "fuente": "estrategia",
+                "tipo": "CHOCH_RESISTENCIA_CERCANA_SIN_RUPTURA",
+                "direccion": "CALL",
+                "peso": 0,
+                "fuerza": 0,
+                "confirmada": True,
+                "razon": "CHOCH cerca de resistencia sin ruptura confirmada.",
+                "categoria": "RIESGO_PRICE_ACTION",
+                "datos": {
+                    "accion_precio": accion_precio,
+                    "ajuste_anterior": -3,
+                },
+            })
+    
+        if (
+            accion_precio == "PUT_SOPORTE_CERCA_SIN_RUPTURA"
+            and senal["direccion"] == "put"
+        ):
+            evidencias_estrategia.append({
+                "modulo": "estrategia",
+                "fuente": "estrategia",
+                "tipo": "CHOCH_SOPORTE_CERCANO_SIN_RUPTURA",
+                "direccion": "PUT",
+                "peso": 0,
+                "fuerza": 0,
+                "confirmada": True,
+                "razon": "CHOCH cerca de soporte sin ruptura confirmada.",
+                "categoria": "RIESGO_PRICE_ACTION",
+                "datos": {
+                    "accion_precio": accion_precio,
+                    "ajuste_anterior": -3,
+                },
+            })
+    
+    senal["estrategia_evidencias"] = evidencias_estrategia
     if diagnostico_pa.get("permite") is False:
         razon_pa = diagnostico_pa.get("razon", "").lower()
     

@@ -97,7 +97,16 @@ def construir_evidencia_operacion(senal, ctx=None):
 
     if not isinstance(pa_evidencias_raw, list):
         pa_evidencias_raw = []
-    
+    # ========================================================
+    # EVIDENCIAS GENERADAS POR LA ESTRATEGIA
+    # ========================================================
+    estrategia_evidencias_raw = senal.get(
+        "estrategia_evidencias",
+        ctx.get("estrategia_evidencias", []),
+    )
+
+    if not isinstance(estrategia_evidencias_raw, list):
+        estrategia_evidencias_raw = []
     if not isinstance(setup_completo, dict):
         setup_completo = {}
 
@@ -265,10 +274,15 @@ def construir_evidencia_operacion(senal, ctx=None):
             pa_evidencias_raw,
             "price_action"
         ),
-        
+
         "mercado_evidencias": normalizar_lista_evidencias(
             mercado_evidencias_raw,
             "mercado"
+        ),
+
+        "estrategia_evidencias": normalizar_lista_evidencias(
+            estrategia_evidencias_raw,
+            "estrategia"
         ),
     }
 
@@ -281,25 +295,6 @@ def imprimir_evidencia(evidencia):
         print(clave + ":", valor)
 
 
-if __name__ == "__main__":
-    ejemplo_senal = {
-        "activo": "BIDU-OTC",
-        "direccion": "put",
-        "patron": "CHOCH bajista",
-        "puntaje": 22,
-        "prioridad": 4,
-        "score_final": 178,
-        "consenso": 98,
-        "nivel_consenso": "PREMIUM",
-        "tipo_mercado": "TENDENCIA_BAJISTA",
-        "calidad_mercado": "NORMAL",
-        "estado_tendencia": "BAJISTA_FUERTE",
-        "pa_tipo": "IMPULSO_BAJISTA_FUERTE",
-        "pa_direccion": "PUT",
-    }
-
-    evidencia = construir_evidencia_operacion(ejemplo_senal)
-    imprimir_evidencia(evidencia)
 
 def construir_evidencias_mercado(ctx):
     """
@@ -588,3 +583,23 @@ def construir_evidencias_mercado(ctx):
         })
 
     return evidencias
+
+if __name__ == "__main__":
+    ejemplo_senal = {
+        "activo": "BIDU-OTC",
+        "direccion": "put",
+        "patron": "CHOCH bajista",
+        "puntaje": 22,
+        "prioridad": 4,
+        "score_final": 178,
+        "consenso": 98,
+        "nivel_consenso": "PREMIUM",
+        "tipo_mercado": "TENDENCIA_BAJISTA",
+        "calidad_mercado": "NORMAL",
+        "estado_tendencia": "BAJISTA_FUERTE",
+        "pa_tipo": "IMPULSO_BAJISTA_FUERTE",
+        "pa_direccion": "PUT",
+    }
+
+    evidencia = construir_evidencia_operacion(ejemplo_senal)
+    imprimir_evidencia(evidencia)
