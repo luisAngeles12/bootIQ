@@ -384,136 +384,297 @@ def leer_contexto_grafico(activo):
 
 
 def diagnosticar_base_estrategia(senal, ctx):
+    """
+    Detecta hechos estratégicos sin clasificarlos como fortaleza o riesgo.
+
+    Esta capa no decide si una evidencia es favorable o desfavorable.
+    Solo describe lo observado y lo entrega al Cerebro Único para que
+    este lo interprete junto con el aprendizaje histórico.
+
+    Se conservan las claves ``riesgos_base`` y ``fortalezas_base`` vacías
+    para mantener compatibilidad con módulos anteriores.
+    """
     try:
         patron = str(senal.get("patron", "")).lower()
         direccion = str(senal.get("direccion", "")).lower()
+        direccion_mayus = direccion.upper() or "NEUTRA"
 
-        accion_precio = str(senal.get("accion_precio", "SIN_DATOS")).upper()
-        pa_tipo = str(ctx.get("pa_tipo", "SIN_CONTEXTO_CLARO")).upper()
-        pa_direccion = str(ctx.get("pa_direccion", "NEUTRA")).upper()
-        fuerza_tendencia = float(ctx.get("fuerza_tendencia", 0) or 0)
-        direccion_tendencia = str(ctx.get("direccion_tendencia", "NEUTRA")).upper()
+        accion_precio = str(
+            senal.get("accion_precio", "SIN_DATOS")
+        ).upper()
+        pa_tipo = str(
+            ctx.get("pa_tipo", "SIN_CONTEXTO_CLARO")
+        ).upper()
+        pa_direccion = str(
+            ctx.get("pa_direccion", "NEUTRA")
+        ).upper()
+        fuerza_tendencia = float(
+            ctx.get("fuerza_tendencia", 0) or 0
+        )
+        direccion_tendencia = str(
+            ctx.get("direccion_tendencia", "NEUTRA")
+        ).upper()
 
-        diagnostico = {
-            "base_estrategia": "MEDIA",
-            "riesgos_base": [],
-            "fortalezas_base": []
-        }
-
-        def riesgo(nombre):
-            if nombre not in diagnostico["riesgos_base"]:
-                diagnostico["riesgos_base"].append(nombre)
-
-        def fortaleza(nombre):
-            if nombre not in diagnostico["fortalezas_base"]:
-                diagnostico["fortalezas_base"].append(nombre)
-
-        confianza_pa = evaluar_confianza_price_action(ctx, direccion)
-        nivel_pa = str(confianza_pa.get("nivel", "NINGUNA")).upper()
-        pa_valido = bool(confianza_pa.get("pa_valido", False))
-
-        # ZONAS
-        if direccion == "call" and accion_precio == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA":
-            riesgo("CALL_RESISTENCIA_SIN_RUPTURA")
-
-        if direccion == "put" and accion_precio == "PUT_SOPORTE_CERCA_SIN_RUPTURA":
-            riesgo("PUT_SOPORTE_SIN_RUPTURA")
-
-        # PRICE ACTION
-        if pa_direccion == "NEUTRA" or pa_tipo == "SIN_CONTEXTO_CLARO":
-            riesgo("SIN_CONTEXTO_CLARO")
-
-        elif pa_direccion != direccion.upper():
-            riesgo("PA_CONTRA_" + direccion.upper())
-
-        elif pa_valido and nivel_pa in ["MEDIA", "ALTA"]:
-            fortaleza("PA_A_FAVOR_" + direccion.upper() + "_" + nivel_pa)
-
-        else:
-            riesgo("PA_A_FAVOR_" + direccion.upper() + "_DEBIL")
-
-        # # No todo PA confirmado es fortaleza. Solo dejamos los que mostraron mejor comportamiento.
-        # if pa_tipo in ["RECHAZO_COMPRADOR_CONFIRMADO", "IMPULSO_BAJISTA_FUERTE"]:
-        #     fortaleza(pa_tipo)
-
-        # if pa_tipo in ["IMPULSO_ALCISTA_FUERTE", "RECHAZO_VENDEDOR_CONFIRMADO"]:
-        #     riesgo(pa_tipo + "_DEBIL_HISTORICO")
-
-        # TENDENCIA
-        tendencia_a_favor = (
-            direccion == "call" and direccion_tendencia == "ALCISTA"
-        ) or (
-            direccion == "put" and direccion_tendencia == "BAJISTA"
+        confianza_pa = evaluar_confianza_price_action(
+            ctx,
+            direccion,
+        )
+        nivel_pa = str(
+            confianza_pa.get("nivel", "NINGUNA")
+        ).upper()
+        pa_valido = bool(
+            confianza_pa.get("pa_valido", False)
         )
 
-        if tendencia_a_favor and fuerza_tendencia >= 65:
-            riesgo("TENDENCIA_FUERTE_NO_CONFIABLE")
-        elif tendencia_a_favor:
-            riesgo("TENDENCIA_A_FAVOR_NO_PREDICTIVA")
-        elif not tendencia_a_favor and direccion_tendencia in ["ALCISTA", "BAJISTA"]:
-            riesgo("CONTRA_TENDENCIA")
+        tendencia_a_favor = (
+            direccion == "call"
+            and direccion_tendencia == "ALCISTA"
+        ) or (
+            direccion == "put"
+            and direccion_tendencia == "BAJISTA"
+        )
 
-        if fuerza_tendencia < 45:
-            riesgo("FUERZA_TENDENCIA_BAJA")
+        evidencias = []
+        tipos_registrados = set()
 
-        # ESTRATEGIAS
+        def evidencia(tipo, razon, datos=None):
+            tipo = str(tipo).strip().upper()
+            if not tipo or tipo in tipos_registrados:
+                return
+
+            tipos_registrados.add(tipo)
+            evidencias.append({
+                "modulo": "estrategia",
+                "fuente": "diagnosticar_base_estrategia",
+                "tipo": tipo,
+                "direccion": direccion_mayus,
+                "peso": 0,
+                "fuerza": 0,
+                "confirmada": True,
+                "razon": razon,
+                "categoria": "HECHO_ESTRATEGICO",
+                "datos": datos or {},
+            })
+
+        # Ubicación de la señal respecto a soporte y resistencia.
+        if (
+            direccion == "call"
+            and accion_precio
+            == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA"
+        ):
+            evidencia(
+                "CALL_RESISTENCIA_CERCA_SIN_RUPTURA",
+                "La señal CALL está cerca de resistencia sin ruptura confirmada.",
+                {"accion_precio": accion_precio},
+            )
+
+        if (
+            direccion == "put"
+            and accion_precio
+            == "PUT_SOPORTE_CERCA_SIN_RUPTURA"
+        ):
+            evidencia(
+                "PUT_SOPORTE_CERCA_SIN_RUPTURA",
+                "La señal PUT está cerca de soporte sin ruptura confirmada.",
+                {"accion_precio": accion_precio},
+            )
+
+        # Hechos de Price Action. No se etiquetan como buenos o malos.
+        if pa_direccion == "NEUTRA" or pa_tipo == "SIN_CONTEXTO_CLARO":
+            evidencia(
+                "PA_SIN_CONTEXTO_CLARO",
+                "Price Action no presenta una dirección clara.",
+                {
+                    "pa_tipo": pa_tipo,
+                    "pa_direccion": pa_direccion,
+                    "nivel_pa": nivel_pa,
+                    "pa_valido": pa_valido,
+                },
+            )
+        elif pa_direccion == direccion_mayus:
+            evidencia(
+                "PA_DIRECCION_A_FAVOR",
+                "La dirección de Price Action coincide con la señal candidata.",
+                {
+                    "pa_tipo": pa_tipo,
+                    "pa_direccion": pa_direccion,
+                    "nivel_pa": nivel_pa,
+                    "pa_valido": pa_valido,
+                },
+            )
+        else:
+            evidencia(
+                "PA_DIRECCION_CONTRARIA",
+                "La dirección de Price Action contradice la señal candidata.",
+                {
+                    "pa_tipo": pa_tipo,
+                    "pa_direccion": pa_direccion,
+                    "nivel_pa": nivel_pa,
+                    "pa_valido": pa_valido,
+                },
+            )
+
+        evidencia(
+            "PA_NIVEL_" + nivel_pa,
+            "Nivel de confianza detectado por Price Action: " + nivel_pa + ".",
+            {
+                "nivel_pa": nivel_pa,
+                "pa_valido": pa_valido,
+                "pa_tipo": pa_tipo,
+            },
+        )
+
+        # Hechos de tendencia. Tampoco se convierten aquí en riesgo o fortaleza.
+        if tendencia_a_favor:
+            evidencia(
+                "TENDENCIA_A_FAVOR",
+                "La dirección de la tendencia coincide con la señal candidata.",
+                {
+                    "direccion_tendencia": direccion_tendencia,
+                    "fuerza_tendencia": fuerza_tendencia,
+                },
+            )
+        elif direccion_tendencia in ["ALCISTA", "BAJISTA"]:
+            evidencia(
+                "TENDENCIA_CONTRARIA",
+                "La dirección de la tendencia contradice la señal candidata.",
+                {
+                    "direccion_tendencia": direccion_tendencia,
+                    "fuerza_tendencia": fuerza_tendencia,
+                },
+            )
+        else:
+            evidencia(
+                "TENDENCIA_SIN_DIRECCION_CLARA",
+                "La tendencia no presenta una dirección definida.",
+                {
+                    "direccion_tendencia": direccion_tendencia,
+                    "fuerza_tendencia": fuerza_tendencia,
+                },
+            )
+
+        if fuerza_tendencia >= 65:
+            nivel_fuerza = "ALTA"
+        elif fuerza_tendencia >= 45:
+            nivel_fuerza = "MEDIA"
+        else:
+            nivel_fuerza = "BAJA"
+
+        evidencia(
+            "FUERZA_TENDENCIA_" + nivel_fuerza,
+            "Fuerza de tendencia detectada: " + nivel_fuerza + ".",
+            {"fuerza_tendencia": fuerza_tendencia},
+        )
+
+        # Hechos propios de cada familia estratégica.
         if "choch" in patron:
-            if fuerza_tendencia < 55:
-                riesgo("CHOCH_CON_TENDENCIA_DEBIL")
-            if pa_direccion == direccion.upper() and pa_valido and nivel_pa in ["MEDIA", "ALTA"]:
-                fortaleza("CHOCH_CON_PA_VALIDO")
-            else:
-                riesgo("CHOCH_SIN_PA_VALIDO")
+            evidencia(
+                "SETUP_CHOCH",
+                "La señal candidata pertenece a la familia CHOCH.",
+                {
+                    "pa_valido": pa_valido,
+                    "nivel_pa": nivel_pa,
+                    "pa_direccion": pa_direccion,
+                    "fuerza_tendencia": fuerza_tendencia,
+                },
+            )
+            evidencia(
+                "CHOCH_PA_COINCIDE"
+                if pa_direccion == direccion_mayus
+                else "CHOCH_PA_NO_COINCIDE",
+                "Relación observada entre CHOCH y la dirección de Price Action.",
+                {
+                    "pa_valido": pa_valido,
+                    "nivel_pa": nivel_pa,
+                    "pa_direccion": pa_direccion,
+                },
+            )
 
         if "liquidity sweep" in patron:
-            if (
-                ("RECHAZO" in pa_tipo or "AGOTAMIENTO" in pa_tipo)
-                and pa_valido
-                and nivel_pa in ["MEDIA", "ALTA"]
-            ):
-                fortaleza("SWEEP_CON_PA_VALIDO")
-            else:
-                riesgo("SWEEP_CON_CONFIRMACION_PA_DEBIL")
-
-            if pa_tipo == "SIN_CONTEXTO_CLARO":
-                riesgo("SWEEP_SIN_CONFIRMACION_PA")
+            evidencia(
+                "SETUP_LIQUIDITY_SWEEP",
+                "La señal candidata pertenece a la familia liquidity sweep.",
+                {
+                    "pa_tipo": pa_tipo,
+                    "pa_valido": pa_valido,
+                    "nivel_pa": nivel_pa,
+                },
+            )
+            evidencia(
+                "SWEEP_CON_RECHAZO_O_AGOTAMIENTO"
+                if ("RECHAZO" in pa_tipo or "AGOTAMIENTO" in pa_tipo)
+                else "SWEEP_SIN_RECHAZO_O_AGOTAMIENTO",
+                "Relación observada entre el sweep y el contexto de Price Action.",
+                {
+                    "pa_tipo": pa_tipo,
+                    "pa_valido": pa_valido,
+                    "nivel_pa": nivel_pa,
+                },
+            )
 
         if "pullback" in patron:
-            if tendencia_a_favor and 50 <= fuerza_tendencia <= 64 and pa_valido:
-                fortaleza("PULLBACK_CON_PA_Y_TENDENCIA")
-            else:
-                riesgo("PULLBACK_TENDENCIA_INSUFICIENTE")
+            evidencia(
+                "SETUP_PULLBACK",
+                "La señal candidata pertenece a la familia pullback.",
+                {
+                    "tendencia_a_favor": tendencia_a_favor,
+                    "fuerza_tendencia": fuerza_tendencia,
+                    "pa_valido": pa_valido,
+                },
+            )
 
         if "reacción" in patron or "reaccion" in patron:
-            if ("RECHAZO" in pa_tipo or "AGOTAMIENTO" in pa_tipo) and pa_valido:
-                fortaleza("REACCION_CONFIRMADA")
-            else:
-                riesgo("REACCION_SIN_CONFIRMACION_FUERTE")
+            evidencia(
+                "SETUP_REACCION_ZONA",
+                "La señal candidata pertenece a la familia reacción en zona.",
+                {
+                    "pa_tipo": pa_tipo,
+                    "pa_valido": pa_valido,
+                    "nivel_pa": nivel_pa,
+                },
+            )
 
         if "continuación" in patron or "continuacion" in patron:
-            if tendencia_a_favor and fuerza_tendencia >= 55 and pa_valido:
-                fortaleza("CONTINUACION_CON_PA_VALIDO")
-            else:
-                riesgo("CONTINUACION_TENDENCIA_INSUFICIENTE")
+            evidencia(
+                "SETUP_CONTINUACION",
+                "La señal candidata pertenece a la familia continuación.",
+                {
+                    "tendencia_a_favor": tendencia_a_favor,
+                    "fuerza_tendencia": fuerza_tendencia,
+                    "pa_valido": pa_valido,
+                },
+            )
 
-        riesgos = len(diagnostico["riesgos_base"])
-        fortalezas = len(diagnostico["fortalezas_base"])
-
-        if fortalezas >= 3 and riesgos <= 1:
-            diagnostico["base_estrategia"] = "FUERTE"
-        elif riesgos >= 3 and fortalezas <= 1:
-            diagnostico["base_estrategia"] = "DEBIL"
-        else:
-            diagnostico["base_estrategia"] = "MEDIA"
-
-        return diagnostico
+        return {
+            # La clasificación queda pendiente del Cerebro Único.
+            "base_estrategia": "MEDIA",
+            "riesgos_base": [],
+            "fortalezas_base": [],
+            "evidencias_base": evidencias,
+            "clasificacion_pendiente_cerebro": True,
+        }
 
     except Exception as e:
         return {
             "base_estrategia": "ERROR",
-            "riesgos_base": ["ERROR_DIAGNOSTICO_BASE"],
+            "riesgos_base": [],
             "fortalezas_base": [],
-            "error_base": str(e)
+            "evidencias_base": [{
+                "modulo": "estrategia",
+                "fuente": "diagnosticar_base_estrategia",
+                "tipo": "ERROR_DIAGNOSTICO_BASE",
+                "direccion": str(
+                    senal.get("direccion", "NEUTRA")
+                ).upper(),
+                "peso": 0,
+                "fuerza": 0,
+                "confirmada": False,
+                "razon": str(e),
+                "categoria": "ERROR_DATOS",
+                "datos": {},
+            }],
+            "clasificacion_pendiente_cerebro": True,
+            "error_base": str(e),
         }
 
 def preparar_contexto_mercado(activo, ctx):
@@ -834,6 +995,38 @@ def evaluar_senal_candidata(activo, ctx, senal):
     senal["fortalezas_base"] = "|".join(
         x for x in [fortalezas_previas, fortalezas_nuevas]
         if x
+    )
+
+    # Incorporar los hechos detectados por la capa estratégica.
+    # Se mantienen con peso cero: estrategia.py observa; el Cerebro decide.
+    evidencias_base = diagnostico_base.get("evidencias_base", [])
+    if not isinstance(evidencias_base, list):
+        evidencias_base = []
+
+    evidencias_actuales = senal.get("estrategia_evidencias", [])
+    if not isinstance(evidencias_actuales, list):
+        evidencias_actuales = []
+
+    tipos_actuales = {
+        str(item.get("tipo", "")).upper()
+        for item in evidencias_actuales
+        if isinstance(item, dict)
+    }
+
+    for item in evidencias_base:
+        if not isinstance(item, dict):
+            continue
+        tipo_item = str(item.get("tipo", "")).upper()
+        if tipo_item and tipo_item not in tipos_actuales:
+            evidencias_actuales.append(item)
+            tipos_actuales.add(tipo_item)
+
+    senal["estrategia_evidencias"] = evidencias_actuales
+    senal["clasificacion_base_pendiente_cerebro"] = bool(
+        diagnostico_base.get(
+            "clasificacion_pendiente_cerebro",
+            True,
+        )
     )
 
     patron_lower = str(senal.get("patron", "")).lower()
@@ -1270,15 +1463,17 @@ def analizar_activo(activo, modo_backtest_diagnostico=False):
     """
     Orquestador principal del análisis por activo.
 
-    Responsabilidad:
-    - leer contexto gráfico
-    - preparar contexto de mercado
-    - generar señales candidatas
-    - evaluar cada candidata
-    - devolver la primera señal válida
+    Responsabilidades:
+    - leer el contexto gráfico;
+    - preparar el contexto de mercado;
+    - generar todas las señales candidatas;
+    - evaluar cada candidata con el Cerebro Único;
+    - comparar los resultados finales;
+    - devolver la mejor señal disponible.
 
-    No debe duplicar lógica de evaluación.
-    No debe contener filtros largos.
+    estrategia.py no decide por orden de aparición.
+    La candidata ganadora se selecciona después de que
+    todas hayan sido evaluadas por el Cerebro Único.
     """
 
     ctx = leer_contexto_grafico(activo)
@@ -1287,9 +1482,11 @@ def analizar_activo(activo, modo_backtest_diagnostico=False):
         return None
 
     ctx = preparar_contexto_mercado(activo, ctx)
+
     ctx["_modo_backtest_diagnostico"] = bool(
         modo_backtest_diagnostico
     )
+
     if not validar_contexto_base(activo, ctx):
         return None
 
@@ -1301,10 +1498,136 @@ def analizar_activo(activo, modo_backtest_diagnostico=False):
     if isinstance(senales, dict):
         senales = [senales]
 
-    for senal in senales[:4]:
-        senal_final = evaluar_senal_candidata(activo, ctx, senal)
+    candidatas_evaluadas = []
 
-        if senal_final is not None:
-            return senal_final
+    # Evaluamos todas las candidatas principales.
+    # Ninguna gana simplemente por aparecer primero.
+    for posicion, senal in enumerate(senales[:4], start=1):
+        if not isinstance(senal, dict):
+            continue
 
-    return None
+        senal["_ranking_estrategia_inicial"] = posicion
+
+        senal_final = evaluar_senal_candidata(
+            activo,
+            ctx,
+            senal,
+        )
+
+        if senal_final is None:
+            continue
+
+        candidatas_evaluadas.append(senal_final)
+
+    if not candidatas_evaluadas:
+        return None
+
+    prioridad_decision = {
+        "OPERAR": 3,
+        "OPERAR_CON_PROTOCOLO": 2,
+        "NO_OPERAR": 1,
+        "ERROR": 0,
+    }
+
+    def clave_seleccion(senal):
+        accion = str(
+            senal.get(
+                "decision_unificada_accion",
+                senal.get("decision_bootiq", "NO_OPERAR"),
+            )
+        ).upper()
+
+        confianza = float(
+            senal.get(
+                "auditoria_confianza_final",
+                senal.get(
+                    "confianza_final_cerebro",
+                    senal.get("confianza_bootiq", 0),
+                ),
+            )
+            or 0
+        )
+
+        score_final = float(
+            senal.get("score_final", 0) or 0
+        )
+
+        nivel_consenso = str(
+            senal.get("nivel_consenso", "MUY_BAJO")
+        ).upper()
+
+        prioridad_consenso = {
+            "PREMIUM": 6,
+            "BUENO": 5,
+            "ALTO": 4,
+            "MEDIO": 3,
+            "BAJO": 2,
+            "MUY_BAJO": 1,
+        }.get(nivel_consenso, 0)
+
+        puntaje = float(
+            senal.get("puntaje", 0) or 0
+        )
+
+        prioridad_original = float(
+            senal.get("prioridad", 0) or 0
+        )
+
+        return (
+            prioridad_decision.get(accion, 0),
+            confianza,
+            prioridad_consenso,
+            score_final,
+            puntaje,
+            prioridad_original,
+        )
+
+    mejor_senal = max(
+        candidatas_evaluadas,
+        key=clave_seleccion,
+    )
+
+    mejor_senal["cantidad_candidatas_evaluadas"] = len(
+        candidatas_evaluadas
+    )
+
+    mejor_senal["resumen_competencia_estrategias"] = [
+        {
+            "patron": candidata.get(
+                "patron",
+                "SIN_PATRON",
+            ),
+            "direccion": candidata.get(
+                "direccion",
+                "SIN_DIRECCION",
+            ),
+            "decision": candidata.get(
+                "decision_unificada_accion",
+                candidata.get(
+                    "decision_bootiq",
+                    "NO_OPERAR",
+                ),
+            ),
+            "confianza": candidata.get(
+                "auditoria_confianza_final",
+                candidata.get(
+                    "confianza_final_cerebro",
+                    candidata.get(
+                        "confianza_bootiq",
+                        0,
+                    ),
+                ),
+            ),
+            "score_final": candidata.get(
+                "score_final",
+                0,
+            ),
+            "nivel_consenso": candidata.get(
+                "nivel_consenso",
+                "MUY_BAJO",
+            ),
+        }
+        for candidata in candidatas_evaluadas
+    ]
+
+    return mejor_senal

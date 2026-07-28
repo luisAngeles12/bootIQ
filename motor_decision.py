@@ -554,99 +554,21 @@ def evaluar_decision_cerebro_unico(evidencia):
     aprendizaje = evaluar_aprendizaje_historico(evidencia)
     ponderacion = calcular_ponderacion_estadistica(evidencia)
 
-    # Contrato defensivo de los especialistas externos.
-    if not isinstance(resultado_inferencia, dict):
-        resultado_inferencia = {
-            "confianza": 50.0,
-            "motivos": [
-                "ALERTA_CEREBRO: motor_inferencia devolvió un resultado inválido."
-            ],
-        }
-
-    if not isinstance(riesgo_compuesto, dict):
-        riesgo_compuesto = {
-            "riesgo_nivel": "BAJO",
-            "riesgo_puntos": 0,
-            "motivos_riesgo": [
-                "ALERTA_CEREBRO: detector_riesgo_compuesto devolvió un resultado inválido."
-            ],
-        }
-
-    if not isinstance(aprendizaje, dict):
-        aprendizaje = {
-            "ajuste_confianza_aprendizaje": 0.0,
-            "decision_aprendizaje": "SIN_RESULTADO",
-            "motivo_aprendizaje": (
-                "ALERTA_CEREBRO: motor_aprendizaje_historico "
-                "devolvió un resultado inválido."
-            ),
-        }
-
-    if not isinstance(ponderacion, dict):
-        ponderacion = {
-            "ajuste_ponderacion": 0.0,
-            "motivos_ponderacion": [
-                "ALERTA_CEREBRO: motor_ponderacion devolvió un resultado inválido."
-            ],
-        }
-
     resultado_pa = evaluar_price_action_decision(evidencia)
     resultado_mercado = evaluar_mercado_decision(evidencia)
     resultado_estrategia = evaluar_estrategia_decision(evidencia)
 
     confianza_base = resultado_inferencia.get("confianza", 50.0)
-    aprendizaje_tiene_ajuste = (
-        "ajuste_confianza_aprendizaje" in aprendizaje
-    )
-
     ajuste_aprendizaje = aprendizaje.get(
         "ajuste_confianza_aprendizaje",
         0,
     )
-
-    aprendizaje_sin_aporte = (
-        not aprendizaje_tiene_ajuste
-        or _num(ajuste_aprendizaje, 0.0) == 0.0
-    )
     ajuste_ponderacion = ponderacion.get("ajuste_ponderacion", 0)
-    consenso_entrada = _num(
-        evidencia.get("consenso", 0),
-        0.0,
-    )
-
-    nivel_consenso_entrada = str(
-        evidencia.get("nivel_consenso", "SIN_DATO") or "SIN_DATO"
-    ).upper().strip()
-
-    ajuste_consenso_entrada = _num(
-        evidencia.get("ajuste_consenso", 0),
-        0.0,
-    )
-    ajuste_pa = _num(
-        resultado_pa.get("ajuste", 0),
-        0.0,
-    )
-
-    ajuste_mercado = _num(
-        resultado_mercado.get("ajuste", 0),
-        0.0,
-    )
-
-    ajuste_estrategia = _num(
-        resultado_estrategia.get("ajuste", 0),
-        0.0,
-    )
 
     ajuste_evidencias = (
-        ajuste_pa
-        + ajuste_mercado
-        + ajuste_estrategia
-    )
-
-    contradiccion_especialistas = (
-        ajuste_pa * ajuste_mercado < 0
-        and abs(ajuste_pa) >= 3.0
-        and abs(ajuste_mercado) >= 3.0
+        resultado_pa.get("ajuste", 0)
+        + resultado_mercado.get("ajuste", 0)
+        + resultado_estrategia.get("ajuste", 0)
     )
 
     resultado_confianza = calcular_confianza_cerebro(
@@ -694,22 +616,6 @@ def evaluar_decision_cerebro_unico(evidencia):
     if motivo_aprendizaje:
         motivos.append(motivo_aprendizaje)
 
-    if not aprendizaje_tiene_ajuste:
-        motivos.append(
-            "ALERTA_CEREBRO: aprendizaje no entregó "
-            "ajuste_confianza_aprendizaje."
-        )
-    elif aprendizaje_sin_aporte:
-        motivos.append(
-            "DIAGNOSTICO_CEREBRO: aprendizaje entregó ajuste 0.0."
-        )
-
-    if contradiccion_especialistas:
-        motivos.append(
-            "DIAGNOSTICO_CEREBRO: Price Action y mercado "
-            "aportan ajustes fuertes en sentidos opuestos."
-        )
-
     motivos.extend(resultado_pa.get("motivos", []))
     motivos.extend(resultado_mercado.get("motivos", []))
     motivos.extend(resultado_estrategia.get("motivos", []))
@@ -731,13 +637,6 @@ def evaluar_decision_cerebro_unico(evidencia):
     if not isinstance(mercado_evidencias, list):
         mercado_evidencias = []
 
-    estrategia_evidencias = evidencia.get(
-        "estrategia_evidencias",
-        [],
-    )
-    if not isinstance(estrategia_evidencias, list):
-        estrategia_evidencias = []
-
     return {
         "operar": operar,
         "decision": decision,
@@ -747,56 +646,9 @@ def evaluar_decision_cerebro_unico(evidencia):
         "bloquear_por_riesgo": bloquear_por_riesgo,
         "pa_evidencias": pa_evidencias,
         "mercado_evidencias": mercado_evidencias,
-        "estrategia_evidencias": estrategia_evidencias,
         "confianza": confianza,
         "confianza_base": confianza_base,
         "ajuste_evidencias": round(ajuste_evidencias, 2),
-            "desglose_cerebro": {
-            "confianza_inferencia": round(
-                _num(confianza_base, 50.0),
-                2,
-            ),
-            "ajuste_aprendizaje": round(
-                _num(ajuste_aprendizaje, 0.0),
-                2,
-            ),
-            "ajuste_price_action": round(
-                ajuste_pa,
-                2,
-            ),
-            "ajuste_mercado": round(
-                ajuste_mercado,
-                2,
-            ),
-            "ajuste_estrategia": round(
-                ajuste_estrategia,
-                2,
-            ),
-            "ajuste_ponderacion": round(
-                _num(ajuste_ponderacion, 0.0),
-                2,
-            ),
-            "consenso_entrada": round(
-                consenso_entrada,
-                2,
-            ),
-            "nivel_consenso_entrada": nivel_consenso_entrada,
-            "ajuste_consenso_entrada": round(
-                ajuste_consenso_entrada,
-                2,
-            ),
-            "consenso_aplicado_a_confianza": False,
-            "aprendizaje_tiene_ajuste": aprendizaje_tiene_ajuste,
-            "aprendizaje_sin_aporte": aprendizaje_sin_aporte,
-            "contradiccion_especialistas": contradiccion_especialistas,
-            "confianza_antes_ponderacion": resultado_confianza.get(
-                "confianza_antes_ponderacion",
-                0,
-            ),
-            "confianza_final": confianza,
-            "umbral_protocolo": UMBRAL_CEREBRO_PROTOCOLO,
-            "umbral_operar": UMBRAL_CEREBRO_OPERAR,
-        },
         "resultado_price_action": resultado_pa,
         "resultado_mercado": resultado_mercado,
         "resultado_estrategia": resultado_estrategia,
@@ -813,9 +665,6 @@ def evaluar_decision_cerebro_unico(evidencia):
             "",
         ),
         "ajuste_confianza_aprendizaje": ajuste_aprendizaje,
-        "aprendizaje_tiene_ajuste": aprendizaje_tiene_ajuste,
-        "aprendizaje_sin_aporte": aprendizaje_sin_aporte,
-        "contradiccion_especialistas": contradiccion_especialistas,
         "ajuste_ponderacion": ajuste_ponderacion,
         "ponderacion_estadistica": ponderacion,
     }
