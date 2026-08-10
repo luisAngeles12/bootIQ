@@ -64,11 +64,16 @@ BUILD_ID = "BOOTIQ_BACKTEST_V6_VALIDACION_FUERA_MUESTRA_2026_08_02"
 MODO_EXPERIMENTO_ENTRENAMIENTO = "ENTRENAMIENTO"
 MODO_EXPERIMENTO_VALIDACION = "VALIDACION"
 
-MODO_EXPERIMENTO = MODO_EXPERIMENTO_VALIDACION
+# Auditoría sobre los 12 datasets de entrenamiento,
+# pero SIN regenerar aprendizaje_historico_bootiq.csv.
+MODO_EXPERIMENTO_AUDITORIA_TRAIN = "AUDITORIA_TRAIN"
+
+MODO_EXPERIMENTO = MODO_EXPERIMENTO_AUDITORIA_TRAIN
 
 # Reserva un dataset de cada cuatro para validación.
 FRECUENCIA_DATASET_VALIDACION = 4
 
+# Solo el modo ENTRENAMIENTO real puede actualizar la memoria.
 ACTUALIZAR_APRENDIZAJE = (
     MODO_EXPERIMENTO == MODO_EXPERIMENTO_ENTRENAMIENTO
 )
@@ -407,14 +412,15 @@ def seleccionar_datasets_experimento(datasets):
 
     if MODO_EXPERIMENTO == MODO_EXPERIMENTO_ENTRENAMIENTO:
         seleccionados = entrenamiento
+    elif MODO_EXPERIMENTO == MODO_EXPERIMENTO_AUDITORIA_TRAIN:
+        seleccionados = entrenamiento
     elif MODO_EXPERIMENTO == MODO_EXPERIMENTO_VALIDACION:
         seleccionados = validacion
     else:
         raise ValueError(
             "MODO_EXPERIMENTO inválido: "
             f"{MODO_EXPERIMENTO}. "
-            "Usa MODO_EXPERIMENTO_ENTRENAMIENTO o "
-            "MODO_EXPERIMENTO_VALIDACION."
+            "Usa ENTRENAMIENTO, AUDITORIA_TRAIN o VALIDACION."
         )
 
     if not seleccionados:
@@ -432,6 +438,9 @@ def configurar_salida_experimento():
 
     if MODO_EXPERIMENTO == MODO_EXPERIMENTO_ENTRENAMIENTO:
         return "backtest_bootiq_entrenamiento_resultados.csv"
+
+    if MODO_EXPERIMENTO == MODO_EXPERIMENTO_AUDITORIA_TRAIN:
+        return "backtest_bootiq_auditoria_train_resultados.csv"
 
     if MODO_EXPERIMENTO == MODO_EXPERIMENTO_VALIDACION:
         return "backtest_bootiq_validacion_resultados.csv"
@@ -660,6 +669,29 @@ def crear_registro_resultado(
         idx_entrada,
         direccion,
     )
+
+    # ========================================================
+    # AUDITORÍA SELECCIÓN V3 SOMBRA
+    # ========================================================
+    # estrategia.py sigue devolviendo la candidata oficial.
+    # Aquí solo calculamos qué habría ocurrido con la
+    # candidata preferida por el ranking V3.
+    direccion_v3_sombra = str(
+        senal.get("seleccion_v3_sombra_direccion", "")
+        or ""
+    ).lower().strip()
+
+    if direccion_v3_sombra in {"call", "put"}:
+        info_resultado_v3_sombra = resultado_binario(
+            velas,
+            idx,
+            direccion_v3_sombra,
+        )
+    else:
+        info_resultado_v3_sombra = {
+            "resultado": "SIN_DATOS",
+        }
+
     decision_bootiq = (
         decision_bootiq
         if isinstance(decision_bootiq, dict)
@@ -671,6 +703,76 @@ def crear_registro_resultado(
         senal.get("cerebro_unico_decision", "NO_OPERAR")
         or "NO_OPERAR"
     ).upper().strip()
+
+    # ========================================================
+    # AUDITORÍA FUENTE PRINCIPAL VS RESPALDO
+    # ========================================================
+    fuente_principal_raw = senal.get(
+        "fuente_probabilidad_principal"
+    )
+    fuente_respaldo_raw = senal.get(
+        "fuente_probabilidad_respaldo"
+    )
+
+    fuente_principal_raw = (
+        fuente_principal_raw
+        if isinstance(fuente_principal_raw, dict)
+        else {}
+    )
+    fuente_respaldo_raw = (
+        fuente_respaldo_raw
+        if isinstance(fuente_respaldo_raw, dict)
+        else {}
+    )
+
+    prob_principal_sola = float(
+        fuente_principal_raw.get(
+            "probabilidad_ajustada",
+            0,
+        )
+        or 0
+    )
+
+    muestra_principal_sola = int(
+        float(
+            fuente_principal_raw.get("total", 0)
+            or 0
+        )
+    )
+
+    prob_respaldo_sola = float(
+        fuente_respaldo_raw.get(
+            "probabilidad_ajustada",
+            0,
+        )
+        or 0
+    )
+
+    muestra_respaldo_sola = int(
+        float(
+            fuente_respaldo_raw.get("total", 0)
+            or 0
+        )
+    )
+
+    # Misma clasificación de umbrales V3, pero SOLO para auditoría.
+    if not fuente_principal_raw or muestra_principal_sola < 12:
+        decision_principal_sola = "NO_OPERAR_MUESTRA"
+        operar_principal_sola = False
+    elif prob_principal_sola >= 55.0:
+        decision_principal_sola = "OPERAR"
+        operar_principal_sola = True
+    elif prob_principal_sola >= 50.0:
+        decision_principal_sola = "OPERAR_CON_PROTOCOLO"
+        operar_principal_sola = True
+    else:
+        decision_principal_sola = "NO_OPERAR"
+        operar_principal_sola = False
+
+    probabilidad_combinada = float(
+        senal.get("probabilidad_estimada", 0)
+        or 0
+    )
 
     registro = {
         "tipo": senal.get("tipo", ""),
@@ -865,6 +967,64 @@ def crear_registro_resultado(
         "fuente_probabilidad_respaldo": _texto(
             senal.get("fuente_probabilidad_respaldo", "")
         ),
+
+        # Auditoría estructurada de la combinación histórica.
+        "fuente_principal_nivel": fuente_principal_raw.get(
+            "nivel", ""
+        ),
+        "fuente_principal_clave": fuente_principal_raw.get(
+            "clave", ""
+        ),
+        "fuente_principal_probabilidad": prob_principal_sola,
+        "fuente_principal_muestra": muestra_principal_sola,
+        "fuente_principal_wins": fuente_principal_raw.get(
+            "wins", 0
+        ),
+        "fuente_principal_losses": fuente_principal_raw.get(
+            "losses", 0
+        ),
+        "fuente_principal_intervalo_inferior": (
+            fuente_principal_raw.get("intervalo_inferior", 0)
+        ),
+        "fuente_principal_intervalo_superior": (
+            fuente_principal_raw.get("intervalo_superior", 0)
+        ),
+        "fuente_principal_confiabilidad": (
+            fuente_principal_raw.get("confiabilidad", "")
+        ),
+
+        "fuente_respaldo_nivel": fuente_respaldo_raw.get(
+            "nivel", ""
+        ),
+        "fuente_respaldo_clave": fuente_respaldo_raw.get(
+            "clave", ""
+        ),
+        "fuente_respaldo_probabilidad": prob_respaldo_sola,
+        "fuente_respaldo_muestra": muestra_respaldo_sola,
+        "fuente_respaldo_wins": fuente_respaldo_raw.get(
+            "wins", 0
+        ),
+        "fuente_respaldo_losses": fuente_respaldo_raw.get(
+            "losses", 0
+        ),
+        "fuente_respaldo_intervalo_inferior": (
+            fuente_respaldo_raw.get("intervalo_inferior", 0)
+        ),
+        "fuente_respaldo_intervalo_superior": (
+            fuente_respaldo_raw.get("intervalo_superior", 0)
+        ),
+        "fuente_respaldo_confiabilidad": (
+            fuente_respaldo_raw.get("confiabilidad", "")
+        ),
+
+        "probabilidad_principal_sola": prob_principal_sola,
+        "decision_principal_sola": decision_principal_sola,
+        "operar_principal_sola": operar_principal_sola,
+        "delta_combinacion_vs_principal": round(
+            probabilidad_combinada - prob_principal_sola,
+            4,
+        ),
+
         "nivel_probabilidad_principal": senal.get(
             "nivel_probabilidad_principal", ""
         ),
@@ -884,6 +1044,75 @@ def crear_registro_resultado(
         ),
         "motivo_decision_estadistica_sombra": _texto(
             senal.get("motivo_decision_estadistica_sombra", "")
+        ),
+
+        # ==================================================
+        # FASE 1 V3 — SEPARACIÓN LEGACY VS ESTADÍSTICA
+        # ==================================================
+        "origen_decision_oficial": senal.get(
+            "origen_decision_oficial",
+            "CONFIANZA_LEGACY",
+        ),
+        "origen_decision_estadistica": senal.get(
+            "origen_decision_estadistica",
+            "PROBABILIDAD_HISTORICA_V3",
+        ),
+        "sistemas_decision_separados": bool(
+            senal.get("sistemas_decision_separados", False)
+        ),
+        "confianza_legacy": senal.get(
+            "confianza_legacy",
+            senal.get("cerebro_unico_confianza", 0),
+        ),
+        "confianza_base_legacy": senal.get(
+            "confianza_base_legacy",
+            senal.get("auditoria_confianza_base", 0),
+        ),
+        "probabilidad_v3": senal.get(
+            "probabilidad_v3",
+            senal.get("probabilidad_estimada", 0),
+        ),
+        "desacuerdo_actual_vs_v3": bool(
+            senal.get("desacuerdo_actual_vs_v3", False)
+        ),
+        "auditoria_separacion_v3": _texto(
+            senal.get("auditoria_separacion_v3", {})
+        ),
+
+        # ==================================================
+        # RANKING ENTRE CANDIDATAS — SOMBRA V3
+        # ==================================================
+        "seleccion_v3_sombra_patron": senal.get(
+            "seleccion_v3_sombra_patron",
+            "",
+        ),
+        "seleccion_v3_sombra_direccion": senal.get(
+            "seleccion_v3_sombra_direccion",
+            "",
+        ),
+        "seleccion_v3_sombra_probabilidad": senal.get(
+            "seleccion_v3_sombra_probabilidad",
+            0,
+        ),
+        "seleccion_v3_sombra_muestra": senal.get(
+            "seleccion_v3_sombra_muestra",
+            0,
+        ),
+        "seleccion_v3_sombra_decision": senal.get(
+            "seleccion_v3_sombra_decision",
+            "SIN_DATOS",
+        ),
+        "seleccion_v3_sombra_misma_que_actual": bool(
+            senal.get(
+                "seleccion_v3_sombra_misma_que_actual",
+                False,
+            )
+        ),
+        "resultado_seleccion_v3_sombra": (
+            info_resultado_v3_sombra.get(
+                "resultado",
+                "SIN_DATOS",
+            )
         ),
 
         # Alias legacy. Solo reflejan al Cerebro Único.
@@ -1372,12 +1601,57 @@ def guardar_resultados(resultados):
         "confiabilidad_probabilidad",
         "fuente_probabilidad_principal",
         "fuente_probabilidad_respaldo",
+
+        "fuente_principal_nivel",
+        "fuente_principal_clave",
+        "fuente_principal_probabilidad",
+        "fuente_principal_muestra",
+        "fuente_principal_wins",
+        "fuente_principal_losses",
+        "fuente_principal_intervalo_inferior",
+        "fuente_principal_intervalo_superior",
+        "fuente_principal_confiabilidad",
+
+        "fuente_respaldo_nivel",
+        "fuente_respaldo_clave",
+        "fuente_respaldo_probabilidad",
+        "fuente_respaldo_muestra",
+        "fuente_respaldo_wins",
+        "fuente_respaldo_losses",
+        "fuente_respaldo_intervalo_inferior",
+        "fuente_respaldo_intervalo_superior",
+        "fuente_respaldo_confiabilidad",
+
+        "probabilidad_principal_sola",
+        "decision_principal_sola",
+        "operar_principal_sola",
+        "delta_combinacion_vs_principal",
+
         "nivel_probabilidad_principal",
         "clave_probabilidad_principal",
         "decision_estadistica_sombra",
         "operar_estadistico_sombra",
         "requiere_protocolo_estadistico_sombra",
         "motivo_decision_estadistica_sombra",
+
+        # Fase 1 V3 — separación de sistemas.
+        "origen_decision_oficial",
+        "origen_decision_estadistica",
+        "sistemas_decision_separados",
+        "confianza_legacy",
+        "confianza_base_legacy",
+        "probabilidad_v3",
+        "desacuerdo_actual_vs_v3",
+        "auditoria_separacion_v3",
+
+        # Ranking sombra entre candidatas.
+        "seleccion_v3_sombra_patron",
+        "seleccion_v3_sombra_direccion",
+        "seleccion_v3_sombra_probabilidad",
+        "seleccion_v3_sombra_muestra",
+        "seleccion_v3_sombra_decision",
+        "seleccion_v3_sombra_misma_que_actual",
+        "resultado_seleccion_v3_sombra",
 
         "fase4_evaluada",
         "fase4_permitir_operacion",
@@ -1871,6 +2145,562 @@ def imprimir_comparacion_sombra(resultados):
     print("=================================================\n")
 
 
+
+
+
+def imprimir_auditoria_autorizadas_combinaciones(resultados):
+    """
+    Analiza exclusivamente las señales autorizadas por el Cerebro V3.
+
+    Busca qué variables y combinaciones separan mejor WIN de LOSS
+    dentro del subconjunto ya autorizado.
+
+    No modifica decisiones, aprendizaje ni protocolos.
+    """
+
+    if not resultados:
+        return
+
+    autorizadas = [
+        r for r in resultados
+        if str(
+            r.get("cerebro_unico_decision", "")
+            or ""
+        ).upper().strip()
+        in {"OPERAR", "OPERAR_CON_PROTOCOLO"}
+    ]
+
+    if not autorizadas:
+        print("\n===== AUDITORÍA AUTORIZADAS V3 =====")
+        print("Sin señales autorizadas.")
+        print("====================================\n")
+        return
+
+    def normalizar(valor):
+        if isinstance(valor, bool):
+            return str(valor)
+        return str(valor or "").strip()
+
+    def stats(filas):
+        wins = sum(
+            1 for r in filas
+            if r.get("resultado_hipotetico") == "WIN"
+        )
+        losses = sum(
+            1 for r in filas
+            if r.get("resultado_hipotetico") == "LOSS"
+        )
+        total = wins + losses
+        wr = round((wins / total) * 100, 2) if total else 0
+        return total, wins, losses, wr
+
+    def agrupar(campos, min_total=8, top=20):
+        grupos = {}
+
+        for r in autorizadas:
+            clave = tuple(
+                normalizar(r.get(campo, ""))
+                for campo in campos
+            )
+
+            if not any(clave):
+                continue
+
+            grupos.setdefault(clave, []).append(r)
+
+        salida = []
+
+        for clave, filas in grupos.items():
+            total, wins, losses, wr = stats(filas)
+
+            if total < min_total:
+                continue
+
+            salida.append(
+                {
+                    "clave": clave,
+                    "total": total,
+                    "wins": wins,
+                    "losses": losses,
+                    "winrate": wr,
+                }
+            )
+
+        salida.sort(
+            key=lambda x: (
+                x["winrate"],
+                x["total"],
+            ),
+            reverse=True,
+        )
+
+        return salida[:top]
+
+    total, wins, losses, wr = stats(autorizadas)
+
+    print("\n===== AUDITORÍA AUTORIZADAS V3 =====")
+    print(
+        "Autorizadas:",
+        total,
+        "| WIN:", wins,
+        "| LOSS:", losses,
+        "| winrate:", str(wr) + "%",
+    )
+
+    bloques = [
+        (
+            "CALIDAD + FAMILIA",
+            ["calidad_setup", "familia_setup"],
+            8,
+        ),
+        (
+            "TIPO + SUBTIPO",
+            ["tipo_setup", "subtipo_setup"],
+            8,
+        ),
+        (
+            "FAMILIA + PA",
+            ["familia_setup", "pa_tipo"],
+            8,
+        ),
+        (
+            "FAMILIA + MERCADO",
+            ["familia_setup", "tipo_mercado"],
+            8,
+        ),
+        (
+            "FAMILIA + TENDENCIA",
+            ["familia_setup", "estado_tendencia"],
+            8,
+        ),
+        (
+            "CALIDAD + PA",
+            ["calidad_setup", "pa_tipo"],
+            8,
+        ),
+        (
+            "CALIDAD + MERCADO",
+            ["calidad_setup", "tipo_mercado"],
+            8,
+        ),
+        (
+            "PROTOCOLO + FAMILIA",
+            ["protocolo_sugerido", "familia_setup"],
+            8,
+        ),
+        (
+            "FUENTE + FAMILIA",
+            ["nivel_probabilidad_principal", "familia_setup"],
+            8,
+        ),
+        (
+            "FUENTE + PA",
+            ["nivel_probabilidad_principal", "pa_tipo"],
+            8,
+        ),
+        (
+            "CALIDAD + FAMILIA + PA",
+            ["calidad_setup", "familia_setup", "pa_tipo"],
+            6,
+        ),
+        (
+            "FAMILIA + MERCADO + TENDENCIA",
+            ["familia_setup", "tipo_mercado", "estado_tendencia"],
+            6,
+        ),
+    ]
+
+    for titulo, campos, minimo in bloques:
+        print("\n---", titulo, "---")
+
+        filas = agrupar(
+            campos,
+            min_total=minimo,
+            top=15,
+        )
+
+        if not filas:
+            print("Sin grupos con muestra suficiente.")
+            continue
+
+        for item in filas:
+            clave = " | ".join(item["clave"])
+            print(
+                clave,
+                "| total:", item["total"],
+                "| win:", item["wins"],
+                "| loss:", item["losses"],
+                "| winrate:", str(item["winrate"]) + "%",
+            )
+
+    # --------------------------------------------------------
+    # ZONAS DE MAYOR / MENOR VALOR DENTRO DE AUTORIZADAS
+    # --------------------------------------------------------
+    print("\n--- TOP GRUPOS >= 65% ---")
+
+    candidatos_top = []
+
+    for campos in [
+        ["calidad_setup"],
+        ["familia_setup"],
+        ["tipo_setup"],
+        ["subtipo_setup"],
+        ["protocolo_sugerido"],
+        ["pa_tipo"],
+        ["tipo_mercado"],
+        ["estado_tendencia"],
+        ["nivel_probabilidad_principal"],
+        ["calidad_setup", "familia_setup"],
+        ["familia_setup", "pa_tipo"],
+        ["familia_setup", "tipo_mercado"],
+        ["familia_setup", "estado_tendencia"],
+        ["calidad_setup", "pa_tipo"],
+    ]:
+        for item in agrupar(
+            campos,
+            min_total=8,
+            top=100,
+        ):
+            if item["winrate"] >= 65.0:
+                candidatos_top.append(
+                    (
+                        item["winrate"],
+                        item["total"],
+                        tuple(campos),
+                        item,
+                    )
+                )
+
+    candidatos_top.sort(
+        key=lambda x: (x[0], x[1]),
+        reverse=True,
+    )
+
+    vistos = set()
+
+    for winrate, total_g, campos, item in candidatos_top[:25]:
+        firma = (campos, item["clave"])
+        if firma in vistos:
+            continue
+        vistos.add(firma)
+
+        print(
+            " + ".join(campos),
+            "=>",
+            " | ".join(item["clave"]),
+            "| total:", item["total"],
+            "| win:", item["wins"],
+            "| loss:", item["losses"],
+            "| winrate:", str(item["winrate"]) + "%",
+        )
+
+    print("\n--- GRUPOS <= 48% ---")
+
+    candidatos_bajos = []
+
+    for campos in [
+        ["calidad_setup"],
+        ["familia_setup"],
+        ["tipo_setup"],
+        ["subtipo_setup"],
+        ["protocolo_sugerido"],
+        ["pa_tipo"],
+        ["tipo_mercado"],
+        ["estado_tendencia"],
+        ["nivel_probabilidad_principal"],
+        ["calidad_setup", "familia_setup"],
+        ["familia_setup", "pa_tipo"],
+        ["familia_setup", "tipo_mercado"],
+        ["familia_setup", "estado_tendencia"],
+        ["calidad_setup", "pa_tipo"],
+    ]:
+        for item in agrupar(
+            campos,
+            min_total=8,
+            top=100,
+        ):
+            if item["winrate"] <= 48.0:
+                candidatos_bajos.append(
+                    (
+                        item["winrate"],
+                        -item["total"],
+                        tuple(campos),
+                        item,
+                    )
+                )
+
+    candidatos_bajos.sort(
+        key=lambda x: (x[0], x[1]),
+    )
+
+    vistos = set()
+
+    for winrate, _, campos, item in candidatos_bajos[:25]:
+        firma = (campos, item["clave"])
+        if firma in vistos:
+            continue
+        vistos.add(firma)
+
+        print(
+            " + ".join(campos),
+            "=>",
+            " | ".join(item["clave"]),
+            "| total:", item["total"],
+            "| win:", item["wins"],
+            "| loss:", item["losses"],
+            "| winrate:", str(item["winrate"]) + "%",
+        )
+
+    print("====================================\n")
+
+
+def imprimir_auditoria_principal_respaldo(resultados):
+    """
+    Compara la selección que produciría la fuente principal sola
+    contra la selección producida por la probabilidad combinada.
+
+    Este reporte NO altera el backtest.
+    """
+
+    if not resultados:
+        return
+
+    def wr(filas):
+        wins = sum(
+            1 for r in filas
+            if r.get("resultado_hipotetico") == "WIN"
+        )
+        losses = sum(
+            1 for r in filas
+            if r.get("resultado_hipotetico") == "LOSS"
+        )
+        total = wins + losses
+        tasa = round((wins / total) * 100, 2) if total else 0
+        return total, wins, losses, tasa
+
+    principal_si = [
+        r for r in resultados
+        if r.get("operar_principal_sola") is True
+    ]
+
+    combinada_si = [
+        r for r in resultados
+        if r.get("operar_estadistico_sombra") is True
+    ]
+
+    ambas_si = [
+        r for r in resultados
+        if (
+            r.get("operar_principal_sola") is True
+            and r.get("operar_estadistico_sombra") is True
+        )
+    ]
+
+    principal_si_combinada_no = [
+        r for r in resultados
+        if (
+            r.get("operar_principal_sola") is True
+            and r.get("operar_estadistico_sombra") is not True
+        )
+    ]
+
+    principal_no_combinada_si = [
+        r for r in resultados
+        if (
+            r.get("operar_principal_sola") is not True
+            and r.get("operar_estadistico_sombra") is True
+        )
+    ]
+
+    total_p, win_p, loss_p, wr_p = wr(principal_si)
+    total_c, win_c, loss_c, wr_c = wr(combinada_si)
+    total_a, win_a, loss_a, wr_a = wr(ambas_si)
+    total_q, win_q, loss_q, wr_q = wr(principal_si_combinada_no)
+    total_ag, win_ag, loss_ag, wr_ag = wr(principal_no_combinada_si)
+
+    con_respaldo = [
+        r for r in resultados
+        if str(r.get("fuente_respaldo_nivel", "") or "").strip()
+    ]
+    sin_respaldo = [
+        r for r in resultados
+        if not str(r.get("fuente_respaldo_nivel", "") or "").strip()
+    ]
+
+    tr, wrs, lrs, wrr = wr(con_respaldo)
+    ts, wss, lss, wrs_sin = wr(sin_respaldo)
+
+    print("\n===== AUDITORÍA FUENTE PRINCIPAL VS COMBINADA =====")
+    print(
+        "Principal sola autoriza",
+        "| total:", total_p,
+        "| win:", win_p,
+        "| loss:", loss_p,
+        "| winrate:", str(wr_p) + "%",
+    )
+    print(
+        "Combinada autoriza",
+        "| total:", total_c,
+        "| win:", win_c,
+        "| loss:", loss_c,
+        "| winrate:", str(wr_c) + "%",
+    )
+    print("----------------------------")
+    print(
+        "AMBAS AUTORIZAN",
+        "| total:", total_a,
+        "| win:", win_a,
+        "| loss:", loss_a,
+        "| winrate:", str(wr_a) + "%",
+    )
+    print(
+        "PRINCIPAL SI / COMBINADA NO",
+        "| total:", total_q,
+        "| win:", win_q,
+        "| loss:", loss_q,
+        "| winrate:", str(wr_q) + "%",
+    )
+    print(
+        "PRINCIPAL NO / COMBINADA SI",
+        "| total:", total_ag,
+        "| win:", win_ag,
+        "| loss:", loss_ag,
+        "| winrate:", str(wr_ag) + "%",
+    )
+    print("----------------------------")
+    print(
+        "Señales con respaldo",
+        "| total:", tr,
+        "| win:", wrs,
+        "| loss:", lrs,
+        "| winrate:", str(wrr) + "%",
+    )
+    print(
+        "Señales sin respaldo",
+        "| total:", ts,
+        "| win:", wss,
+        "| loss:", lss,
+        "| winrate:", str(wrs_sin) + "%",
+    )
+    print("====================================================\n")
+
+
+def imprimir_comparacion_ranking_v3(resultados):
+    """
+    Compara la candidata elegida por estrategia.py contra la
+    candidata preferida por el ranking V3 sombra.
+
+    No modifica ninguna operación.
+    """
+
+    if not resultados:
+        return
+
+    con_datos = [
+        r for r in resultados
+        if str(
+            r.get("seleccion_v3_sombra_direccion", "")
+            or ""
+        ).lower().strip() in {"call", "put"}
+    ]
+
+    if not con_datos:
+        print("\n===== COMPARACIÓN RANKING ACTUAL VS V3 =====")
+        print("Sin datos de ranking V3 sombra.")
+        print("============================================\n")
+        return
+
+    mismas = [
+        r for r in con_datos
+        if r.get("seleccion_v3_sombra_misma_que_actual") is True
+    ]
+
+    diferentes = [
+        r for r in con_datos
+        if r.get("seleccion_v3_sombra_misma_que_actual") is not True
+    ]
+
+    def estadisticas(filas, campo_resultado):
+        wins = sum(
+            1 for r in filas
+            if r.get(campo_resultado) == "WIN"
+        )
+        losses = sum(
+            1 for r in filas
+            if r.get(campo_resultado) == "LOSS"
+        )
+        total_valido = wins + losses
+        wr = (
+            round((wins / total_valido) * 100, 2)
+            if total_valido
+            else 0
+        )
+        return total_valido, wins, losses, wr
+
+    total_actual, win_actual, loss_actual, wr_actual = estadisticas(
+        con_datos,
+        "resultado_hipotetico",
+    )
+
+    total_v3, win_v3, loss_v3, wr_v3 = estadisticas(
+        con_datos,
+        "resultado_seleccion_v3_sombra",
+    )
+
+    total_dif_actual, win_dif_actual, loss_dif_actual, wr_dif_actual = (
+        estadisticas(
+            diferentes,
+            "resultado_hipotetico",
+        )
+    )
+
+    total_dif_v3, win_dif_v3, loss_dif_v3, wr_dif_v3 = estadisticas(
+        diferentes,
+        "resultado_seleccion_v3_sombra",
+    )
+
+    print("\n===== COMPARACIÓN RANKING ACTUAL VS V3 =====")
+    print("Registros con ranking V3:", len(con_datos))
+    print(
+        "Misma candidata:",
+        len(mismas),
+        "| Diferente candidata:",
+        len(diferentes),
+    )
+    print("----------------------------")
+    print(
+        "Ranking actual",
+        "| total:", total_actual,
+        "| win:", win_actual,
+        "| loss:", loss_actual,
+        "| winrate:", str(wr_actual) + "%",
+    )
+    print(
+        "Ranking V3 sombra",
+        "| total:", total_v3,
+        "| win:", win_v3,
+        "| loss:", loss_v3,
+        "| winrate:", str(wr_v3) + "%",
+    )
+    print("----------------------------")
+    print("SOLO CUANDO ELIGEN DISTINTO:")
+    print(
+        "Actual",
+        "| total:", total_dif_actual,
+        "| win:", win_dif_actual,
+        "| loss:", loss_dif_actual,
+        "| winrate:", str(wr_dif_actual) + "%",
+    )
+    print(
+        "V3 sombra",
+        "| total:", total_dif_v3,
+        "| win:", win_dif_v3,
+        "| loss:", loss_dif_v3,
+        "| winrate:", str(wr_dif_v3) + "%",
+    )
+    print("============================================\n")
+
+
 def clasificar_indice_confirmacion_ia(valor):
     try:
         valor = float(valor)
@@ -2094,6 +2924,9 @@ def imprimir_resumen(resultados):
     )
 
     imprimir_comparacion_sombra(resultados)
+    imprimir_auditoria_autorizadas_combinaciones(resultados)
+    imprimir_auditoria_principal_respaldo(resultados)
+    imprimir_comparacion_ranking_v3(resultados)
 
     # Reportes de ejecución real.
     imprimir_tabla_resumen(
@@ -2187,6 +3020,18 @@ def main():
         print(
             "Validación fuera de muestra: aprendizaje histórico "
             "congelado."
+        )
+
+    elif MODO_EXPERIMENTO == MODO_EXPERIMENTO_AUDITORIA_TRAIN:
+        if ACTUALIZAR_APRENDIZAJE:
+            raise RuntimeError(
+                "Protección anti-fuga: AUDITORIA_TRAIN no puede "
+                "sobrescribir el aprendizaje."
+            )
+
+        print(
+            "Auditoría TRAIN: 12 datasets de entrenamiento "
+            "con aprendizaje histórico congelado."
         )
 
     elif ACTUALIZAR_APRENDIZAJE:

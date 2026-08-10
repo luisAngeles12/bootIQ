@@ -1586,11 +1586,42 @@ def analizar_activo(activo, modo_backtest_diagnostico=False):
         candidatas_evaluadas,
         key=clave_seleccion,
     )
+    def clave_seleccion_v3_sombra(senal):
+        probabilidad = float(
+            senal.get(
+                "probabilidad_v3",
+                senal.get("probabilidad_estimada", 0),
+            )
+            or 0
+        )
+    
+        muestra = int(
+            float(
+                senal.get("muestra_probabilidad", 0)
+                or 0
+            )
+        )
+    
+        operar_sombra = bool(
+            senal.get("operar_estadistico_sombra", False)
+        )
+    
+        return (
+            1 if operar_sombra else 0,
+            probabilidad,
+            muestra,
+        )
+    
+    
+    mejor_senal_v3_sombra = max(
+        candidatas_evaluadas,
+        key=clave_seleccion_v3_sombra,
+    )
 
     mejor_senal["cantidad_candidatas_evaluadas"] = len(
         candidatas_evaluadas
     )
-
+    
     mejor_senal["resumen_competencia_estrategias"] = [
         {
             "patron": candidata.get(
@@ -1629,5 +1660,38 @@ def analizar_activo(activo, modo_backtest_diagnostico=False):
         }
         for candidata in candidatas_evaluadas
     ]
-
+    mejor_senal["seleccion_v3_sombra_patron"] = (
+        mejor_senal_v3_sombra.get("patron", "")
+    )
+    
+    mejor_senal["seleccion_v3_sombra_direccion"] = (
+        mejor_senal_v3_sombra.get("direccion", "")
+    )
+    
+    mejor_senal["seleccion_v3_sombra_probabilidad"] = (
+        mejor_senal_v3_sombra.get(
+            "probabilidad_v3",
+            mejor_senal_v3_sombra.get(
+                "probabilidad_estimada",
+                0,
+            ),
+        )
+    )
+    
+    mejor_senal["seleccion_v3_sombra_decision"] = (
+        mejor_senal_v3_sombra.get(
+            "decision_estadistica_sombra",
+            "SIN_DATOS",
+        )
+    )
+    
+    mejor_senal["seleccion_v3_sombra_misma_que_actual"] = (
+        mejor_senal_v3_sombra is mejor_senal
+    )
+    mejor_senal["seleccion_v3_sombra_muestra"] = (
+        mejor_senal_v3_sombra.get(
+            "muestra_probabilidad",
+            0,
+        )
+    )
     return mejor_senal

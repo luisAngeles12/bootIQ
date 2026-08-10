@@ -493,6 +493,7 @@ def calcular_confianza_cerebro(
             confianza_antes_ponderacion
         ),
         "auditoria_confianza": auditoria_confianza,
+        "auditoria_confianza_legacy": auditoria_confianza,
     }
 
 def clasificar_decision_estadistica_sombra(
@@ -583,6 +584,113 @@ def clasificar_decision_estadistica_sombra(
         "motivo": motivo,
         "nivel": nivel,
         "clave": clave,
+    }
+
+
+
+def convertir_decision_v3_a_oficial(
+    resultado_decision_sombra,
+):
+    """
+    Convierte la clasificación estadística V3 al contrato operativo
+    oficial de BootIQ.
+
+    IMPORTANTE:
+    - no recalcula probabilidad;
+    - no modifica umbrales;
+    - no consulta otros motores;
+    - no aplica protocolo;
+    - no altera aprendizaje.
+
+    Solo traduce:
+        OPERAR_SOMBRA
+            -> OPERAR
+        OPERAR_CON_PROTOCOLO_SOMBRA
+            -> OPERAR_CON_PROTOCOLO
+        cualquier otra salida
+            -> NO_OPERAR
+    """
+
+    resultado = (
+        resultado_decision_sombra
+        if isinstance(resultado_decision_sombra, dict)
+        else {}
+    )
+
+    decision_sombra = str(
+        resultado.get("decision", "SIN_DATOS")
+        or "SIN_DATOS"
+    ).upper().strip()
+
+    motivo_sombra = str(
+        resultado.get("motivo", "")
+        or ""
+    ).strip()
+
+    nivel = str(
+        resultado.get("nivel", "")
+        or ""
+    ).upper().strip()
+
+    clave = str(
+        resultado.get("clave", "")
+        or ""
+    ).strip()
+
+    if decision_sombra == "OPERAR_SOMBRA":
+        return {
+            "decision": "OPERAR",
+            "decision_legacy": "OPERAR_DIRECTO_O_CONFIRMADO",
+            "operar": True,
+            "requiere_protocolo": False,
+            "modo_ejecucion": "DIRECTA",
+            "bloquear_por_riesgo": False,
+            "riesgo_extremo_diagnostico": False,
+            "origen_autoridad": "PROBABILIDAD_HISTORICA_V3",
+            "decision_sombra_origen": decision_sombra,
+            "nivel_probabilidad": nivel,
+            "clave_probabilidad": clave,
+            "motivo": (
+                "V3 estadístico autorizó entrada directa. "
+                + motivo_sombra
+            ).strip(),
+        }
+
+    if decision_sombra == "OPERAR_CON_PROTOCOLO_SOMBRA":
+        return {
+            "decision": "OPERAR_CON_PROTOCOLO",
+            "decision_legacy": "OPERAR_CON_CONFIRMACION",
+            "operar": True,
+            "requiere_protocolo": True,
+            "modo_ejecucion": "PROTOCOLO",
+            "bloquear_por_riesgo": False,
+            "riesgo_extremo_diagnostico": False,
+            "origen_autoridad": "PROBABILIDAD_HISTORICA_V3",
+            "decision_sombra_origen": decision_sombra,
+            "nivel_probabilidad": nivel,
+            "clave_probabilidad": clave,
+            "motivo": (
+                "V3 estadístico autorizó operación con protocolo. "
+                + motivo_sombra
+            ).strip(),
+        }
+
+    return {
+        "decision": "NO_OPERAR",
+        "decision_legacy": "NO_OPERAR",
+        "operar": False,
+        "requiere_protocolo": False,
+        "modo_ejecucion": "BLOQUEADA",
+        "bloquear_por_riesgo": False,
+        "riesgo_extremo_diagnostico": False,
+        "origen_autoridad": "PROBABILIDAD_HISTORICA_V3",
+        "decision_sombra_origen": decision_sombra,
+        "nivel_probabilidad": nivel,
+        "clave_probabilidad": clave,
+        "motivo": (
+            "V3 estadístico no autorizó la operación. "
+            + motivo_sombra
+        ).strip(),
     }
 
 
@@ -681,6 +789,160 @@ def clasificar_decision_final(confianza, riesgo_nivel):
     }
 
 
+
+def construir_auditoria_separacion_v3(
+    resultado_confianza,
+    resultado_decision_oficial,
+    probabilidad_estimada,
+    muestra_probabilidad,
+    confiabilidad_probabilidad,
+    fuente_probabilidad_principal,
+    resultado_decision_sombra,
+):
+    """
+    Separa explícitamente los dos sistemas que hoy conviven en BootIQ V3.
+
+    SISTEMA LEGACY:
+    - motor_inferencia / motor_confianza;
+    - ajustes históricos legacy;
+    - Price Action manual;
+    - estrategia manual;
+    - ponderación manual;
+    - produce la confianza usada por la decisión oficial actual.
+
+    SISTEMA ESTADÍSTICO V3:
+    - motor_aprendizaje_historico;
+    - probabilidad estimada;
+    - muestra;
+    - confiabilidad;
+    - fuente histórica principal;
+    - produce únicamente la decisión sombra.
+
+    Esta función NO cambia ninguna decisión.
+    Solo hace auditable la transición arquitectónica.
+    """
+
+    resultado_confianza = (
+        resultado_confianza
+        if isinstance(resultado_confianza, dict)
+        else {}
+    )
+    resultado_decision_oficial = (
+        resultado_decision_oficial
+        if isinstance(resultado_decision_oficial, dict)
+        else {}
+    )
+    resultado_decision_sombra = (
+        resultado_decision_sombra
+        if isinstance(resultado_decision_sombra, dict)
+        else {}
+    )
+    fuente_probabilidad_principal = (
+        fuente_probabilidad_principal
+        if isinstance(fuente_probabilidad_principal, dict)
+        else {}
+    )
+
+    decision_oficial = str(
+        resultado_decision_oficial.get("decision", "NO_OPERAR")
+        or "NO_OPERAR"
+    ).upper().strip()
+
+    decision_sombra = str(
+        resultado_decision_sombra.get("decision", "SIN_DATOS")
+        or "SIN_DATOS"
+    ).upper().strip()
+
+    operar_oficial = bool(
+        resultado_decision_oficial.get("operar", False)
+    )
+    operar_sombra = bool(
+        resultado_decision_sombra.get("operar", False)
+    )
+
+    return {
+        "sistemas_separados": True,
+
+        "sistema_oficial_actual": "CONFIANZA_LEGACY",
+        "sistema_estadistico_v3": "PROBABILIDAD_HISTORICA_SOMBRA",
+
+        "decision_oficial": decision_oficial,
+        "operar_oficial": operar_oficial,
+        "confianza_legacy": _num(
+            resultado_confianza.get("confianza", 0.0),
+            0.0,
+        ),
+
+        "decision_sombra": decision_sombra,
+        "operar_sombra": operar_sombra,
+        "probabilidad_v3": round(
+            _num(probabilidad_estimada, 0.0),
+            2,
+        ),
+        "muestra_v3": int(
+            _num(muestra_probabilidad, 0)
+        ),
+        "confiabilidad_v3": str(
+            confiabilidad_probabilidad or "SIN_DATOS"
+        ).upper().strip(),
+
+        "nivel_fuente_v3": str(
+            fuente_probabilidad_principal.get("nivel", "")
+            or ""
+        ).upper().strip(),
+        "clave_fuente_v3": str(
+            fuente_probabilidad_principal.get("clave", "")
+            or ""
+        ).strip(),
+
+        "desacuerdo_operativo": (
+            operar_oficial != operar_sombra
+        ),
+
+        "legacy_desglose": {
+            "confianza_base": _num(
+                resultado_confianza.get("confianza_base", 0.0),
+                0.0,
+            ),
+            "ajuste_aprendizaje": _num(
+                resultado_confianza.get(
+                    "ajuste_aprendizaje",
+                    0.0,
+                ),
+                0.0,
+            ),
+            "ajuste_price_action": _num(
+                resultado_confianza.get(
+                    "ajuste_price_action",
+                    0.0,
+                ),
+                0.0,
+            ),
+            "ajuste_mercado": _num(
+                resultado_confianza.get(
+                    "ajuste_mercado",
+                    0.0,
+                ),
+                0.0,
+            ),
+            "ajuste_estrategia": _num(
+                resultado_confianza.get(
+                    "ajuste_estrategia",
+                    0.0,
+                ),
+                0.0,
+            ),
+            "ajuste_ponderacion": _num(
+                resultado_confianza.get(
+                    "ajuste_ponderacion",
+                    0.0,
+                ),
+                0.0,
+            ),
+        },
+    }
+
+
 # ============================================================
 # CEREBRO ÚNICO OFICIAL BOOTIQ
 # ============================================================
@@ -704,7 +966,7 @@ def evaluar_decision_cerebro_unico(evidencia):
     Decide una sola vez al final.
     """
 
-    resultado_inferencia = inferir_confianza(evidencia)
+    resultado_inferencia_legacy = inferir_confianza(evidencia)
     riesgo_compuesto = evaluar_riesgo_compuesto(evidencia)
     aprendizaje = evaluar_aprendizaje_historico(evidencia)
     ponderacion = calcular_ponderacion_estadistica(evidencia)
@@ -713,12 +975,18 @@ def evaluar_decision_cerebro_unico(evidencia):
     resultado_mercado = evaluar_mercado_decision(evidencia)
     resultado_estrategia = evaluar_estrategia_decision(evidencia)
 
-    confianza_base = resultado_inferencia.get("confianza", 50.0)
-    ajuste_aprendizaje = aprendizaje.get(
+    confianza_base_legacy = resultado_inferencia_legacy.get(
+        "confianza",
+        50.0,
+    )
+    ajuste_aprendizaje_legacy = aprendizaje.get(
         "ajuste_confianza_aprendizaje",
         0,
     )
-    ajuste_ponderacion = ponderacion.get("ajuste_ponderacion", 0)
+    ajuste_ponderacion_legacy = ponderacion.get(
+        "ajuste_ponderacion",
+        0,
+    )
 
     ajuste_price_action = _num(
         resultado_pa.get("ajuste", 0),
@@ -741,17 +1009,17 @@ def evaluar_decision_cerebro_unico(evidencia):
         + ajuste_estrategia
     )
 
-    resultado_confianza = calcular_confianza_cerebro(
-        confianza_base=confianza_base,
-        ajuste_aprendizaje=ajuste_aprendizaje,
+    resultado_confianza_legacy = calcular_confianza_cerebro(
+        confianza_base=confianza_base_legacy,
+        ajuste_aprendizaje=ajuste_aprendizaje_legacy,
         ajuste_price_action=ajuste_price_action,
         ajuste_mercado=ajuste_mercado,
         ajuste_estrategia=ajuste_estrategia,
-        ajuste_ponderacion=ajuste_ponderacion,
+        ajuste_ponderacion=ajuste_ponderacion_legacy,
     )
 
-    confianza = resultado_confianza["confianza"]
-    auditoria_confianza = resultado_confianza.get(
+    confianza_legacy = resultado_confianza_legacy["confianza"]
+    auditoria_confianza_legacy = resultado_confianza_legacy.get(
         "auditoria_confianza",
         {},
     )
@@ -801,39 +1069,59 @@ def evaluar_decision_cerebro_unico(evidencia):
         fuente_principal=fuente_probabilidad_principal,
     )
 
-    resultado_decision = clasificar_decision_final(
-        confianza=confianza,
+    # ========================================================
+    # DECISIÓN LEGACY — SOLO AUDITORÍA
+    # ========================================================
+    resultado_decision_legacy = clasificar_decision_final(
+        confianza=confianza_legacy,
         riesgo_nivel=riesgo_nivel,
     )
 
-    decision = resultado_decision["decision"]
-    operar = resultado_decision["operar"]
+    # ========================================================
+    # DECISIÓN OFICIAL V3 — AUTORIDAD ESTADÍSTICA
+    # ========================================================
+    resultado_decision_oficial = convertir_decision_v3_a_oficial(
+        resultado_decision_sombra,
+    )
+
+    auditoria_separacion_v3 = construir_auditoria_separacion_v3(
+        resultado_confianza=resultado_confianza_legacy,
+        resultado_decision_oficial=resultado_decision_legacy,
+        probabilidad_estimada=probabilidad_estimada,
+        muestra_probabilidad=muestra_probabilidad,
+        confiabilidad_probabilidad=confiabilidad_probabilidad,
+        fuente_probabilidad_principal=fuente_probabilidad_principal,
+        resultado_decision_sombra=resultado_decision_sombra,
+    )
+
+    decision = resultado_decision_oficial["decision"]
+    operar = resultado_decision_oficial["operar"]
     
-    decision_legacy = resultado_decision.get(
-        "decision_legacy",
-        decision,
+    decision_legacy = resultado_decision_legacy.get(
+        "decision",
+        "NO_OPERAR",
     )
     
     requiere_protocolo = bool(
-        resultado_decision.get("requiere_protocolo", False)
+        resultado_decision_oficial.get("requiere_protocolo", False)
     )
     
-    modo_ejecucion = resultado_decision.get(
+    modo_ejecucion = resultado_decision_oficial.get(
         "modo_ejecucion",
         "BLOQUEADA",
     )
     
     bloquear_por_riesgo = bool(
-        resultado_decision.get("bloquear_por_riesgo", False)
+        resultado_decision_oficial.get("bloquear_por_riesgo", False)
     )
     riesgo_extremo_diagnostico = bool(
-        resultado_decision.get(
+        resultado_decision_oficial.get(
             "riesgo_extremo_diagnostico",
             False,
         )
     )
     motivos = []
-    motivos.extend(resultado_inferencia.get("motivos", []))
+    motivos.extend(resultado_inferencia_legacy.get("motivos", []))
     motivos.extend(riesgo_compuesto.get("motivos_riesgo", []))
 
     motivo_aprendizaje = aprendizaje.get("motivo_aprendizaje", "")
@@ -845,8 +1133,19 @@ def evaluar_decision_cerebro_unico(evidencia):
     motivos.extend(resultado_estrategia.get("motivos", []))
     motivos.extend(ponderacion.get("motivos_ponderacion", []))
 
-    motivo_decision = resultado_decision.get("motivo", "")
+    motivo_decision_legacy = resultado_decision_legacy.get(
+        "motivo",
+        "",
+    )
+    if motivo_decision_legacy:
+        motivos.append(
+            "Legacy auditoría: " + motivo_decision_legacy
+        )
 
+    motivo_decision = resultado_decision_oficial.get(
+        "motivo",
+        "",
+    )
     if motivo_decision:
         motivos.append(motivo_decision)
 
@@ -875,31 +1174,57 @@ def evaluar_decision_cerebro_unico(evidencia):
         "riesgo_extremo_diagnostico": riesgo_extremo_diagnostico,
         "pa_evidencias": pa_evidencias,
         "mercado_evidencias": mercado_evidencias,
-        "confianza": confianza,
-        "confianza_base": confianza_base,
+        "confianza": confianza_legacy,
+        "confianza_legacy": confianza_legacy,
+        "confianza_base": confianza_base_legacy,
+        "confianza_base_legacy": confianza_base_legacy,
         "ajuste_evidencias": round(ajuste_evidencias, 2),
         "resultado_price_action": resultado_pa,
         "resultado_mercado": resultado_mercado,
         "resultado_estrategia": resultado_estrategia,
-        "resultado_confianza": resultado_confianza,
-        "auditoria_confianza": auditoria_confianza,
+        "resultado_confianza": resultado_confianza_legacy,
+        "resultado_confianza_legacy": resultado_confianza_legacy,
+        "auditoria_confianza": auditoria_confianza_legacy,
+        "auditoria_confianza_legacy": auditoria_confianza_legacy,
         "ajuste_price_action": ajuste_price_action,
         "ajuste_mercado": ajuste_mercado,
         "ajuste_estrategia": ajuste_estrategia,
-        "resultado_decision_final": resultado_decision,
+        "resultado_decision_final": resultado_decision_oficial,
+        "resultado_decision_oficial": resultado_decision_oficial,
+        "resultado_decision_legacy": resultado_decision_legacy,
         "riesgo_nivel": riesgo_nivel,
         "riesgo_puntos": riesgo_puntos,
         "motivos": motivos,
-        "detalle_inferencia": resultado_inferencia,
+        "detalle_inferencia": resultado_inferencia_legacy,
+        "detalle_inferencia_legacy": resultado_inferencia_legacy,
         "riesgo_compuesto": riesgo_compuesto,
         "aprendizaje_historico": aprendizaje,
         "decision_aprendizaje": aprendizaje.get(
             "decision_aprendizaje",
             "",
         ),
-        "ajuste_confianza_aprendizaje": ajuste_aprendizaje,
-        "ajuste_ponderacion": ajuste_ponderacion,
+        "ajuste_confianza_aprendizaje": ajuste_aprendizaje_legacy,
+        "ajuste_ponderacion": ajuste_ponderacion_legacy,
         "ponderacion_estadistica": ponderacion,
+
+        # ==================================================
+        # FASE 1 V3 — SEPARACIÓN DE AUTORIDADES
+        # ==================================================
+        # La decisión oficial continúa usando confianza legacy.
+        # La probabilidad histórica permanece sombra.
+        # Estos campos permiten medir ambos sistemas sin mezclarlos.
+        "origen_decision_oficial": "PROBABILIDAD_HISTORICA_V3",
+        "origen_decision_estadistica": "PROBABILIDAD_HISTORICA_V3",
+        "origen_decision_legacy": "CONFIANZA_LEGACY",
+        "sistemas_decision_separados": True,
+        "probabilidad_v3": round(probabilidad_estimada, 2),
+        "auditoria_separacion_v3": auditoria_separacion_v3,
+        "desacuerdo_actual_vs_v3": bool(
+            auditoria_separacion_v3.get(
+                "desacuerdo_operativo",
+                False,
+            )
+        ),
 
         # Salida estadística sombra BootIQ V3.
         "modo_probabilidad": modo_probabilidad,

@@ -572,7 +572,55 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         senal["motivos_ponderacion"] = motivos_ponderacion
         senal["pesos_aplicados"] = pesos_aplicados
         senal["confianza_final_cerebro"] = confianza
-
+        # =====================================================
+        # BOOTIQ V3 — SEPARACIÓN LEGACY VS ESTADÍSTICA
+        # =====================================================
+        # Estos campos son exclusivamente de auditoría.
+        # No modifican la decisión ni permiten operar.
+        
+        senal["origen_decision_oficial"] = decision_cerebro.get(
+            "origen_decision_oficial",
+            "CONFIANZA_LEGACY",
+        )
+        
+        senal["origen_decision_estadistica"] = decision_cerebro.get(
+            "origen_decision_estadistica",
+            "PROBABILIDAD_HISTORICA_V3",
+        )
+        
+        senal["sistemas_decision_separados"] = bool(
+            decision_cerebro.get(
+                "sistemas_decision_separados",
+                False,
+            )
+        )
+        
+        senal["confianza_legacy"] = decision_cerebro.get(
+            "confianza_legacy",
+            confianza,
+        )
+        
+        senal["confianza_base_legacy"] = decision_cerebro.get(
+            "confianza_base_legacy",
+            decision_cerebro.get("confianza_base", 50),
+        )
+        
+        senal["probabilidad_v3"] = decision_cerebro.get(
+            "probabilidad_v3",
+            decision_cerebro.get("probabilidad_estimada", 0),
+        )
+        
+        senal["desacuerdo_actual_vs_v3"] = bool(
+            decision_cerebro.get(
+                "desacuerdo_actual_vs_v3",
+                False,
+            )
+        )
+        
+        senal["auditoria_separacion_v3"] = decision_cerebro.get(
+            "auditoria_separacion_v3",
+            {},
+        )
         senal["pa_evidencias"] = decision_cerebro.get(
             "pa_evidencias",
             evidencia.get(
