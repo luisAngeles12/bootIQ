@@ -11,6 +11,16 @@ from motor_ponderacion import calcular_ponderacion_estadistica
 UMBRAL_CEREBRO_OPERAR = 62.0
 UMBRAL_CEREBRO_PROTOCOLO = 55.0
 
+# ============================================================
+# MODO SOMBRA ESTADÍSTICO BOOTIQ V3
+# ============================================================
+# Estos umbrales NO autorizan operaciones. Solo clasifican la
+# probabilidad nueva para medirla en el backtest.
+MODO_SOMBRA_ESTADISTICO = True
+UMBRAL_PROBABILIDAD_SOMBRA_OPERAR = 55.0
+UMBRAL_PROBABILIDAD_SOMBRA_PROTOCOLO = 50.0
+MIN_MUESTRA_SOMBRA = 12
+
 def _txt(v):
     return str(v or "").lower().strip()
 
@@ -100,10 +110,11 @@ def evaluar_mercado_decision(evidencia):
     No decide la operación.
     No bloquea.
     No modifica la evidencia.
+    No altera la confianza.
 
-    Evalúa el régimen y la calidad general del mercado.
-    Price Action y estrategia son responsables de evaluar
-    la dirección concreta de la operación.
+    Su función es únicamente detectar, organizar y describir
+    el contexto de mercado para que el aprendizaje histórico
+    y el Cerebro Único utilicen esa información.
     """
 
     mercado_evidencias = evidencia.get(
@@ -124,12 +135,18 @@ def evaluar_mercado_decision(evidencia):
 
         evidencias_validas += 1
 
-        tipo = _txt(
-            ev.get("tipo", "")
-        )
+        tipo = _txt(ev.get("tipo", ""))
 
         if tipo:
             tipos_mercado.add(tipo)
+
+    # ========================================================
+    # MERCADO SOLO DIAGNOSTICA
+    # ========================================================
+    # No se aplican bonos ni penalizaciones manuales.
+    # El valor estadístico del contexto debe provenir del
+    # motor_aprendizaje_historico.py.
+    # ========================================================
 
     ajuste = 0.0
 
@@ -138,15 +155,13 @@ def evaluar_mercado_decision(evidencia):
     # ========================================================
 
     if "mercado_rango" in tipos_mercado:
-        ajuste += 3
-
         motivos.append(
-            "Mercado: rango con rendimiento histórico favorable."
+            "Mercado: rango detectado, sin ajuste automático."
         )
 
-    elif "mercado_normal" in tipos_mercado:
+    if "mercado_normal" in tipos_mercado:
         motivos.append(
-            "Mercado: calidad normal operable, sin bono automático."
+            "Mercado: calidad normal operable, sin ajuste automático."
         )
 
     # ========================================================
@@ -154,54 +169,52 @@ def evaluar_mercado_decision(evidencia):
     # ========================================================
 
     if "mercado_limpio" in tipos_mercado:
-        ajuste -= 2
-
         motivos.append(
-            "Mercado: clasificación LIMPIO no mostró ventaja histórica."
+            "Mercado: contexto limpio detectado, sin ajuste automático."
         )
 
     if "mercado_sucio" in tipos_mercado:
-        ajuste -= 4
-
         motivos.append(
-            "Mercado: contexto sucio o caótico."
+            "Mercado: contexto sucio o caótico detectado, "
+            "sin ajuste automático."
         )
 
     # ========================================================
     # ESTADO DE TENDENCIA
     # ========================================================
 
-    if (
-        "tendencia_alcista" in tipos_mercado
-        and "tendencia_fuerte" in tipos_mercado
-    ):
-        ajuste -= 3
-
+    if "tendencia_alcista" in tipos_mercado:
         motivos.append(
-            "Mercado: tendencia alcista fuerte históricamente débil."
+            "Mercado: tendencia alcista detectada."
+        )
+
+    if "tendencia_bajista" in tipos_mercado:
+        motivos.append(
+            "Mercado: tendencia bajista detectada."
+        )
+
+    if "tendencia_fuerte" in tipos_mercado:
+        motivos.append(
+            "Mercado: tendencia fuerte detectada, "
+            "sin ajuste automático."
         )
 
     if "tendencia_agotada" in tipos_mercado:
-        ajuste -= 3
-
         motivos.append(
-            "Mercado: tendencia agotada."
+            "Mercado: tendencia agotada detectada, "
+            "sin ajuste automático."
         )
-
-    # TENDENCIA_DEBIL queda como diagnóstico.
-    # El backtest no justificó una penalización automática.
 
     if "tendencia_debil" in tipos_mercado:
         motivos.append(
-            "Mercado: tendencia débil sin penalización automática."
+            "Mercado: tendencia débil detectada, "
+            "sin ajuste automático."
         )
-
-    # TENDENCIA_LIMPIA queda como diagnóstico.
-    # No se premia automáticamente.
 
     if "tendencia_limpia" in tipos_mercado:
         motivos.append(
-            "Mercado: tendencia limpia sin bono automático."
+            "Mercado: tendencia limpia detectada, "
+            "sin ajuste automático."
         )
 
     # ========================================================
@@ -209,41 +222,37 @@ def evaluar_mercado_decision(evidencia):
     # ========================================================
 
     if "expansion_peligrosa" in tipos_mercado:
-        ajuste -= 4
-
         motivos.append(
-            "Mercado: expansión peligrosa."
+            "Mercado: expansión peligrosa detectada, "
+            "sin ajuste automático."
         )
 
     if "rango_sucio" in tipos_mercado:
-        ajuste -= 4
-
         motivos.append(
-            "Mercado: rango sucio."
+            "Mercado: rango sucio detectado, "
+            "sin ajuste automático."
         )
 
     if "riesgo_mercado_alto" in tipos_mercado:
-        ajuste -= 3
-
         motivos.append(
-            "Mercado: riesgo general alto."
+            "Mercado: riesgo general alto detectado, "
+            "sin ajuste automático."
         )
 
     # ========================================================
     # SCORE DE MERCADO
-    # Valores deliberadamente moderados.
     # ========================================================
 
     if "score_mercado_alto" in tipos_mercado:
         motivos.append(
-            "Mercado: score alto sin bono automático."
+            "Mercado: score alto detectado, "
+            "sin ajuste automático."
         )
 
     if "score_mercado_bajo" in tipos_mercado:
-        ajuste -= 2
-
         motivos.append(
-            "Mercado: score bajo."
+            "Mercado: score bajo detectado, "
+            "sin ajuste automático."
         )
 
     return {
@@ -252,8 +261,8 @@ def evaluar_mercado_decision(evidencia):
         "tipos_mercado": sorted(tipos_mercado),
         "total_evidencias": len(mercado_evidencias),
         "evidencias_validas": evidencias_validas,
+        "modo": "DIAGNOSTICO",
     }
-
 
 def evaluar_estrategia_decision(evidencia):
     """
@@ -394,17 +403,31 @@ def evaluar_estrategia_decision(evidencia):
 def calcular_confianza_cerebro(
     confianza_base,
     ajuste_aprendizaje,
-    ajuste_evidencias,
+    ajuste_price_action,
+    ajuste_mercado,
+    ajuste_estrategia,
     ajuste_ponderacion,
 ):
     """
-    Calcula la confianza final del Cerebro Único y conserva su desglose.
+    Calcula la confianza final del Cerebro Único
+    y conserva el desglose completo de cada componente.
+
+    Esta función no decide.
+    Solamente calcula y registra.
     """
 
     confianza_base = _num(confianza_base, 50.0)
     ajuste_aprendizaje = _num(ajuste_aprendizaje, 0.0)
-    ajuste_evidencias = _num(ajuste_evidencias, 0.0)
+    ajuste_price_action = _num(ajuste_price_action, 0.0)
+    ajuste_mercado = _num(ajuste_mercado, 0.0)
+    ajuste_estrategia = _num(ajuste_estrategia, 0.0)
     ajuste_ponderacion = _num(ajuste_ponderacion, 0.0)
+
+    ajuste_evidencias = (
+        ajuste_price_action
+        + ajuste_mercado
+        + ajuste_estrategia
+    )
 
     confianza_antes_ponderacion = (
         confianza_base
@@ -413,20 +436,153 @@ def calcular_confianza_cerebro(
     )
 
     confianza_antes_ponderacion = round(
-        max(0, min(100, confianza_antes_ponderacion)),
+        max(0.0, min(100.0, confianza_antes_ponderacion)),
         2,
     )
 
-    confianza_final = confianza_antes_ponderacion + ajuste_ponderacion
-    confianza_final = round(max(0, min(100, confianza_final)), 2)
+    confianza_final = (
+        confianza_antes_ponderacion
+        + ajuste_ponderacion
+    )
+
+    confianza_final = round(
+        max(0.0, min(100.0, confianza_final)),
+        2,
+    )
+
+    auditoria_confianza = {
+        "base": round(confianza_base, 2),
+        "aprendizaje": round(ajuste_aprendizaje, 2),
+        "price_action": round(ajuste_price_action, 2),
+        "mercado": round(ajuste_mercado, 2),
+        "estrategia": round(ajuste_estrategia, 2),
+        "evidencias_total": round(ajuste_evidencias, 2),
+        "ponderacion": round(ajuste_ponderacion, 2),
+        "antes_ponderacion": confianza_antes_ponderacion,
+        "total": confianza_final,
+    }
 
     return {
         "confianza": confianza_final,
         "confianza_base": round(confianza_base, 2),
-        "ajuste_aprendizaje": round(ajuste_aprendizaje, 2),
-        "ajuste_evidencias": round(ajuste_evidencias, 2),
-        "ajuste_ponderacion": round(ajuste_ponderacion, 2),
-        "confianza_antes_ponderacion": confianza_antes_ponderacion,
+        "ajuste_aprendizaje": round(
+            ajuste_aprendizaje,
+            2,
+        ),
+        "ajuste_price_action": round(
+            ajuste_price_action,
+            2,
+        ),
+        "ajuste_mercado": round(
+            ajuste_mercado,
+            2,
+        ),
+        "ajuste_estrategia": round(
+            ajuste_estrategia,
+            2,
+        ),
+        "ajuste_evidencias": round(
+            ajuste_evidencias,
+            2,
+        ),
+        "ajuste_ponderacion": round(
+            ajuste_ponderacion,
+            2,
+        ),
+        "confianza_antes_ponderacion": (
+            confianza_antes_ponderacion
+        ),
+        "auditoria_confianza": auditoria_confianza,
+    }
+
+def clasificar_decision_estadistica_sombra(
+    probabilidad,
+    intervalo_inferior,
+    intervalo_superior,
+    muestra,
+    confiabilidad,
+    fuente_principal=None,
+):
+    """Clasifica la probabilidad nueva sin afectar la operación real."""
+    probabilidad = _num(probabilidad, 0.0)
+    intervalo_inferior = _num(intervalo_inferior, probabilidad)
+    intervalo_superior = _num(intervalo_superior, probabilidad)
+
+    try:
+        muestra = int(float(muestra or 0))
+    except (TypeError, ValueError):
+        muestra = 0
+
+    confiabilidad = str(confiabilidad or "SIN_DATOS").upper().strip()
+    fuente_principal = (
+        fuente_principal if isinstance(fuente_principal, dict) else {}
+    )
+    nivel = str(fuente_principal.get("nivel", "") or "").upper().strip()
+    clave = str(fuente_principal.get("clave", "") or "").strip()
+
+    if not MODO_SOMBRA_ESTADISTICO:
+        return {
+            "decision": "SOMBRA_DESACTIVADA",
+            "operar": False,
+            "requiere_protocolo": False,
+            "modo": "DIAGNOSTICO",
+            "motivo": "Modo sombra estadístico desactivado.",
+            "nivel": nivel,
+            "clave": clave,
+        }
+
+    if not fuente_principal or muestra <= 0:
+        return {
+            "decision": "SIN_DATOS_ESTADISTICOS",
+            "operar": False,
+            "requiere_protocolo": False,
+            "modo": "DIAGNOSTICO",
+            "motivo": "Sin fuente histórica principal utilizable.",
+            "nivel": nivel,
+            "clave": clave,
+        }
+
+    if muestra < MIN_MUESTRA_SOMBRA:
+        return {
+            "decision": "NO_OPERAR_SOMBRA_MUESTRA_INSUFICIENTE",
+            "operar": False,
+            "requiere_protocolo": False,
+            "modo": "DIAGNOSTICO",
+            "motivo": (
+                f"Probabilidad sombra {probabilidad:.2f}%, pero muestra "
+                f"{muestra} < {MIN_MUESTRA_SOMBRA}."
+            ),
+            "nivel": nivel,
+            "clave": clave,
+        }
+
+    if probabilidad >= UMBRAL_PROBABILIDAD_SOMBRA_OPERAR:
+        decision = "OPERAR_SOMBRA"
+        operar_sombra = True
+        requiere_protocolo_sombra = False
+    elif probabilidad >= UMBRAL_PROBABILIDAD_SOMBRA_PROTOCOLO:
+        decision = "OPERAR_CON_PROTOCOLO_SOMBRA"
+        operar_sombra = True
+        requiere_protocolo_sombra = True
+    else:
+        decision = "NO_OPERAR_SOMBRA"
+        operar_sombra = False
+        requiere_protocolo_sombra = False
+
+    motivo = (
+        f"Probabilidad sombra {probabilidad:.2f}% | intervalo "
+        f"{intervalo_inferior:.2f}%–{intervalo_superior:.2f}% | "
+        f"muestra {muestra} | confiabilidad {confiabilidad}."
+    )
+
+    return {
+        "decision": decision,
+        "operar": operar_sombra,
+        "requiere_protocolo": requiere_protocolo_sombra,
+        "modo": "DIAGNOSTICO",
+        "motivo": motivo,
+        "nivel": nivel,
+        "clave": clave,
     }
 
 
@@ -452,25 +608,21 @@ def clasificar_decision_final(confianza, riesgo_nivel):
     ).upper().strip()
 
     # ========================================================
-    # BLOQUEO OFICIAL POR RIESGO EXTREMO
+    # RIESGO EXTREMO EN MODO DIAGNÓSTICO
     # ========================================================
-    # detector_riesgo_compuesto.py solamente calcula el riesgo.
-    # La decisión de bloquear pertenece al Cerebro Único.
+    # El backtest mostró que la categoría EXTREMO no justifica
+    # un bloqueo automático:
+    #
+    # 701 señales
+    # 360 WIN
+    # 341 LOSS
+    # 51.36% de winrate
+    #
+    # El riesgo continúa registrado, pero la decisión dependerá
+    # de la confianza y de los umbrales oficiales del Cerebro.
     # ========================================================
-
-    if riesgo_nivel == "EXTREMO":
-        return {
-            "decision": "NO_OPERAR",
-            "decision_legacy": "NO_OPERAR",
-            "operar": False,
-            "requiere_protocolo": False,
-            "modo_ejecucion": "BLOQUEADA",
-            "bloquear_por_riesgo": True,
-            "motivo": (
-                "Cerebro único: operación rechazada "
-                "por riesgo extremo."
-            ),
-        }
+    
+    riesgo_extremo_diagnostico = riesgo_nivel == "EXTREMO"
 
     # ========================================================
     # CONFIANZA ALTA
@@ -484,6 +636,7 @@ def clasificar_decision_final(confianza, riesgo_nivel):
             "requiere_protocolo": False,
             "modo_ejecucion": "DIRECTA",
             "bloquear_por_riesgo": False,
+            "riesgo_extremo_diagnostico": riesgo_extremo_diagnostico,
             "motivo": (
                 "Cerebro único: confianza alta; "
                 "entrada directa autorizada."
@@ -502,6 +655,7 @@ def clasificar_decision_final(confianza, riesgo_nivel):
             "requiere_protocolo": True,
             "modo_ejecucion": "PROTOCOLO",
             "bloquear_por_riesgo": False,
+            "riesgo_extremo_diagnostico": riesgo_extremo_diagnostico,
             "motivo": (
                 "Cerebro único: confianza intermedia; "
                 "requiere confirmación del protocolo."
@@ -519,6 +673,7 @@ def clasificar_decision_final(confianza, riesgo_nivel):
         "requiere_protocolo": False,
         "modo_ejecucion": "BLOQUEADA",
         "bloquear_por_riesgo": False,
+        "riesgo_extremo_diagnostico": riesgo_extremo_diagnostico,
         "motivo": (
             "Cerebro único: confianza inferior "
             "al mínimo operativo."
@@ -565,22 +720,86 @@ def evaluar_decision_cerebro_unico(evidencia):
     )
     ajuste_ponderacion = ponderacion.get("ajuste_ponderacion", 0)
 
+    ajuste_price_action = _num(
+        resultado_pa.get("ajuste", 0),
+        0.0,
+    )
+    
+    ajuste_mercado = _num(
+        resultado_mercado.get("ajuste", 0),
+        0.0,
+    )
+    
+    ajuste_estrategia = _num(
+        resultado_estrategia.get("ajuste", 0),
+        0.0,
+    )
+
     ajuste_evidencias = (
-        resultado_pa.get("ajuste", 0)
-        + resultado_mercado.get("ajuste", 0)
-        + resultado_estrategia.get("ajuste", 0)
+        ajuste_price_action
+        + ajuste_mercado
+        + ajuste_estrategia
     )
 
     resultado_confianza = calcular_confianza_cerebro(
         confianza_base=confianza_base,
         ajuste_aprendizaje=ajuste_aprendizaje,
-        ajuste_evidencias=ajuste_evidencias,
+        ajuste_price_action=ajuste_price_action,
+        ajuste_mercado=ajuste_mercado,
+        ajuste_estrategia=ajuste_estrategia,
         ajuste_ponderacion=ajuste_ponderacion,
     )
 
     confianza = resultado_confianza["confianza"]
+    auditoria_confianza = resultado_confianza.get(
+        "auditoria_confianza",
+        {},
+    )
     riesgo_nivel = riesgo_compuesto.get("riesgo_nivel", "BAJO")
     riesgo_puntos = riesgo_compuesto.get("riesgo_puntos", 0)
+
+    # Probabilidad estadística paralela. No participa en la decisión oficial.
+    probabilidad_estimada = _num(
+        aprendizaje.get("probabilidad_estimada", 0.0),
+        0.0,
+    )
+    intervalo_probabilidad_inferior = _num(
+        aprendizaje.get(
+            "intervalo_probabilidad_inferior",
+            probabilidad_estimada,
+        ),
+        probabilidad_estimada,
+    )
+    intervalo_probabilidad_superior = _num(
+        aprendizaje.get(
+            "intervalo_probabilidad_superior",
+            probabilidad_estimada,
+        ),
+        probabilidad_estimada,
+    )
+    muestra_probabilidad = aprendizaje.get("muestra_historica", 0)
+    wins_probabilidad = aprendizaje.get("wins", 0)
+    losses_probabilidad = aprendizaje.get("losses", 0)
+    confiabilidad_probabilidad = aprendizaje.get(
+        "confiabilidad_muestra",
+        "SIN_DATOS",
+    )
+    fuente_probabilidad_principal = aprendizaje.get(
+        "fuente_probabilidad_principal"
+    )
+    fuente_probabilidad_respaldo = aprendizaje.get(
+        "fuente_probabilidad_respaldo"
+    )
+    modo_probabilidad = aprendizaje.get("modo_probabilidad", "SOMBRA")
+
+    resultado_decision_sombra = clasificar_decision_estadistica_sombra(
+        probabilidad=probabilidad_estimada,
+        intervalo_inferior=intervalo_probabilidad_inferior,
+        intervalo_superior=intervalo_probabilidad_superior,
+        muestra=muestra_probabilidad,
+        confiabilidad=confiabilidad_probabilidad,
+        fuente_principal=fuente_probabilidad_principal,
+    )
 
     resultado_decision = clasificar_decision_final(
         confianza=confianza,
@@ -607,7 +826,12 @@ def evaluar_decision_cerebro_unico(evidencia):
     bloquear_por_riesgo = bool(
         resultado_decision.get("bloquear_por_riesgo", False)
     )
-
+    riesgo_extremo_diagnostico = bool(
+        resultado_decision.get(
+            "riesgo_extremo_diagnostico",
+            False,
+        )
+    )
     motivos = []
     motivos.extend(resultado_inferencia.get("motivos", []))
     motivos.extend(riesgo_compuesto.get("motivos_riesgo", []))
@@ -625,6 +849,10 @@ def evaluar_decision_cerebro_unico(evidencia):
 
     if motivo_decision:
         motivos.append(motivo_decision)
+
+    motivo_sombra = resultado_decision_sombra.get("motivo", "")
+    if motivo_sombra:
+        motivos.append("Sombra estadística: " + motivo_sombra)
     # ========================================================
     # EVIDENCIAS OFICIALES UTILIZADAS POR EL CEREBRO
     # ========================================================
@@ -644,6 +872,7 @@ def evaluar_decision_cerebro_unico(evidencia):
         "requiere_protocolo": requiere_protocolo,
         "modo_ejecucion": modo_ejecucion,
         "bloquear_por_riesgo": bloquear_por_riesgo,
+        "riesgo_extremo_diagnostico": riesgo_extremo_diagnostico,
         "pa_evidencias": pa_evidencias,
         "mercado_evidencias": mercado_evidencias,
         "confianza": confianza,
@@ -653,6 +882,10 @@ def evaluar_decision_cerebro_unico(evidencia):
         "resultado_mercado": resultado_mercado,
         "resultado_estrategia": resultado_estrategia,
         "resultado_confianza": resultado_confianza,
+        "auditoria_confianza": auditoria_confianza,
+        "ajuste_price_action": ajuste_price_action,
+        "ajuste_mercado": ajuste_mercado,
+        "ajuste_estrategia": ajuste_estrategia,
         "resultado_decision_final": resultado_decision,
         "riesgo_nivel": riesgo_nivel,
         "riesgo_puntos": riesgo_puntos,
@@ -667,4 +900,39 @@ def evaluar_decision_cerebro_unico(evidencia):
         "ajuste_confianza_aprendizaje": ajuste_aprendizaje,
         "ajuste_ponderacion": ajuste_ponderacion,
         "ponderacion_estadistica": ponderacion,
+
+        # Salida estadística sombra BootIQ V3.
+        "modo_probabilidad": modo_probabilidad,
+        "probabilidad_estimada": round(probabilidad_estimada, 2),
+        "intervalo_probabilidad_inferior": round(
+            intervalo_probabilidad_inferior, 2
+        ),
+        "intervalo_probabilidad_superior": round(
+            intervalo_probabilidad_superior, 2
+        ),
+        "muestra_probabilidad": muestra_probabilidad,
+        "wins_probabilidad": wins_probabilidad,
+        "losses_probabilidad": losses_probabilidad,
+        "confiabilidad_probabilidad": confiabilidad_probabilidad,
+        "fuente_probabilidad_principal": fuente_probabilidad_principal,
+        "fuente_probabilidad_respaldo": fuente_probabilidad_respaldo,
+        "decision_estadistica_sombra": resultado_decision_sombra.get(
+            "decision", "SIN_DATOS"
+        ),
+        "operar_estadistico_sombra": bool(
+            resultado_decision_sombra.get("operar", False)
+        ),
+        "requiere_protocolo_estadistico_sombra": bool(
+            resultado_decision_sombra.get("requiere_protocolo", False)
+        ),
+        "nivel_probabilidad_principal": resultado_decision_sombra.get(
+            "nivel", ""
+        ),
+        "clave_probabilidad_principal": resultado_decision_sombra.get(
+            "clave", ""
+        ),
+        "motivo_decision_estadistica_sombra": resultado_decision_sombra.get(
+            "motivo", ""
+        ),
+        "resultado_decision_estadistica_sombra": resultado_decision_sombra,
     }

@@ -1,6 +1,7 @@
 import csv
 import os
 import re
+import math
 from collections import defaultdict
 
 RUTA_APRENDIZAJE = "aprendizaje_historico_bootiq.csv"
@@ -21,6 +22,12 @@ AJUSTE_MAXIMO = 5.0
 AJUSTE_MINIMO = -5.0
 
 RESULTADOS_VALIDOS = {"WIN", "LOSS"}
+
+# Prior conservador del universo observado. Se usa solo para suavizar
+# muestras pequeñas; no autoriza ni bloquea operaciones.
+PRIOR_WINRATE = 49.25
+PRIOR_FUERZA = 20.0
+Z_INTERVALO = 1.96
 
 # Pesos relativos por nivel histórico.
 # No necesitan sumar 1 porque luego se normalizan.
@@ -72,6 +79,261 @@ def _numero(valor, default=0.0):
 def _limitar_ajuste(valor):
     valor = _numero(valor, 0.0)
     return round(max(AJUSTE_MINIMO, min(AJUSTE_MAXIMO, valor)), 2)
+
+
+def _probabilidad_suavizada(wins, losses):
+    """
+    Estimación beta-binomial conservadora.
+
+    Evita interpretar 1/1 como 100% o 0/1 como 0%. El prior se centra
+    en el winrate general observado y pierde autoridad a medida que
+    crece la muestra real.
+    """
+
+    wins = max(0, _entero(wins, 0))
+    losses = max(0, _entero(losses, 0))
+
+    prior_p = max(0.0, min(1.0, PRIOR_WINRATE / 100.0))
+    alpha = wins + (prior_p * PRIOR_FUERZA)
+    beta = losses + ((1.0 - prior_p) * PRIOR_FUERZA)
+    total = alpha + beta
+
+    if total <= 0:
+        return round(PRIOR_WINRATE, 2)
+
+    return round((alpha / total) * 100.0, 2)
+
+
+def _intervalo_probabilidad(wins, losses):
+    """Intervalo aproximado del posterior beta, en porcentaje."""
+
+    wins = max(0, _entero(wins, 0))
+    losses = max(0, _entero(losses, 0))
+    prior_p = max(0.0, min(1.0, PRIOR_WINRATE / 100.0))
+
+    alpha = wins + (prior_p * PRIOR_FUERZA)
+    beta = losses + ((1.0 - prior_p) * PRIOR_FUERZA)
+    total = alpha + beta
+
+    if total <= 0:
+        return round(PRIOR_WINRATE, 2), round(PRIOR_WINRATE, 2)
+
+    media = alpha / total
+    varianza = (alpha * beta) / ((total ** 2) * (total + 1.0))
+    desviacion = math.sqrt(max(0.0, varianza))
+
+    inferior = max(0.0, media - (Z_INTERVALO * desviacion))
+    superior = min(1.0, media + (Z_INTERVALO * desviacion))
+
+    return round(inferior * 100.0, 2), round(superior * 100.0, 2)
+
+
+def _prioridad_nivel(nivel):
+    """Orden de especificidad usado solo para elegir fuente principal."""
+
+    prioridades = {
+        "FIRMA_EVIDENCIAS_EXACTA": 16,
+        "PA_SETUP_MERCADO": 15,
+        "PA_SETUP": 14,
+        "PA_MERCADO": 13,
+        "SETUP_MERCADO": 12,
+        "CLAVE_ESPECIFICA": 11,
+        "PA_DIRECCION": 10,
+        "FAMILIA_TENDENCIA": 9,
+        "FAMILIA_MERCADO": 8,
+        "FAMILIA_DIRECCION": 7,
+        "SETUP_EVIDENCIAS": 6,
+        "PA": 5,
+        "MERCADO_EVIDENCIAS": 4,
+        "ACTIVO_FAMILIA": 3,
+        "ACTIVO_DIRECCION": 2,
+        "FAMILIA": 1,
+        "LEGACY": 0,
+    }
+    return prioridades.get(_txt(nivel), 0)
+
+
+NIVELES_ESPECIFICOS = {
+    "FIRMA_EVIDENCIAS_EXACTA",
+    "PA_SETUP_MERCADO",
+    "PA_SETUP",
+    "PA_MERCADO",
+    "SETUP_MERCADO",
+    "CLAVE_ESPECIFICA",
+}
+
+NIVELES_INTERMEDIOS = {
+    "PA_DIRECCION",
+    "FAMILIA_TENDENCIA",
+    "FAMILIA_DIRECCION",
+    "SETUP_EVIDENCIAS",
+    "PA",
+}
+
+NIVELES_GENERALES = {
+    "FAMILIA_MERCADO",
+    "FAMILIA",
+    "MERCADO_EVIDENCIAS",
+    "ACTIVO_FAMILIA",
+    "ACTIVO_DIRECCION",
+    "LEGACY",
+}
+
+
+def _grupo_nivel(nivel):
+    nivel = _txt(nivel)
+
+    if nivel in NIVELES_ESPECIFICOS:
+        return "ESPECIFICO"
+
+    if nivel in NIVELES_INTERMEDIOS:
+        return "INTERMEDIO"
+
+    return "GENERAL"
+
+
+def _seleccionar_fuente_principal(fuentes):
+    """
+    Selecciona primero una fuente específica o intermedia con muestra
+    suficiente. Los niveles generales solo pueden ser principales cuando
+    no existe una alternativa más informativa.
+
+    Esto evita que FAMILIA_MERCADO o FAMILIA dominen la mayoría de señales
+    únicamente por tener mucha muestra.
+    """
+
+    candidatas_por_grupo = {
+        "ESPECIFICO": [],
+        "INTERMEDIO": [],
+        "GENERAL": [],
+    }
+
+    for fuente in fuentes or []:
+        total = _entero(fuente.get("total"), 0)
+
+        if total < MIN_MUESTRA_APORTE:
+            continue
+
+        nivel = _txt(fuente.get("nivel"))
+        grupo = _grupo_nivel(nivel)
+        prioridad = _prioridad_nivel(nivel)
+        factor = _factor_muestra(total)
+        confiabilidad = _confiabilidad_muestra(total)
+
+        # Requisitos mínimos distintos según el nivel.
+        if grupo == "ESPECIFICO":
+            muestra_minima_grupo = MIN_MUESTRA_CONFIABLE
+        elif grupo == "INTERMEDIO":
+            muestra_minima_grupo = MIN_MUESTRA_APORTE
+        else:
+            muestra_minima_grupo = MIN_MUESTRA_APORTE
+
+        if total < muestra_minima_grupo:
+            continue
+
+        score_especificidad = prioridad * factor
+        score_muestra = math.log1p(total) * 1.5
+
+        bono_confiabilidad = {
+            "ALTA": 3.0,
+            "MEDIA": 2.0,
+            "BAJA": 1.0,
+            "MUY_BAJA": 0.0,
+            "INSUFICIENTE": -5.0,
+        }.get(confiabilidad, 0.0)
+
+        # Bonificación estructural moderada por grupo.
+        bono_grupo = {
+            "ESPECIFICO": 6.0,
+            "INTERMEDIO": 3.0,
+            "GENERAL": 0.0,
+        }[grupo]
+
+        score = (
+            score_especificidad
+            + score_muestra
+            + bono_confiabilidad
+            + bono_grupo
+        )
+
+        candidatas_por_grupo[grupo].append(
+            (score, total, prioridad, fuente)
+        )
+
+    # Orden de búsqueda deliberado.
+    for grupo in ("ESPECIFICO", "INTERMEDIO", "GENERAL"):
+        candidatas = candidatas_por_grupo[grupo]
+
+        if not candidatas:
+            continue
+
+        candidatas.sort(
+            key=lambda item: (item[0], item[1], item[2]),
+            reverse=True,
+        )
+
+        return candidatas[0][3]
+
+    return None
+
+
+def _seleccionar_fuente_respaldo(fuentes, principal):
+    """
+    Selecciona una fuente más general que la principal.
+
+    El respaldo estabiliza la probabilidad, pero no puede pertenecer al mismo
+    nivel ni repetir la misma clave. Se priorizan niveles generales con muestra
+    confiable y, en segundo término, niveles intermedios distintos.
+    """
+
+    principal = principal if isinstance(principal, dict) else {}
+    clave_principal = principal.get("clave")
+    grupo_principal = _grupo_nivel(principal.get("nivel"))
+
+    candidatas_generales = []
+    candidatas_intermedias = []
+
+    for fuente in fuentes or []:
+        if fuente.get("clave") == clave_principal:
+            continue
+
+        total = _entero(fuente.get("total"), 0)
+
+        if total < MIN_MUESTRA_CONFIABLE:
+            continue
+
+        grupo = _grupo_nivel(fuente.get("nivel"))
+
+        if grupo_principal == "ESPECIFICO":
+            if grupo == "GENERAL":
+                candidatas_generales.append((total, fuente))
+            elif grupo == "INTERMEDIO":
+                candidatas_intermedias.append((total, fuente))
+
+        elif grupo_principal == "INTERMEDIO":
+            if grupo == "GENERAL":
+                candidatas_generales.append((total, fuente))
+
+        else:
+            # Si la principal ya es general, no se añade otro respaldo
+            # correlacionado que diluya aún más la señal.
+            continue
+
+    if candidatas_generales:
+        candidatas_generales.sort(
+            key=lambda item: item[0],
+            reverse=True,
+        )
+        return candidatas_generales[0][1]
+
+    if candidatas_intermedias:
+        candidatas_intermedias.sort(
+            key=lambda item: item[0],
+            reverse=True,
+        )
+        return candidatas_intermedias[0][1]
+
+    return None
 
 
 def _normalizar_token(valor):
@@ -511,8 +773,17 @@ def _confiabilidad_muestra(total):
 
 def _factor_muestra(total):
     """
-    Factor progresivo.
-    Evita el salto brusco de 0 a ajuste completo.
+    Curva continua de autoridad estadística.
+
+    Conserva MIN_MUESTRA_APORTE como mínimo absoluto, pero elimina
+    los saltos bruscos entre 5, 12, 20, 30 y 50 observaciones.
+
+    La autoridad crece suavemente:
+    - cerca de 0.25 con 5 muestras;
+    - alrededor de 0.45 con 12;
+    - alrededor de 0.65 con 20;
+    - alrededor de 0.85 con 35;
+    - se aproxima progresivamente a 1.0.
     """
 
     total = _entero(total, 0)
@@ -520,19 +791,11 @@ def _factor_muestra(total):
     if total < MIN_MUESTRA_APORTE:
         return 0.0
 
-    if total < MIN_MUESTRA_CONFIABLE:
-        return 0.25
+    # Curva exponencial calibrada para crecer sin discontinuidades.
+    factor = 1.0 - math.exp(-total / 19.0)
 
-    if total < 20:
-        return 0.45
-
-    if total < 30:
-        return 0.65
-
-    if total < 50:
-        return 0.85
-
-    return 1.00
+    # Mantiene una contribución mínima controlada desde 5 muestras.
+    return round(max(0.20, min(1.0, factor)), 4)
 
 
 def _calcular_ajuste(total, winrate):
@@ -586,6 +849,10 @@ def _crear_data_memoria(row):
         total=total,
         winrate=winrate,
     )
+    probabilidad = _probabilidad_suavizada(wins, losses)
+    intervalo_inferior, intervalo_superior = _intervalo_probabilidad(
+        wins, losses
+    )
 
     return {
         "total": total,
@@ -595,6 +862,9 @@ def _crear_data_memoria(row):
         "ajuste_confianza": ajuste,
         "decision_aprendizaje": decision,
         "confiabilidad_muestra": _confiabilidad_muestra(total),
+        "probabilidad_ajustada": probabilidad,
+        "intervalo_inferior": intervalo_inferior,
+        "intervalo_superior": intervalo_superior,
         "nivel": _txt(row.get("nivel")),
     }
 
@@ -668,6 +938,10 @@ def _buscar_fuentes_aprendizaje(senal, memoria):
         peso_nivel = _numero(PESOS_NIVELES.get(nivel), 1.0)
         factor = _factor_muestra(total)
         peso_efectivo = peso_nivel * factor
+        probabilidad = _probabilidad_suavizada(wins, losses)
+        intervalo_inferior, intervalo_superior = _intervalo_probabilidad(
+            wins, losses
+        )
 
         fuentes.append({
             "nivel": nivel,
@@ -682,6 +956,9 @@ def _buscar_fuentes_aprendizaje(senal, memoria):
             "peso_nivel": round(peso_nivel, 3),
             "factor_muestra": round(factor, 3),
             "peso_efectivo": round(peso_efectivo, 3),
+            "probabilidad_ajustada": probabilidad,
+            "intervalo_inferior": intervalo_inferior,
+            "intervalo_superior": intervalo_superior,
         })
 
     # Compatibilidad con la memoria antigua.
@@ -718,9 +995,14 @@ def _buscar_fuentes_aprendizaje(senal, memoria):
 
 def _combinar_fuentes(fuentes):
     """
-    Combina las fuentes sin duplicar autoridad.
+    Combina fuentes sin promediar indiscriminadamente claves correlacionadas.
 
-    El ajuste final es un promedio ponderado, no una suma.
+    La fuente principal conserva su señal estadística. La fuente general de
+    respaldo actúa como estabilizador, pero su influencia disminuye cuando
+    la principal tiene suficiente muestra.
+
+    La incertidumbre se expresa mediante confiabilidad e intervalo; no se
+    aplasta automáticamente una señal específica hasta el promedio general.
     """
 
     if not fuentes:
@@ -731,56 +1013,153 @@ def _combinar_fuentes(fuentes):
             "wins": 0,
             "losses": 0,
             "peso_total": 0.0,
+            "probabilidad_estimada": PRIOR_WINRATE,
+            "intervalo_inferior": PRIOR_WINRATE,
+            "intervalo_superior": PRIOR_WINRATE,
+            "fuente_principal": None,
+            "fuente_respaldo": None,
+            "peso_fuente_principal": 0.0,
+            "peso_fuente_respaldo": 0.0,
         }
 
+    # Compatibilidad con el ajuste histórico anterior.
     suma_ajustes = 0.0
     suma_winrate = 0.0
     peso_total = 0.0
-
     muestras = []
-    wins_total = 0
-    losses_total = 0
 
     for fuente in fuentes:
         peso = _numero(fuente.get("peso_efectivo"), 0.0)
+
         if peso <= 0:
             continue
 
-        ajuste = _numero(fuente.get("ajuste"), 0.0)
-        winrate = _numero(fuente.get("winrate"), 0.0)
+        suma_ajustes += _numero(
+            fuente.get("ajuste"),
+            0.0,
+        ) * peso
 
-        suma_ajustes += ajuste * peso
-        suma_winrate += winrate * peso
+        suma_winrate += _numero(
+            fuente.get("winrate"),
+            0.0,
+        ) * peso
+
         peso_total += peso
-
         muestras.append(_entero(fuente.get("total"), 0))
-        wins_total += _entero(fuente.get("wins"), 0)
-        losses_total += _entero(fuente.get("losses"), 0)
 
-    if peso_total <= 0:
-        return {
-            "ajuste": 0.0,
-            "winrate": 0.0,
-            "muestra": 0,
-            "wins": 0,
-            "losses": 0,
-            "peso_total": 0.0,
-        }
+    if peso_total > 0:
+        ajuste_final = _limitar_ajuste(
+            suma_ajustes / peso_total
+        )
+        winrate_final = round(
+            suma_winrate / peso_total,
+            2,
+        )
+    else:
+        ajuste_final = 0.0
+        winrate_final = 0.0
 
-    ajuste_final = _limitar_ajuste(suma_ajustes / peso_total)
-    winrate_final = round(suma_winrate / peso_total, 2)
+    principal = _seleccionar_fuente_principal(fuentes)
+    respaldo = _seleccionar_fuente_respaldo(
+        fuentes,
+        principal,
+    )
 
-    # La muestra representativa no se suma porque las fuentes
-    # contienen operaciones superpuestas.
-    muestra_representativa = max(muestras) if muestras else 0
+    peso_principal = 0.0
+    peso_respaldo = 0.0
+
+    if principal:
+        prob_principal = _numero(
+            principal.get("probabilidad_ajustada"),
+            PRIOR_WINRATE,
+        )
+        total_principal = _entero(
+            principal.get("total"),
+            0,
+        )
+        factor_principal = _factor_muestra(total_principal)
+
+        # La principal manda progresivamente según su muestra.
+        # Con poca muestra conserva al menos 65% de autoridad; con
+        # historial sólido alcanza hasta 95%.
+        peso_principal = min(
+            0.95,
+            max(
+                0.65,
+                0.60 + (0.35 * factor_principal),
+            ),
+        )
+
+        if respaldo:
+            prob_respaldo = _numero(
+                respaldo.get("probabilidad_ajustada"),
+                PRIOR_WINRATE,
+            )
+            peso_respaldo = 1.0 - peso_principal
+
+            probabilidad = (
+                prob_principal * peso_principal
+                + prob_respaldo * peso_respaldo
+            )
+        else:
+            probabilidad = prob_principal
+            peso_principal = 1.0
+            peso_respaldo = 0.0
+
+        intervalo_inferior = _numero(
+            principal.get("intervalo_inferior"),
+            probabilidad,
+        )
+        intervalo_superior = _numero(
+            principal.get("intervalo_superior"),
+            probabilidad,
+        )
+
+        muestra_representativa = total_principal
+        wins_representativos = _entero(
+            principal.get("wins"),
+            0,
+        )
+        losses_representativos = _entero(
+            principal.get("losses"),
+            0,
+        )
+    else:
+        probabilidad = PRIOR_WINRATE
+        intervalo_inferior = PRIOR_WINRATE
+        intervalo_superior = PRIOR_WINRATE
+        muestra_representativa = (
+            max(muestras) if muestras else 0
+        )
+        wins_representativos = 0
+        losses_representativos = 0
 
     return {
         "ajuste": ajuste_final,
         "winrate": winrate_final,
         "muestra": muestra_representativa,
-        "wins": wins_total,
-        "losses": losses_total,
+        "wins": wins_representativos,
+        "losses": losses_representativos,
         "peso_total": round(peso_total, 3),
+        "probabilidad_estimada": round(probabilidad, 2),
+        "intervalo_inferior": round(
+            intervalo_inferior,
+            2,
+        ),
+        "intervalo_superior": round(
+            intervalo_superior,
+            2,
+        ),
+        "fuente_principal": principal,
+        "fuente_respaldo": respaldo,
+        "peso_fuente_principal": round(
+            peso_principal,
+            3,
+        ),
+        "peso_fuente_respaldo": round(
+            peso_respaldo,
+            3,
+        ),
     }
 
 
@@ -830,7 +1209,17 @@ def evaluar_aprendizaje_historico(senal, memoria=None):
             "winrate": 0.0,
             "confiabilidad_muestra": "SIN_DATOS",
             "confianza_historica": 0.0,
+            "probabilidad_estimada": PRIOR_WINRATE,
+            "intervalo_probabilidad_inferior": PRIOR_WINRATE,
+            "intervalo_probabilidad_superior": PRIOR_WINRATE,
+            "fuente_probabilidad_principal": None,
+            "fuente_probabilidad_respaldo": None,
+            "grupo_fuente_probabilidad_principal": "SIN_DATOS",
+            "grupo_fuente_probabilidad_respaldo": "SIN_DATOS",
+            "modo_probabilidad": "SOMBRA",
             "peso_historico_total": 0.0,
+            "peso_fuente_probabilidad_principal": 0.0,
+            "peso_fuente_probabilidad_respaldo": 0.0,
         }
 
     if ajuste > 0:
@@ -847,6 +1236,7 @@ def evaluar_aprendizaje_historico(senal, memoria=None):
         f"winrate ponderado {winrate:.2f}%; "
         f"muestra representativa {muestra}; "
         f"ajuste {ajuste:+.2f}; "
+        f"probabilidad sombra {combinado['probabilidad_estimada']:.2f}%; "
         f"confiabilidad {confiabilidad.lower()}."
     )
 
@@ -867,14 +1257,32 @@ def evaluar_aprendizaje_historico(senal, memoria=None):
         "winrate": winrate,
         "confiabilidad_muestra": confiabilidad,
         "confianza_historica": winrate,
+        "probabilidad_estimada": combinado["probabilidad_estimada"],
+        "intervalo_probabilidad_inferior": combinado["intervalo_inferior"],
+        "intervalo_probabilidad_superior": combinado["intervalo_superior"],
+        "fuente_probabilidad_principal": combinado["fuente_principal"],
+        "fuente_probabilidad_respaldo": combinado["fuente_respaldo"],
+        "grupo_fuente_probabilidad_principal": _grupo_nivel(
+            (combinado["fuente_principal"] or {}).get("nivel")
+        ),
+        "grupo_fuente_probabilidad_respaldo": _grupo_nivel(
+            (combinado["fuente_respaldo"] or {}).get("nivel")
+        ) if combinado["fuente_respaldo"] else "SIN_RESPALDO",
+        "modo_probabilidad": "SOMBRA",
         "peso_historico_total": combinado["peso_total"],
+        "peso_fuente_probabilidad_principal": combinado.get(
+            "peso_fuente_principal",
+            0.0,
+        ),
+        "peso_fuente_probabilidad_respaldo": combinado.get(
+            "peso_fuente_respaldo",
+            0.0,
+        ),
     }
 
 
 def _resultado_real(registro):
-    """
-    Devuelve WIN o LOSS únicamente cuando el resultado es real y válido.
-    """
+    """Devuelve WIN o LOSS únicamente para operaciones ejecutadas."""
 
     if not isinstance(registro, dict):
         return ""
@@ -897,16 +1305,33 @@ def _resultado_real(registro):
         return ""
 
     resultado = _txt(registro.get("resultado"))
+    return resultado if resultado in RESULTADOS_VALIDOS else ""
 
-    if resultado in RESULTADOS_VALIDOS:
-        return resultado
 
-    return ""
+def _resultado_aprendizaje(registro, incluir_hipoteticos=False):
+    """
+    Selecciona la etiqueta de entrenamiento.
+
+    En producción conserva resultados ejecutados. En backtest diagnóstico
+    puede usar resultado_hipotetico para aprender del universo completo y
+    evitar el sesgo de entrenar solo con señales ya autorizadas.
+    """
+
+    if not isinstance(registro, dict):
+        return ""
+
+    if incluir_hipoteticos:
+        resultado_hipotetico = _txt(registro.get("resultado_hipotetico"))
+        if resultado_hipotetico in RESULTADOS_VALIDOS:
+            return resultado_hipotetico
+
+    return _resultado_real(registro)
 
 
 def generar_aprendizaje_desde_resultados(
     resultados,
     ruta=RUTA_APRENDIZAJE,
+    incluir_hipoteticos=False,
 ):
     """
     Genera memoria jerárquica usando exclusivamente operaciones reales.
@@ -932,7 +1357,10 @@ def generar_aprendizaje_desde_resultados(
             registros_ignorados += 1
             continue
 
-        resultado = _resultado_real(registro)
+        resultado = _resultado_aprendizaje(
+            registro,
+            incluir_hipoteticos=incluir_hipoteticos,
+        )
 
         if resultado not in RESULTADOS_VALIDOS:
             registros_ignorados += 1
@@ -972,6 +1400,10 @@ def generar_aprendizaje_desde_resultados(
             total=total,
             winrate=winrate,
         )
+        probabilidad = _probabilidad_suavizada(wins, losses)
+        intervalo_inferior, intervalo_superior = _intervalo_probabilidad(
+            wins, losses
+        )
 
         ejemplo = datos["ejemplo"]
 
@@ -985,6 +1417,9 @@ def generar_aprendizaje_desde_resultados(
             "ajuste_confianza": ajuste,
             "decision_aprendizaje": decision,
             "confiabilidad_muestra": _confiabilidad_muestra(total),
+            "probabilidad_ajustada": probabilidad,
+            "intervalo_inferior": intervalo_inferior,
+            "intervalo_superior": intervalo_superior,
             "activo": ejemplo.get("activo", ""),
             "direccion": ejemplo.get("direccion", ""),
             "familia_setup": _familia_setup(ejemplo),
@@ -1023,6 +1458,9 @@ def generar_aprendizaje_desde_resultados(
         "ajuste_confianza",
         "decision_aprendizaje",
         "confiabilidad_muestra",
+        "probabilidad_ajustada",
+        "intervalo_inferior",
+        "intervalo_superior",
         "activo",
         "direccion",
         "familia_setup",
@@ -1054,7 +1492,11 @@ def generar_aprendizaje_desde_resultados(
 
     print("Archivo de aprendizaje generado:", ruta)
     print("Combinaciones jerárquicas aprendidas:", len(filas))
-    print("Resultados reales utilizados:", registros_validos)
+    print(
+        "Resultados utilizados:",
+        registros_validos,
+        "(universo hipotético)" if incluir_hipoteticos else "(ejecutados)",
+    )
     print("Registros ignorados:", registros_ignorados)
 
     return filas

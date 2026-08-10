@@ -43,8 +43,36 @@ MODO_BACKTEST_DIAGNOSTICO = "DIAGNOSTICO_COMPLETO"
 # Cambiar únicamente esta línea para comparar universos.
 MODO_BACKTEST = MODO_BACKTEST_FILTRADO
 
-BUILD_ID = "BOOTIQ_BACKTEST_V4_SIN_DOBLE_DECISION_2026_07_17"
-ACTUALIZAR_APRENDIZAJE = False
+BUILD_ID = "BOOTIQ_BACKTEST_V6_VALIDACION_FUERA_MUESTRA_2026_08_02"
+
+# ============================================================
+# EXPERIMENTO FUERA DE MUESTRA
+# ============================================================
+# Cambia UNICAMENTE esta línea:
+#
+# MODO_EXPERIMENTO_ENTRENAMIENTO:
+#   - usa 12 de los 16 datasets seleccionados;
+#   - genera aprendizaje_historico_bootiq.csv al finalizar;
+#   - guarda backtest_bootiq_entrenamiento_resultados.csv.
+#
+# MODO_EXPERIMENTO_VALIDACION:
+#   - usa los 4 datasets reservados;
+#   - mantiene el aprendizaje congelado;
+#   - guarda backtest_bootiq_validacion_resultados.csv.
+#
+# No borres aprendizaje_historico_bootiq.csv entre ambas ejecuciones.
+MODO_EXPERIMENTO_ENTRENAMIENTO = "ENTRENAMIENTO"
+MODO_EXPERIMENTO_VALIDACION = "VALIDACION"
+
+MODO_EXPERIMENTO = MODO_EXPERIMENTO_VALIDACION
+
+# Reserva un dataset de cada cuatro para validación.
+FRECUENCIA_DATASET_VALIDACION = 4
+
+ACTUALIZAR_APRENDIZAJE = (
+    MODO_EXPERIMENTO == MODO_EXPERIMENTO_ENTRENAMIENTO
+)
+
 DATASETS_USADOS_BACKTEST = 0
 AUDITORIA_DATASETS = {
     "cargados": 0,
@@ -331,6 +359,88 @@ def seleccionar_top_datasets(datasets, limite=20):
         )
 
     return seleccionados
+def dividir_datasets_experimento(datasets):
+    """
+    Divide de forma determinista los datasets seleccionados.
+
+    No utiliza WIN/LOSS ni resultados futuros. Reserva uno de cada
+    cuatro datasets para validación y usa el resto para entrenamiento.
+    """
+
+    if not isinstance(datasets, list):
+        datasets = []
+
+    entrenamiento = []
+    validacion = []
+
+    for indice, dataset in enumerate(datasets, start=1):
+        if indice % FRECUENCIA_DATASET_VALIDACION == 0:
+            validacion.append(dataset)
+        else:
+            entrenamiento.append(dataset)
+
+    return entrenamiento, validacion
+
+
+def seleccionar_datasets_experimento(datasets):
+    """
+    Devuelve únicamente el grupo correspondiente al modo configurado.
+    """
+
+    entrenamiento, validacion = dividir_datasets_experimento(datasets)
+
+    print()
+    print("===== DIVISION FUERA DE MUESTRA =====")
+    print("Modo experimento:", MODO_EXPERIMENTO)
+    print("Entrenamiento:", len(entrenamiento), "datasets")
+    print("Validación:", len(validacion), "datasets")
+
+    print()
+    print("Activos de entrenamiento:")
+    for dataset in entrenamiento:
+        print("-", dataset.get("activo", ""))
+
+    print()
+    print("Activos de validación:")
+    for dataset in validacion:
+        print("-", dataset.get("activo", ""))
+
+    if MODO_EXPERIMENTO == MODO_EXPERIMENTO_ENTRENAMIENTO:
+        seleccionados = entrenamiento
+    elif MODO_EXPERIMENTO == MODO_EXPERIMENTO_VALIDACION:
+        seleccionados = validacion
+    else:
+        raise ValueError(
+            "MODO_EXPERIMENTO inválido: "
+            f"{MODO_EXPERIMENTO}. "
+            "Usa MODO_EXPERIMENTO_ENTRENAMIENTO o "
+            "MODO_EXPERIMENTO_VALIDACION."
+        )
+
+    if not seleccionados:
+        raise RuntimeError(
+            "El grupo seleccionado para el experimento está vacío."
+        )
+
+    return seleccionados
+
+
+def configurar_salida_experimento():
+    """
+    Define un CSV distinto para entrenamiento y validación.
+    """
+
+    if MODO_EXPERIMENTO == MODO_EXPERIMENTO_ENTRENAMIENTO:
+        return "backtest_bootiq_entrenamiento_resultados.csv"
+
+    if MODO_EXPERIMENTO == MODO_EXPERIMENTO_VALIDACION:
+        return "backtest_bootiq_validacion_resultados.csv"
+
+    raise ValueError(
+        f"MODO_EXPERIMENTO inválido: {MODO_EXPERIMENTO}"
+    )
+
+
 def imprimir_auditoria_datasets():
     print("\n===== AUDITORIA DE DATASETS =====")
     print("Modo ejecutado:", MODO_BACKTEST)
@@ -719,6 +829,61 @@ def crear_registro_resultado(
         ),
         "cerebro_unico_motivos": _texto(
             senal.get("cerebro_unico_motivos", "")
+        ),
+
+        # ==================================================
+        # MODO SOMBRA ESTADÍSTICO BOOTIQ V3
+        # ==================================================
+        # Solo auditoría. Estos campos nunca controlan la ejecución.
+        "modo_probabilidad": senal.get(
+            "modo_probabilidad", "SOMBRA"
+        ),
+        "probabilidad_estimada": senal.get(
+            "probabilidad_estimada", 0
+        ),
+        "intervalo_probabilidad_inferior": senal.get(
+            "intervalo_probabilidad_inferior", 0
+        ),
+        "intervalo_probabilidad_superior": senal.get(
+            "intervalo_probabilidad_superior", 0
+        ),
+        "muestra_probabilidad": senal.get(
+            "muestra_probabilidad", 0
+        ),
+        "wins_probabilidad": senal.get(
+            "wins_probabilidad", 0
+        ),
+        "losses_probabilidad": senal.get(
+            "losses_probabilidad", 0
+        ),
+        "confiabilidad_probabilidad": senal.get(
+            "confiabilidad_probabilidad", "SIN_DATOS"
+        ),
+        "fuente_probabilidad_principal": _texto(
+            senal.get("fuente_probabilidad_principal", "")
+        ),
+        "fuente_probabilidad_respaldo": _texto(
+            senal.get("fuente_probabilidad_respaldo", "")
+        ),
+        "nivel_probabilidad_principal": senal.get(
+            "nivel_probabilidad_principal", ""
+        ),
+        "clave_probabilidad_principal": senal.get(
+            "clave_probabilidad_principal", ""
+        ),
+        "decision_estadistica_sombra": senal.get(
+            "decision_estadistica_sombra", "SIN_DATOS"
+        ),
+        "operar_estadistico_sombra": bool(
+            senal.get("operar_estadistico_sombra", False)
+        ),
+        "requiere_protocolo_estadistico_sombra": bool(
+            senal.get(
+                "requiere_protocolo_estadistico_sombra", False
+            )
+        ),
+        "motivo_decision_estadistica_sombra": _texto(
+            senal.get("motivo_decision_estadistica_sombra", "")
         ),
 
         # Alias legacy. Solo reflejan al Cerebro Único.
@@ -1196,6 +1361,24 @@ def guardar_resultados(resultados):
         "cerebro_unico_riesgo_puntos",
         "cerebro_unico_motivos",
 
+        # Modo sombra estadístico BootIQ V3.
+        "modo_probabilidad",
+        "probabilidad_estimada",
+        "intervalo_probabilidad_inferior",
+        "intervalo_probabilidad_superior",
+        "muestra_probabilidad",
+        "wins_probabilidad",
+        "losses_probabilidad",
+        "confiabilidad_probabilidad",
+        "fuente_probabilidad_principal",
+        "fuente_probabilidad_respaldo",
+        "nivel_probabilidad_principal",
+        "clave_probabilidad_principal",
+        "decision_estadistica_sombra",
+        "operar_estadistico_sombra",
+        "requiere_protocolo_estadistico_sombra",
+        "motivo_decision_estadistica_sombra",
+
         "fase4_evaluada",
         "fase4_permitir_operacion",
         "fase4_modo",
@@ -1352,6 +1535,75 @@ def resumen_por_campo(
         reverse=True,
     )
 
+def resumen_por_rangos(
+    resultados,
+    campo,
+    campo_resultado="resultado_hipotetico",
+):
+    """
+    Agrupa un valor numérico por rangos de confianza.
+    """
+
+    rangos = [
+        ("0-39", 0, 39.999),
+        ("40-44", 40, 44.999),
+        ("45-49", 45, 49.999),
+        ("50-54", 50, 54.999),
+        ("55-59", 55, 59.999),
+        ("60-64", 60, 64.999),
+        ("65-69", 65, 69.999),
+        ("70+", 70, 1000),
+    ]
+
+    grupos = {
+        nombre: {
+            "total": 0,
+            "win": 0,
+        }
+        for nombre, _, _ in rangos
+    }
+
+    for r in resultados:
+
+        try:
+            valor = float(r.get(campo, 0))
+        except Exception:
+            continue
+
+        for nombre, minimo, maximo in rangos:
+
+            if minimo <= valor <= maximo:
+
+                grupos[nombre]["total"] += 1
+
+                if r.get(campo_resultado) == "WIN":
+                    grupos[nombre]["win"] += 1
+
+                break
+
+    filas = []
+
+    for nombre, _, _ in rangos:
+
+        total = grupos[nombre]["total"]
+
+        win = grupos[nombre]["win"]
+
+        loss = total - win
+
+        wr = round((win / total) * 100, 2) if total else 0
+
+        filas.append(
+            (
+                nombre,
+                total,
+                win,
+                loss,
+                wr,
+            )
+        )
+
+    return filas
 def resumen_por_lista(
     resultados,
     campo,
@@ -1546,6 +1798,79 @@ def imprimir_impacto_cerebro(resultados):
     print("================================\n")
 
 
+def imprimir_comparacion_sombra(resultados):
+    """
+    Compara la decisión oficial contra la decisión estadística sombra.
+
+    Siempre utiliza resultado_hipotetico para medir la señal original.
+    La decisión sombra nunca modifica la ejecución.
+    """
+
+    if not resultados:
+        return
+
+    grupos = {
+        "ACTUAL_SI_SOMBRA_SI": [],
+        "ACTUAL_SI_SOMBRA_NO": [],
+        "ACTUAL_NO_SOMBRA_SI": [],
+        "ACTUAL_NO_SOMBRA_NO": [],
+    }
+
+    for registro in resultados:
+        actual = bool(registro.get("cerebro_unico_operar", False))
+        sombra = bool(registro.get("operar_estadistico_sombra", False))
+
+        if actual and sombra:
+            clave = "ACTUAL_SI_SOMBRA_SI"
+        elif actual and not sombra:
+            clave = "ACTUAL_SI_SOMBRA_NO"
+        elif not actual and sombra:
+            clave = "ACTUAL_NO_SOMBRA_SI"
+        else:
+            clave = "ACTUAL_NO_SOMBRA_NO"
+
+        grupos[clave].append(registro)
+
+    print("\n===== COMPARACIÓN DECISIÓN ACTUAL VS SOMBRA =====")
+
+    for clave, filas in grupos.items():
+        total = len(filas)
+        wins = sum(
+            1 for fila in filas
+            if fila.get("resultado_hipotetico") == "WIN"
+        )
+        losses = total - wins
+        winrate = round((wins / total) * 100, 2) if total else 0
+
+        print(
+            clave,
+            "| total:", total,
+            "| win:", wins,
+            "| loss:", losses,
+            "| winrate:", str(winrate) + "%",
+        )
+
+    sombra_autorizadas = [
+        registro for registro in resultados
+        if registro.get("operar_estadistico_sombra") is True
+    ]
+
+    total = len(sombra_autorizadas)
+    wins = sum(
+        1 for registro in sombra_autorizadas
+        if registro.get("resultado_hipotetico") == "WIN"
+    )
+    losses = total - wins
+    winrate = round((wins / total) * 100, 2) if total else 0
+
+    print("----------------------------")
+    print("Autorizadas por sombra:", total)
+    print("WIN sombra:", wins)
+    print("LOSS sombra:", losses)
+    print("Winrate sombra:", str(winrate) + "%")
+    print("=================================================\n")
+
+
 def clasificar_indice_confirmacion_ia(valor):
     try:
         valor = float(valor)
@@ -1687,6 +2012,88 @@ def imprimir_resumen(resultados):
             ),
             limite=20,
         )
+    # ========================================================
+    # CURVAS DE CALIBRACION DE LA CONFIANZA
+    # ========================================================
+    # Utilizan resultado_hipotetico porque deben medir
+    # la calidad de la señal original, no el efecto posterior
+    # del protocolo.
+    # ========================================================
+
+    imprimir_tabla_resumen(
+        "CALIBRACION CONFIANZA BASE",
+        resumen_por_rangos(
+            resultados,
+            "auditoria_confianza_base",
+            campo_resultado="resultado_hipotetico",
+        ),
+        limite=20,
+    )
+
+    imprimir_tabla_resumen(
+        "CALIBRACION ANTES PONDERACION",
+        resumen_por_rangos(
+            resultados,
+            "auditoria_confianza_antes_ponderacion",
+            campo_resultado="resultado_hipotetico",
+        ),
+        limite=20,
+    )
+
+    imprimir_tabla_resumen(
+        "CALIBRACION CONFIANZA FINAL",
+        resumen_por_rangos(
+            resultados,
+            "auditoria_confianza_final",
+            campo_resultado="resultado_hipotetico",
+        ),
+        limite=20,
+    )
+
+    # ========================================================
+    # AUDITORÍA DEL MODO SOMBRA ESTADÍSTICO
+    # ========================================================
+    imprimir_tabla_resumen(
+        "CALIBRACION PROBABILIDAD ESTIMADA",
+        resumen_por_rangos(
+            resultados,
+            "probabilidad_estimada",
+            campo_resultado="resultado_hipotetico",
+        ),
+        limite=20,
+    )
+
+    imprimir_tabla_resumen(
+        "POR DECISION ESTADISTICA SOMBRA",
+        resumen_por_campo(
+            resultados,
+            "decision_estadistica_sombra",
+            campo_resultado="resultado_hipotetico",
+        ),
+        limite=20,
+    )
+
+    imprimir_tabla_resumen(
+        "POR CONFIABILIDAD PROBABILIDAD",
+        resumen_por_campo(
+            resultados,
+            "confiabilidad_probabilidad",
+            campo_resultado="resultado_hipotetico",
+        ),
+        limite=20,
+    )
+
+    imprimir_tabla_resumen(
+        "POR NIVEL PROBABILIDAD PRINCIPAL",
+        resumen_por_campo(
+            resultados,
+            "nivel_probabilidad_principal",
+            campo_resultado="resultado_hipotetico",
+        ),
+        limite=30,
+    )
+
+    imprimir_comparacion_sombra(resultados)
 
     # Reportes de ejecución real.
     imprimir_tabla_resumen(
@@ -1740,30 +2147,58 @@ def imprimir_resumen(resultados):
         limite=30
     )
 def main():
+    global DATASETS_USADOS_BACKTEST
+    global SALIDA
+
     print("BUILD:", BUILD_ID)
+    print("MODO EXPERIMENTO:", MODO_EXPERIMENTO)
     reset_estado()
 
     datasets = cargar_datasets()
     datasets = seleccionar_top_datasets(
         datasets,
-        limite=MAX_ACTIVOS_ANALIZAR
+        limite=MAX_ACTIVOS_ANALIZAR,
     )
 
-    # Auditoría de los datasets seleccionados
     imprimir_auditoria_datasets()
 
-    global DATASETS_USADOS_BACKTEST
+    datasets = seleccionar_datasets_experimento(datasets)
+    SALIDA = configurar_salida_experimento()
+
     DATASETS_USADOS_BACKTEST = len(datasets)
 
-    print("Datasets cargados:", len(datasets))
+    print()
+    print("Datasets usados en esta ejecución:", len(datasets))
+    print("Salida CSV:", SALIDA)
+    print("Actualizar aprendizaje:", ACTUALIZAR_APRENDIZAJE)
     print("Ejecutando backtest usando analizar_activo() real...")
 
     resultados = ejecutar_backtest(datasets)
 
     guardar_resultados(resultados)
 
-    if ACTUALIZAR_APRENDIZAJE:
-        generar_aprendizaje_desde_resultados(resultados)
+    if MODO_EXPERIMENTO == MODO_EXPERIMENTO_VALIDACION:
+        if ACTUALIZAR_APRENDIZAJE:
+            raise RuntimeError(
+                "Protección anti-fuga: la validación no puede "
+                "sobrescribir el aprendizaje."
+            )
+
+        print(
+            "Validación fuera de muestra: aprendizaje histórico "
+            "congelado."
+        )
+
+    elif ACTUALIZAR_APRENDIZAJE:
+        generar_aprendizaje_desde_resultados(
+            resultados,
+            incluir_hipoteticos=True,
+        )
+        print(
+            "Entrenamiento terminado: aprendizaje generado "
+            "únicamente con el grupo de entrenamiento."
+        )
+
     else:
         print(
             "Aprendizaje histórico congelado: "
@@ -1773,5 +2208,7 @@ def main():
     imprimir_resumen(resultados)
 
     print("Archivo generado:", SALIDA)
+
+
 if __name__ == "__main__":
     main()
