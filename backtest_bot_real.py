@@ -17,7 +17,9 @@ autoridad independiente.
 """
 
 import csv
+import json
 import os
+import copy
 
 import estado
 import estrategia
@@ -28,6 +30,7 @@ from motor_aprendizaje_historico import generar_aprendizaje_desde_resultados
 
 CARPETA_DATA = "data_backtest"
 SALIDA = "backtest_bot_real_resultados.csv"
+MODELO_PROTOCOLO_ARCHIVO = "modelo_probabilidad_protocolo.json"
 
 MAX_ACTIVOS_ANALIZAR = 20
 LIMITE_DATASETS = 160
@@ -43,41 +46,22 @@ MODO_BACKTEST_DIAGNOSTICO = "DIAGNOSTICO_COMPLETO"
 # Cambiar únicamente esta línea para comparar universos.
 MODO_BACKTEST = MODO_BACKTEST_FILTRADO
 
-BUILD_ID = "BOOTIQ_BACKTEST_V6_VALIDACION_FUERA_MUESTRA_2026_08_02"
+# ============================================================
+# PARTICIÓN OFICIAL TRAIN / VALIDACIÓN
+# ============================================================
 
-# ============================================================
-# EXPERIMENTO FUERA DE MUESTRA
-# ============================================================
-# Cambia UNICAMENTE esta línea:
-#
-# MODO_EXPERIMENTO_ENTRENAMIENTO:
-#   - usa 12 de los 16 datasets seleccionados;
-#   - genera aprendizaje_historico_bootiq.csv al finalizar;
-#   - guarda backtest_bootiq_entrenamiento_resultados.csv.
-#
-# MODO_EXPERIMENTO_VALIDACION:
-#   - usa los 4 datasets reservados;
-#   - mantiene el aprendizaje congelado;
-#   - guarda backtest_bootiq_validacion_resultados.csv.
-#
-# No borres aprendizaje_historico_bootiq.csv entre ambas ejecuciones.
-MODO_EXPERIMENTO_ENTRENAMIENTO = "ENTRENAMIENTO"
+MODO_EXPERIMENTO_AUDITORIA_TRAIN = "AUDITORIA_TRAIN"
 MODO_EXPERIMENTO_VALIDACION = "VALIDACION"
 
-# Auditoría sobre los 12 datasets de entrenamiento,
-# pero SIN regenerar aprendizaje_historico_bootiq.csv.
-MODO_EXPERIMENTO_AUDITORIA_TRAIN = "AUDITORIA_TRAIN"
+# Durante esta fase, cambiar únicamente esta línea.
+MODO_EXPERIMENTO = MODO_EXPERIMENTO_VALIDACION
 
-MODO_EXPERIMENTO = MODO_EXPERIMENTO_AUDITORIA_TRAIN
+TOTAL_DATASETS_EXPERIMENTO = 16
+TOTAL_DATASETS_TRAIN = 12
+TOTAL_DATASETS_VALIDACION = 4
 
-# Reserva un dataset de cada cuatro para validación.
-FRECUENCIA_DATASET_VALIDACION = 4
-
-# Solo el modo ENTRENAMIENTO real puede actualizar la memoria.
-ACTUALIZAR_APRENDIZAJE = (
-    MODO_EXPERIMENTO == MODO_EXPERIMENTO_ENTRENAMIENTO
-)
-
+BUILD_ID = "BOOTIQ_BACKTEST_V5_SOMBRA_ESTADISTICA_2026_08_01"
+ACTUALIZAR_APRENDIZAJE = False
 DATASETS_USADOS_BACKTEST = 0
 AUDITORIA_DATASETS = {
     "cargados": 0,
@@ -364,90 +348,93 @@ def seleccionar_top_datasets(datasets, limite=20):
         )
 
     return seleccionados
-def dividir_datasets_experimento(datasets):
+def dividir_datasets_experimento(datasets_seleccionados):
     """
-    Divide de forma determinista los datasets seleccionados.
+    Congela un universo de 16 datasets y lo divide
+    determinísticamente en 12 TRAIN + 4 VALIDACIÓN.
 
-    No utiliza WIN/LOSS ni resultados futuros. Reserva uno de cada
-    cuatro datasets para validación y usa el resto para entrenamiento.
-    """
-
-    if not isinstance(datasets, list):
-        datasets = []
-
-    entrenamiento = []
-    validacion = []
-
-    for indice, dataset in enumerate(datasets, start=1):
-        if indice % FRECUENCIA_DATASET_VALIDACION == 0:
-            validacion.append(dataset)
-        else:
-            entrenamiento.append(dataset)
-
-    return entrenamiento, validacion
-
-
-def seleccionar_datasets_experimento(datasets):
-    """
-    Devuelve únicamente el grupo correspondiente al modo configurado.
+    AUDITORIA_TRAIN nunca puede usar los 4 de validación.
+    VALIDACION nunca puede usar los 12 TRAIN.
     """
 
-    entrenamiento, validacion = dividir_datasets_experimento(datasets)
-
-    print()
-    print("===== DIVISION FUERA DE MUESTRA =====")
-    print("Modo experimento:", MODO_EXPERIMENTO)
-    print("Entrenamiento:", len(entrenamiento), "datasets")
-    print("Validación:", len(validacion), "datasets")
-
-    print()
-    print("Activos de entrenamiento:")
-    for dataset in entrenamiento:
-        print("-", dataset.get("activo", ""))
-
-    print()
-    print("Activos de validación:")
-    for dataset in validacion:
-        print("-", dataset.get("activo", ""))
-
-    if MODO_EXPERIMENTO == MODO_EXPERIMENTO_ENTRENAMIENTO:
-        seleccionados = entrenamiento
-    elif MODO_EXPERIMENTO == MODO_EXPERIMENTO_AUDITORIA_TRAIN:
-        seleccionados = entrenamiento
-    elif MODO_EXPERIMENTO == MODO_EXPERIMENTO_VALIDACION:
-        seleccionados = validacion
-    else:
-        raise ValueError(
-            "MODO_EXPERIMENTO inválido: "
-            f"{MODO_EXPERIMENTO}. "
-            "Usa ENTRENAMIENTO, AUDITORIA_TRAIN o VALIDACION."
-        )
-
-    if not seleccionados:
+    if len(datasets_seleccionados) < TOTAL_DATASETS_EXPERIMENTO:
         raise RuntimeError(
-            "El grupo seleccionado para el experimento está vacío."
+            "Se requieren al menos "
+            f"{TOTAL_DATASETS_EXPERIMENTO} datasets seleccionados "
+            "para construir 12 TRAIN + 4 VALIDACIÓN, pero solo hay "
+            f"{len(datasets_seleccionados)}."
         )
 
-    return seleccionados
+    universo = datasets_seleccionados[:TOTAL_DATASETS_EXPERIMENTO]
+
+    train = universo[:TOTAL_DATASETS_TRAIN]
+
+    validacion = universo[
+        TOTAL_DATASETS_TRAIN:
+        TOTAL_DATASETS_TRAIN + TOTAL_DATASETS_VALIDACION
+    ]
+
+    if len(train) != TOTAL_DATASETS_TRAIN:
+        raise RuntimeError(
+            f"TRAIN debe contener {TOTAL_DATASETS_TRAIN} datasets, "
+            f"pero contiene {len(train)}."
+        )
+
+    if len(validacion) != TOTAL_DATASETS_VALIDACION:
+        raise RuntimeError(
+            "VALIDACIÓN debe contener "
+            f"{TOTAL_DATASETS_VALIDACION} datasets, "
+            f"pero contiene {len(validacion)}."
+        )
+
+    return universo, train, validacion
 
 
-def configurar_salida_experimento():
-    """
-    Define un CSV distinto para entrenamiento y validación.
-    """
-
-    if MODO_EXPERIMENTO == MODO_EXPERIMENTO_ENTRENAMIENTO:
-        return "backtest_bootiq_entrenamiento_resultados.csv"
+def seleccionar_datasets_experimento(datasets_seleccionados):
+    universo, train, validacion = dividir_datasets_experimento(
+        datasets_seleccionados
+    )
 
     if MODO_EXPERIMENTO == MODO_EXPERIMENTO_AUDITORIA_TRAIN:
-        return "backtest_bootiq_auditoria_train_resultados.csv"
+        usados = train
 
-    if MODO_EXPERIMENTO == MODO_EXPERIMENTO_VALIDACION:
-        return "backtest_bootiq_validacion_resultados.csv"
+    elif MODO_EXPERIMENTO == MODO_EXPERIMENTO_VALIDACION:
+        usados = validacion
 
-    raise ValueError(
-        f"MODO_EXPERIMENTO inválido: {MODO_EXPERIMENTO}"
+    else:
+        raise RuntimeError(
+            f"Modo experimental inválido: {MODO_EXPERIMENTO}"
+        )
+
+    esperado = (
+        TOTAL_DATASETS_TRAIN
+        if MODO_EXPERIMENTO == MODO_EXPERIMENTO_AUDITORIA_TRAIN
+        else TOTAL_DATASETS_VALIDACION
     )
+
+    if len(usados) != esperado:
+        raise RuntimeError(
+            f"{MODO_EXPERIMENTO} debe usar {esperado} datasets, "
+            f"pero recibió {len(usados)}."
+        )
+
+    print("\n===== CONFIGURACION EXPERIMENTO =====")
+    print("Modo:", MODO_EXPERIMENTO)
+    print("Universo experimental fijo:", len(universo))
+    print("TRAIN reservados:", len(train))
+    print("VALIDACION reservados:", len(validacion))
+    print("Datasets usados ahora:", len(usados))
+    print("====================================")
+
+    print("\nTRAIN:")
+    for d in train:
+        print(" -", d.get("activo", ""))
+
+    print("\nVALIDACION RESERVADA:")
+    for d in validacion:
+        print(" -", d.get("activo", ""))
+
+    return usados
 
 
 def imprimir_auditoria_datasets():
@@ -669,29 +656,6 @@ def crear_registro_resultado(
         idx_entrada,
         direccion,
     )
-
-    # ========================================================
-    # AUDITORÍA SELECCIÓN V3 SOMBRA
-    # ========================================================
-    # estrategia.py sigue devolviendo la candidata oficial.
-    # Aquí solo calculamos qué habría ocurrido con la
-    # candidata preferida por el ranking V3.
-    direccion_v3_sombra = str(
-        senal.get("seleccion_v3_sombra_direccion", "")
-        or ""
-    ).lower().strip()
-
-    if direccion_v3_sombra in {"call", "put"}:
-        info_resultado_v3_sombra = resultado_binario(
-            velas,
-            idx,
-            direccion_v3_sombra,
-        )
-    else:
-        info_resultado_v3_sombra = {
-            "resultado": "SIN_DATOS",
-        }
-
     decision_bootiq = (
         decision_bootiq
         if isinstance(decision_bootiq, dict)
@@ -703,76 +667,6 @@ def crear_registro_resultado(
         senal.get("cerebro_unico_decision", "NO_OPERAR")
         or "NO_OPERAR"
     ).upper().strip()
-
-    # ========================================================
-    # AUDITORÍA FUENTE PRINCIPAL VS RESPALDO
-    # ========================================================
-    fuente_principal_raw = senal.get(
-        "fuente_probabilidad_principal"
-    )
-    fuente_respaldo_raw = senal.get(
-        "fuente_probabilidad_respaldo"
-    )
-
-    fuente_principal_raw = (
-        fuente_principal_raw
-        if isinstance(fuente_principal_raw, dict)
-        else {}
-    )
-    fuente_respaldo_raw = (
-        fuente_respaldo_raw
-        if isinstance(fuente_respaldo_raw, dict)
-        else {}
-    )
-
-    prob_principal_sola = float(
-        fuente_principal_raw.get(
-            "probabilidad_ajustada",
-            0,
-        )
-        or 0
-    )
-
-    muestra_principal_sola = int(
-        float(
-            fuente_principal_raw.get("total", 0)
-            or 0
-        )
-    )
-
-    prob_respaldo_sola = float(
-        fuente_respaldo_raw.get(
-            "probabilidad_ajustada",
-            0,
-        )
-        or 0
-    )
-
-    muestra_respaldo_sola = int(
-        float(
-            fuente_respaldo_raw.get("total", 0)
-            or 0
-        )
-    )
-
-    # Misma clasificación de umbrales V3, pero SOLO para auditoría.
-    if not fuente_principal_raw or muestra_principal_sola < 12:
-        decision_principal_sola = "NO_OPERAR_MUESTRA"
-        operar_principal_sola = False
-    elif prob_principal_sola >= 55.0:
-        decision_principal_sola = "OPERAR"
-        operar_principal_sola = True
-    elif prob_principal_sola >= 50.0:
-        decision_principal_sola = "OPERAR_CON_PROTOCOLO"
-        operar_principal_sola = True
-    else:
-        decision_principal_sola = "NO_OPERAR"
-        operar_principal_sola = False
-
-    probabilidad_combinada = float(
-        senal.get("probabilidad_estimada", 0)
-        or 0
-    )
 
     registro = {
         "tipo": senal.get("tipo", ""),
@@ -967,64 +861,6 @@ def crear_registro_resultado(
         "fuente_probabilidad_respaldo": _texto(
             senal.get("fuente_probabilidad_respaldo", "")
         ),
-
-        # Auditoría estructurada de la combinación histórica.
-        "fuente_principal_nivel": fuente_principal_raw.get(
-            "nivel", ""
-        ),
-        "fuente_principal_clave": fuente_principal_raw.get(
-            "clave", ""
-        ),
-        "fuente_principal_probabilidad": prob_principal_sola,
-        "fuente_principal_muestra": muestra_principal_sola,
-        "fuente_principal_wins": fuente_principal_raw.get(
-            "wins", 0
-        ),
-        "fuente_principal_losses": fuente_principal_raw.get(
-            "losses", 0
-        ),
-        "fuente_principal_intervalo_inferior": (
-            fuente_principal_raw.get("intervalo_inferior", 0)
-        ),
-        "fuente_principal_intervalo_superior": (
-            fuente_principal_raw.get("intervalo_superior", 0)
-        ),
-        "fuente_principal_confiabilidad": (
-            fuente_principal_raw.get("confiabilidad", "")
-        ),
-
-        "fuente_respaldo_nivel": fuente_respaldo_raw.get(
-            "nivel", ""
-        ),
-        "fuente_respaldo_clave": fuente_respaldo_raw.get(
-            "clave", ""
-        ),
-        "fuente_respaldo_probabilidad": prob_respaldo_sola,
-        "fuente_respaldo_muestra": muestra_respaldo_sola,
-        "fuente_respaldo_wins": fuente_respaldo_raw.get(
-            "wins", 0
-        ),
-        "fuente_respaldo_losses": fuente_respaldo_raw.get(
-            "losses", 0
-        ),
-        "fuente_respaldo_intervalo_inferior": (
-            fuente_respaldo_raw.get("intervalo_inferior", 0)
-        ),
-        "fuente_respaldo_intervalo_superior": (
-            fuente_respaldo_raw.get("intervalo_superior", 0)
-        ),
-        "fuente_respaldo_confiabilidad": (
-            fuente_respaldo_raw.get("confiabilidad", "")
-        ),
-
-        "probabilidad_principal_sola": prob_principal_sola,
-        "decision_principal_sola": decision_principal_sola,
-        "operar_principal_sola": operar_principal_sola,
-        "delta_combinacion_vs_principal": round(
-            probabilidad_combinada - prob_principal_sola,
-            4,
-        ),
-
         "nivel_probabilidad_principal": senal.get(
             "nivel_probabilidad_principal", ""
         ),
@@ -1044,75 +880,6 @@ def crear_registro_resultado(
         ),
         "motivo_decision_estadistica_sombra": _texto(
             senal.get("motivo_decision_estadistica_sombra", "")
-        ),
-
-        # ==================================================
-        # FASE 1 V3 — SEPARACIÓN LEGACY VS ESTADÍSTICA
-        # ==================================================
-        "origen_decision_oficial": senal.get(
-            "origen_decision_oficial",
-            "CONFIANZA_LEGACY",
-        ),
-        "origen_decision_estadistica": senal.get(
-            "origen_decision_estadistica",
-            "PROBABILIDAD_HISTORICA_V3",
-        ),
-        "sistemas_decision_separados": bool(
-            senal.get("sistemas_decision_separados", False)
-        ),
-        "confianza_legacy": senal.get(
-            "confianza_legacy",
-            senal.get("cerebro_unico_confianza", 0),
-        ),
-        "confianza_base_legacy": senal.get(
-            "confianza_base_legacy",
-            senal.get("auditoria_confianza_base", 0),
-        ),
-        "probabilidad_v3": senal.get(
-            "probabilidad_v3",
-            senal.get("probabilidad_estimada", 0),
-        ),
-        "desacuerdo_actual_vs_v3": bool(
-            senal.get("desacuerdo_actual_vs_v3", False)
-        ),
-        "auditoria_separacion_v3": _texto(
-            senal.get("auditoria_separacion_v3", {})
-        ),
-
-        # ==================================================
-        # RANKING ENTRE CANDIDATAS — SOMBRA V3
-        # ==================================================
-        "seleccion_v3_sombra_patron": senal.get(
-            "seleccion_v3_sombra_patron",
-            "",
-        ),
-        "seleccion_v3_sombra_direccion": senal.get(
-            "seleccion_v3_sombra_direccion",
-            "",
-        ),
-        "seleccion_v3_sombra_probabilidad": senal.get(
-            "seleccion_v3_sombra_probabilidad",
-            0,
-        ),
-        "seleccion_v3_sombra_muestra": senal.get(
-            "seleccion_v3_sombra_muestra",
-            0,
-        ),
-        "seleccion_v3_sombra_decision": senal.get(
-            "seleccion_v3_sombra_decision",
-            "SIN_DATOS",
-        ),
-        "seleccion_v3_sombra_misma_que_actual": bool(
-            senal.get(
-                "seleccion_v3_sombra_misma_que_actual",
-                False,
-            )
-        ),
-        "resultado_seleccion_v3_sombra": (
-            info_resultado_v3_sombra.get(
-                "resultado",
-                "SIN_DATOS",
-            )
         ),
 
         # Alias legacy. Solo reflejan al Cerebro Único.
@@ -1147,6 +914,61 @@ def crear_registro_resultado(
                 "fase4_motivo",
                 senal.get("cerebro_unico_motivos", ""),
             )
+        ),
+
+        # ==================================================
+        # AUDITORÍA MOTOR PROTOCOLOS
+        # ==================================================
+        "auditoria_protocolo_tipo": senal.get("auditoria_protocolo_tipo", ""),
+        "auditoria_protocolo_subtipo": senal.get("auditoria_protocolo_subtipo", ""),
+        "auditoria_protocolo_familia": senal.get("auditoria_protocolo_familia", ""),
+        "auditoria_protocolo_operada": bool(
+            senal.get("auditoria_protocolo_operada", False)
+        ),
+        "auditoria_protocolo_idx_senal": senal.get("auditoria_protocolo_idx_senal", -1),
+        "auditoria_protocolo_idx_entrada": senal.get("auditoria_protocolo_idx_entrada", -1),
+        "auditoria_protocolo_espera_velas": senal.get("auditoria_protocolo_espera_velas", -1),
+        "auditoria_protocolo_motivo": senal.get("auditoria_protocolo_motivo", ""),
+        "auditoria_protocolo_riesgo": senal.get("auditoria_protocolo_riesgo", 0),
+        "auditoria_protocolo_nivel_riesgo": senal.get("auditoria_protocolo_nivel_riesgo", ""),
+        "auditoria_protocolo_indice_confirmacion": senal.get("auditoria_protocolo_indice_confirmacion", 0),
+        "auditoria_protocolo_nivel_confirmacion": senal.get("auditoria_protocolo_nivel_confirmacion", ""),
+        "auditoria_protocolo_accion_confirmacion": senal.get("auditoria_protocolo_accion_confirmacion", ""),
+        "auditoria_protocolo_tipo_mercado": senal.get("auditoria_protocolo_tipo_mercado", ""),
+        "auditoria_protocolo_tendencia": senal.get("auditoria_protocolo_tendencia", ""),
+        "auditoria_protocolo_pa_tipo": senal.get("auditoria_protocolo_pa_tipo", ""),
+        "auditoria_protocolo_probabilidad": senal.get("auditoria_protocolo_probabilidad", 0),
+
+        # ==================================================
+        # VALIDACIÓN RECUPERACIÓN VETO SETUP — SOMBRA
+        # ==================================================
+        "recuperacion_sombra_candidata": bool(
+            senal.get(
+                "recuperacion_sombra_candidata",
+                False,
+            )
+        ),
+        "recuperacion_sombra_sobrevive_protocolo": bool(
+            senal.get(
+                "recuperacion_sombra_sobrevive_protocolo",
+                False,
+            )
+        ),
+        "recuperacion_sombra_idx_entrada": senal.get(
+            "recuperacion_sombra_idx_entrada",
+            "",
+        ),
+        "recuperacion_sombra_motivo": senal.get(
+            "recuperacion_sombra_motivo",
+            "",
+        ),
+        "recuperacion_sombra_resultado": senal.get(
+            "recuperacion_sombra_resultado",
+            "",
+        ),
+        "recuperacion_sombra_espera_velas": senal.get(
+            "recuperacion_sombra_espera_velas",
+            0,
         ),
 
         "resultado": info_resultado["resultado"],
@@ -1272,6 +1094,97 @@ def crear_registro_resultado(
 
     registro.update(decision_bootiq_plana)
     return registro
+
+
+def es_candidata_recuperacion_veto_sombra(senal):
+    """
+    Regla congelada descubierta exclusivamente en TRAIN.
+
+    Solo auditoría:
+    - no modifica motor_decision;
+    - no modifica motor_protocolos;
+    - no cambia la ejecución oficial.
+    """
+
+    subtipo_setup = str(
+        senal.get("subtipo_setup", "")
+        or ""
+    ).upper().strip()
+
+    tipo_mercado = str(
+        senal.get("tipo_mercado", "")
+        or ""
+    ).upper().strip()
+
+    return (
+        subtipo_setup == "SWEEP_SIMPLE"
+        and tipo_mercado == "TENDENCIA_ALCISTA"
+    )
+
+
+def evaluar_recuperacion_veto_sombra(
+    senal,
+    velas,
+    idx,
+):
+    """
+    Simula qué habría ocurrido si únicamente se levantara
+    el veto general de setup para la regla congelada.
+
+    Después, la señal debe pasar normalmente por motor_protocolos.
+    """
+
+    salida = {
+        "candidata": False,
+        "sobrevive_protocolo": False,
+        "idx_entrada": None,
+        "motivo": "",
+        "resultado": "",
+        "espera_velas": 0,
+    }
+
+    if not es_candidata_recuperacion_veto_sombra(senal):
+        return salida
+
+    salida["candidata"] = True
+
+    senal_sombra = copy.deepcopy(senal)
+
+    # Única excepción simulada:
+    # levantar el veto estructural general del setup.
+    senal_sombra[
+        "riesgo_estructural_critico_setup"
+    ] = False
+
+    idx_entrada, motivo = buscar_entrada_confirmada(
+        velas,
+        idx,
+        senal_sombra,
+    )
+
+    salida["motivo"] = motivo
+
+    if idx_entrada is None:
+        return salida
+
+    if idx_entrada + 1 >= len(velas):
+        salida["motivo"] = (
+            "RECUPERACION_SOMBRA_SIN_VELA_RESULTADO"
+        )
+        return salida
+
+    info = resultado_binario(
+        velas,
+        idx_entrada,
+        senal.get("direccion", ""),
+    )
+
+    salida["sobrevive_protocolo"] = True
+    salida["idx_entrada"] = idx_entrada
+    salida["resultado"] = info["resultado"]
+    salida["espera_velas"] = idx_entrada - idx
+
+    return salida
 
 
 def ejecutar_backtest(datasets):
@@ -1442,6 +1355,56 @@ def ejecutar_backtest(datasets):
                 )
 
                 if idx_entrada is None:
+
+                    recuperacion_sombra = {
+                        "candidata": False,
+                        "sobrevive_protocolo": False,
+                        "idx_entrada": None,
+                        "motivo": "",
+                        "resultado": "",
+                        "espera_velas": 0,
+                    }
+
+                    if (
+                        MODO_EXPERIMENTO
+                        == MODO_EXPERIMENTO_VALIDACION
+                        and motivo_ejecucion
+                        == "CANCELADA_SETUP_NO_OPERAR"
+                    ):
+                        recuperacion_sombra = (
+                            evaluar_recuperacion_veto_sombra(
+                                senal,
+                                velas,
+                                idx,
+                            )
+                        )
+
+                    senal[
+                        "recuperacion_sombra_candidata"
+                    ] = recuperacion_sombra["candidata"]
+
+                    senal[
+                        "recuperacion_sombra_sobrevive_protocolo"
+                    ] = recuperacion_sombra[
+                        "sobrevive_protocolo"
+                    ]
+
+                    senal[
+                        "recuperacion_sombra_idx_entrada"
+                    ] = recuperacion_sombra["idx_entrada"]
+
+                    senal[
+                        "recuperacion_sombra_motivo"
+                    ] = recuperacion_sombra["motivo"]
+
+                    senal[
+                        "recuperacion_sombra_resultado"
+                    ] = recuperacion_sombra["resultado"]
+
+                    senal[
+                        "recuperacion_sombra_espera_velas"
+                    ] = recuperacion_sombra["espera_velas"]
+
                     resultados.append(
                         crear_registro_resultado(
                             senal=senal,
@@ -1449,9 +1412,7 @@ def ejecutar_backtest(datasets):
                             idx=idx,
                             idx_entrada=idx,
                             motivo_ejecucion=motivo_ejecucion,
-                            estado_operacion=(
-                                "CANCELADA_PROTOCOLO"
-                            ),
+                            estado_operacion="CANCELADA_PROTOCOLO",
                             decision_bootiq=decision_bootiq,
                         )
                     )
@@ -1601,57 +1562,12 @@ def guardar_resultados(resultados):
         "confiabilidad_probabilidad",
         "fuente_probabilidad_principal",
         "fuente_probabilidad_respaldo",
-
-        "fuente_principal_nivel",
-        "fuente_principal_clave",
-        "fuente_principal_probabilidad",
-        "fuente_principal_muestra",
-        "fuente_principal_wins",
-        "fuente_principal_losses",
-        "fuente_principal_intervalo_inferior",
-        "fuente_principal_intervalo_superior",
-        "fuente_principal_confiabilidad",
-
-        "fuente_respaldo_nivel",
-        "fuente_respaldo_clave",
-        "fuente_respaldo_probabilidad",
-        "fuente_respaldo_muestra",
-        "fuente_respaldo_wins",
-        "fuente_respaldo_losses",
-        "fuente_respaldo_intervalo_inferior",
-        "fuente_respaldo_intervalo_superior",
-        "fuente_respaldo_confiabilidad",
-
-        "probabilidad_principal_sola",
-        "decision_principal_sola",
-        "operar_principal_sola",
-        "delta_combinacion_vs_principal",
-
         "nivel_probabilidad_principal",
         "clave_probabilidad_principal",
         "decision_estadistica_sombra",
         "operar_estadistico_sombra",
         "requiere_protocolo_estadistico_sombra",
         "motivo_decision_estadistica_sombra",
-
-        # Fase 1 V3 — separación de sistemas.
-        "origen_decision_oficial",
-        "origen_decision_estadistica",
-        "sistemas_decision_separados",
-        "confianza_legacy",
-        "confianza_base_legacy",
-        "probabilidad_v3",
-        "desacuerdo_actual_vs_v3",
-        "auditoria_separacion_v3",
-
-        # Ranking sombra entre candidatas.
-        "seleccion_v3_sombra_patron",
-        "seleccion_v3_sombra_direccion",
-        "seleccion_v3_sombra_probabilidad",
-        "seleccion_v3_sombra_muestra",
-        "seleccion_v3_sombra_decision",
-        "seleccion_v3_sombra_misma_que_actual",
-        "resultado_seleccion_v3_sombra",
 
         "fase4_evaluada",
         "fase4_permitir_operacion",
@@ -1740,6 +1656,25 @@ def guardar_resultados(resultados):
         "auditoria_motivos_price_action",
         "auditoria_motivos_mercado",
         "auditoria_motivos_estrategia",
+
+        # Auditoría motor_protocolos.
+        "auditoria_protocolo_tipo",
+        "auditoria_protocolo_subtipo",
+        "auditoria_protocolo_familia",
+        "auditoria_protocolo_operada",
+        "auditoria_protocolo_idx_senal",
+        "auditoria_protocolo_idx_entrada",
+        "auditoria_protocolo_espera_velas",
+        "auditoria_protocolo_motivo",
+        "auditoria_protocolo_riesgo",
+        "auditoria_protocolo_nivel_riesgo",
+        "auditoria_protocolo_indice_confirmacion",
+        "auditoria_protocolo_nivel_confirmacion",
+        "auditoria_protocolo_accion_confirmacion",
+        "auditoria_protocolo_tipo_mercado",
+        "auditoria_protocolo_tendencia",
+        "auditoria_protocolo_pa_tipo",
+        "auditoria_protocolo_probabilidad",
 
         "bootiq_resultado_estado_operacion",
         "bootiq_resultado_motivo_ejecucion",
@@ -2145,560 +2080,219 @@ def imprimir_comparacion_sombra(resultados):
     print("=================================================\n")
 
 
+def _resumen_combinacion(
+    filas,
+    campos,
+    campo_resultado="resultado_hipotetico",
+):
+    grupos = {}
 
-
-
-def imprimir_auditoria_autorizadas_combinaciones(resultados):
-    """
-    Analiza exclusivamente las señales autorizadas por el Cerebro V3.
-
-    Busca qué variables y combinaciones separan mejor WIN de LOSS
-    dentro del subconjunto ya autorizado.
-
-    No modifica decisiones, aprendizaje ni protocolos.
-    """
-
-    if not resultados:
-        return
-
-    autorizadas = [
-        r for r in resultados
-        if str(
-            r.get("cerebro_unico_decision", "")
-            or ""
-        ).upper().strip()
-        in {"OPERAR", "OPERAR_CON_PROTOCOLO"}
-    ]
-
-    if not autorizadas:
-        print("\n===== AUDITORÍA AUTORIZADAS V3 =====")
-        print("Sin señales autorizadas.")
-        print("====================================\n")
-        return
-
-    def normalizar(valor):
-        if isinstance(valor, bool):
-            return str(valor)
-        return str(valor or "").strip()
-
-    def stats(filas):
-        wins = sum(
-            1 for r in filas
-            if r.get("resultado_hipotetico") == "WIN"
-        )
-        losses = sum(
-            1 for r in filas
-            if r.get("resultado_hipotetico") == "LOSS"
-        )
-        total = wins + losses
-        wr = round((wins / total) * 100, 2) if total else 0
-        return total, wins, losses, wr
-
-    def agrupar(campos, min_total=8, top=20):
-        grupos = {}
-
-        for r in autorizadas:
-            clave = tuple(
-                normalizar(r.get(campo, ""))
-                for campo in campos
-            )
-
-            if not any(clave):
-                continue
-
-            grupos.setdefault(clave, []).append(r)
-
-        salida = []
-
-        for clave, filas in grupos.items():
-            total, wins, losses, wr = stats(filas)
-
-            if total < min_total:
-                continue
-
-            salida.append(
-                {
-                    "clave": clave,
-                    "total": total,
-                    "wins": wins,
-                    "losses": losses,
-                    "winrate": wr,
-                }
-            )
-
-        salida.sort(
-            key=lambda x: (
-                x["winrate"],
-                x["total"],
-            ),
-            reverse=True,
+    for fila in filas:
+        clave = tuple(
+            str(fila.get(campo, "") or "").strip()
+            for campo in campos
         )
 
-        return salida[:top]
+        if not any(clave):
+            continue
 
-    total, wins, losses, wr = stats(autorizadas)
+        if clave not in grupos:
+            grupos[clave] = {
+                "total": 0,
+                "win": 0,
+                "activos": set(),
+            }
 
-    print("\n===== AUDITORÍA AUTORIZADAS V3 =====")
-    print(
-        "Autorizadas:",
-        total,
-        "| WIN:", wins,
-        "| LOSS:", losses,
-        "| winrate:", str(wr) + "%",
+        grupos[clave]["total"] += 1
+
+        if fila.get(campo_resultado) == "WIN":
+            grupos[clave]["win"] += 1
+
+        activo = str(fila.get("activo", "") or "").strip()
+
+        if activo:
+            grupos[clave]["activos"].add(activo)
+
+    salida = []
+
+    for clave, datos in grupos.items():
+        total = datos["total"]
+        win = datos["win"]
+        loss = total - win
+        wr = round((win / total) * 100, 2) if total else 0
+
+        salida.append({
+            "campos": tuple(campos),
+            "clave": clave,
+            "total": total,
+            "win": win,
+            "loss": loss,
+            "winrate": wr,
+            "activos": len(datos["activos"]),
+        })
+
+    return sorted(
+        salida,
+        key=lambda x: (
+            -x["winrate"],
+            -x["total"],
+            -x["activos"],
+        ),
     )
 
-    bloques = [
+
+def imprimir_auditoria_veto_setup(resultados):
+    """
+    Audita exclusivamente CANCELADA_SETUP_NO_OPERAR.
+
+    No modifica decisiones.
+    Solo descubre hipótesis sobre TRAIN.
+    """
+
+    if MODO_EXPERIMENTO != MODO_EXPERIMENTO_AUDITORIA_TRAIN:
+        return
+
+    vetadas = [
+        r for r in resultados
+        if str(r.get("motivo_ejecucion", "")).upper().strip()
+        == "CANCELADA_SETUP_NO_OPERAR"
+    ]
+
+    print("\n===== AUDITORIA VETO SETUP — TRAIN =====")
+
+    if not vetadas:
+        print("No se encontraron señales CANCELADA_SETUP_NO_OPERAR.")
+        print("=========================================")
+        return
+
+    total = len(vetadas)
+
+    wins = sum(
+        1 for r in vetadas
+        if r.get("resultado_hipotetico") == "WIN"
+    )
+
+    losses = total - wins
+
+    wr = round((wins / total) * 100, 2) if total else 0
+
+    activos = {
+        str(r.get("activo", "") or "").strip()
+        for r in vetadas
+        if str(r.get("activo", "") or "").strip()
+    }
+
+    print("Total vetadas:", total)
+    print("WIN hipotéticos:", wins)
+    print("LOSS hipotéticos:", losses)
+    print("Winrate hipotético:", str(wr) + "%")
+    print("Activos presentes:", len(activos))
+
+    campos_simples = [
+        ("POR FAMILIA", ["familia_setup"]),
+        ("POR TIPO SETUP", ["tipo_setup"]),
+        ("POR SUBTIPO", ["subtipo_setup"]),
+        ("POR CALIDAD", ["calidad_setup"]),
+        ("POR PA", ["pa_tipo"]),
+        ("POR DIRECCION PA", ["pa_direccion"]),
+        ("POR MERCADO", ["tipo_mercado"]),
+        ("POR TENDENCIA", ["estado_tendencia"]),
+        ("POR ACCION PRECIO", ["accion_precio"]),
+        ("POR PROTOCOLO", ["protocolo_sugerido"]),
         (
-            "CALIDAD + FAMILIA",
-            ["calidad_setup", "familia_setup"],
-            8,
-        ),
-        (
-            "TIPO + SUBTIPO",
-            ["tipo_setup", "subtipo_setup"],
-            8,
-        ),
-        (
-            "FAMILIA + PA",
-            ["familia_setup", "pa_tipo"],
-            8,
-        ),
-        (
-            "FAMILIA + MERCADO",
-            ["familia_setup", "tipo_mercado"],
-            8,
-        ),
-        (
-            "FAMILIA + TENDENCIA",
-            ["familia_setup", "estado_tendencia"],
-            8,
-        ),
-        (
-            "CALIDAD + PA",
-            ["calidad_setup", "pa_tipo"],
-            8,
-        ),
-        (
-            "CALIDAD + MERCADO",
-            ["calidad_setup", "tipo_mercado"],
-            8,
-        ),
-        (
-            "PROTOCOLO + FAMILIA",
-            ["protocolo_sugerido", "familia_setup"],
-            8,
-        ),
-        (
-            "FUENTE + FAMILIA",
-            ["nivel_probabilidad_principal", "familia_setup"],
-            8,
-        ),
-        (
-            "FUENTE + PA",
-            ["nivel_probabilidad_principal", "pa_tipo"],
-            8,
-        ),
-        (
-            "CALIDAD + FAMILIA + PA",
-            ["calidad_setup", "familia_setup", "pa_tipo"],
-            6,
-        ),
-        (
-            "FAMILIA + MERCADO + TENDENCIA",
-            ["familia_setup", "tipo_mercado", "estado_tendencia"],
-            6,
+            "POR NIVEL PROBABILIDAD",
+            ["nivel_probabilidad_principal"],
         ),
     ]
 
-    for titulo, campos, minimo in bloques:
+    for titulo, campos in campos_simples:
         print("\n---", titulo, "---")
 
-        filas = agrupar(
+        filas = _resumen_combinacion(
+            vetadas,
             campos,
-            min_total=minimo,
-            top=15,
         )
 
-        if not filas:
-            print("Sin grupos con muestra suficiente.")
-            continue
-
-        for item in filas:
-            clave = " | ".join(item["clave"])
+        for fila in filas[:20]:
             print(
-                clave,
-                "| total:", item["total"],
-                "| win:", item["wins"],
-                "| loss:", item["losses"],
-                "| winrate:", str(item["winrate"]) + "%",
+                " | ".join(fila["clave"]),
+                "| total:", fila["total"],
+                "| win:", fila["win"],
+                "| loss:", fila["loss"],
+                "| winrate:", str(fila["winrate"]) + "%",
+                "| activos:", fila["activos"],
             )
 
-    # --------------------------------------------------------
-    # ZONAS DE MAYOR / MENOR VALOR DENTRO DE AUTORIZADAS
-    # --------------------------------------------------------
-    print("\n--- TOP GRUPOS >= 65% ---")
-
-    candidatos_top = []
-
-    for campos in [
-        ["calidad_setup"],
-        ["familia_setup"],
-        ["tipo_setup"],
-        ["subtipo_setup"],
-        ["protocolo_sugerido"],
-        ["pa_tipo"],
-        ["tipo_mercado"],
-        ["estado_tendencia"],
-        ["nivel_probabilidad_principal"],
-        ["calidad_setup", "familia_setup"],
-        ["familia_setup", "pa_tipo"],
+    combinaciones = [
         ["familia_setup", "tipo_mercado"],
-        ["familia_setup", "estado_tendencia"],
-        ["calidad_setup", "pa_tipo"],
-    ]:
-        for item in agrupar(
-            campos,
-            min_total=8,
-            top=100,
-        ):
-            if item["winrate"] >= 65.0:
-                candidatos_top.append(
-                    (
-                        item["winrate"],
-                        item["total"],
-                        tuple(campos),
-                        item,
-                    )
-                )
-
-    candidatos_top.sort(
-        key=lambda x: (x[0], x[1]),
-        reverse=True,
-    )
-
-    vistos = set()
-
-    for winrate, total_g, campos, item in candidatos_top[:25]:
-        firma = (campos, item["clave"])
-        if firma in vistos:
-            continue
-        vistos.add(firma)
-
-        print(
-            " + ".join(campos),
-            "=>",
-            " | ".join(item["clave"]),
-            "| total:", item["total"],
-            "| win:", item["wins"],
-            "| loss:", item["losses"],
-            "| winrate:", str(item["winrate"]) + "%",
-        )
-
-    print("\n--- GRUPOS <= 48% ---")
-
-    candidatos_bajos = []
-
-    for campos in [
-        ["calidad_setup"],
-        ["familia_setup"],
-        ["tipo_setup"],
-        ["subtipo_setup"],
-        ["protocolo_sugerido"],
-        ["pa_tipo"],
-        ["tipo_mercado"],
-        ["estado_tendencia"],
-        ["nivel_probabilidad_principal"],
-        ["calidad_setup", "familia_setup"],
         ["familia_setup", "pa_tipo"],
-        ["familia_setup", "tipo_mercado"],
-        ["familia_setup", "estado_tendencia"],
+        ["tipo_setup", "pa_tipo"],
+        ["tipo_setup", "tipo_mercado"],
         ["calidad_setup", "pa_tipo"],
-    ]:
-        for item in agrupar(
+        ["calidad_setup", "tipo_mercado"],
+        ["subtipo_setup", "tipo_mercado"],
+        ["familia_setup", "estado_tendencia"],
+        ["pa_tipo", "tipo_mercado"],
+        [
+            "familia_setup",
+            "tipo_mercado",
+            "estado_tendencia",
+        ],
+        [
+            "tipo_setup",
+            "pa_tipo",
+            "tipo_mercado",
+        ],
+    ]
+
+    print("\n--- CANDIDATOS RECUPERABLES TRAIN ---")
+    print(
+        "Criterio: muestra >= 8, winrate >= 60%, "
+        "presencia en >= 2 activos."
+    )
+
+    candidatos = []
+
+    for campos in combinaciones:
+        filas = _resumen_combinacion(
+            vetadas,
             campos,
-            min_total=8,
-            top=100,
-        ):
-            if item["winrate"] <= 48.0:
-                candidatos_bajos.append(
-                    (
-                        item["winrate"],
-                        -item["total"],
-                        tuple(campos),
-                        item,
-                    )
-                )
-
-    candidatos_bajos.sort(
-        key=lambda x: (x[0], x[1]),
-    )
-
-    vistos = set()
-
-    for winrate, _, campos, item in candidatos_bajos[:25]:
-        firma = (campos, item["clave"])
-        if firma in vistos:
-            continue
-        vistos.add(firma)
-
-        print(
-            " + ".join(campos),
-            "=>",
-            " | ".join(item["clave"]),
-            "| total:", item["total"],
-            "| win:", item["wins"],
-            "| loss:", item["losses"],
-            "| winrate:", str(item["winrate"]) + "%",
         )
 
-    print("====================================\n")
+        for fila in filas:
+            if (
+                fila["total"] >= 8
+                and fila["winrate"] >= 60
+                and fila["activos"] >= 2
+            ):
+                candidatos.append(fila)
 
-
-def imprimir_auditoria_principal_respaldo(resultados):
-    """
-    Compara la selección que produciría la fuente principal sola
-    contra la selección producida por la probabilidad combinada.
-
-    Este reporte NO altera el backtest.
-    """
-
-    if not resultados:
-        return
-
-    def wr(filas):
-        wins = sum(
-            1 for r in filas
-            if r.get("resultado_hipotetico") == "WIN"
-        )
-        losses = sum(
-            1 for r in filas
-            if r.get("resultado_hipotetico") == "LOSS"
-        )
-        total = wins + losses
-        tasa = round((wins / total) * 100, 2) if total else 0
-        return total, wins, losses, tasa
-
-    principal_si = [
-        r for r in resultados
-        if r.get("operar_principal_sola") is True
-    ]
-
-    combinada_si = [
-        r for r in resultados
-        if r.get("operar_estadistico_sombra") is True
-    ]
-
-    ambas_si = [
-        r for r in resultados
-        if (
-            r.get("operar_principal_sola") is True
-            and r.get("operar_estadistico_sombra") is True
-        )
-    ]
-
-    principal_si_combinada_no = [
-        r for r in resultados
-        if (
-            r.get("operar_principal_sola") is True
-            and r.get("operar_estadistico_sombra") is not True
-        )
-    ]
-
-    principal_no_combinada_si = [
-        r for r in resultados
-        if (
-            r.get("operar_principal_sola") is not True
-            and r.get("operar_estadistico_sombra") is True
-        )
-    ]
-
-    total_p, win_p, loss_p, wr_p = wr(principal_si)
-    total_c, win_c, loss_c, wr_c = wr(combinada_si)
-    total_a, win_a, loss_a, wr_a = wr(ambas_si)
-    total_q, win_q, loss_q, wr_q = wr(principal_si_combinada_no)
-    total_ag, win_ag, loss_ag, wr_ag = wr(principal_no_combinada_si)
-
-    con_respaldo = [
-        r for r in resultados
-        if str(r.get("fuente_respaldo_nivel", "") or "").strip()
-    ]
-    sin_respaldo = [
-        r for r in resultados
-        if not str(r.get("fuente_respaldo_nivel", "") or "").strip()
-    ]
-
-    tr, wrs, lrs, wrr = wr(con_respaldo)
-    ts, wss, lss, wrs_sin = wr(sin_respaldo)
-
-    print("\n===== AUDITORÍA FUENTE PRINCIPAL VS COMBINADA =====")
-    print(
-        "Principal sola autoriza",
-        "| total:", total_p,
-        "| win:", win_p,
-        "| loss:", loss_p,
-        "| winrate:", str(wr_p) + "%",
-    )
-    print(
-        "Combinada autoriza",
-        "| total:", total_c,
-        "| win:", win_c,
-        "| loss:", loss_c,
-        "| winrate:", str(wr_c) + "%",
-    )
-    print("----------------------------")
-    print(
-        "AMBAS AUTORIZAN",
-        "| total:", total_a,
-        "| win:", win_a,
-        "| loss:", loss_a,
-        "| winrate:", str(wr_a) + "%",
-    )
-    print(
-        "PRINCIPAL SI / COMBINADA NO",
-        "| total:", total_q,
-        "| win:", win_q,
-        "| loss:", loss_q,
-        "| winrate:", str(wr_q) + "%",
-    )
-    print(
-        "PRINCIPAL NO / COMBINADA SI",
-        "| total:", total_ag,
-        "| win:", win_ag,
-        "| loss:", loss_ag,
-        "| winrate:", str(wr_ag) + "%",
-    )
-    print("----------------------------")
-    print(
-        "Señales con respaldo",
-        "| total:", tr,
-        "| win:", wrs,
-        "| loss:", lrs,
-        "| winrate:", str(wrr) + "%",
-    )
-    print(
-        "Señales sin respaldo",
-        "| total:", ts,
-        "| win:", wss,
-        "| loss:", lss,
-        "| winrate:", str(wrs_sin) + "%",
-    )
-    print("====================================================\n")
-
-
-def imprimir_comparacion_ranking_v3(resultados):
-    """
-    Compara la candidata elegida por estrategia.py contra la
-    candidata preferida por el ranking V3 sombra.
-
-    No modifica ninguna operación.
-    """
-
-    if not resultados:
-        return
-
-    con_datos = [
-        r for r in resultados
-        if str(
-            r.get("seleccion_v3_sombra_direccion", "")
-            or ""
-        ).lower().strip() in {"call", "put"}
-    ]
-
-    if not con_datos:
-        print("\n===== COMPARACIÓN RANKING ACTUAL VS V3 =====")
-        print("Sin datos de ranking V3 sombra.")
-        print("============================================\n")
-        return
-
-    mismas = [
-        r for r in con_datos
-        if r.get("seleccion_v3_sombra_misma_que_actual") is True
-    ]
-
-    diferentes = [
-        r for r in con_datos
-        if r.get("seleccion_v3_sombra_misma_que_actual") is not True
-    ]
-
-    def estadisticas(filas, campo_resultado):
-        wins = sum(
-            1 for r in filas
-            if r.get(campo_resultado) == "WIN"
-        )
-        losses = sum(
-            1 for r in filas
-            if r.get(campo_resultado) == "LOSS"
-        )
-        total_valido = wins + losses
-        wr = (
-            round((wins / total_valido) * 100, 2)
-            if total_valido
-            else 0
-        )
-        return total_valido, wins, losses, wr
-
-    total_actual, win_actual, loss_actual, wr_actual = estadisticas(
-        con_datos,
-        "resultado_hipotetico",
+    candidatos = sorted(
+        candidatos,
+        key=lambda x: (
+            -x["winrate"],
+            -x["total"],
+            -x["activos"],
+        ),
     )
 
-    total_v3, win_v3, loss_v3, wr_v3 = estadisticas(
-        con_datos,
-        "resultado_seleccion_v3_sombra",
-    )
+    if not candidatos:
+        print("No hay candidatos que superen los criterios.")
 
-    total_dif_actual, win_dif_actual, loss_dif_actual, wr_dif_actual = (
-        estadisticas(
-            diferentes,
-            "resultado_hipotetico",
-        )
-    )
+    else:
+        for fila in candidatos[:40]:
+            print(
+                " + ".join(fila["campos"]),
+                "=>",
+                " | ".join(fila["clave"]),
+                "| total:", fila["total"],
+                "| win:", fila["win"],
+                "| loss:", fila["loss"],
+                "| winrate:", str(fila["winrate"]) + "%",
+                "| activos:", fila["activos"],
+            )
 
-    total_dif_v3, win_dif_v3, loss_dif_v3, wr_dif_v3 = estadisticas(
-        diferentes,
-        "resultado_seleccion_v3_sombra",
-    )
-
-    print("\n===== COMPARACIÓN RANKING ACTUAL VS V3 =====")
-    print("Registros con ranking V3:", len(con_datos))
-    print(
-        "Misma candidata:",
-        len(mismas),
-        "| Diferente candidata:",
-        len(diferentes),
-    )
-    print("----------------------------")
-    print(
-        "Ranking actual",
-        "| total:", total_actual,
-        "| win:", win_actual,
-        "| loss:", loss_actual,
-        "| winrate:", str(wr_actual) + "%",
-    )
-    print(
-        "Ranking V3 sombra",
-        "| total:", total_v3,
-        "| win:", win_v3,
-        "| loss:", loss_v3,
-        "| winrate:", str(wr_v3) + "%",
-    )
-    print("----------------------------")
-    print("SOLO CUANDO ELIGEN DISTINTO:")
-    print(
-        "Actual",
-        "| total:", total_dif_actual,
-        "| win:", win_dif_actual,
-        "| loss:", loss_dif_actual,
-        "| winrate:", str(wr_dif_actual) + "%",
-    )
-    print(
-        "V3 sombra",
-        "| total:", total_dif_v3,
-        "| win:", win_dif_v3,
-        "| loss:", loss_dif_v3,
-        "| winrate:", str(wr_dif_v3) + "%",
-    )
-    print("============================================\n")
+    print("=========================================\n")
 
 
 def clasificar_indice_confirmacion_ia(valor):
@@ -2716,6 +2310,1164 @@ def clasificar_indice_confirmacion_ia(valor):
     if valor >= 45:
         return "45_59_BAJO"
     return "0_44_MUY_BAJO"
+def imprimir_validacion_recuperacion_sombra(resultados):
+    """
+    Valida en los 4 datasets reservados la única regla
+    descubierta previamente en TRAIN.
+
+    No modifica el resultado oficial del backtest.
+    """
+
+    if (
+        MODO_EXPERIMENTO
+        != MODO_EXPERIMENTO_VALIDACION
+    ):
+        return
+
+    candidatas = [
+        r for r in resultados
+        if r.get(
+            "recuperacion_sombra_candidata"
+        ) is True
+    ]
+
+    recuperadas = [
+        r for r in candidatas
+        if r.get(
+            "recuperacion_sombra_sobrevive_protocolo"
+        ) is True
+    ]
+
+    total_candidatas = len(candidatas)
+    total_recuperadas = len(recuperadas)
+
+    wins_recuperadas = sum(
+        1
+        for r in recuperadas
+        if r.get(
+            "recuperacion_sombra_resultado"
+        ) == "WIN"
+    )
+
+    losses_recuperadas = (
+        total_recuperadas
+        - wins_recuperadas
+    )
+
+    wr_recuperadas = (
+        round(
+            (
+                wins_recuperadas
+                / total_recuperadas
+            ) * 100,
+            2,
+        )
+        if total_recuperadas
+        else 0
+    )
+
+    operadas_actuales = [
+        r for r in resultados
+        if str(
+            r.get("estado_operacion", "")
+        ).startswith("OPERADA")
+    ]
+
+    total_actual = len(operadas_actuales)
+
+    wins_actual = sum(
+        1
+        for r in operadas_actuales
+        if r.get("resultado") == "WIN"
+    )
+
+    losses_actual = total_actual - wins_actual
+
+    wr_actual = (
+        round(
+            (wins_actual / total_actual) * 100,
+            2,
+        )
+        if total_actual
+        else 0
+    )
+
+    total_sombra = (
+        total_actual
+        + total_recuperadas
+    )
+
+    wins_sombra = (
+        wins_actual
+        + wins_recuperadas
+    )
+
+    losses_sombra = (
+        losses_actual
+        + losses_recuperadas
+    )
+
+    wr_sombra = (
+        round(
+            (wins_sombra / total_sombra) * 100,
+            2,
+        )
+        if total_sombra
+        else 0
+    )
+
+    print(
+        "\n===== VALIDACION RECUPERACION VETO SETUP ====="
+    )
+
+    print(
+        "Regla congelada:",
+        "SWEEP_SIMPLE + TENDENCIA_ALCISTA",
+    )
+
+    print("----------------------------------------")
+    print("Candidatas encontradas:", total_candidatas)
+    print("Sobreviven protocolo:", total_recuperadas)
+    print("WIN recuperadas:", wins_recuperadas)
+    print("LOSS recuperadas:", losses_recuperadas)
+    print("Winrate recuperadas:", str(wr_recuperadas) + "%")
+
+    print("----------------------------------------")
+
+    print(
+        "BASELINE VALIDACION:",
+        total_actual,
+        "operaciones |",
+        wins_actual,
+        "WIN |",
+        losses_actual,
+        "LOSS |",
+        str(wr_actual) + "%",
+    )
+
+    print(
+        "SOMBRA + RECUPERACION:",
+        total_sombra,
+        "operaciones |",
+        wins_sombra,
+        "WIN |",
+        losses_sombra,
+        "LOSS |",
+        str(wr_sombra) + "%",
+    )
+
+    print(
+        "============================================\n"
+    )
+
+
+def _resumen_protocolo_combinado(filas, campos, campo_resultado):
+    grupos = {}
+
+    for fila in filas:
+        clave = tuple(str(fila.get(c, "") or "").strip() for c in campos)
+
+        if not any(clave):
+            continue
+
+        datos = grupos.setdefault(
+            clave,
+            {"total": 0, "win": 0, "activos": set()},
+        )
+
+        datos["total"] += 1
+
+        if fila.get(campo_resultado) == "WIN":
+            datos["win"] += 1
+
+        activo = str(fila.get("activo", "") or "").strip()
+        if activo:
+            datos["activos"].add(activo)
+
+    salida = []
+
+    for clave, datos in grupos.items():
+        total = datos["total"]
+        win = datos["win"]
+        loss = total - win
+        wr = round((win / total) * 100, 2) if total else 0
+
+        salida.append({
+            "clave": clave,
+            "total": total,
+            "win": win,
+            "loss": loss,
+            "winrate": wr,
+            "activos": len(datos["activos"]),
+        })
+
+    return sorted(
+        salida,
+        key=lambda x: (-x["winrate"], -x["total"], -x["activos"]),
+    )
+
+
+def imprimir_auditoria_motor_protocolos(resultados):
+    """
+    Auditoría TRAIN de motor_protocolos.
+    No modifica ninguna decisión.
+    """
+
+    if MODO_EXPERIMENTO != MODO_EXPERIMENTO_AUDITORIA_TRAIN:
+        return
+
+    filas = [
+        r for r in resultados
+        if str(r.get("cerebro_unico_decision", "")).upper().strip()
+        == "OPERAR_CON_PROTOCOLO"
+    ]
+
+    print("\n===== AUDITORIA MOTOR PROTOCOLOS — TRAIN =====")
+
+    if not filas:
+        print("No hay señales OPERAR_CON_PROTOCOLO.")
+        print("==============================================")
+        return
+
+    normalizadas = []
+
+    for r in filas:
+        copia = dict(r)
+
+        if r.get("estado_operacion") == "OPERADA_PROTOCOLO":
+            copia["_resultado_proto"] = r.get("resultado")
+        else:
+            copia["_resultado_proto"] = r.get("resultado_hipotetico")
+
+        normalizadas.append(copia)
+
+    bloques = [
+        ("POR PROTOCOLO", ["auditoria_protocolo_tipo"]),
+        ("POR PROTOCOLO + ESTADO", ["auditoria_protocolo_tipo", "estado_operacion"]),
+        ("POR PROTOCOLO + ESPERA", ["auditoria_protocolo_tipo", "auditoria_protocolo_espera_velas"]),
+        ("POR PROTOCOLO + MOTIVO", ["auditoria_protocolo_tipo", "auditoria_protocolo_motivo"]),
+        ("POR PROTOCOLO + NIVEL CONFIRMACION", ["auditoria_protocolo_tipo", "auditoria_protocolo_nivel_confirmacion"]),
+        ("POR PROTOCOLO + ACCION CONFIRMACION", ["auditoria_protocolo_tipo", "auditoria_protocolo_accion_confirmacion"]),
+        ("POR PROTOCOLO + NIVEL RIESGO", ["auditoria_protocolo_tipo", "auditoria_protocolo_nivel_riesgo"]),
+        ("POR PROTOCOLO + MERCADO", ["auditoria_protocolo_tipo", "auditoria_protocolo_tipo_mercado"]),
+        ("POR PROTOCOLO + TENDENCIA", ["auditoria_protocolo_tipo", "auditoria_protocolo_tendencia"]),
+        ("POR PROTOCOLO + PA", ["auditoria_protocolo_tipo", "auditoria_protocolo_pa_tipo"]),
+        ("POR PROTOCOLO + SUBTIPO", ["auditoria_protocolo_tipo", "auditoria_protocolo_subtipo"]),
+    ]
+
+    for titulo, campos in bloques:
+        print("\n---", titulo, "---")
+
+        resumen = _resumen_protocolo_combinado(
+            normalizadas,
+            campos,
+            "_resultado_proto",
+        )
+
+        for fila in resumen[:40]:
+            print(
+                " | ".join(fila["clave"]),
+                "| total:", fila["total"],
+                "| win:", fila["win"],
+                "| loss:", fila["loss"],
+                "| winrate:", str(fila["winrate"]) + "%",
+                "| activos:", fila["activos"],
+            )
+
+    print("\n--- CANDIDATOS PROTOCOLO TRAIN ---")
+    print("Criterio: >= 8 muestras, >= 60% WR, >= 2 activos.")
+
+    operadas = [
+        r for r in normalizadas
+        if r.get("estado_operacion") == "OPERADA_PROTOCOLO"
+    ]
+
+    combinaciones = [
+        ["auditoria_protocolo_tipo", "auditoria_protocolo_espera_velas"],
+        ["auditoria_protocolo_tipo", "auditoria_protocolo_motivo"],
+        ["auditoria_protocolo_tipo", "auditoria_protocolo_nivel_confirmacion"],
+        ["auditoria_protocolo_tipo", "auditoria_protocolo_nivel_riesgo"],
+        ["auditoria_protocolo_tipo", "auditoria_protocolo_tipo_mercado"],
+        ["auditoria_protocolo_tipo", "auditoria_protocolo_subtipo", "auditoria_protocolo_espera_velas"],
+    ]
+
+    candidatos = []
+
+    for campos in combinaciones:
+        resumen = _resumen_protocolo_combinado(
+            operadas,
+            campos,
+            "_resultado_proto",
+        )
+
+        for fila in resumen:
+            if (
+                fila["total"] >= 8
+                and fila["winrate"] >= 60
+                and fila["activos"] >= 2
+            ):
+                candidatos.append((campos, fila))
+
+    candidatos.sort(
+        key=lambda x: (
+            -x[1]["winrate"],
+            -x[1]["total"],
+            -x[1]["activos"],
+        )
+    )
+
+    if not candidatos:
+        print("No hay candidatos que superen los criterios.")
+    else:
+        for campos, fila in candidatos[:40]:
+            print(
+                " + ".join(campos),
+                "=>",
+                " | ".join(fila["clave"]),
+                "| total:", fila["total"],
+                "| win:", fila["win"],
+                "| loss:", fila["loss"],
+                "| winrate:", str(fila["winrate"]) + "%",
+                "| activos:", fila["activos"],
+            )
+
+    print("==============================================\n")
+
+
+def _normalizar_valor_modelo(valor):
+    texto = str(valor or "").strip().upper()
+
+    if not texto:
+        return "SIN_DATO"
+
+    return texto
+
+
+def _bin_probabilidad_v3(valor):
+    try:
+        x = float(valor)
+    except Exception:
+        return "SIN_DATO"
+
+    if x < 45:
+        return "<45"
+    if x < 50:
+        return "45_49"
+    if x < 55:
+        return "50_54"
+    return "55+"
+
+
+def _bin_espera_protocolo(valor):
+    try:
+        x = int(float(valor))
+    except Exception:
+        return "SIN_DATO"
+
+    if x < 0:
+        return "SIN_ENTRADA"
+
+    if x >= 5:
+        return "5+"
+
+    return str(x)
+
+
+def _extraer_features_probabilidad_protocolo(registro):
+    """
+    Features disponibles en el momento en que el protocolo
+    ya encontró un punto técnico de entrada.
+    """
+
+    return {
+        "protocolo": _normalizar_valor_modelo(
+            registro.get("auditoria_protocolo_tipo")
+        ),
+        "subtipo": _normalizar_valor_modelo(
+            registro.get("auditoria_protocolo_subtipo")
+        ),
+        "mercado": _normalizar_valor_modelo(
+            registro.get("auditoria_protocolo_tipo_mercado")
+        ),
+        "tendencia": _normalizar_valor_modelo(
+            registro.get("auditoria_protocolo_tendencia")
+        ),
+        "pa": _normalizar_valor_modelo(
+            registro.get("auditoria_protocolo_pa_tipo")
+        ),
+        "riesgo": _normalizar_valor_modelo(
+            registro.get("auditoria_protocolo_nivel_riesgo")
+        ),
+        "confirmacion": _normalizar_valor_modelo(
+            registro.get("auditoria_protocolo_nivel_confirmacion")
+        ),
+        "espera": _bin_espera_protocolo(
+            registro.get("auditoria_protocolo_espera_velas")
+        ),
+        "prob_v3": _bin_probabilidad_v3(
+            registro.get("probabilidad_estimada")
+        ),
+    }
+
+
+def _crear_tabla_estadistica(filas, campos):
+    tabla = {}
+
+    for r in filas:
+        features = _extraer_features_probabilidad_protocolo(r)
+
+        clave = tuple(
+            features.get(campo, "SIN_DATO")
+            for campo in campos
+        )
+
+        datos = tabla.setdefault(
+            clave,
+            {
+                "total": 0,
+                "win": 0,
+                "activos": set(),
+            },
+        )
+
+        datos["total"] += 1
+
+        if r.get("resultado") == "WIN":
+            datos["win"] += 1
+
+        activo = str(
+            r.get("activo", "")
+            or ""
+        ).strip()
+
+        if activo:
+            datos["activos"].add(activo)
+
+    return tabla
+
+
+def _probabilidad_suavizada(win, total, prior, fuerza_prior=8.0):
+    """
+    Suavizado bayesiano simple.
+
+    Evita que grupos pequeños como 3/3 aparezcan como 100%.
+    """
+
+    if total <= 0:
+        return prior
+
+    return (
+        win + (prior * fuerza_prior)
+    ) / (
+        total + fuerza_prior
+    )
+
+
+def construir_modelo_probabilidad_protocolo_train(resultados):
+    """
+    Construye un estimador estadístico sobre entradas de protocolo
+    REALMENTE ejecutadas en TRAIN.
+
+    No modifica decisiones.
+    No utiliza VALIDACION.
+    """
+
+    operadas = [
+        r for r in resultados
+        if r.get("estado_operacion") == "OPERADA_PROTOCOLO"
+    ]
+
+    total = len(operadas)
+
+    wins = sum(
+        1 for r in operadas
+        if r.get("resultado") == "WIN"
+    )
+
+    prior = (
+        wins / total
+        if total
+        else 0.5
+    )
+
+    definiciones = [
+        ("PROTOCOLO_SUBTIPO", ["protocolo", "subtipo"]),
+        ("PROTOCOLO_MERCADO", ["protocolo", "mercado"]),
+        ("PROTOCOLO_RIESGO", ["protocolo", "riesgo"]),
+        (
+            "PROTOCOLO_CONFIRMACION",
+            ["protocolo", "confirmacion"],
+        ),
+        ("PROTOCOLO_ESPERA", ["protocolo", "espera"]),
+        ("PROTOCOLO_PA", ["protocolo", "pa"]),
+        (
+            "PROTOCOLO_MERCADO_RIESGO",
+            ["protocolo", "mercado", "riesgo"],
+        ),
+        (
+            "PROTOCOLO_SUBTIPO_ESPERA",
+            ["protocolo", "subtipo", "espera"],
+        ),
+        (
+            "PROTOCOLO_CONFIRMACION_ESPERA",
+            ["protocolo", "confirmacion", "espera"],
+        ),
+    ]
+
+    modelo = {
+        "prior": prior,
+        "total_train": total,
+        "wins_train": wins,
+        "tablas": {},
+    }
+
+    for nombre, campos in definiciones:
+        modelo["tablas"][nombre] = {
+            "campos": campos,
+            "datos": _crear_tabla_estadistica(
+                operadas,
+                campos,
+            ),
+        }
+
+    return modelo
+
+
+
+def _modelo_protocolo_serializable(modelo):
+    salida = {
+        "version": 1,
+        "prior": modelo.get("prior", 0.5),
+        "total_train": modelo.get("total_train", 0),
+        "wins_train": modelo.get("wins_train", 0),
+        "tablas": {},
+    }
+
+    for nombre, info in modelo.get("tablas", {}).items():
+        tabla_out = {
+            "campos": list(info.get("campos", [])),
+            "datos": [],
+        }
+
+        for clave, datos in info.get("datos", {}).items():
+            tabla_out["datos"].append({
+                "clave": list(clave),
+                "total": int(datos.get("total", 0)),
+                "win": int(datos.get("win", 0)),
+                "activos": sorted(list(datos.get("activos", set()))),
+            })
+
+        salida["tablas"][nombre] = tabla_out
+
+    return salida
+
+
+def guardar_modelo_probabilidad_protocolo(modelo):
+    payload = _modelo_protocolo_serializable(modelo)
+
+    with open(
+        MODELO_PROTOCOLO_ARCHIVO,
+        "w",
+        encoding="utf-8",
+    ) as f:
+        json.dump(
+            payload,
+            f,
+            ensure_ascii=False,
+            indent=2,
+        )
+
+    print(
+        "\nModelo de probabilidad de protocolo congelado en:",
+        MODELO_PROTOCOLO_ARCHIVO,
+    )
+    print(
+        "TRAIN usado para congelar modelo:",
+        payload["total_train"],
+        "operaciones de protocolo |",
+        payload["wins_train"],
+        "WIN | prior:",
+        str(round(payload["prior"] * 100, 2)) + "%",
+    )
+
+
+def cargar_modelo_probabilidad_protocolo():
+    """
+    Carga el modelo congelado generado exclusivamente con TRAIN.
+
+    IMPORTANTE:
+    - VALIDACION nunca reconstruye tablas;
+    - VALIDACION nunca recalcula prior;
+    - VALIDACION solo lee el JSON congelado.
+    """
+
+    if not os.path.exists(MODELO_PROTOCOLO_ARCHIVO):
+        raise FileNotFoundError(
+            "No existe el modelo congelado: "
+            f"{MODELO_PROTOCOLO_ARCHIVO}. "
+            "Ejecuta primero AUDITORIA_TRAIN para generarlo."
+        )
+
+    with open(
+        MODELO_PROTOCOLO_ARCHIVO,
+        "r",
+        encoding="utf-8",
+    ) as f:
+        payload = json.load(f)
+
+    modelo = {
+        "prior": float(payload.get("prior", 0.5)),
+        "total_train": int(payload.get("total_train", 0)),
+        "wins_train": int(payload.get("wins_train", 0)),
+        "tablas": {},
+    }
+
+    for nombre, info in payload.get("tablas", {}).items():
+        datos_convertidos = {}
+
+        for fila in info.get("datos", []):
+            clave = tuple(fila.get("clave", []))
+
+            datos_convertidos[clave] = {
+                "total": int(fila.get("total", 0)),
+                "win": int(fila.get("win", 0)),
+                "activos": set(
+                    fila.get("activos", [])
+                ),
+            }
+
+        modelo["tablas"][nombre] = {
+            "campos": list(info.get("campos", [])),
+            "datos": datos_convertidos,
+        }
+
+    if modelo["total_train"] <= 0:
+        raise RuntimeError(
+            "El modelo congelado no contiene muestra TRAIN válida."
+        )
+
+    print(
+        "\nModelo de probabilidad de protocolo cargado:",
+        MODELO_PROTOCOLO_ARCHIVO,
+    )
+    print(
+        "TRAIN congelado:",
+        modelo["total_train"],
+        "operaciones de protocolo |",
+        modelo["wins_train"],
+        "WIN | prior:",
+        str(round(modelo["prior"] * 100, 2)) + "%",
+    )
+
+    return modelo
+
+
+def estimar_probabilidad_protocolo(registro, modelo):
+    """
+    Combina evidencia estadística TRAIN con backoff.
+
+    Reglas:
+    - grupos con < 5 muestras no pesan;
+    - grupos con >= 8 y >= 2 activos pesan más;
+    - todas las tasas están suavizadas hacia el prior.
+    """
+
+    prior = modelo["prior"]
+    features = _extraer_features_probabilidad_protocolo(registro)
+
+    suma_pesos = 1.0
+    suma = prior
+    fuentes = []
+
+    for nombre, info in modelo["tablas"].items():
+        campos = info["campos"]
+
+        clave = tuple(
+            features.get(campo, "SIN_DATO")
+            for campo in campos
+        )
+
+        datos = info["datos"].get(clave)
+
+        if not datos:
+            continue
+
+        total = datos["total"]
+
+        if total < 5:
+            continue
+
+        win = datos["win"]
+        activos = len(datos["activos"])
+
+        prob = _probabilidad_suavizada(
+            win,
+            total,
+            prior,
+            fuerza_prior=8.0,
+        )
+
+        if total >= 12 and activos >= 4:
+            peso = 2.0
+        elif total >= 8 and activos >= 2:
+            peso = 1.5
+        else:
+            peso = 1.0
+
+        suma += prob * peso
+        suma_pesos += peso
+
+        fuentes.append({
+            "nombre": nombre,
+            "total": total,
+            "win": win,
+            "activos": activos,
+            "prob": prob,
+            "peso": peso,
+        })
+
+    prob_final = suma / suma_pesos
+
+    return {
+        "probabilidad": round(prob_final * 100, 2),
+        "fuentes": fuentes,
+        "cantidad_fuentes": len(fuentes),
+    }
+
+
+def imprimir_probabilidad_protocolo_train(resultados):
+    """
+    Evalúa si la probabilidad de protocolo construida con TRAIN
+    ordena las entradas ejecutadas de menor a mayor calidad.
+
+    Esta etapa todavía es diagnóstico.
+    """
+
+    if (
+        MODO_EXPERIMENTO
+        != MODO_EXPERIMENTO_AUDITORIA_TRAIN
+    ):
+        return
+
+    operadas = [
+        r for r in resultados
+        if r.get("estado_operacion") == "OPERADA_PROTOCOLO"
+    ]
+
+    print(
+        "\n===== PROBABILIDAD PROTOCOLO — TRAIN ====="
+    )
+
+    if not operadas:
+        print("No hay operaciones de protocolo.")
+        print("==========================================")
+        return
+
+    modelo = construir_modelo_probabilidad_protocolo_train(
+        resultados
+    )
+
+    guardar_modelo_probabilidad_protocolo(
+        modelo
+    )
+
+    print(
+        "Muestra TRAIN:",
+        modelo["total_train"],
+        "| WIN:",
+        modelo["wins_train"],
+        "| prior:",
+        str(round(modelo["prior"] * 100, 2)) + "%",
+    )
+
+    evaluadas = []
+
+    for r in operadas:
+        estimacion = estimar_probabilidad_protocolo(
+            r,
+            modelo,
+        )
+
+        evaluadas.append({
+            "resultado": r.get("resultado"),
+            "prob": estimacion["probabilidad"],
+            "fuentes": estimacion["cantidad_fuentes"],
+            "activo": r.get("activo", ""),
+            "protocolo": r.get(
+                "auditoria_protocolo_tipo",
+                "",
+            ),
+        })
+
+    rangos = [
+        ("<50", None, 50),
+        ("50-54", 50, 55),
+        ("55-59", 55, 60),
+        ("60-64", 60, 65),
+        ("65+", 65, None),
+    ]
+
+    print("\n--- CALIBRACION PROBABILIDAD PROTOCOLO ---")
+
+    for etiqueta, minimo, maximo in rangos:
+        grupo = []
+
+        for r in evaluadas:
+            p = r["prob"]
+
+            if minimo is not None and p < minimo:
+                continue
+
+            if maximo is not None and p >= maximo:
+                continue
+
+            grupo.append(r)
+
+        total = len(grupo)
+
+        wins = sum(
+            1 for r in grupo
+            if r["resultado"] == "WIN"
+        )
+
+        loss = total - wins
+
+        wr = (
+            round((wins / total) * 100, 2)
+            if total
+            else 0
+        )
+
+        activos = len({
+            str(r["activo"])
+            for r in grupo
+            if str(r["activo"])
+        })
+
+        print(
+            etiqueta,
+            "| total:", total,
+            "| win:", wins,
+            "| loss:", loss,
+            "| winrate:", str(wr) + "%",
+            "| activos:", activos,
+        )
+
+    ordenadas = sorted(
+        evaluadas,
+        key=lambda x: x["prob"],
+        reverse=True,
+    )
+
+    print("\n--- TOP CUANTILES PROTOCOLO ---")
+
+    for porcentaje in [25, 40, 50, 60, 75, 100]:
+        n = max(
+            1,
+            int(
+                round(
+                    len(ordenadas)
+                    * porcentaje
+                    / 100
+                )
+            ),
+        )
+
+        grupo = ordenadas[:n]
+
+        wins = sum(
+            1 for r in grupo
+            if r["resultado"] == "WIN"
+        )
+
+        wr = round(
+            (wins / len(grupo)) * 100,
+            2,
+        )
+
+        corte = grupo[-1]["prob"]
+
+        print(
+            "TOP",
+            str(porcentaje) + "%",
+            "| total:", len(grupo),
+            "| winrate:", str(wr) + "%",
+            "| prob mínima:", str(corte) + "%",
+        )
+
+    print("\n--- COBERTURA DE EVIDENCIA ---")
+
+    cobertura = {}
+
+    for r in evaluadas:
+        n = r["fuentes"]
+
+        if n not in cobertura:
+            cobertura[n] = {
+                "total": 0,
+                "win": 0,
+            }
+
+        cobertura[n]["total"] += 1
+
+        if r["resultado"] == "WIN":
+            cobertura[n]["win"] += 1
+
+    for n in sorted(cobertura):
+        datos = cobertura[n]
+        total = datos["total"]
+        win = datos["win"]
+        wr = round((win / total) * 100, 2)
+
+        print(
+            n,
+            "fuentes",
+            "| total:", total,
+            "| winrate:", str(wr) + "%",
+        )
+
+    print("==========================================\n")
+
+
+def imprimir_probabilidad_protocolo_validacion(resultados):
+    """
+    Aplica en VALIDACION el modelo congelado de TRAIN.
+
+    No aprende nada con VALIDACION.
+    No modifica decisiones oficiales.
+    """
+
+    if (
+        MODO_EXPERIMENTO
+        != MODO_EXPERIMENTO_VALIDACION
+    ):
+        return
+
+    operadas = [
+        r for r in resultados
+        if r.get("estado_operacion") == "OPERADA_PROTOCOLO"
+    ]
+
+    print(
+        "\n===== PROBABILIDAD PROTOCOLO — VALIDACION ====="
+    )
+
+    if not operadas:
+        print("No hay operaciones de protocolo en VALIDACION.")
+        print("===============================================")
+        return
+
+    modelo = cargar_modelo_probabilidad_protocolo()
+
+    evaluadas = []
+
+    for r in operadas:
+        estimacion = estimar_probabilidad_protocolo(
+            r,
+            modelo,
+        )
+
+        evaluadas.append({
+            "resultado": r.get("resultado"),
+            "prob": estimacion["probabilidad"],
+            "fuentes": estimacion["cantidad_fuentes"],
+            "activo": r.get("activo", ""),
+            "protocolo": r.get(
+                "auditoria_protocolo_tipo",
+                "",
+            ),
+        })
+
+    rangos = [
+        ("<50", None, 50),
+        ("50-54", 50, 55),
+        ("55-59", 55, 60),
+        ("60-64", 60, 65),
+        ("65+", 65, None),
+    ]
+
+    print("\n--- CALIBRACION PROBABILIDAD PROTOCOLO ---")
+
+    for etiqueta, minimo, maximo in rangos:
+        grupo = []
+
+        for r in evaluadas:
+            p = r["prob"]
+
+            if minimo is not None and p < minimo:
+                continue
+
+            if maximo is not None and p >= maximo:
+                continue
+
+            grupo.append(r)
+
+        total = len(grupo)
+
+        wins = sum(
+            1 for r in grupo
+            if r["resultado"] == "WIN"
+        )
+
+        loss = total - wins
+
+        wr = (
+            round((wins / total) * 100, 2)
+            if total
+            else 0
+        )
+
+        activos = len({
+            str(r["activo"])
+            for r in grupo
+            if str(r["activo"])
+        })
+
+        print(
+            etiqueta,
+            "| total:", total,
+            "| win:", wins,
+            "| loss:", loss,
+            "| winrate:", str(wr) + "%",
+            "| activos:", activos,
+        )
+
+    ordenadas = sorted(
+        evaluadas,
+        key=lambda x: x["prob"],
+        reverse=True,
+    )
+
+    print("\n--- TOP CUANTILES PROTOCOLO ---")
+
+    for porcentaje in [25, 40, 50, 60, 75, 100]:
+        n = max(
+            1,
+            int(
+                round(
+                    len(ordenadas)
+                    * porcentaje
+                    / 100
+                )
+            ),
+        )
+
+        grupo = ordenadas[:n]
+
+        wins = sum(
+            1 for r in grupo
+            if r["resultado"] == "WIN"
+        )
+
+        wr = round(
+            (wins / len(grupo)) * 100,
+            2,
+        )
+
+        corte = grupo[-1]["prob"]
+
+        print(
+            "TOP",
+            str(porcentaje) + "%",
+            "| total:", len(grupo),
+            "| winrate:", str(wr) + "%",
+            "| prob mínima:", str(corte) + "%",
+        )
+
+    print("\n--- SIMULACION DE UMBRALES ---")
+
+    directas = [
+        r for r in resultados
+        if r.get("estado_operacion") == "OPERADA_DIRECTA"
+    ]
+
+    directas_win = sum(
+        1 for r in directas
+        if r.get("resultado") == "WIN"
+    )
+
+    baseline_total = len(directas) + len(operadas)
+    baseline_win = directas_win + sum(
+        1 for r in operadas
+        if r.get("resultado") == "WIN"
+    )
+    baseline_wr = (
+        round((baseline_win / baseline_total) * 100, 2)
+        if baseline_total
+        else 0
+    )
+
+    print(
+        "BASELINE:",
+        baseline_total,
+        "ops |",
+        baseline_win,
+        "WIN | WR:",
+        str(baseline_wr) + "%",
+    )
+
+    for umbral in [50, 55, 57.5, 60, 62.5, 65]:
+        proto_filtradas = [
+            r for r in evaluadas
+            if r["prob"] >= umbral
+        ]
+
+        proto_win = sum(
+            1 for r in proto_filtradas
+            if r["resultado"] == "WIN"
+        )
+
+        total = len(directas) + len(proto_filtradas)
+        wins = directas_win + proto_win
+
+        wr = (
+            round((wins / total) * 100, 2)
+            if total
+            else 0
+        )
+
+        print(
+            "umbral >=",
+            umbral,
+            "| ops:", total,
+            "| WIN:", wins,
+            "| WR:", str(wr) + "%",
+            "| protocolos:", len(proto_filtradas),
+        )
+
+    print("\n--- COBERTURA DE EVIDENCIA ---")
+
+    cobertura = {}
+
+    for r in evaluadas:
+        n = r["fuentes"]
+
+        datos = cobertura.setdefault(
+            n,
+            {"total": 0, "win": 0},
+        )
+
+        datos["total"] += 1
+
+        if r["resultado"] == "WIN":
+            datos["win"] += 1
+
+    for n in sorted(cobertura):
+        datos = cobertura[n]
+        total = datos["total"]
+        win = datos["win"]
+        wr = round((win / total) * 100, 2)
+
+        print(
+            n,
+            "fuentes",
+            "| total:", total,
+            "| winrate:", str(wr) + "%",
+        )
+
+    print("===============================================\n")
+
+
 def imprimir_resumen(resultados):
     operadas = [
         r for r in resultados
@@ -2924,9 +3676,6 @@ def imprimir_resumen(resultados):
     )
 
     imprimir_comparacion_sombra(resultados)
-    imprimir_auditoria_autorizadas_combinaciones(resultados)
-    imprimir_auditoria_principal_respaldo(resultados)
-    imprimir_comparacion_ranking_v3(resultados)
 
     # Reportes de ejecución real.
     imprimir_tabla_resumen(
@@ -2979,71 +3728,59 @@ def imprimir_resumen(resultados):
         resumen_por_lista(resultados, "fortalezas_base"),
         limite=30
     )
-def main():
-    global DATASETS_USADOS_BACKTEST
-    global SALIDA
 
+    imprimir_auditoria_veto_setup(resultados)
+
+    imprimir_auditoria_motor_protocolos(resultados)
+
+    imprimir_probabilidad_protocolo_train(resultados)
+
+    imprimir_probabilidad_protocolo_validacion(resultados)
+
+    imprimir_validacion_recuperacion_sombra(resultados)
+
+
+def main():
     print("BUILD:", BUILD_ID)
-    print("MODO EXPERIMENTO:", MODO_EXPERIMENTO)
     reset_estado()
 
-    datasets = cargar_datasets()
-    datasets = seleccionar_top_datasets(
-        datasets,
-        limite=MAX_ACTIVOS_ANALIZAR,
+    datasets_cargados = cargar_datasets()
+
+    datasets_seleccionados = seleccionar_top_datasets(
+        datasets_cargados,
+        limite=MAX_ACTIVOS_ANALIZAR
     )
 
+    # Auditoría general del filtro de datasets.
     imprimir_auditoria_datasets()
 
-    datasets = seleccionar_datasets_experimento(datasets)
-    SALIDA = configurar_salida_experimento()
+    # División experimental blindada:
+    # 12 TRAIN + 4 VALIDACIÓN.
+    datasets = seleccionar_datasets_experimento(
+        datasets_seleccionados
+    )
 
+    global DATASETS_USADOS_BACKTEST
     DATASETS_USADOS_BACKTEST = len(datasets)
 
-    print()
-    print("Datasets usados en esta ejecución:", len(datasets))
-    print("Salida CSV:", SALIDA)
-    print("Actualizar aprendizaje:", ACTUALIZAR_APRENDIZAJE)
-    print("Ejecutando backtest usando analizar_activo() real...")
+    print(
+        "\nDatasets cargados para esta ejecución:",
+        len(datasets),
+    )
+
+    print(
+        "Ejecutando backtest usando analizar_activo() real..."
+    )
 
     resultados = ejecutar_backtest(datasets)
 
     guardar_resultados(resultados)
 
-    if MODO_EXPERIMENTO == MODO_EXPERIMENTO_VALIDACION:
-        if ACTUALIZAR_APRENDIZAJE:
-            raise RuntimeError(
-                "Protección anti-fuga: la validación no puede "
-                "sobrescribir el aprendizaje."
-            )
-
-        print(
-            "Validación fuera de muestra: aprendizaje histórico "
-            "congelado."
-        )
-
-    elif MODO_EXPERIMENTO == MODO_EXPERIMENTO_AUDITORIA_TRAIN:
-        if ACTUALIZAR_APRENDIZAJE:
-            raise RuntimeError(
-                "Protección anti-fuga: AUDITORIA_TRAIN no puede "
-                "sobrescribir el aprendizaje."
-            )
-
-        print(
-            "Auditoría TRAIN: 12 datasets de entrenamiento "
-            "con aprendizaje histórico congelado."
-        )
-
-    elif ACTUALIZAR_APRENDIZAJE:
+    if ACTUALIZAR_APRENDIZAJE:
         generar_aprendizaje_desde_resultados(
             resultados,
             incluir_hipoteticos=True,
         )
-        print(
-            "Entrenamiento terminado: aprendizaje generado "
-            "únicamente con el grupo de entrenamiento."
-        )
-
     else:
         print(
             "Aprendizaje histórico congelado: "
@@ -3053,7 +3790,5 @@ def main():
     imprimir_resumen(resultados)
 
     print("Archivo generado:", SALIDA)
-
-
 if __name__ == "__main__":
     main()

@@ -1,0 +1,2922 @@
+{
+  "version": 1,
+  "prior": 0.5695364238410596,
+  "total_train": 151,
+  "wins_train": 86,
+  "tablas": {
+    "PROTOCOLO_SUBTIPO": {
+      "campos": [
+        "protocolo",
+        "subtipo"
+      ],
+      "datos": [
+        {
+          "clave": [
+            "PULLBACK",
+            "PULLBACK_GENERICO"
+          ],
+          "total": 36,
+          "win": 19,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "SWEEP_SIMPLE"
+          ],
+          "total": 18,
+          "win": 12,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "SWEEP_RUPTURA_CONFIRMABLE"
+          ],
+          "total": 29,
+          "win": 19,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "SWEEP_CON_RECHAZO_AGOTAMIENTO"
+          ],
+          "total": 4,
+          "win": 0,
+          "activos": [
+            "AIG-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "US2000-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "CHOCH_CON_PA_A_FAVOR"
+          ],
+          "total": 21,
+          "win": 14,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "ZONA_GENERICA"
+          ],
+          "total": 11,
+          "win": 7,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "SWEEP_RUPTURA_CONFIRMABLE"
+          ],
+          "total": 21,
+          "win": 11,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "SWEEP_CON_RECHAZO_AGOTAMIENTO"
+          ],
+          "total": 9,
+          "win": 3,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "ZONA_SIN_RUPTURA"
+          ],
+          "total": 2,
+          "win": 1,
+          "activos": [
+            "MANAUSD-OTC",
+            "NZDJPY-OTC"
+          ]
+        }
+      ]
+    },
+    "PROTOCOLO_MERCADO": {
+      "campos": [
+        "protocolo",
+        "mercado"
+      ],
+      "datos": [
+        {
+          "clave": [
+            "PULLBACK",
+            "TENDENCIA_BAJISTA"
+          ],
+          "total": 35,
+          "win": 18,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "TENDENCIA_BAJISTA"
+          ],
+          "total": 24,
+          "win": 17,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "RANGO"
+          ],
+          "total": 22,
+          "win": 13,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "RANGO"
+          ],
+          "total": 8,
+          "win": 5,
+          "activos": [
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "TENDENCIA_BAJISTA"
+          ],
+          "total": 21,
+          "win": 14,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "RANGO"
+          ],
+          "total": 6,
+          "win": 3,
+          "activos": [
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "NZDCHF-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "TENDENCIA_BAJISTA"
+          ],
+          "total": 14,
+          "win": 5,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "TENDENCIA_ALCISTA"
+          ],
+          "total": 10,
+          "win": 4,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "USDMXN-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "TENDENCIA_ALCISTA"
+          ],
+          "total": 5,
+          "win": 2,
+          "activos": [
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "TENDENCIA_ALCISTA"
+          ],
+          "total": 1,
+          "win": 1,
+          "activos": [
+            "NZDJPY-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "TENDENCIA_BAJISTA"
+          ],
+          "total": 4,
+          "win": 3,
+          "activos": [
+            "AIG-OTC",
+            "NZDJPY-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "TENDENCIA_ALCISTA"
+          ],
+          "total": 1,
+          "win": 1,
+          "activos": [
+            "COFFEE-OTC"
+          ]
+        }
+      ]
+    },
+    "PROTOCOLO_RIESGO": {
+      "campos": [
+        "protocolo",
+        "riesgo"
+      ],
+      "datos": [
+        {
+          "clave": [
+            "PULLBACK",
+            "MUY_BAJO"
+          ],
+          "total": 20,
+          "win": 8,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "BAJO"
+          ],
+          "total": 25,
+          "win": 13,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "BAJO"
+          ],
+          "total": 11,
+          "win": 5,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDJPY-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "ALTO"
+          ],
+          "total": 12,
+          "win": 10,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDJPY-OTC",
+            "USDMXN-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "MEDIO"
+          ],
+          "total": 12,
+          "win": 9,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "MUY_BAJO"
+          ],
+          "total": 4,
+          "win": 1,
+          "activos": [
+            "EURCAD-OTC",
+            "NZDJPY-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "MUY_BAJO"
+          ],
+          "total": 9,
+          "win": 5,
+          "activos": [
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "MUY_BAJO"
+          ],
+          "total": 7,
+          "win": 4,
+          "activos": [
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "MUY_BAJO"
+          ],
+          "total": 17,
+          "win": 11,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "MEDIO"
+          ],
+          "total": 4,
+          "win": 3,
+          "activos": [
+            "AIG-OTC",
+            "NZDCHF-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "ALTO"
+          ],
+          "total": 6,
+          "win": 2,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "BAJO"
+          ],
+          "total": 16,
+          "win": 11,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "BAJO"
+          ],
+          "total": 3,
+          "win": 3,
+          "activos": [
+            "COFFEE-OTC",
+            "NZDCHF-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "MEDIO"
+          ],
+          "total": 2,
+          "win": 0,
+          "activos": [
+            "COFFEE-OTC",
+            "USDMXN-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "MEDIO"
+          ],
+          "total": 3,
+          "win": 1,
+          "activos": [
+            "HK33-OTC",
+            "MANAUSD-OTC",
+            "NZDJPY-OTC"
+          ]
+        }
+      ]
+    },
+    "PROTOCOLO_CONFIRMACION": {
+      "campos": [
+        "protocolo",
+        "confirmacion"
+      ],
+      "datos": [
+        {
+          "clave": [
+            "PULLBACK",
+            "ALTO"
+          ],
+          "total": 29,
+          "win": 13,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "ALTO"
+          ],
+          "total": 46,
+          "win": 29,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "ALTO"
+          ],
+          "total": 22,
+          "win": 8,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "ALTO"
+          ],
+          "total": 17,
+          "win": 11,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "ALTO"
+          ],
+          "total": 11,
+          "win": 7,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "MEDIO"
+          ],
+          "total": 4,
+          "win": 3,
+          "activos": [
+            "MANAUSD-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "MEDIO"
+          ],
+          "total": 10,
+          "win": 5,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "MEDIO"
+          ],
+          "total": 5,
+          "win": 4,
+          "activos": [
+            "LTCUSD-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "MEDIO"
+          ],
+          "total": 7,
+          "win": 6,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "USDSGD-OTC"
+          ]
+        }
+      ]
+    },
+    "PROTOCOLO_ESPERA": {
+      "campos": [
+        "protocolo",
+        "espera"
+      ],
+      "datos": [
+        {
+          "clave": [
+            "PULLBACK",
+            "4"
+          ],
+          "total": 10,
+          "win": 4,
+          "activos": [
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "2"
+          ],
+          "total": 28,
+          "win": 16,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "5+"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "LTCUSD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "3"
+          ],
+          "total": 19,
+          "win": 12,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "1"
+          ],
+          "total": 10,
+          "win": 6,
+          "activos": [
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "1"
+          ],
+          "total": 3,
+          "win": 2,
+          "activos": [
+            "EURCAD-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "2"
+          ],
+          "total": 7,
+          "win": 4,
+          "activos": [
+            "AIG-OTC",
+            "HK33-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "1"
+          ],
+          "total": 8,
+          "win": 3,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "NZDJPY-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "2"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "NZDCHF-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "4"
+          ],
+          "total": 9,
+          "win": 6,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "US2000-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "4"
+          ],
+          "total": 3,
+          "win": 3,
+          "activos": [
+            "US2000-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "3"
+          ],
+          "total": 4,
+          "win": 1,
+          "activos": [
+            "AIG-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "3"
+          ],
+          "total": 9,
+          "win": 7,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "US2000-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "0"
+          ],
+          "total": 6,
+          "win": 4,
+          "activos": [
+            "COFFEE-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "4"
+          ],
+          "total": 2,
+          "win": 1,
+          "activos": [
+            "US2000-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "1"
+          ],
+          "total": 7,
+          "win": 4,
+          "activos": [
+            "AIG-OTC",
+            "HK33-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "2"
+          ],
+          "total": 12,
+          "win": 7,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "2"
+          ],
+          "total": 7,
+          "win": 2,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "NZDCHF-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "5+"
+          ],
+          "total": 3,
+          "win": 2,
+          "activos": [
+            "COFFEE-OTC",
+            "LTCUSD-OTC",
+            "US2000-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "3"
+          ],
+          "total": 1,
+          "win": 1,
+          "activos": [
+            "NZDJPY-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "3"
+          ],
+          "total": 1,
+          "win": 1,
+          "activos": [
+            "AIG-OTC"
+          ]
+        }
+      ]
+    },
+    "PROTOCOLO_PA": {
+      "campos": [
+        "protocolo",
+        "pa"
+      ],
+      "datos": [
+        {
+          "clave": [
+            "PULLBACK",
+            "RECHAZO_VENDEDOR_OBSERVADO"
+          ],
+          "total": 6,
+          "win": 2,
+          "activos": [
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "US2000-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "IMPULSO_BAJISTA_MEDIO"
+          ],
+          "total": 8,
+          "win": 6,
+          "activos": [
+            "LTCUSD-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "IMPULSO_ALCISTA_MEDIO"
+          ],
+          "total": 6,
+          "win": 4,
+          "activos": [
+            "AIG-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "US2000-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "RECHAZO_VENDEDOR_OBSERVADO"
+          ],
+          "total": 2,
+          "win": 0,
+          "activos": [
+            "LTCUSD-OTC",
+            "US2000-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "IMPULSO_ALCISTA_AGOTANDOSE"
+          ],
+          "total": 11,
+          "win": 8,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "IMPULSO_BAJISTA_MEDIO"
+          ],
+          "total": 21,
+          "win": 14,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "IMPULSO_BAJISTA_MEDIO"
+          ],
+          "total": 7,
+          "win": 3,
+          "activos": [
+            "AIG-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "SIN_CONTEXTO_CLARO"
+          ],
+          "total": 7,
+          "win": 5,
+          "activos": [
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "RECHAZO_VENDEDOR_OBSERVADO"
+          ],
+          "total": 6,
+          "win": 2,
+          "activos": [
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "SIN_CONTEXTO_CLARO"
+          ],
+          "total": 14,
+          "win": 9,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "IMPULSO_BAJISTA_MEDIO"
+          ],
+          "total": 9,
+          "win": 4,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "IMPULSO_BAJISTA_MEDIO"
+          ],
+          "total": 13,
+          "win": 5,
+          "activos": [
+            "AIG-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "RECHAZO_COMPRADOR_HISTORICO"
+          ],
+          "total": 2,
+          "win": 1,
+          "activos": [
+            "COFFEE-OTC",
+            "USDMXN-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "IMPULSO_BAJISTA_FUERTE"
+          ],
+          "total": 2,
+          "win": 1,
+          "activos": [
+            "COFFEE-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "IMPULSO_ALCISTA_FUERTE"
+          ],
+          "total": 4,
+          "win": 2,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "NZDCHF-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "IMPULSO_ALCISTA_AGOTANDOSE"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "IMPULSO_BAJISTA_FUERTE"
+          ],
+          "total": 3,
+          "win": 1,
+          "activos": [
+            "COFFEE-OTC",
+            "NZDJPY-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "IMPULSO_ALCISTA_MEDIO"
+          ],
+          "total": 5,
+          "win": 3,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "IMPULSO_ALCISTA_AGOTANDOSE"
+          ],
+          "total": 11,
+          "win": 8,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "RECHAZO_VENDEDOR_HISTORICO"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "AIG-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "IMPULSO_BAJISTA_AGOTANDOSE"
+          ],
+          "total": 2,
+          "win": 1,
+          "activos": [
+            "USDMXN-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "AGOTAMIENTO_ALCISTA_CONFIRMADO"
+          ],
+          "total": 3,
+          "win": 3,
+          "activos": [
+            "COFFEE-OTC",
+            "NZDCHF-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "IMPULSO_BAJISTA_AGOTANDOSE"
+          ],
+          "total": 2,
+          "win": 2,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "RECHAZO_COMPRADOR_OBSERVADO"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "AIG-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "RECHAZO_COMPRADOR_OBSERVADO"
+          ],
+          "total": 1,
+          "win": 1,
+          "activos": [
+            "NZDJPY-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "AGOTAMIENTO_BAJISTA_CONFIRMADO"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "NZDJPY-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "SIN_CONTEXTO_CLARO"
+          ],
+          "total": 1,
+          "win": 1,
+          "activos": [
+            "EURCAD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "RECHAZO_COMPRADOR_OBSERVADO"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "HK33-OTC"
+          ]
+        }
+      ]
+    },
+    "PROTOCOLO_MERCADO_RIESGO": {
+      "campos": [
+        "protocolo",
+        "mercado",
+        "riesgo"
+      ],
+      "datos": [
+        {
+          "clave": [
+            "PULLBACK",
+            "TENDENCIA_BAJISTA",
+            "MUY_BAJO"
+          ],
+          "total": 19,
+          "win": 7,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "TENDENCIA_BAJISTA",
+            "BAJO"
+          ],
+          "total": 11,
+          "win": 6,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "RANGO",
+            "BAJO"
+          ],
+          "total": 11,
+          "win": 6,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "RANGO",
+            "BAJO"
+          ],
+          "total": 4,
+          "win": 2,
+          "activos": [
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "TENDENCIA_BAJISTA",
+            "ALTO"
+          ],
+          "total": 8,
+          "win": 7,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "USDMXN-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "TENDENCIA_BAJISTA",
+            "MEDIO"
+          ],
+          "total": 12,
+          "win": 9,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "RANGO",
+            "MUY_BAJO"
+          ],
+          "total": 3,
+          "win": 1,
+          "activos": [
+            "EURCAD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "TENDENCIA_BAJISTA",
+            "MUY_BAJO"
+          ],
+          "total": 9,
+          "win": 5,
+          "activos": [
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "TENDENCIA_BAJISTA",
+            "MUY_BAJO"
+          ],
+          "total": 3,
+          "win": 1,
+          "activos": [
+            "EURCAD-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "RANGO",
+            "MUY_BAJO"
+          ],
+          "total": 9,
+          "win": 6,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "TENDENCIA_ALCISTA",
+            "MUY_BAJO"
+          ],
+          "total": 3,
+          "win": 1,
+          "activos": [
+            "NZDCHF-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "RANGO",
+            "MEDIO"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "NZDCHF-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "TENDENCIA_BAJISTA",
+            "ALTO"
+          ],
+          "total": 4,
+          "win": 1,
+          "activos": [
+            "AIG-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "TENDENCIA_ALCISTA",
+            "BAJO"
+          ],
+          "total": 3,
+          "win": 1,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "NZDCHF-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "TENDENCIA_ALCISTA",
+            "ALTO"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "US2000-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "TENDENCIA_ALCISTA",
+            "MUY_BAJO"
+          ],
+          "total": 2,
+          "win": 1,
+          "activos": [
+            "NZDCHF-OTC",
+            "USDMXN-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "RANGO",
+            "ALTO"
+          ],
+          "total": 1,
+          "win": 1,
+          "activos": [
+            "COFFEE-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "RANGO",
+            "MUY_BAJO"
+          ],
+          "total": 2,
+          "win": 2,
+          "activos": [
+            "LTCUSD-OTC",
+            "US2000-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "TENDENCIA_BAJISTA",
+            "BAJO"
+          ],
+          "total": 6,
+          "win": 3,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "TENDENCIA_BAJISTA",
+            "BAJO"
+          ],
+          "total": 16,
+          "win": 11,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "TENDENCIA_ALCISTA",
+            "ALTO"
+          ],
+          "total": 2,
+          "win": 2,
+          "activos": [
+            "NZDJPY-OTC",
+            "USDMXN-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "RANGO",
+            "BAJO"
+          ],
+          "total": 2,
+          "win": 2,
+          "activos": [
+            "COFFEE-OTC",
+            "NZDCHF-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "TENDENCIA_ALCISTA",
+            "BAJO"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "NZDJPY-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "TENDENCIA_ALCISTA",
+            "MUY_BAJO"
+          ],
+          "total": 1,
+          "win": 1,
+          "activos": [
+            "NZDJPY-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "TENDENCIA_BAJISTA",
+            "MUY_BAJO"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "NZDJPY-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "TENDENCIA_BAJISTA",
+            "MUY_BAJO"
+          ],
+          "total": 5,
+          "win": 4,
+          "activos": [
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "US2000-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "TENDENCIA_ALCISTA",
+            "MEDIO"
+          ],
+          "total": 2,
+          "win": 0,
+          "activos": [
+            "COFFEE-OTC",
+            "USDMXN-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "RANGO",
+            "ALTO"
+          ],
+          "total": 2,
+          "win": 1,
+          "activos": [
+            "LTCUSD-OTC",
+            "USDMXN-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "TENDENCIA_ALCISTA",
+            "BAJO"
+          ],
+          "total": 1,
+          "win": 1,
+          "activos": [
+            "COFFEE-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "TENDENCIA_BAJISTA",
+            "MEDIO"
+          ],
+          "total": 3,
+          "win": 3,
+          "activos": [
+            "AIG-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "TENDENCIA_ALCISTA",
+            "MEDIO"
+          ],
+          "total": 1,
+          "win": 1,
+          "activos": [
+            "MANAUSD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "RANGO",
+            "MEDIO"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "NZDJPY-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "TENDENCIA_BAJISTA",
+            "MEDIO"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "HK33-OTC"
+          ]
+        }
+      ]
+    },
+    "PROTOCOLO_SUBTIPO_ESPERA": {
+      "campos": [
+        "protocolo",
+        "subtipo",
+        "espera"
+      ],
+      "datos": [
+        {
+          "clave": [
+            "PULLBACK",
+            "PULLBACK_GENERICO",
+            "4"
+          ],
+          "total": 10,
+          "win": 4,
+          "activos": [
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "SWEEP_SIMPLE",
+            "2"
+          ],
+          "total": 8,
+          "win": 5,
+          "activos": [
+            "AIG-OTC",
+            "LTCUSD-OTC",
+            "NZDJPY-OTC",
+            "USDMXN-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "SWEEP_RUPTURA_CONFIRMABLE",
+            "2"
+          ],
+          "total": 14,
+          "win": 10,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "SWEEP_CON_RECHAZO_AGOTAMIENTO",
+            "5+"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "LTCUSD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "SWEEP_RUPTURA_CONFIRMABLE",
+            "3"
+          ],
+          "total": 8,
+          "win": 5,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "CHOCH_CON_PA_A_FAVOR",
+            "1"
+          ],
+          "total": 10,
+          "win": 6,
+          "activos": [
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "ZONA_GENERICA",
+            "1"
+          ],
+          "total": 3,
+          "win": 2,
+          "activos": [
+            "EURCAD-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "SWEEP_SIMPLE",
+            "3"
+          ],
+          "total": 8,
+          "win": 5,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "US2000-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "CHOCH_CON_PA_A_FAVOR",
+            "2"
+          ],
+          "total": 7,
+          "win": 4,
+          "activos": [
+            "AIG-OTC",
+            "HK33-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "SWEEP_RUPTURA_CONFIRMABLE",
+            "1"
+          ],
+          "total": 6,
+          "win": 3,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "NZDJPY-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "SWEEP_CON_RECHAZO_AGOTAMIENTO",
+            "3"
+          ],
+          "total": 3,
+          "win": 2,
+          "activos": [
+            "COFFEE-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "ZONA_GENERICA",
+            "2"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "NZDCHF-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "SWEEP_RUPTURA_CONFIRMABLE",
+            "4"
+          ],
+          "total": 7,
+          "win": 4,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "US2000-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "CHOCH_CON_PA_A_FAVOR",
+            "4"
+          ],
+          "total": 3,
+          "win": 3,
+          "activos": [
+            "US2000-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "SWEEP_RUPTURA_CONFIRMABLE",
+            "3"
+          ],
+          "total": 3,
+          "win": 0,
+          "activos": [
+            "AIG-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "PULLBACK_GENERICO",
+            "3"
+          ],
+          "total": 9,
+          "win": 7,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "US2000-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "ZONA_GENERICA",
+            "0"
+          ],
+          "total": 6,
+          "win": 4,
+          "activos": [
+            "COFFEE-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "SWEEP_CON_RECHAZO_AGOTAMIENTO",
+            "4"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "US2000-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "PULLBACK_GENERICO",
+            "1"
+          ],
+          "total": 7,
+          "win": 4,
+          "activos": [
+            "AIG-OTC",
+            "HK33-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "SWEEP_RUPTURA_CONFIRMABLE",
+            "2"
+          ],
+          "total": 11,
+          "win": 7,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "PULLBACK_GENERICO",
+            "2"
+          ],
+          "total": 7,
+          "win": 2,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "NZDCHF-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "SWEEP_SIMPLE",
+            "4"
+          ],
+          "total": 2,
+          "win": 2,
+          "activos": [
+            "LTCUSD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "PULLBACK_GENERICO",
+            "5+"
+          ],
+          "total": 3,
+          "win": 2,
+          "activos": [
+            "COFFEE-OTC",
+            "LTCUSD-OTC",
+            "US2000-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "SWEEP_CON_RECHAZO_AGOTAMIENTO",
+            "2"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "AIG-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "CHOCH_CON_PA_A_FAVOR",
+            "3"
+          ],
+          "total": 1,
+          "win": 1,
+          "activos": [
+            "NZDJPY-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "SWEEP_CON_RECHAZO_AGOTAMIENTO",
+            "2"
+          ],
+          "total": 6,
+          "win": 1,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "USDMXN-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "ZONA_GENERICA",
+            "3"
+          ],
+          "total": 1,
+          "win": 1,
+          "activos": [
+            "AIG-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "ZONA_SIN_RUPTURA",
+            "3"
+          ],
+          "total": 1,
+          "win": 1,
+          "activos": [
+            "MANAUSD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "ZONA_SIN_RUPTURA",
+            "1"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "NZDJPY-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "SWEEP_RUPTURA_CONFIRMABLE",
+            "4"
+          ],
+          "total": 1,
+          "win": 1,
+          "activos": [
+            "US2000-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "SWEEP_CON_RECHAZO_AGOTAMIENTO",
+            "1"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "HK33-OTC"
+          ]
+        }
+      ]
+    },
+    "PROTOCOLO_CONFIRMACION_ESPERA": {
+      "campos": [
+        "protocolo",
+        "confirmacion",
+        "espera"
+      ],
+      "datos": [
+        {
+          "clave": [
+            "PULLBACK",
+            "ALTO",
+            "4"
+          ],
+          "total": 10,
+          "win": 4,
+          "activos": [
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "ALTO",
+            "2"
+          ],
+          "total": 26,
+          "win": 15,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "ALTO",
+            "5+"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "LTCUSD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "ALTO",
+            "3"
+          ],
+          "total": 14,
+          "win": 10,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "ALTO",
+            "1"
+          ],
+          "total": 8,
+          "win": 4,
+          "activos": [
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "USDMXN-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "ALTO",
+            "1"
+          ],
+          "total": 3,
+          "win": 2,
+          "activos": [
+            "EURCAD-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "ALTO",
+            "2"
+          ],
+          "total": 6,
+          "win": 4,
+          "activos": [
+            "AIG-OTC",
+            "HK33-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "MEDIO",
+            "1"
+          ],
+          "total": 2,
+          "win": 2,
+          "activos": [
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "ALTO",
+            "1"
+          ],
+          "total": 7,
+          "win": 2,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "NZDJPY-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "MEDIO",
+            "3"
+          ],
+          "total": 5,
+          "win": 2,
+          "activos": [
+            "AIG-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "ALTO",
+            "2"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "NZDCHF-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "ALTO",
+            "4"
+          ],
+          "total": 6,
+          "win": 4,
+          "activos": [
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "US2000-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "ALTO",
+            "4"
+          ],
+          "total": 2,
+          "win": 2,
+          "activos": [
+            "US2000-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "ALTO",
+            "3"
+          ],
+          "total": 4,
+          "win": 1,
+          "activos": [
+            "AIG-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "ALTO",
+            "3"
+          ],
+          "total": 6,
+          "win": 4,
+          "activos": [
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "US2000-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "ALTO",
+            "0"
+          ],
+          "total": 6,
+          "win": 4,
+          "activos": [
+            "COFFEE-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "ALTO",
+            "4"
+          ],
+          "total": 2,
+          "win": 1,
+          "activos": [
+            "US2000-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "ALTO",
+            "1"
+          ],
+          "total": 7,
+          "win": 4,
+          "activos": [
+            "AIG-OTC",
+            "HK33-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "ALTO",
+            "2"
+          ],
+          "total": 8,
+          "win": 4,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "MEDIO",
+            "4"
+          ],
+          "total": 3,
+          "win": 2,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "MEDIO",
+            "2"
+          ],
+          "total": 4,
+          "win": 3,
+          "activos": [
+            "LTCUSD-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "MEDIO",
+            "2"
+          ],
+          "total": 3,
+          "win": 2,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "MEDIO",
+            "1"
+          ],
+          "total": 1,
+          "win": 1,
+          "activos": [
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "MEDIO",
+            "5+"
+          ],
+          "total": 1,
+          "win": 1,
+          "activos": [
+            "COFFEE-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "ALTO",
+            "5+"
+          ],
+          "total": 2,
+          "win": 1,
+          "activos": [
+            "LTCUSD-OTC",
+            "US2000-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "ALTO",
+            "3"
+          ],
+          "total": 1,
+          "win": 1,
+          "activos": [
+            "NZDJPY-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "MEDIO",
+            "3"
+          ],
+          "total": 3,
+          "win": 3,
+          "activos": [
+            "AIG-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "PULLBACK",
+            "ALTO",
+            "2"
+          ],
+          "total": 4,
+          "win": 0,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "NZDCHF-OTC",
+            "USDMXN-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "MEDIO",
+            "2"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "MANAUSD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "MEDIO",
+            "2"
+          ],
+          "total": 2,
+          "win": 1,
+          "activos": [
+            "HK33-OTC",
+            "USDMXN-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "REACCION_ZONA",
+            "ALTO",
+            "3"
+          ],
+          "total": 1,
+          "win": 1,
+          "activos": [
+            "AIG-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "MEDIO",
+            "4"
+          ],
+          "total": 1,
+          "win": 1,
+          "activos": [
+            "US2000-OTC"
+          ]
+        }
+      ]
+    }
+  }
+}

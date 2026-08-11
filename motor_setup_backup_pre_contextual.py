@@ -1,11 +1,5 @@
 # motor_setup.py
 
-
-# ============================================================
-# SETUP CONTEXTUAL — MODO DIAGNÓSTICO
-# ============================================================
-SETUP_PUNTUACION_CONTEXTUAL_OPERATIVA = False
-
 def _txt(v):
     return str(v or "").upper().strip()
 
@@ -460,49 +454,32 @@ def calcular_confianza_setup_por_capas(senal, identidad_setup):
 
 def clasificar_setup(senal):
     identidad_setup = identificar_setup(senal)
+
     familia_setup = identidad_setup["familia_setup"]
     subtipo_setup = identidad_setup["subtipo_setup"]
     protocolo_sugerido = identidad_setup["protocolo_sugerido"]
 
-    confianza_diagnostico, razones = calcular_confianza_setup_por_capas(
+    confianza_setup, razones = calcular_confianza_setup_por_capas(
         senal,
-        identidad_setup,
-    )
-
-    nivel_diagnostico, estado_diagnostico = _nivel_estado_desde_confianza(
-        confianza_diagnostico
+        identidad_setup
     )
 
     direccion = _txt(senal.get("direccion", ""))
     accion_precio = _txt(senal.get("accion_precio", ""))
 
-    if (
-        "CALL_RESISTENCIA_CERCA_SIN_RUPTURA" in accion_precio
-        and direccion == "CALL"
-    ):
+    if "CALL_RESISTENCIA_CERCA_SIN_RUPTURA" in accion_precio and direccion == "CALL":
         protocolo_sugerido = "PROTOCOLO_RUPTURA_RESISTENCIA"
 
-    if SETUP_PUNTUACION_CONTEXTUAL_OPERATIVA:
-        confianza_operativa = confianza_diagnostico
-        nivel_operativo = nivel_diagnostico
-        estado_operativo = estado_diagnostico
-    else:
-        confianza_operativa = 50.0
-        nivel_operativo = "MEDIO"
-        estado_operativo = "PENDIENTE_CONFIRMACION"
+    nivel_setup, estado_setup = _nivel_estado_desde_confianza(confianza_setup)
 
     return {
         "familia_setup": familia_setup,
         "subtipo_setup": subtipo_setup,
         "protocolo_sugerido": protocolo_sugerido,
-        "nivel_setup": nivel_operativo,
-        "estado_setup": estado_operativo,
-        "confianza_setup": confianza_operativa,
-        "nivel_setup_diagnostico": nivel_diagnostico,
-        "estado_setup_diagnostico": estado_diagnostico,
-        "confianza_setup_diagnostico": round(confianza_diagnostico, 2),
+        "nivel_setup": nivel_setup,
+        "estado_setup": estado_setup,
+        "confianza_setup": confianza_setup,
         "razones_clasificador_setup": " | ".join(razones),
-        "setup_puntuacion_contextual_operativa": SETUP_PUNTUACION_CONTEXTUAL_OPERATIVA,
     }
 
 

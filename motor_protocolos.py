@@ -2,6 +2,20 @@
 from motor_confirmacion import decidir_confirmacion
 from motor_riesgo import evaluar_riesgo_protocolo
 
+# ============================================================
+# VETO GENERAL DEL SETUP — LEGACY OPCIONAL
+# ============================================================
+# False:
+# - motor_protocolos NO cancela automáticamente porque
+#   motor_setup haya marcado riesgo_estructural_critico_setup;
+# - la señal debe fallar una confirmación técnica real para
+#   ser descartada;
+# - el dato se conserva como diagnóstico.
+#
+# True:
+# - restaura temporalmente el comportamiento anterior.
+PROTOCOLO_VETO_SETUP_LEGACY_ACTIVO = True
+
 def _txt(v):
     return str(v or "").lower().strip()
 
@@ -156,9 +170,12 @@ def _riesgo_cancelacion(senal):
 
     Solo cancela por:
     - bloqueo duro del cerebro;
-    - riesgo estructural crítico del setup;
     - calidad extremadamente baja;
     - riesgo de protocolo crítico.
+
+    El veto general por riesgo estructural crítico del setup queda
+    disponible solo en modo legacy mediante
+    PROTOCOLO_VETO_SETUP_LEGACY_ACTIVO.
     """
 
     # Campo legacy: respaldo temporal.
@@ -198,7 +215,10 @@ def _riesgo_cancelacion(senal):
 
     # Ya no se interpreta NO_OPERAR directamente.
     # Se utiliza la evidencia neutral generada por motor_setup.
-    if riesgo_critico_setup:
+    if (
+        PROTOCOLO_VETO_SETUP_LEGACY_ACTIVO
+        and riesgo_critico_setup
+    ):
         return True, "CANCELADA_SETUP_NO_OPERAR"
 
     if calidad in ["muy_baja", "baja"]:
@@ -206,6 +226,14 @@ def _riesgo_cancelacion(senal):
 
     if riesgo >= 85:
         return True, "CANCELADA_RIESGO_PROTOCOLO_CRITICO"
+
+    # Riesgo crítico del setup queda disponible como diagnóstico,
+    # pero no veta automáticamente cuando el modo legacy está apagado.
+    if (
+        riesgo_critico_setup
+        and not PROTOCOLO_VETO_SETUP_LEGACY_ACTIVO
+    ):
+        senal["veto_setup_legacy_omitido"] = True
 
     return False, ""
 def _entrada_directa_permitida(senal):
@@ -645,55 +673,266 @@ def _protocolo_generico(velas, idx, senal):
 
     return None, "CANCELADA_GENERICO_SIN_CONFIRMACION"
 
+def _registrar_auditoria_protocolo(
+    senal,
+    idx_senal,
+    idx_entrada,
+    motivo,
+    protocolo,
+):
+    """
+    Registra cómo motor_protocolos llegó a su resultado.
 
+    No modifica ninguna decisión.
+    Solo añade diagnóstico para backtest.
+    """
+
+    if idx_entrada is None:
+        espera = None
+        operada = False
+    else:
+        espera = idx_entrada - idx_senal
+        operada = True
+
+    senal["auditoria_protocolo_tipo"] = protocolo
+
+    senal["auditoria_protocolo_subtipo"] = _txt(
+        senal.get("subtipo_setup")
+    )
+
+    senal["auditoria_protocolo_familia"] = _txt(
+        senal.get("familia_setup")
+    )
+
+    senal["auditoria_protocolo_operada"] = operada
+
+    senal["auditoria_protocolo_idx_senal"] = idx_senal
+
+    senal["auditoria_protocolo_idx_entrada"] = (
+        idx_entrada
+        if idx_entrada is not None
+        else -1
+    )
+
+    senal["auditoria_protocolo_espera_velas"] = (
+        espera
+        if espera is not None
+        else -1
+    )
+
+    senal["auditoria_protocolo_motivo"] = motivo
+
+    senal["auditoria_protocolo_riesgo"] = senal.get(
+        "riesgo_protocolo",
+        0,
+    )
+
+    senal["auditoria_protocolo_nivel_riesgo"] = senal.get(
+        "nivel_riesgo_protocolo",
+        "",
+    )
+
+    senal["auditoria_protocolo_indice_confirmacion"] = senal.get(
+        "indice_confirmacion_ia",
+        0,
+    )
+
+    senal["auditoria_protocolo_nivel_confirmacion"] = senal.get(
+        "nivel_confirmacion_ia",
+        "",
+    )
+
+    senal["auditoria_protocolo_accion_confirmacion"] = senal.get(
+        "accion_confirmacion_ia",
+        "",
+    )
+
+    senal["auditoria_protocolo_tipo_mercado"] = senal.get(
+        "tipo_mercado",
+        "",
+    )
+
+    senal["auditoria_protocolo_tendencia"] = senal.get(
+        "estado_tendencia",
+        "",
+    )
+
+    senal["auditoria_protocolo_pa_tipo"] = senal.get(
+        "pa_tipo",
+        "",
+    )
+
+    senal["auditoria_protocolo_probabilidad"] = senal.get(
+        "probabilidad_estimada",
+        0,
+    )
+
+    return idx_entrada, motivo
 def buscar_entrada_confirmada(velas, idx, senal):
+    """
+    Orquestador de protocolos.
+
+    En esta fase mantiene exactamente la misma autoridad y reglas,
+    pero registra cómo terminó cada evaluación para poder detectar
+    qué protocolos/timings están degradando las señales de V3.
+    """
+
     if idx >= len(velas) - 2:
-        return None, "CANCELADA_SIN_VELAS_FUTURAS"
+        return _registrar_auditoria_protocolo(
+            senal,
+            idx,
+            None,
+            "CANCELADA_SIN_VELAS_FUTURAS",
+            "SIN_PROTOCOLO",
+        )
 
-    diagnostico_riesgo = evaluar_riesgo_protocolo(senal)
+    # ========================================================
+    # DIAGNÓSTICOS AUXILIARES
+    # ========================================================
 
-    senal["riesgo_protocolo"] = diagnostico_riesgo.get("riesgo", 100)
-    senal["nivel_riesgo_protocolo"] = diagnostico_riesgo.get("nivel", "ERROR")
-    senal["razon_riesgo_protocolo"] = diagnostico_riesgo.get("razon", "")
+    diagnostico_riesgo = evaluar_riesgo_protocolo(
+        senal
+    )
 
-    confirmacion_ia = decidir_confirmacion(senal)
+    senal["riesgo_protocolo"] = diagnostico_riesgo.get(
+        "riesgo",
+        100,
+    )
 
-    senal["indice_confirmacion_ia"] = confirmacion_ia.get("indice", 0)
-    senal["nivel_confirmacion_ia"] = confirmacion_ia.get("nivel", "BAJO")
-    senal["accion_confirmacion_ia"] = confirmacion_ia.get("accion", "CANCELAR")
-    senal["razon_confirmacion_ia"] = confirmacion_ia.get("razon", "")
+    senal["nivel_riesgo_protocolo"] = diagnostico_riesgo.get(
+        "nivel",
+        "ERROR",
+    )
 
-    cancelar, motivo = _riesgo_cancelacion(senal)
+    senal["razon_riesgo_protocolo"] = diagnostico_riesgo.get(
+        "razon",
+        "",
+    )
+
+    confirmacion_ia = decidir_confirmacion(
+        senal
+    )
+
+    senal["indice_confirmacion_ia"] = confirmacion_ia.get(
+        "indice",
+        0,
+    )
+
+    senal["nivel_confirmacion_ia"] = confirmacion_ia.get(
+        "nivel",
+        "BAJO",
+    )
+
+    senal["accion_confirmacion_ia"] = confirmacion_ia.get(
+        "accion",
+        "CANCELAR",
+    )
+
+    senal["razon_confirmacion_ia"] = confirmacion_ia.get(
+        "razon",
+        "",
+    )
+
+    # ========================================================
+    # CANCELACIONES PREVIAS
+    # ========================================================
+
+    cancelar, motivo = _riesgo_cancelacion(
+        senal
+    )
+
     if cancelar:
-        return None, motivo
+        return _registrar_auditoria_protocolo(
+            senal,
+            idx,
+            None,
+            motivo,
+            "VETO_PREVIO",
+        )
 
-    protocolo_sugerido = _txt(senal.get("protocolo_sugerido"))
+    # ========================================================
+    # PROTOCOLO
+    # ========================================================
 
     protocolo_sugerido = _txt(
         senal.get("protocolo_sugerido")
     )
-    
-    if protocolo_sugerido == "protocolo_ruptura_resistencia":
-        return _protocolo_ruptura_resistencia(
+
+    # Ruptura de resistencia tiene prioridad explícita.
+    if (
+        protocolo_sugerido
+        == "protocolo_ruptura_resistencia"
+    ):
+        idx_entrada, motivo = (
+            _protocolo_ruptura_resistencia(
+                velas,
+                idx,
+                senal,
+            )
+        )
+
+        return _registrar_auditoria_protocolo(
+            senal,
+            idx,
+            idx_entrada,
+            motivo,
+            "RUPTURA_RESISTENCIA",
+        )
+
+    protocolo = _tipo_protocolo(
+        senal
+    )
+
+    if protocolo == "SWEEP":
+        idx_entrada, motivo = _protocolo_sweep(
             velas,
             idx,
             senal,
         )
-    protocolo = _tipo_protocolo(senal)
 
-    if protocolo == "SWEEP":
-        return _protocolo_sweep(velas, idx, senal)
+    elif protocolo == "CHOCH":
+        idx_entrada, motivo = _protocolo_choch(
+            velas,
+            idx,
+            senal,
+        )
 
-    if protocolo == "CHOCH":
-        return _protocolo_choch(velas, idx, senal)
+    elif protocolo == "PULLBACK":
+        idx_entrada, motivo = _protocolo_pullback(
+            velas,
+            idx,
+            senal,
+        )
 
-    if protocolo == "PULLBACK":
-        return _protocolo_pullback(velas, idx, senal)
+    elif protocolo == "REACCION_ZONA":
+        idx_entrada, motivo = (
+            _protocolo_reaccion_zona(
+                velas,
+                idx,
+                senal,
+            )
+        )
 
-    if protocolo == "REACCION_ZONA":
-        return _protocolo_reaccion_zona(velas, idx, senal)
+    elif protocolo == "CONTINUACION":
+        idx_entrada, motivo = (
+            _protocolo_continuacion(
+                velas,
+                idx,
+                senal,
+            )
+        )
 
-    if protocolo == "CONTINUACION":
-        return _protocolo_continuacion(velas, idx, senal)
+    else:
+        idx_entrada, motivo = _protocolo_generico(
+            velas,
+            idx,
+            senal,
+        )
 
-    return _protocolo_generico(velas, idx, senal)
+    return _registrar_auditoria_protocolo(
+        senal,
+        idx,
+        idx_entrada,
+        motivo,
+        protocolo,
+    )

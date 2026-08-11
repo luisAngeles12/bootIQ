@@ -10,6 +10,19 @@ from config import (
 from utils import segundo_actual
 from confirmacion_entrada import evaluar_confirmacion_entrada
 
+# ============================================================
+# CEREBRO INTERMEDIO DE ENTRADA — MODO DIAGNÓSTICO
+# ============================================================
+# False:
+# - evaluar_confirmacion_entrada() sigue calculándose completo;
+# - conserva índice, nivel, motivos y acción diagnóstica;
+# - NO puede cancelar ni dejar esperando una señal por sí solo;
+# - las validaciones reales de entrada.py mantienen autoridad.
+#
+# True:
+# - restaura temporalmente el comportamiento anterior.
+ENTRADA_CEREBRO_INTERMEDIO_OPERATIVO = False
+
 def _bool(v, default=False):
     if isinstance(v, bool):
         return v
@@ -476,96 +489,216 @@ def motivo_pendiente_por_accion_precio(senal):
     Decide si una señal debe entrar directo o quedar pendiente
     esperando confirmación de ruptura/rechazo.
 
-    Objetivo:
-    - No bloquear estrategias.
-    - Mandar setups dudosos a confirmación.
-    - Aprovechar rechazos y rupturas reales.
+    En esta fase:
+    - NO cambiamos el comportamiento operativo.
+    - auditamos el veto por riesgo estructural crítico.
+    - conservamos PA, setup y contexto para análisis posterior.
     """
 
-    direccion = str(senal.get("direccion", "")).lower()
-    accion_precio = str(senal.get("accion_precio", "")).upper()
-    tipo_setup = str(senal.get("tipo_setup", "")).upper()
-    calidad_setup = str(senal.get("calidad_setup", "")).upper()
-    # Campo legacy: solo respaldo temporal.
+    direccion = str(
+        senal.get("direccion", "")
+    ).lower()
+
+    accion_precio = str(
+        senal.get("accion_precio", "")
+    ).upper()
+
+    tipo_setup = str(
+        senal.get("tipo_setup", "")
+    ).upper()
+
+    calidad_setup = str(
+        senal.get("calidad_setup", "")
+    ).upper()
+
+    # Campo legacy: respaldo temporal.
     modo_setup_legacy = str(
         senal.get("modo_entrada_setup", "")
     ).upper()
-    
+
     # Evidencia neutral oficial del setup.
     riesgo_critico_setup = _bool(
-        senal.get("riesgo_estructural_critico_setup"),
+        senal.get(
+            "riesgo_estructural_critico_setup"
+        ),
         default=(
             modo_setup_legacy == "NO_OPERAR"
             or "CANCELAR" in modo_setup_legacy
-        )
+        ),
     )
-    pa_tipo = str(senal.get("pa_tipo", "")).upper()
-    pa_direccion = str(senal.get("pa_direccion", "")).upper()
-    patron = str(senal.get("patron", "")).lower()
 
-    # =========================
-    # NO OPERAR
-    # =========================
+    requiere_ruptura_setup = _bool(
+        senal.get("requiere_ruptura_setup"),
+        default=(
+            "ESPERAR_RUPTURA"
+            in modo_setup_legacy
+        ),
+    )
+
+    requiere_confirmacion_setup = _bool(
+        senal.get(
+            "requiere_confirmacion_setup"
+        ),
+        default=(
+            "ESPERAR_CONFIRMACION"
+            in modo_setup_legacy
+        ),
+    )
+
+    pa_tipo = str(
+        senal.get("pa_tipo", "")
+    ).upper()
+
+    pa_direccion = str(
+        senal.get("pa_direccion", "")
+    ).upper()
+
+    patron = str(
+        senal.get("patron", "")
+    ).lower()
+
+    # ========================================================
+    # AUDITORÍA DEL VETO DE SETUP
+    # ========================================================
+    senal[
+        "entrada_auditoria_riesgo_critico_setup"
+    ] = riesgo_critico_setup
+
+    senal[
+        "entrada_auditoria_modo_setup_legacy"
+    ] = modo_setup_legacy
+
+    senal[
+        "entrada_auditoria_calidad_setup"
+    ] = calidad_setup
+
+    senal[
+        "entrada_auditoria_tipo_setup"
+    ] = tipo_setup
+
+    senal[
+        "entrada_auditoria_accion_precio"
+    ] = accion_precio
+
+    senal[
+        "entrada_auditoria_pa_tipo"
+    ] = pa_tipo
+
+    senal[
+        "entrada_auditoria_pa_direccion"
+    ] = pa_direccion
+
+    senal[
+        "entrada_auditoria_requiere_ruptura"
+    ] = requiere_ruptura_setup
+
+    senal[
+        "entrada_auditoria_requiere_confirmacion"
+    ] = requiere_confirmacion_setup
+
+    # ========================================================
+    # RIESGO ESTRUCTURAL CRÍTICO
+    # ========================================================
+    # IMPORTANTE:
+    # todavía conserva exactamente el comportamiento anterior.
+    # Solo añadimos trazabilidad.
     if riesgo_critico_setup:
+        senal[
+            "entrada_auditoria_veto_setup_aplicado"
+        ] = True
+
+        senal[
+            "entrada_auditoria_motivo_veto"
+        ] = "RIESGO_ESTRUCTURAL_CRITICO_SETUP"
+
         return "CANCELAR_PROTOCOLO_RIESGO_CRITICO"
-    # =========================
+
+    senal[
+        "entrada_auditoria_veto_setup_aplicado"
+    ] = False
+
+    senal[
+        "entrada_auditoria_motivo_veto"
+    ] = ""
+
+    # ========================================================
     # RUPTURAS POR ZONA
-    # =========================
-    if direccion == "call" and accion_precio in [
-        "CALL_RESISTENCIA_CERCA_SIN_RUPTURA",
-        "CALL_ZONA_NEUTRA"
-    ]:
+    # ========================================================
+    if (
+        direccion == "call"
+        and accion_precio in [
+            "CALL_RESISTENCIA_CERCA_SIN_RUPTURA",
+            "CALL_ZONA_NEUTRA",
+        ]
+    ):
         return "ESPERANDO_RUPTURA_RESISTENCIA"
 
-    if direccion == "put" and accion_precio in [
-        "PUT_SOPORTE_CERCA_SIN_RUPTURA",
-        "PUT_ZONA_NEUTRA"
-    ]:
+    if (
+        direccion == "put"
+        and accion_precio in [
+            "PUT_SOPORTE_CERCA_SIN_RUPTURA",
+            "PUT_ZONA_NEUTRA",
+        ]
+    ):
         return "ESPERANDO_RUPTURA_SOPORTE"
 
-    # =========================
+    # ========================================================
     # SWEEP / REVERSIÓN
-    # =========================
+    # ========================================================
     if tipo_setup in [
         "SWEEP_ALCISTA",
         "SWEEP_BAJISTA",
         "REVERSION_ALCISTA",
-        "REVERSION_BAJISTA"
+        "REVERSION_BAJISTA",
     ]:
-        # Si ya tiene PA fuerte a favor, puede entrar directo.
-        if direccion == "call" and pa_direccion == "CALL" and pa_tipo in [
-            "RECHAZO_COMPRADOR_CONFIRMADO",
-            "AGOTAMIENTO_BAJISTA_CONFIRMADO",
-            "IMPULSO_ALCISTA_FUERTE"
-        ]:
+
+        # PA fuerte a favor CALL.
+        if (
+            direccion == "call"
+            and pa_direccion == "CALL"
+            and pa_tipo in [
+                "RECHAZO_COMPRADOR_CONFIRMADO",
+                "AGOTAMIENTO_BAJISTA_CONFIRMADO",
+                "IMPULSO_ALCISTA_FUERTE",
+            ]
+        ):
             return None
 
-        if direccion == "put" and pa_direccion == "PUT" and pa_tipo in [
-            "RECHAZO_VENDEDOR_CONFIRMADO",
-            "AGOTAMIENTO_ALCISTA_CONFIRMADO",
-            "IMPULSO_BAJISTA_FUERTE"
-        ]:
+        # PA fuerte a favor PUT.
+        if (
+            direccion == "put"
+            and pa_direccion == "PUT"
+            and pa_tipo in [
+                "RECHAZO_VENDEDOR_CONFIRMADO",
+                "AGOTAMIENTO_ALCISTA_CONFIRMADO",
+                "IMPULSO_BAJISTA_FUERTE",
+            ]
+        ):
             return None
 
-        # Si no tiene confirmación fuerte, no se bloquea:
-        # se guarda pendiente.
         return "ESPERANDO_CONFIRMACION_RECHAZO"
 
-    # =========================
+    # ========================================================
     # RECHAZOS EN SOPORTE / RESISTENCIA
-    # =========================
-    if "reaccion" in patron or tipo_setup in [
-        "RECHAZO_ALCISTA",
-        "RECHAZO_BAJISTA"
-    ]:
-        if calidad_setup in ["PREMIUM", "BUENA"]:
+    # ========================================================
+    if (
+        "reaccion" in patron
+        or tipo_setup in [
+            "RECHAZO_ALCISTA",
+            "RECHAZO_BAJISTA",
+        ]
+    ):
+        if calidad_setup in [
+            "PREMIUM",
+            "BUENA",
+        ]:
             return None
 
         return "ESPERANDO_CONFIRMACION_RECHAZO"
 
-    # =========================
+    # ========================================================
     # SETUPS MEDIOS
-    # =========================
+    # ========================================================
     if calidad_setup == "MEDIA":
         return "ESPERANDO_CONFIRMACION_RECHAZO"
 
@@ -764,39 +897,75 @@ def procesar_senales_pendientes(abrir_operacion):
             # =========================
             # CEREBRO DE ENTRADA
             # =========================
+            # Se mantiene como diagnóstico. La autoridad operativa
+            # permanece en las validaciones técnicas reales de
+            # entrada.py.
             confirmacion = evaluar_confirmacion_entrada(
                 senal,
                 candles,
                 segundo
             )
-            
-            senal["entrada_cerebro_accion"] = confirmacion.get("accion", "")
-            senal["entrada_cerebro_indice"] = confirmacion.get("indice", 0)
-            senal["entrada_cerebro_nivel"] = confirmacion.get("nivel", "")
+
+            senal["entrada_cerebro_accion"] = confirmacion.get(
+                "accion",
+                "",
+            )
+            senal["entrada_cerebro_indice"] = confirmacion.get(
+                "indice",
+                0,
+            )
+            senal["entrada_cerebro_nivel"] = confirmacion.get(
+                "nivel",
+                "",
+            )
             senal["entrada_cerebro_motivos"] = " | ".join(
                 confirmacion.get("motivos", [])
             )
-            
-            if confirmacion.get("accion") == "CANCELAR":
-                print(
-                    "SEÑAL PENDIENTE CANCELADA POR CEREBRO ENTRADA:",
-                    activo,
-                    confirmacion.get("indice"),
-                    "|",
-                    senal["entrada_cerebro_motivos"]
+
+            senal["entrada_cerebro_accion_diagnostico"] = (
+                confirmacion.get(
+                    "accion_diagnostico",
+                    confirmacion.get("accion", ""),
                 )
-                continue
-            
-            if confirmacion.get("accion") == "ESPERAR":
-                print(
-                    "SEÑAL PENDIENTE ESPERA POR CEREBRO ENTRADA:",
-                    activo,
-                    confirmacion.get("indice"),
-                    "|",
-                    senal["entrada_cerebro_motivos"]
+            )
+            senal["entrada_cerebro_indice_diagnostico"] = (
+                confirmacion.get(
+                    "indice_diagnostico",
+                    confirmacion.get("indice", 0),
                 )
-                restantes.append(senal)
-                continue
+            )
+            senal["entrada_cerebro_nivel_diagnostico"] = (
+                confirmacion.get(
+                    "nivel_diagnostico",
+                    confirmacion.get("nivel", ""),
+                )
+            )
+            senal["entrada_cerebro_intermedio_operativo"] = (
+                ENTRADA_CEREBRO_INTERMEDIO_OPERATIVO
+            )
+
+            if ENTRADA_CEREBRO_INTERMEDIO_OPERATIVO:
+                if confirmacion.get("accion") == "CANCELAR":
+                    print(
+                        "SEÑAL PENDIENTE CANCELADA POR CEREBRO ENTRADA:",
+                        activo,
+                        confirmacion.get("indice"),
+                        "|",
+                        senal["entrada_cerebro_motivos"]
+                    )
+                    continue
+
+                if confirmacion.get("accion") == "ESPERAR":
+                    print(
+                        "SEÑAL PENDIENTE ESPERA POR CEREBRO ENTRADA:",
+                        activo,
+                        confirmacion.get("indice"),
+                        "|",
+                        senal["entrada_cerebro_motivos"]
+                    )
+                    restantes.append(senal)
+                    continue
+
             # =========================
             # DECISIÓN DE ENTRADA
             # =========================

@@ -1,7 +1,5 @@
-from motor_inferencia import inferir_confianza
 from detector_riesgo_compuesto import evaluar_riesgo_compuesto
 from motor_aprendizaje_historico import evaluar_aprendizaje_historico
-from motor_ponderacion import calcular_ponderacion_estadistica
 
 
 # ============================================================
@@ -20,6 +18,15 @@ MODO_SOMBRA_ESTADISTICO = True
 UMBRAL_PROBABILIDAD_SOMBRA_OPERAR = 55.0
 UMBRAL_PROBABILIDAD_SOMBRA_PROTOCOLO = 50.0
 MIN_MUESTRA_SOMBRA = 12
+
+
+# ============================================================
+# AUDITORÍA LEGACY OPCIONAL
+# ============================================================
+# False = la ruta legacy NO se importa ni se calcula.
+# True  = permite comparar contra la arquitectura anterior,
+#         sin devolverle autoridad operativa.
+AUDITORIA_LEGACY_ACTIVA = False
 
 def _txt(v):
     return str(v or "").lower().strip()
@@ -943,6 +950,146 @@ def construir_auditoria_separacion_v3(
     }
 
 
+
+def _resultado_legacy_neutro():
+    """
+    Salida compatible cuando la arquitectura legacy está apagada.
+
+    Mantiene las claves antiguas para no romper consumidores,
+    pero no ejecuta motor_inferencia ni motor_ponderacion.
+    """
+
+    resultado_confianza = {
+        "confianza": 50.0,
+        "confianza_base": 50.0,
+        "ajuste_aprendizaje": 0.0,
+        "ajuste_price_action": 0.0,
+        "ajuste_mercado": 0.0,
+        "ajuste_estrategia": 0.0,
+        "ajuste_evidencias": 0.0,
+        "ajuste_ponderacion": 0.0,
+        "confianza_antes_ponderacion": 50.0,
+        "auditoria_confianza": {
+            "modo": "LEGACY_DESACTIVADO",
+            "base": 50.0,
+            "aprendizaje": 0.0,
+            "price_action": 0.0,
+            "mercado": 0.0,
+            "estrategia": 0.0,
+            "evidencias_total": 0.0,
+            "ponderacion": 0.0,
+            "antes_ponderacion": 50.0,
+            "total": 50.0,
+        },
+    }
+
+    return {
+        "resultado_inferencia": {
+            "confianza": 50.0,
+            "decision": "LEGACY_DESACTIVADO",
+            "motivos": [],
+        },
+        "ponderacion": {
+            "ajuste_ponderacion": 0.0,
+            "motivos_ponderacion": [],
+            "modo": "LEGACY_DESACTIVADO",
+        },
+        "resultado_confianza": resultado_confianza,
+        "resultado_decision": {
+            "decision": "LEGACY_DESACTIVADO",
+            "decision_legacy": "LEGACY_DESACTIVADO",
+            "operar": False,
+            "requiere_protocolo": False,
+            "modo_ejecucion": "DIAGNOSTICO",
+            "bloquear_por_riesgo": False,
+            "riesgo_extremo_diagnostico": False,
+            "motivo": "Auditoría legacy desactivada.",
+        },
+        "confianza_base": 50.0,
+        "confianza": 50.0,
+        "ajuste_aprendizaje": 0.0,
+        "ajuste_ponderacion": 0.0,
+        "auditoria_confianza": resultado_confianza[
+            "auditoria_confianza"
+        ],
+    }
+
+
+def _evaluar_legacy_opcional(
+    evidencia,
+    aprendizaje,
+    ajuste_price_action,
+    ajuste_mercado,
+    ajuste_estrategia,
+    riesgo_nivel,
+):
+    """
+    Ejecuta la arquitectura antigua únicamente cuando la auditoría
+    legacy está activada.
+
+    Los imports son locales a propósito. Con la bandera en False,
+    BootIQ V3 no necesita cargar esos motores.
+    """
+
+    if not AUDITORIA_LEGACY_ACTIVA:
+        return _resultado_legacy_neutro()
+
+    from motor_inferencia import inferir_confianza
+    from motor_ponderacion import calcular_ponderacion_estadistica
+
+    resultado_inferencia = inferir_confianza(evidencia)
+    ponderacion = calcular_ponderacion_estadistica(evidencia)
+
+    confianza_base = resultado_inferencia.get(
+        "confianza",
+        50.0,
+    )
+
+    ajuste_aprendizaje = aprendizaje.get(
+        "ajuste_confianza_aprendizaje",
+        0,
+    )
+
+    ajuste_ponderacion = ponderacion.get(
+        "ajuste_ponderacion",
+        0,
+    )
+
+    resultado_confianza = calcular_confianza_cerebro(
+        confianza_base=confianza_base,
+        ajuste_aprendizaje=ajuste_aprendizaje,
+        ajuste_price_action=ajuste_price_action,
+        ajuste_mercado=ajuste_mercado,
+        ajuste_estrategia=ajuste_estrategia,
+        ajuste_ponderacion=ajuste_ponderacion,
+    )
+
+    confianza = resultado_confianza.get(
+        "confianza",
+        50.0,
+    )
+
+    resultado_decision = clasificar_decision_final(
+        confianza=confianza,
+        riesgo_nivel=riesgo_nivel,
+    )
+
+    return {
+        "resultado_inferencia": resultado_inferencia,
+        "ponderacion": ponderacion,
+        "resultado_confianza": resultado_confianza,
+        "resultado_decision": resultado_decision,
+        "confianza_base": confianza_base,
+        "confianza": confianza,
+        "ajuste_aprendizaje": ajuste_aprendizaje,
+        "ajuste_ponderacion": ajuste_ponderacion,
+        "auditoria_confianza": resultado_confianza.get(
+            "auditoria_confianza",
+            {},
+        ),
+    }
+
+
 # ============================================================
 # CEREBRO ÚNICO OFICIAL BOOTIQ
 # ============================================================
@@ -966,38 +1113,27 @@ def evaluar_decision_cerebro_unico(evidencia):
     Decide una sola vez al final.
     """
 
-    resultado_inferencia_legacy = inferir_confianza(evidencia)
+    # ========================================================
+    # RUTA OFICIAL V3
+    # ========================================================
     riesgo_compuesto = evaluar_riesgo_compuesto(evidencia)
     aprendizaje = evaluar_aprendizaje_historico(evidencia)
-    ponderacion = calcular_ponderacion_estadistica(evidencia)
 
+    # Diagnósticos internos. No deciden ni bloquean V3.
     resultado_pa = evaluar_price_action_decision(evidencia)
     resultado_mercado = evaluar_mercado_decision(evidencia)
     resultado_estrategia = evaluar_estrategia_decision(evidencia)
-
-    confianza_base_legacy = resultado_inferencia_legacy.get(
-        "confianza",
-        50.0,
-    )
-    ajuste_aprendizaje_legacy = aprendizaje.get(
-        "ajuste_confianza_aprendizaje",
-        0,
-    )
-    ajuste_ponderacion_legacy = ponderacion.get(
-        "ajuste_ponderacion",
-        0,
-    )
 
     ajuste_price_action = _num(
         resultado_pa.get("ajuste", 0),
         0.0,
     )
-    
+
     ajuste_mercado = _num(
         resultado_mercado.get("ajuste", 0),
         0.0,
     )
-    
+
     ajuste_estrategia = _num(
         resultado_estrategia.get("ajuste", 0),
         0.0,
@@ -1009,24 +1145,52 @@ def evaluar_decision_cerebro_unico(evidencia):
         + ajuste_estrategia
     )
 
-    resultado_confianza_legacy = calcular_confianza_cerebro(
-        confianza_base=confianza_base_legacy,
-        ajuste_aprendizaje=ajuste_aprendizaje_legacy,
+    riesgo_nivel = riesgo_compuesto.get(
+        "riesgo_nivel",
+        "BAJO",
+    )
+    riesgo_puntos = riesgo_compuesto.get(
+        "riesgo_puntos",
+        0,
+    )
+
+    # ========================================================
+    # RUTA LEGACY OPCIONAL — SOLO AUDITORÍA
+    # ========================================================
+    legacy = _evaluar_legacy_opcional(
+        evidencia=evidencia,
+        aprendizaje=aprendizaje,
         ajuste_price_action=ajuste_price_action,
         ajuste_mercado=ajuste_mercado,
         ajuste_estrategia=ajuste_estrategia,
-        ajuste_ponderacion=ajuste_ponderacion_legacy,
+        riesgo_nivel=riesgo_nivel,
     )
 
-    confianza_legacy = resultado_confianza_legacy["confianza"]
-    auditoria_confianza_legacy = resultado_confianza_legacy.get(
-        "auditoria_confianza",
-        {},
-    )
-    riesgo_nivel = riesgo_compuesto.get("riesgo_nivel", "BAJO")
-    riesgo_puntos = riesgo_compuesto.get("riesgo_puntos", 0)
+    resultado_inferencia_legacy = legacy[
+        "resultado_inferencia"
+    ]
+    ponderacion = legacy["ponderacion"]
+    resultado_confianza_legacy = legacy[
+        "resultado_confianza"
+    ]
+    resultado_decision_legacy = legacy[
+        "resultado_decision"
+    ]
 
-    # Probabilidad estadística paralela. No participa en la decisión oficial.
+    confianza_base_legacy = legacy["confianza_base"]
+    confianza_legacy = legacy["confianza"]
+
+    ajuste_aprendizaje_legacy = legacy[
+        "ajuste_aprendizaje"
+    ]
+    ajuste_ponderacion_legacy = legacy[
+        "ajuste_ponderacion"
+    ]
+    auditoria_confianza_legacy = legacy[
+        "auditoria_confianza"
+    ]
+
+    # Probabilidad estadística V3 que alimenta la decisión oficial.
     probabilidad_estimada = _num(
         aprendizaje.get("probabilidad_estimada", 0.0),
         0.0,
@@ -1067,14 +1231,6 @@ def evaluar_decision_cerebro_unico(evidencia):
         muestra=muestra_probabilidad,
         confiabilidad=confiabilidad_probabilidad,
         fuente_principal=fuente_probabilidad_principal,
-    )
-
-    # ========================================================
-    # DECISIÓN LEGACY — SOLO AUDITORÍA
-    # ========================================================
-    resultado_decision_legacy = clasificar_decision_final(
-        confianza=confianza_legacy,
-        riesgo_nivel=riesgo_nivel,
     )
 
     # ========================================================
@@ -1121,8 +1277,21 @@ def evaluar_decision_cerebro_unico(evidencia):
         )
     )
     motivos = []
-    motivos.extend(resultado_inferencia_legacy.get("motivos", []))
-    motivos.extend(riesgo_compuesto.get("motivos_riesgo", []))
+
+    if AUDITORIA_LEGACY_ACTIVA:
+        motivos.extend(
+            resultado_inferencia_legacy.get(
+                "motivos",
+                [],
+            )
+        )
+
+    motivos.extend(
+        riesgo_compuesto.get(
+            "motivos_riesgo",
+            [],
+        )
+    )
 
     motivo_aprendizaje = aprendizaje.get("motivo_aprendizaje", "")
     if motivo_aprendizaje:
@@ -1131,16 +1300,25 @@ def evaluar_decision_cerebro_unico(evidencia):
     motivos.extend(resultado_pa.get("motivos", []))
     motivos.extend(resultado_mercado.get("motivos", []))
     motivos.extend(resultado_estrategia.get("motivos", []))
-    motivos.extend(ponderacion.get("motivos_ponderacion", []))
-
-    motivo_decision_legacy = resultado_decision_legacy.get(
-        "motivo",
-        "",
-    )
-    if motivo_decision_legacy:
-        motivos.append(
-            "Legacy auditoría: " + motivo_decision_legacy
+    if AUDITORIA_LEGACY_ACTIVA:
+        motivos.extend(
+            ponderacion.get(
+                "motivos_ponderacion",
+                [],
+            )
         )
+
+        motivo_decision_legacy = (
+            resultado_decision_legacy.get(
+                "motivo",
+                "",
+            )
+        )
+        if motivo_decision_legacy:
+            motivos.append(
+                "Legacy auditoría: "
+                + motivo_decision_legacy
+            )
 
     motivo_decision = resultado_decision_oficial.get(
         "motivo",
@@ -1215,7 +1393,12 @@ def evaluar_decision_cerebro_unico(evidencia):
         # Estos campos permiten medir ambos sistemas sin mezclarlos.
         "origen_decision_oficial": "PROBABILIDAD_HISTORICA_V3",
         "origen_decision_estadistica": "PROBABILIDAD_HISTORICA_V3",
-        "origen_decision_legacy": "CONFIANZA_LEGACY",
+        "origen_decision_legacy": (
+            "CONFIANZA_LEGACY"
+            if AUDITORIA_LEGACY_ACTIVA
+            else "LEGACY_DESACTIVADO"
+        ),
+        "auditoria_legacy_activa": AUDITORIA_LEGACY_ACTIVA,
         "sistemas_decision_separados": True,
         "probabilidad_v3": round(probabilidad_estimada, 2),
         "auditoria_separacion_v3": auditoria_separacion_v3,
