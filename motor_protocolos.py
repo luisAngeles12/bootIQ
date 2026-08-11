@@ -772,9 +772,13 @@ def buscar_entrada_confirmada(velas, idx, senal):
     """
     Orquestador de protocolos.
 
-    En esta fase mantiene exactamente la misma autoridad y reglas,
-    pero registra cómo terminó cada evaluación para poder detectar
-    qué protocolos/timings están degradando las señales de V3.
+    FASE C4:
+    - mantiene los vetos generales para todos los protocolos;
+    - PROTOCOLO_RUPTURA_RESISTENCIA no es cancelado por
+      el veto previo de setup/riesgo;
+    - riesgo y confirmación siguen calculándose y registrándose;
+    - la entrada solo ocurre si el protocolo técnico confirma
+      una ruptura real.
     """
 
     if idx >= len(velas) - 2:
@@ -834,7 +838,56 @@ def buscar_entrada_confirmada(velas, idx, senal):
     )
 
     # ========================================================
+    # PROTOCOLO SUGERIDO
+    # ========================================================
+
+    protocolo_sugerido = _txt(
+        senal.get("protocolo_sugerido")
+    )
+
+    # ========================================================
+    # C4 — RUPTURA RESISTENCIA
+    # ========================================================
+    #
+    # C3 mostró que este protocolo sí conserva ventaja
+    # cuando las señales vetadas llegan a su confirmación
+    # técnica:
+    #
+    # TRAIN      ~59.65%
+    # VALIDACION ~60.71%
+    #
+    # Por eso setup/riesgo permanecen como evidencia,
+    # pero no bloquean antes de comprobar la ruptura real.
+    # ========================================================
+
+    if (
+        protocolo_sugerido
+        == "protocolo_ruptura_resistencia"
+    ):
+        senal["c4_bypass_veto_ruptura_resistencia"] = True
+
+        idx_entrada, motivo = (
+            _protocolo_ruptura_resistencia(
+                velas,
+                idx,
+                senal,
+            )
+        )
+
+        return _registrar_auditoria_protocolo(
+            senal,
+            idx,
+            idx_entrada,
+            motivo,
+            "RUPTURA_RESISTENCIA",
+        )
+
+    # ========================================================
     # CANCELACIONES PREVIAS
+    # ========================================================
+    #
+    # Todos los demás protocolos conservan exactamente
+    # el comportamiento anterior.
     # ========================================================
 
     cancelar, motivo = _riesgo_cancelacion(
@@ -851,33 +904,8 @@ def buscar_entrada_confirmada(velas, idx, senal):
         )
 
     # ========================================================
-    # PROTOCOLO
+    # PROTOCOLOS RESTANTES
     # ========================================================
-
-    protocolo_sugerido = _txt(
-        senal.get("protocolo_sugerido")
-    )
-
-    # Ruptura de resistencia tiene prioridad explícita.
-    if (
-        protocolo_sugerido
-        == "protocolo_ruptura_resistencia"
-    ):
-        idx_entrada, motivo = (
-            _protocolo_ruptura_resistencia(
-                velas,
-                idx,
-                senal,
-            )
-        )
-
-        return _registrar_auditoria_protocolo(
-            senal,
-            idx,
-            idx_entrada,
-            motivo,
-            "RUPTURA_RESISTENCIA",
-        )
 
     protocolo = _tipo_protocolo(
         senal

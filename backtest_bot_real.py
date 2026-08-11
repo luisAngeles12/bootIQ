@@ -17,20 +17,19 @@ autoridad independiente.
 """
 
 import csv
-import json
 import os
 import copy
 
 import estado
 import estrategia
 from motor_protocolos import buscar_entrada_confirmada
+import motor_protocolos as motor_protocolos_mod
 from contexto_mercado import detectar_tipo_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
 from motor_aprendizaje_historico import generar_aprendizaje_desde_resultados
 
 
 CARPETA_DATA = "data_backtest"
 SALIDA = "backtest_bot_real_resultados.csv"
-MODELO_PROTOCOLO_ARCHIVO = "modelo_probabilidad_protocolo.json"
 
 MAX_ACTIVOS_ANALIZAR = 20
 LIMITE_DATASETS = 160
@@ -742,6 +741,30 @@ def crear_registro_resultado(
         "modo_entrada_setup": senal.get(
             "modo_entrada_setup", "DIRECTA"
         ),
+        "requiere_ruptura_setup": bool(
+            senal.get("requiere_ruptura_setup", False)
+        ),
+        "requiere_confirmacion_setup": bool(
+            senal.get("requiere_confirmacion_setup", False)
+        ),
+        "riesgo_estructural_critico_setup": bool(
+            senal.get(
+                "riesgo_estructural_critico_setup",
+                (
+                    "no_operar"
+                    in str(
+                        senal.get("modo_entrada_setup", "")
+                        or ""
+                    ).lower()
+                    or
+                    "cancelar"
+                    in str(
+                        senal.get("modo_entrada_setup", "")
+                        or ""
+                    ).lower()
+                ),
+            )
+        ),
         "puntaje_extra_setup": senal.get(
             "puntaje_extra_setup", 0
         ),
@@ -971,6 +994,48 @@ def crear_registro_resultado(
             0,
         ),
 
+        # ====================================================
+        # C3 — BYPASS SOMBRA DE VETOS
+        # ====================================================
+        "c3_sombra_aplicada": bool(
+            senal.get("c3_sombra_aplicada", False)
+        ),
+        "c3_sombra_grupo_veto": senal.get(
+            "c3_sombra_grupo_veto", ""
+        ),
+        "c3_sombra_protocolo": senal.get(
+            "c3_sombra_protocolo", ""
+        ),
+        "c3_sombra_idx_entrada": senal.get(
+            "c3_sombra_idx_entrada",
+            -1,
+        ),
+        "c3_sombra_motivo": senal.get(
+            "c3_sombra_motivo", ""
+        ),
+        "c3_sombra_encuentra_entrada": bool(
+            senal.get("c3_sombra_encuentra_entrada", False)
+        ),
+        "c3_sombra_resultado": senal.get(
+            "c3_sombra_resultado", ""
+        ),
+        "c3_sombra_espera_velas": senal.get(
+            "c3_sombra_espera_velas",
+            -1,
+        ),
+        "c3_sombra_riesgo": senal.get(
+            "c3_sombra_riesgo",
+            0,
+        ),
+        "c3_sombra_nivel_riesgo": senal.get(
+            "c3_sombra_nivel_riesgo",
+            ""
+        ),
+        "c3_sombra_confirmacion": senal.get(
+            "c3_sombra_confirmacion",
+            ""
+        ),
+
         "resultado": info_resultado["resultado"],
         "resultado_hipotetico": info_hipotetico["resultado"],
 
@@ -1187,6 +1252,318 @@ def evaluar_recuperacion_veto_sombra(
     return salida
 
 
+
+def _c3_bool(valor, default=False):
+    if isinstance(valor, bool):
+        return valor
+
+    if valor is None:
+        return default
+
+    texto = str(valor).lower().strip()
+
+    if texto in {"true", "1", "si", "sí", "yes"}:
+        return True
+
+    if texto in {"false", "0", "no", "none", "null", ""}:
+        return False
+
+    return default
+
+
+def _c3_num(valor, default=0.0):
+    try:
+        return float(valor)
+    except Exception:
+        return float(default)
+
+
+def _c3_grupo_veto(senal):
+    """
+    Clasifica la señal usando exactamente las dos evidencias
+    estudiadas en C2.
+
+    No modifica ninguna decisión.
+    """
+
+    modo_setup = str(
+        senal.get("modo_entrada_setup", "")
+        or ""
+    ).lower().strip()
+
+    setup_bloquea = _c3_bool(
+        senal.get("riesgo_estructural_critico_setup"),
+        default=(
+            "no_operar" in modo_setup
+            or "cancelar" in modo_setup
+        ),
+    )
+
+    riesgo = _c3_num(
+        senal.get("riesgo_protocolo", 0),
+        0,
+    )
+
+    riesgo_bloquea = riesgo >= 85
+
+    if setup_bloquea and riesgo_bloquea:
+        return "SETUP_BLOQUEA + RIESGO_BLOQUEA"
+
+    if setup_bloquea and not riesgo_bloquea:
+        return "SETUP_BLOQUEA + RIESGO_PASA"
+
+    if not setup_bloquea and riesgo_bloquea:
+        return "SETUP_PASA + RIESGO_BLOQUEA"
+
+    return "SETUP_PASA + RIESGO_PASA"
+
+
+def _c3_ejecutar_protocolo_sin_vetos(
+    velas,
+    idx,
+    senal,
+):
+    """
+    Ejecuta la misma selección de protocolo de motor_protocolos,
+    pero deliberadamente NO llama _riesgo_cancelacion().
+
+    Es una ruta SOMBRA de diagnóstico.
+    """
+
+    # Primero se conservan los motores auxiliares reales.
+    diagnostico_riesgo = (
+        motor_protocolos_mod.evaluar_riesgo_protocolo(
+            senal
+        )
+    )
+
+    senal["riesgo_protocolo"] = diagnostico_riesgo.get(
+        "riesgo",
+        100,
+    )
+    senal["nivel_riesgo_protocolo"] = diagnostico_riesgo.get(
+        "nivel",
+        "ERROR",
+    )
+    senal["razon_riesgo_protocolo"] = diagnostico_riesgo.get(
+        "razon",
+        "",
+    )
+
+    confirmacion_ia = (
+        motor_protocolos_mod.decidir_confirmacion(
+            senal
+        )
+    )
+
+    senal["indice_confirmacion_ia"] = confirmacion_ia.get(
+        "indice",
+        0,
+    )
+    senal["nivel_confirmacion_ia"] = confirmacion_ia.get(
+        "nivel",
+        "BAJO",
+    )
+    senal["accion_confirmacion_ia"] = confirmacion_ia.get(
+        "accion",
+        "CANCELAR",
+    )
+    senal["razon_confirmacion_ia"] = confirmacion_ia.get(
+        "razon",
+        "",
+    )
+
+    protocolo_sugerido = str(
+        senal.get("protocolo_sugerido", "")
+        or ""
+    ).lower().strip()
+
+    # Mantener la prioridad real de ruptura_resistencia.
+    if (
+        protocolo_sugerido
+        == "protocolo_ruptura_resistencia"
+    ):
+        idx_entrada, motivo = (
+            motor_protocolos_mod
+            ._protocolo_ruptura_resistencia(
+                velas,
+                idx,
+                senal,
+            )
+        )
+
+        return (
+            idx_entrada,
+            motivo,
+            "RUPTURA_RESISTENCIA",
+        )
+
+    protocolo = motor_protocolos_mod._tipo_protocolo(
+        senal
+    )
+
+    if protocolo == "SWEEP":
+        idx_entrada, motivo = (
+            motor_protocolos_mod._protocolo_sweep(
+                velas,
+                idx,
+                senal,
+            )
+        )
+
+    elif protocolo == "CHOCH":
+        idx_entrada, motivo = (
+            motor_protocolos_mod._protocolo_choch(
+                velas,
+                idx,
+                senal,
+            )
+        )
+
+    elif protocolo == "PULLBACK":
+        idx_entrada, motivo = (
+            motor_protocolos_mod._protocolo_pullback(
+                velas,
+                idx,
+                senal,
+            )
+        )
+
+    elif protocolo == "REACCION_ZONA":
+        idx_entrada, motivo = (
+            motor_protocolos_mod._protocolo_reaccion_zona(
+                velas,
+                idx,
+                senal,
+            )
+        )
+
+    elif protocolo == "CONTINUACION":
+        idx_entrada, motivo = (
+            motor_protocolos_mod._protocolo_continuacion(
+                velas,
+                idx,
+                senal,
+            )
+        )
+
+    else:
+        idx_entrada, motivo = (
+            motor_protocolos_mod._protocolo_generico(
+                velas,
+                idx,
+                senal,
+            )
+        )
+
+    return idx_entrada, motivo, protocolo
+
+
+def evaluar_c3_bypass_vetos_sombra(
+    senal,
+    velas,
+    idx,
+    motivo_oficial,
+):
+    """
+    C3.
+
+    Solo se aplica cuando la ruta OFICIAL fue cancelada por
+    uno de los dos vetos generales estudiados.
+
+    La operación oficial NO cambia.
+    """
+
+    salida = {
+        "aplicada": False,
+        "grupo_veto": "",
+        "protocolo": "",
+        "idx_entrada": None,
+        "motivo": "",
+        "encuentra_entrada": False,
+        "resultado": "",
+        "espera_velas": -1,
+        "riesgo": 0,
+        "nivel_riesgo": "",
+        "confirmacion": "",
+    }
+
+    motivos_c3 = {
+        "CANCELADA_SETUP_NO_OPERAR",
+        "CANCELADA_RIESGO_PROTOCOLO_CRITICO",
+    }
+
+    if motivo_oficial not in motivos_c3:
+        return salida
+
+    salida["aplicada"] = True
+
+    senal_sombra = copy.deepcopy(senal)
+
+    # Recalcular primero los diagnósticos reales para clasificar
+    # correctamente el cruce setup/riesgo.
+    diag = motor_protocolos_mod.evaluar_riesgo_protocolo(
+        senal_sombra
+    )
+    senal_sombra["riesgo_protocolo"] = diag.get(
+        "riesgo",
+        100,
+    )
+    senal_sombra["nivel_riesgo_protocolo"] = diag.get(
+        "nivel",
+        "ERROR",
+    )
+
+    salida["grupo_veto"] = _c3_grupo_veto(
+        senal_sombra
+    )
+
+    idx_entrada, motivo, protocolo = (
+        _c3_ejecutar_protocolo_sin_vetos(
+            velas,
+            idx,
+            senal_sombra,
+        )
+    )
+
+    salida["protocolo"] = protocolo
+    salida["motivo"] = motivo
+    salida["riesgo"] = senal_sombra.get(
+        "riesgo_protocolo",
+        0,
+    )
+    salida["nivel_riesgo"] = senal_sombra.get(
+        "nivel_riesgo_protocolo",
+        "",
+    )
+    salida["confirmacion"] = senal_sombra.get(
+        "accion_confirmacion_ia",
+        "",
+    )
+
+    if idx_entrada is None:
+        return salida
+
+    if idx_entrada + 1 >= len(velas):
+        salida["motivo"] = (
+            "C3_SOMBRA_SIN_VELA_RESULTADO"
+        )
+        return salida
+
+    info = resultado_binario(
+        velas,
+        idx_entrada,
+        senal.get("direccion", ""),
+    )
+
+    salida["encuentra_entrada"] = True
+    salida["idx_entrada"] = idx_entrada
+    salida["resultado"] = info["resultado"]
+    salida["espera_velas"] = idx_entrada - idx
+
+    return salida
+
+
 def ejecutar_backtest(datasets):
     """
     Orquestador oficial del backtest BootIQ.
@@ -1355,6 +1732,54 @@ def ejecutar_backtest(datasets):
                 )
 
                 if idx_entrada is None:
+
+                    # ========================================
+                    # C3 — BYPASS SOMBRA DE VETOS
+                    # ========================================
+                    c3_sombra = (
+                        evaluar_c3_bypass_vetos_sombra(
+                            senal,
+                            velas,
+                            idx,
+                            motivo_ejecucion,
+                        )
+                    )
+
+                    senal["c3_sombra_aplicada"] = (
+                        c3_sombra["aplicada"]
+                    )
+                    senal["c3_sombra_grupo_veto"] = (
+                        c3_sombra["grupo_veto"]
+                    )
+                    senal["c3_sombra_protocolo"] = (
+                        c3_sombra["protocolo"]
+                    )
+                    senal["c3_sombra_idx_entrada"] = (
+                        c3_sombra["idx_entrada"]
+                        if c3_sombra["idx_entrada"] is not None
+                        else -1
+                    )
+                    senal["c3_sombra_motivo"] = (
+                        c3_sombra["motivo"]
+                    )
+                    senal["c3_sombra_encuentra_entrada"] = (
+                        c3_sombra["encuentra_entrada"]
+                    )
+                    senal["c3_sombra_resultado"] = (
+                        c3_sombra["resultado"]
+                    )
+                    senal["c3_sombra_espera_velas"] = (
+                        c3_sombra["espera_velas"]
+                    )
+                    senal["c3_sombra_riesgo"] = (
+                        c3_sombra["riesgo"]
+                    )
+                    senal["c3_sombra_nivel_riesgo"] = (
+                        c3_sombra["nivel_riesgo"]
+                    )
+                    senal["c3_sombra_confirmacion"] = (
+                        c3_sombra["confirmacion"]
+                    )
 
                     recuperacion_sombra = {
                         "candidata": False,
@@ -2833,135 +3258,6 @@ def construir_modelo_probabilidad_protocolo_train(resultados):
     return modelo
 
 
-
-def _modelo_protocolo_serializable(modelo):
-    salida = {
-        "version": 1,
-        "prior": modelo.get("prior", 0.5),
-        "total_train": modelo.get("total_train", 0),
-        "wins_train": modelo.get("wins_train", 0),
-        "tablas": {},
-    }
-
-    for nombre, info in modelo.get("tablas", {}).items():
-        tabla_out = {
-            "campos": list(info.get("campos", [])),
-            "datos": [],
-        }
-
-        for clave, datos in info.get("datos", {}).items():
-            tabla_out["datos"].append({
-                "clave": list(clave),
-                "total": int(datos.get("total", 0)),
-                "win": int(datos.get("win", 0)),
-                "activos": sorted(list(datos.get("activos", set()))),
-            })
-
-        salida["tablas"][nombre] = tabla_out
-
-    return salida
-
-
-def guardar_modelo_probabilidad_protocolo(modelo):
-    payload = _modelo_protocolo_serializable(modelo)
-
-    with open(
-        MODELO_PROTOCOLO_ARCHIVO,
-        "w",
-        encoding="utf-8",
-    ) as f:
-        json.dump(
-            payload,
-            f,
-            ensure_ascii=False,
-            indent=2,
-        )
-
-    print(
-        "\nModelo de probabilidad de protocolo congelado en:",
-        MODELO_PROTOCOLO_ARCHIVO,
-    )
-    print(
-        "TRAIN usado para congelar modelo:",
-        payload["total_train"],
-        "operaciones de protocolo |",
-        payload["wins_train"],
-        "WIN | prior:",
-        str(round(payload["prior"] * 100, 2)) + "%",
-    )
-
-
-def cargar_modelo_probabilidad_protocolo():
-    """
-    Carga el modelo congelado generado exclusivamente con TRAIN.
-
-    IMPORTANTE:
-    - VALIDACION nunca reconstruye tablas;
-    - VALIDACION nunca recalcula prior;
-    - VALIDACION solo lee el JSON congelado.
-    """
-
-    if not os.path.exists(MODELO_PROTOCOLO_ARCHIVO):
-        raise FileNotFoundError(
-            "No existe el modelo congelado: "
-            f"{MODELO_PROTOCOLO_ARCHIVO}. "
-            "Ejecuta primero AUDITORIA_TRAIN para generarlo."
-        )
-
-    with open(
-        MODELO_PROTOCOLO_ARCHIVO,
-        "r",
-        encoding="utf-8",
-    ) as f:
-        payload = json.load(f)
-
-    modelo = {
-        "prior": float(payload.get("prior", 0.5)),
-        "total_train": int(payload.get("total_train", 0)),
-        "wins_train": int(payload.get("wins_train", 0)),
-        "tablas": {},
-    }
-
-    for nombre, info in payload.get("tablas", {}).items():
-        datos_convertidos = {}
-
-        for fila in info.get("datos", []):
-            clave = tuple(fila.get("clave", []))
-
-            datos_convertidos[clave] = {
-                "total": int(fila.get("total", 0)),
-                "win": int(fila.get("win", 0)),
-                "activos": set(
-                    fila.get("activos", [])
-                ),
-            }
-
-        modelo["tablas"][nombre] = {
-            "campos": list(info.get("campos", [])),
-            "datos": datos_convertidos,
-        }
-
-    if modelo["total_train"] <= 0:
-        raise RuntimeError(
-            "El modelo congelado no contiene muestra TRAIN válida."
-        )
-
-    print(
-        "\nModelo de probabilidad de protocolo cargado:",
-        MODELO_PROTOCOLO_ARCHIVO,
-    )
-    print(
-        "TRAIN congelado:",
-        modelo["total_train"],
-        "operaciones de protocolo |",
-        modelo["wins_train"],
-        "WIN | prior:",
-        str(round(modelo["prior"] * 100, 2)) + "%",
-    )
-
-    return modelo
-
-
 def estimar_probabilidad_protocolo(registro, modelo):
     """
     Combina evidencia estadística TRAIN con backoff.
@@ -3065,10 +3361,6 @@ def imprimir_probabilidad_protocolo_train(resultados):
 
     modelo = construir_modelo_probabilidad_protocolo_train(
         resultados
-    )
-
-    guardar_modelo_probabilidad_protocolo(
-        modelo
     )
 
     print(
@@ -3229,243 +3521,1834 @@ def imprimir_probabilidad_protocolo_train(resultados):
     print("==========================================\n")
 
 
-def imprimir_probabilidad_protocolo_validacion(resultados):
+
+def _bool_auditoria(valor, default=False):
+    if isinstance(valor, bool):
+        return valor
+
+    if valor is None:
+        return default
+
+    texto = str(valor).lower().strip()
+
+    if texto in {"true", "1", "si", "sí", "yes"}:
+        return True
+
+    if texto in {"false", "0", "no", "none", "null", ""}:
+        return False
+
+    return default
+
+
+def _num_auditoria(valor, default=0.0):
+    try:
+        return float(valor)
+    except Exception:
+        return float(default)
+
+
+def imprimir_matriz_setup_riesgo(resultados):
     """
-    Aplica en VALIDACION el modelo congelado de TRAIN.
+    C2 — Auditoría cruzada SETUP × RIESGO.
 
-    No aprende nada con VALIDACION.
-    No modifica decisiones oficiales.
+    No cambia ninguna decisión.
+
+    Universo:
+    todas las señales que el Cerebro Único clasificó como
+    OPERAR_CON_PROTOCOLO.
+
+    SETUP_BLOQUEA reproduce la condición neutral utilizada por
+    motor_protocolos:
+        riesgo_estructural_critico_setup == True
+    con fallback legacy a modo_entrada_setup NO_OPERAR/CANCELAR.
+
+    RIESGO_BLOQUEA reproduce el veto técnico actual:
+        riesgo_protocolo >= 85
+
+    El resultado usado es resultado_hipotetico para que todas las
+    señales se comparen desde el mismo punto temporal: la vela donde
+    nació la señal.
     """
 
-    if (
-        MODO_EXPERIMENTO
-        != MODO_EXPERIMENTO_VALIDACION
-    ):
-        return
-
-    operadas = [
+    filas = [
         r for r in resultados
-        if r.get("estado_operacion") == "OPERADA_PROTOCOLO"
+        if str(
+            r.get("cerebro_unico_decision", "")
+            or ""
+        ).upper().strip() == "OPERAR_CON_PROTOCOLO"
     ]
 
-    print(
-        "\n===== PROBABILIDAD PROTOCOLO — VALIDACION ====="
-    )
-
-    if not operadas:
-        print("No hay operaciones de protocolo en VALIDACION.")
-        print("===============================================")
-        return
-
-    modelo = cargar_modelo_probabilidad_protocolo()
-
-    evaluadas = []
-
-    for r in operadas:
-        estimacion = estimar_probabilidad_protocolo(
-            r,
-            modelo,
-        )
-
-        evaluadas.append({
-            "resultado": r.get("resultado"),
-            "prob": estimacion["probabilidad"],
-            "fuentes": estimacion["cantidad_fuentes"],
-            "activo": r.get("activo", ""),
-            "protocolo": r.get(
-                "auditoria_protocolo_tipo",
-                "",
-            ),
-        })
-
-    rangos = [
-        ("<50", None, 50),
-        ("50-54", 50, 55),
-        ("55-59", 55, 60),
-        ("60-64", 60, 65),
-        ("65+", 65, None),
-    ]
-
-    print("\n--- CALIBRACION PROBABILIDAD PROTOCOLO ---")
-
-    for etiqueta, minimo, maximo in rangos:
-        grupo = []
-
-        for r in evaluadas:
-            p = r["prob"]
-
-            if minimo is not None and p < minimo:
-                continue
-
-            if maximo is not None and p >= maximo:
-                continue
-
-            grupo.append(r)
-
-        total = len(grupo)
-
-        wins = sum(
-            1 for r in grupo
-            if r["resultado"] == "WIN"
-        )
-
-        loss = total - wins
-
-        wr = (
-            round((wins / total) * 100, 2)
-            if total
-            else 0
-        )
-
-        activos = len({
-            str(r["activo"])
-            for r in grupo
-            if str(r["activo"])
-        })
-
-        print(
-            etiqueta,
-            "| total:", total,
-            "| win:", wins,
-            "| loss:", loss,
-            "| winrate:", str(wr) + "%",
-            "| activos:", activos,
-        )
-
-    ordenadas = sorted(
-        evaluadas,
-        key=lambda x: x["prob"],
-        reverse=True,
-    )
-
-    print("\n--- TOP CUANTILES PROTOCOLO ---")
-
-    for porcentaje in [25, 40, 50, 60, 75, 100]:
-        n = max(
-            1,
-            int(
-                round(
-                    len(ordenadas)
-                    * porcentaje
-                    / 100
-                )
-            ),
-        )
-
-        grupo = ordenadas[:n]
-
-        wins = sum(
-            1 for r in grupo
-            if r["resultado"] == "WIN"
-        )
-
-        wr = round(
-            (wins / len(grupo)) * 100,
-            2,
-        )
-
-        corte = grupo[-1]["prob"]
-
-        print(
-            "TOP",
-            str(porcentaje) + "%",
-            "| total:", len(grupo),
-            "| winrate:", str(wr) + "%",
-            "| prob mínima:", str(corte) + "%",
-        )
-
-    print("\n--- SIMULACION DE UMBRALES ---")
-
-    directas = [
-        r for r in resultados
-        if r.get("estado_operacion") == "OPERADA_DIRECTA"
-    ]
-
-    directas_win = sum(
-        1 for r in directas
-        if r.get("resultado") == "WIN"
-    )
-
-    baseline_total = len(directas) + len(operadas)
-    baseline_win = directas_win + sum(
-        1 for r in operadas
-        if r.get("resultado") == "WIN"
-    )
-    baseline_wr = (
-        round((baseline_win / baseline_total) * 100, 2)
-        if baseline_total
-        else 0
+    titulo_modo = (
+        "TRAIN"
+        if MODO_EXPERIMENTO == MODO_EXPERIMENTO_AUDITORIA_TRAIN
+        else "VALIDACION"
     )
 
     print(
-        "BASELINE:",
-        baseline_total,
-        "ops |",
-        baseline_win,
-        "WIN | WR:",
-        str(baseline_wr) + "%",
+        "\n===== MATRIZ SETUP × RIESGO — "
+        + titulo_modo
+        + " ====="
     )
 
-    for umbral in [50, 55, 57.5, 60, 62.5, 65]:
-        proto_filtradas = [
-            r for r in evaluadas
-            if r["prob"] >= umbral
-        ]
+    if not filas:
+        print("No hay señales OPERAR_CON_PROTOCOLO.")
+        print("==============================================")
+        return
 
-        proto_win = sum(
-            1 for r in proto_filtradas
-            if r["resultado"] == "WIN"
+    grupos = {}
+
+    for r in filas:
+        modo_setup = str(
+            r.get("modo_entrada_setup", "")
+            or ""
+        ).lower().strip()
+
+        setup_bloquea = _bool_auditoria(
+            r.get("riesgo_estructural_critico_setup"),
+            default=(
+                "no_operar" in modo_setup
+                or "cancelar" in modo_setup
+            ),
         )
 
-        total = len(directas) + len(proto_filtradas)
-        wins = directas_win + proto_win
-
-        wr = (
-            round((wins / total) * 100, 2)
-            if total
-            else 0
+        riesgo_valor = _num_auditoria(
+            r.get("riesgo_protocolo", 0),
+            0,
         )
+        riesgo_bloquea = riesgo_valor >= 85
 
-        print(
-            "umbral >=",
-            umbral,
-            "| ops:", total,
-            "| WIN:", wins,
-            "| WR:", str(wr) + "%",
-            "| protocolos:", len(proto_filtradas),
-        )
+        if setup_bloquea and riesgo_bloquea:
+            clave = "SETUP_BLOQUEA + RIESGO_BLOQUEA"
+        elif setup_bloquea and not riesgo_bloquea:
+            clave = "SETUP_BLOQUEA + RIESGO_PASA"
+        elif not setup_bloquea and riesgo_bloquea:
+            clave = "SETUP_PASA + RIESGO_BLOQUEA"
+        else:
+            clave = "SETUP_PASA + RIESGO_PASA"
 
-    print("\n--- COBERTURA DE EVIDENCIA ---")
-
-    cobertura = {}
-
-    for r in evaluadas:
-        n = r["fuentes"]
-
-        datos = cobertura.setdefault(
-            n,
-            {"total": 0, "win": 0},
+        datos = grupos.setdefault(
+            clave,
+            {
+                "total": 0,
+                "win": 0,
+                "activos": set(),
+                "protocolos": {},
+                "tipos_setup": {},
+                "subtipos_setup": {},
+                "mercados": {},
+                "confirmaciones": {},
+                "niveles_riesgo": {},
+            },
         )
 
         datos["total"] += 1
 
-        if r["resultado"] == "WIN":
+        resultado = str(
+            r.get("resultado_hipotetico", "")
+            or ""
+        ).upper().strip()
+
+        if resultado == "WIN":
             datos["win"] += 1
 
-    for n in sorted(cobertura):
-        datos = cobertura[n]
-        total = datos["total"]
-        win = datos["win"]
-        wr = round((win / total) * 100, 2)
+        activo = str(r.get("activo", "") or "").strip()
+        if activo:
+            datos["activos"].add(activo)
 
-        print(
-            n,
-            "fuentes",
-            "| total:", total,
-            "| winrate:", str(wr) + "%",
+        dimensiones = [
+            (
+                "protocolos",
+                str(
+                    r.get("protocolo_sugerido", "")
+                    or "SIN_PROTOCOLO"
+                ).upper().strip(),
+            ),
+            (
+                "tipos_setup",
+                str(
+                    r.get("tipo_setup", "")
+                    or "SIN_TIPO"
+                ).upper().strip(),
+            ),
+            (
+                "subtipos_setup",
+                str(
+                    r.get("subtipo_setup", "")
+                    or "SIN_SUBTIPO"
+                ).upper().strip(),
+            ),
+            (
+                "mercados",
+                str(
+                    r.get("tipo_mercado", "")
+                    or "SIN_MERCADO"
+                ).upper().strip(),
+            ),
+            (
+                "confirmaciones",
+                str(
+                    r.get("accion_confirmacion_ia", "")
+                    or "SIN_CONFIRMACION"
+                ).upper().strip(),
+            ),
+            (
+                "niveles_riesgo",
+                str(
+                    r.get("nivel_riesgo_protocolo", "")
+                    or "SIN_NIVEL"
+                ).upper().strip(),
+            ),
+        ]
+
+        for nombre, valor in dimensiones:
+            datos[nombre][valor] = (
+                datos[nombre].get(valor, 0) + 1
+            )
+
+    orden = [
+        "SETUP_BLOQUEA + RIESGO_BLOQUEA",
+        "SETUP_BLOQUEA + RIESGO_PASA",
+        "SETUP_PASA + RIESGO_BLOQUEA",
+        "SETUP_PASA + RIESGO_PASA",
+    ]
+
+    for clave in orden:
+        datos = grupos.get(
+            clave,
+            {
+                "total": 0,
+                "win": 0,
+                "activos": set(),
+                "protocolos": {},
+                "tipos_setup": {},
+                "subtipos_setup": {},
+                "mercados": {},
+                "confirmaciones": {},
+                "niveles_riesgo": {},
+            },
         )
 
-    print("===============================================\n")
+        total = datos["total"]
+        win = datos["win"]
+        loss = total - win
+        wr = round((win / total) * 100, 2) if total else 0
+
+        print("\n---", clave, "---")
+        print(
+            "total:", total,
+            "| win:", win,
+            "| loss:", loss,
+            "| winrate:", str(wr) + "%",
+            "| activos:", len(datos["activos"]),
+        )
+
+        for etiqueta, nombre in [
+            ("protocolos", "PROTOCOLOS"),
+            ("tipos_setup", "TIPO SETUP"),
+            ("subtipos_setup", "SUBTIPO SETUP"),
+            ("mercados", "MERCADO"),
+            ("confirmaciones", "CONFIRMACION"),
+            ("niveles_riesgo", "NIVEL RIESGO"),
+        ]:
+            valores = sorted(
+                datos[etiqueta].items(),
+                key=lambda x: (-x[1], x[0]),
+            )
+
+            if valores:
+                resumen = " | ".join(
+                    f"{k}:{v}"
+                    for k, v in valores[:8]
+                )
+                print(nombre + ":", resumen)
+
+    # --------------------------------------------------------
+    # Solapamiento global: cuánto duplican setup y riesgo.
+    # --------------------------------------------------------
+    ambos = grupos.get(
+        "SETUP_BLOQUEA + RIESGO_BLOQUEA",
+        {},
+    ).get("total", 0)
+
+    solo_setup = grupos.get(
+        "SETUP_BLOQUEA + RIESGO_PASA",
+        {},
+    ).get("total", 0)
+
+    solo_riesgo = grupos.get(
+        "SETUP_PASA + RIESGO_BLOQUEA",
+        {},
+    ).get("total", 0)
+
+    ninguno = grupos.get(
+        "SETUP_PASA + RIESGO_PASA",
+        {},
+    ).get("total", 0)
+
+    setup_total = ambos + solo_setup
+    riesgo_total = ambos + solo_riesgo
+
+    print("\n--- SOLAPAMIENTO ---")
+    print("Universo protocolo:", len(filas))
+    print("Setup bloquearía:", setup_total)
+    print("Riesgo bloquearía:", riesgo_total)
+    print("Ambos bloquearían:", ambos)
+    print("Solo setup:", solo_setup)
+    print("Solo riesgo:", solo_riesgo)
+    print("Ninguno:", ninguno)
+
+    if setup_total:
+        print(
+            "% de veto setup también cubierto por riesgo:",
+            str(
+                round(
+                    (ambos / setup_total) * 100,
+                    2,
+                )
+            )
+            + "%",
+        )
+
+    if riesgo_total:
+        print(
+            "% de veto riesgo también cubierto por setup:",
+            str(
+                round(
+                    (ambos / riesgo_total) * 100,
+                    2,
+                )
+            )
+            + "%",
+        )
+
+    print("==============================================\n")
+
+
+
+def imprimir_c3_bypass_vetos_sombra(resultados):
+    """
+    Reporte C3.
+
+    Mide el timing REAL que habrían encontrado los protocolos
+    específicos si los vetos setup/riesgo no hubieran cortado
+    primero la señal.
+
+    No cambia el baseline.
+    """
+
+    filas = [
+        r for r in resultados
+        if r.get("c3_sombra_aplicada")
+    ]
+
+    modo = (
+        "TRAIN"
+        if MODO_EXPERIMENTO
+        == MODO_EXPERIMENTO_AUDITORIA_TRAIN
+        else "VALIDACION"
+    )
+
+    print(
+        "\n===== C3 BYPASS SOMBRA DE VETOS — "
+        + modo
+        + " ====="
+    )
+
+    if not filas:
+        print("No hay señales alcanzadas por C3.")
+        print("============================================")
+        return
+
+    total = len(filas)
+
+    con_entrada = [
+        r for r in filas
+        if r.get("c3_sombra_encuentra_entrada")
+    ]
+
+    sin_entrada = total - len(con_entrada)
+
+    wins = sum(
+        1 for r in con_entrada
+        if str(
+            r.get("c3_sombra_resultado", "")
+            or ""
+        ).upper() == "WIN"
+    )
+
+    loss = len(con_entrada) - wins
+
+    wr = (
+        round(
+            (wins / len(con_entrada)) * 100,
+            2,
+        )
+        if con_entrada
+        else 0
+    )
+
+    print("Señales vetadas evaluadas:", total)
+    print("Protocolo encontró entrada:", len(con_entrada))
+    print("Sin entrada técnica:", sin_entrada)
+    print(
+        "Cobertura timing:",
+        str(
+            round(
+                (len(con_entrada) / total) * 100,
+                2,
+            )
+        ) + "%",
+    )
+    print(
+        "Resultado de entradas sombra:",
+        "WIN:", wins,
+        "| LOSS:", loss,
+        "| WR:", str(wr) + "%",
+    )
+
+    # --------------------------------------------------------
+    # Por cruce de veto
+    # --------------------------------------------------------
+    print("\n--- POR GRUPO VETO ---")
+
+    grupos = {}
+
+    for r in filas:
+        clave = str(
+            r.get("c3_sombra_grupo_veto", "")
+            or "SIN_GRUPO"
+        )
+
+        d = grupos.setdefault(
+            clave,
+            {
+                "total": 0,
+                "entrada": 0,
+                "win": 0,
+            },
+        )
+
+        d["total"] += 1
+
+        if r.get("c3_sombra_encuentra_entrada"):
+            d["entrada"] += 1
+
+            if str(
+                r.get("c3_sombra_resultado", "")
+                or ""
+            ).upper() == "WIN":
+                d["win"] += 1
+
+    for clave, d in sorted(
+        grupos.items(),
+        key=lambda x: -x[1]["total"],
+    ):
+        wr_g = (
+            round(
+                (d["win"] / d["entrada"]) * 100,
+                2,
+            )
+            if d["entrada"]
+            else 0
+        )
+
+        print(
+            clave,
+            "| vetadas:", d["total"],
+            "| entradas:", d["entrada"],
+            "| win:", d["win"],
+            "| loss:", d["entrada"] - d["win"],
+            "| WR timing:", str(wr_g) + "%",
+        )
+
+    # --------------------------------------------------------
+    # Por protocolo específico
+    # --------------------------------------------------------
+    print("\n--- POR PROTOCOLO SOMBRA ---")
+
+    protocolos = {}
+
+    for r in filas:
+        protocolo = str(
+            r.get("c3_sombra_protocolo", "")
+            or "SIN_PROTOCOLO"
+        )
+
+        d = protocolos.setdefault(
+            protocolo,
+            {
+                "total": 0,
+                "entrada": 0,
+                "win": 0,
+                "esperas": [],
+                "motivos": {},
+            },
+        )
+
+        d["total"] += 1
+
+        motivo = str(
+            r.get("c3_sombra_motivo", "")
+            or "SIN_MOTIVO"
+        )
+
+        d["motivos"][motivo] = (
+            d["motivos"].get(motivo, 0) + 1
+        )
+
+        if r.get("c3_sombra_encuentra_entrada"):
+            d["entrada"] += 1
+
+            try:
+                espera = int(
+                    r.get("c3_sombra_espera_velas", -1)
+                )
+            except Exception:
+                espera = -1
+
+            if espera >= 0:
+                d["esperas"].append(espera)
+
+            if str(
+                r.get("c3_sombra_resultado", "")
+                or ""
+            ).upper() == "WIN":
+                d["win"] += 1
+
+    for protocolo, d in sorted(
+        protocolos.items(),
+        key=lambda x: -x[1]["total"],
+    ):
+        wr_p = (
+            round(
+                (d["win"] / d["entrada"]) * 100,
+                2,
+            )
+            if d["entrada"]
+            else 0
+        )
+
+        cobertura = (
+            round(
+                (d["entrada"] / d["total"]) * 100,
+                2,
+            )
+            if d["total"]
+            else 0
+        )
+
+        espera_media = (
+            round(
+                sum(d["esperas"]) / len(d["esperas"]),
+                2,
+            )
+            if d["esperas"]
+            else -1
+        )
+
+        print(
+            protocolo,
+            "| vetadas:", d["total"],
+            "| entradas:", d["entrada"],
+            "| cobertura:", str(cobertura) + "%",
+            "| win:", d["win"],
+            "| loss:", d["entrada"] - d["win"],
+            "| WR timing:", str(wr_p) + "%",
+            "| espera media:", espera_media,
+        )
+
+        top_motivos = sorted(
+            d["motivos"].items(),
+            key=lambda x: -x[1],
+        )[:5]
+
+        if top_motivos:
+            print(
+                "  motivos:",
+                " | ".join(
+                    f"{m}:{n}"
+                    for m, n in top_motivos
+                ),
+            )
+
+    # --------------------------------------------------------
+    # Por espera de entrada
+    # --------------------------------------------------------
+    print("\n--- POR ESPERA SOMBRA ---")
+
+    esperas = {}
+
+    for r in con_entrada:
+        try:
+            e = int(
+                r.get("c3_sombra_espera_velas", -1)
+            )
+        except Exception:
+            e = -1
+
+        d = esperas.setdefault(
+            e,
+            {"total": 0, "win": 0},
+        )
+
+        d["total"] += 1
+
+        if str(
+            r.get("c3_sombra_resultado", "")
+            or ""
+        ).upper() == "WIN":
+            d["win"] += 1
+
+    for e in sorted(esperas):
+        d = esperas[e]
+        wr_e = round(
+            (d["win"] / d["total"]) * 100,
+            2,
+        )
+
+        print(
+            e,
+            "velas",
+            "| total:", d["total"],
+            "| win:", d["win"],
+            "| loss:", d["total"] - d["win"],
+            "| WR:", str(wr_e) + "%",
+        )
+
+    print("============================================\n")
+
+
+
+def imprimir_c5_timing_ruptura_resistencia(resultados):
+    """C5: auditoría de timing de RUPTURA_RESISTENCIA. No cambia decisiones."""
+    modo = (
+        "TRAIN"
+        if MODO_EXPERIMENTO == MODO_EXPERIMENTO_AUDITORIA_TRAIN
+        else "VALIDACION"
+    )
+
+    filas = [
+        r for r in resultados
+        if r.get("estado_operacion") == "OPERADA_PROTOCOLO"
+        and str(r.get("auditoria_protocolo_tipo", "") or "").upper().strip()
+        == "RUPTURA_RESISTENCIA"
+    ]
+
+    print("\n===== C5 RUPTURA RESISTENCIA — TIMING " + modo + " =====")
+
+    if not filas:
+        print("No hay operaciones RUPTURA_RESISTENCIA.")
+        print("==============================================")
+        return
+
+    def resumen(grupo):
+        total = len(grupo)
+        win = sum(1 for r in grupo if str(r.get("resultado", "") or "").upper() == "WIN")
+        loss = total - win
+        wr = round((win / total) * 100, 2) if total else 0
+        activos = len({str(r.get("activo", "") or "") for r in grupo if str(r.get("activo", "") or "")})
+        return total, win, loss, wr, activos
+
+    t,w,l,wr,a = resumen(filas)
+    print("TOTAL RUPTURA_RESISTENCIA:", t, "| WIN:", w, "| LOSS:", l, "| WR:", str(wr)+"%", "| activos:", a)
+
+    print("\n--- POR ESPERA ---")
+    grupos = {}
+    for r in filas:
+        try:
+            espera = int(r.get("auditoria_protocolo_espera_velas", -1))
+        except Exception:
+            espera = -1
+        etiqueta = "5+" if espera >= 5 else str(espera)
+        grupos.setdefault(etiqueta, []).append(r)
+
+    for etiqueta in ["1","2","3","4","5+","0","-1"]:
+        g = grupos.get(etiqueta, [])
+        if not g:
+            continue
+        t,w,l,wr,a = resumen(g)
+        print(etiqueta, "velas | total:", t, "| win:", w, "| loss:", l, "| WR:", str(wr)+"%", "| activos:", a)
+
+    tempranas=[]
+    tardias=[]
+    for r in filas:
+        try:
+            espera=int(r.get("auditoria_protocolo_espera_velas",-1))
+        except Exception:
+            espera=-1
+        if espera in (1,2):
+            tempranas.append(r)
+        elif espera >= 3:
+            tardias.append(r)
+
+    print("\n--- TIMING TEMPRANO VS TARDIO ---")
+    for nombre,g in [("1-2_VELAS",tempranas),("3+_VELAS",tardias)]:
+        t,w,l,wr,a=resumen(g)
+        print(nombre, "| total:",t,"| win:",w,"| loss:",l,"| WR:",str(wr)+"%","| activos:",a)
+
+    dimensiones=[
+        ("SUBTIPO","subtipo_setup"),
+        ("NIVEL_RIESGO","auditoria_protocolo_nivel_riesgo"),
+        ("NIVEL_CONFIRMACION","auditoria_protocolo_nivel_confirmacion"),
+        ("ACCION_CONFIRMACION","auditoria_protocolo_accion_confirmacion"),
+        ("MERCADO","auditoria_protocolo_tipo_mercado"),
+        ("TENDENCIA","estado_tendencia"),
+        ("MOTIVO","motivo_ejecucion"),
+    ]
+
+    for titulo,campo in dimensiones:
+        print("\n--- ESPERA × "+titulo+" ---")
+        cruces={}
+        for r in filas:
+            try:
+                espera=int(r.get("auditoria_protocolo_espera_velas",-1))
+            except Exception:
+                espera=-1
+            espera_txt="5+" if espera>=5 else str(espera)
+            valor=str(r.get(campo,"") or "SIN_DATO").upper().strip()
+            cruces.setdefault((espera_txt,valor),[]).append(r)
+        for (e,v),g in sorted(cruces.items(), key=lambda kv:(-len(kv[1]),kv[0][0],kv[0][1])):
+            if len(g)<2:
+                continue
+            t,w,l,wr,a=resumen(g)
+            print("espera:",e,"|",titulo+":",v,"| total:",t,"| win:",w,"| loss:",l,"| WR:",str(wr)+"%","| activos:",a)
+
+    print("==============================================\n")
+
+
+def imprimir_c6_auditoria_confirmacion(resultados):
+    """
+    C6 — Auditoría de motor_confirmacion.
+
+    No cambia decisiones.
+    Estudia únicamente señales OPERAR_CON_PROTOCOLO y separa:
+    - protocolo real auditado
+    - nivel confirmación
+    - acción confirmación
+    - estado operado/cancelado
+    - resultado WIN/LOSS hipotético/real según registro
+
+    Objetivo:
+    comprobar si MEDIO/ALTO están calibrados de forma coherente
+    en TRAIN y luego en VALIDACION.
+    """
+
+    modo = (
+        "TRAIN"
+        if MODO_EXPERIMENTO
+        == MODO_EXPERIMENTO_AUDITORIA_TRAIN
+        else "VALIDACION"
+    )
+
+    filas = [
+        r for r in resultados
+        if str(
+            r.get("cerebro_unico_decision", "")
+            or ""
+        ).upper().strip() == "OPERAR_CON_PROTOCOLO"
+    ]
+
+    print(
+        "\n===== C6 AUDITORIA MOTOR CONFIRMACION — "
+        + modo
+        + " ====="
+    )
+
+    if not filas:
+        print("No hay señales OPERAR_CON_PROTOCOLO.")
+        print("==============================================")
+        return
+
+    def resultado_fila(r):
+        """
+        Para comparar todo el universo protocolo:
+        usa resultado_hipotetico cuando existe.
+        """
+        valor = str(
+            r.get("resultado_hipotetico", "")
+            or r.get("resultado", "")
+            or ""
+        ).upper().strip()
+        return valor
+
+    def resumen(grupo):
+        total = len(grupo)
+        win = sum(
+            1 for r in grupo
+            if resultado_fila(r) == "WIN"
+        )
+        loss = total - win
+        wr = round((win / total) * 100, 2) if total else 0
+        activos = len({
+            str(r.get("activo", "") or "")
+            for r in grupo
+            if str(r.get("activo", "") or "")
+        })
+        return total, win, loss, wr, activos
+
+    total, win, loss, wr, activos = resumen(filas)
+
+    print(
+        "UNIVERSO PROTOCOLO:",
+        total,
+        "| WIN:", win,
+        "| LOSS:", loss,
+        "| WR:", str(wr) + "%",
+        "| activos:", activos,
+    )
+
+    # --------------------------------------------------------
+    # 1) Nivel confirmación global
+    # --------------------------------------------------------
+    print("\n--- NIVEL CONFIRMACION GLOBAL ---")
+
+    niveles = {}
+    for r in filas:
+        nivel = str(
+            r.get("auditoria_protocolo_nivel_confirmacion", "")
+            or r.get("nivel_confirmacion_ia", "")
+            or "SIN_DATO"
+        ).upper().strip()
+
+        niveles.setdefault(nivel, []).append(r)
+
+    for nivel, grupo in sorted(
+        niveles.items(),
+        key=lambda kv: -len(kv[1]),
+    ):
+        t, w, l, wr_g, act = resumen(grupo)
+        print(
+            nivel,
+            "| total:", t,
+            "| win:", w,
+            "| loss:", l,
+            "| WR:", str(wr_g) + "%",
+            "| activos:", act,
+        )
+
+    # --------------------------------------------------------
+    # 2) Acción confirmación global
+    # --------------------------------------------------------
+    print("\n--- ACCION CONFIRMACION GLOBAL ---")
+
+    acciones = {}
+    for r in filas:
+        accion = str(
+            r.get("auditoria_protocolo_accion_confirmacion", "")
+            or r.get("accion_confirmacion_ia", "")
+            or "SIN_DATO"
+        ).upper().strip()
+
+        acciones.setdefault(accion, []).append(r)
+
+    for accion, grupo in sorted(
+        acciones.items(),
+        key=lambda kv: -len(kv[1]),
+    ):
+        t, w, l, wr_g, act = resumen(grupo)
+        print(
+            accion,
+            "| total:", t,
+            "| win:", w,
+            "| loss:", l,
+            "| WR:", str(wr_g) + "%",
+            "| activos:", act,
+        )
+
+    # --------------------------------------------------------
+    # 3) Protocolo × nivel confirmación
+    # --------------------------------------------------------
+    print("\n--- PROTOCOLO × NIVEL CONFIRMACION ---")
+
+    grupos = {}
+
+    for r in filas:
+        protocolo = str(
+            r.get("auditoria_protocolo_tipo", "")
+            or "SIN_PROTOCOLO"
+        ).upper().strip()
+
+        nivel = str(
+            r.get("auditoria_protocolo_nivel_confirmacion", "")
+            or r.get("nivel_confirmacion_ia", "")
+            or "SIN_DATO"
+        ).upper().strip()
+
+        grupos.setdefault(
+            (protocolo, nivel),
+            [],
+        ).append(r)
+
+    for (protocolo, nivel), grupo in sorted(
+        grupos.items(),
+        key=lambda kv: (-len(kv[1]), kv[0][0], kv[0][1]),
+    ):
+        t, w, l, wr_g, act = resumen(grupo)
+        print(
+            protocolo,
+            "|", nivel,
+            "| total:", t,
+            "| win:", w,
+            "| loss:", l,
+            "| WR:", str(wr_g) + "%",
+            "| activos:", act,
+        )
+
+    # --------------------------------------------------------
+    # 4) Protocolo × acción confirmación
+    # --------------------------------------------------------
+    print("\n--- PROTOCOLO × ACCION CONFIRMACION ---")
+
+    grupos = {}
+
+    for r in filas:
+        protocolo = str(
+            r.get("auditoria_protocolo_tipo", "")
+            or "SIN_PROTOCOLO"
+        ).upper().strip()
+
+        accion = str(
+            r.get("auditoria_protocolo_accion_confirmacion", "")
+            or r.get("accion_confirmacion_ia", "")
+            or "SIN_DATO"
+        ).upper().strip()
+
+        grupos.setdefault(
+            (protocolo, accion),
+            [],
+        ).append(r)
+
+    for (protocolo, accion), grupo in sorted(
+        grupos.items(),
+        key=lambda kv: (-len(kv[1]), kv[0][0], kv[0][1]),
+    ):
+        t, w, l, wr_g, act = resumen(grupo)
+        print(
+            protocolo,
+            "|", accion,
+            "| total:", t,
+            "| win:", w,
+            "| loss:", l,
+            "| WR:", str(wr_g) + "%",
+            "| activos:", act,
+        )
+
+    # --------------------------------------------------------
+    # 5) Protocolo × nivel × estado
+    # --------------------------------------------------------
+    print("\n--- PROTOCOLO × NIVEL × ESTADO ---")
+
+    grupos = {}
+
+    for r in filas:
+        protocolo = str(
+            r.get("auditoria_protocolo_tipo", "")
+            or "SIN_PROTOCOLO"
+        ).upper().strip()
+
+        nivel = str(
+            r.get("auditoria_protocolo_nivel_confirmacion", "")
+            or r.get("nivel_confirmacion_ia", "")
+            or "SIN_DATO"
+        ).upper().strip()
+
+        estado = str(
+            r.get("estado_operacion", "")
+            or "SIN_ESTADO"
+        ).upper().strip()
+
+        grupos.setdefault(
+            (protocolo, nivel, estado),
+            [],
+        ).append(r)
+
+    for (protocolo, nivel, estado), grupo in sorted(
+        grupos.items(),
+        key=lambda kv: (-len(kv[1]), kv[0][0], kv[0][1], kv[0][2]),
+    ):
+        t, w, l, wr_g, act = resumen(grupo)
+        print(
+            protocolo,
+            "|", nivel,
+            "|", estado,
+            "| total:", t,
+            "| win:", w,
+            "| loss:", l,
+            "| WR:", str(wr_g) + "%",
+            "| activos:", act,
+        )
+
+    # --------------------------------------------------------
+    # 6) Índice confirmación por rangos
+    # --------------------------------------------------------
+    print("\n--- INDICE CONFIRMACION POR RANGO ---")
+
+    rangos = {
+        "0-44": [],
+        "45-59": [],
+        "60-74": [],
+        "75+": [],
+    }
+
+    for r in filas:
+        try:
+            indice = float(
+                r.get("indice_confirmacion_ia", 0)
+                or 0
+            )
+        except Exception:
+            indice = 0.0
+
+        if indice < 45:
+            clave = "0-44"
+        elif indice < 60:
+            clave = "45-59"
+        elif indice < 75:
+            clave = "60-74"
+        else:
+            clave = "75+"
+
+        rangos[clave].append(r)
+
+    for clave in ["0-44", "45-59", "60-74", "75+"]:
+        grupo = rangos[clave]
+        if not grupo:
+            continue
+
+        t, w, l, wr_g, act = resumen(grupo)
+        print(
+            clave,
+            "| total:", t,
+            "| win:", w,
+            "| loss:", l,
+            "| WR:", str(wr_g) + "%",
+            "| activos:", act,
+        )
+
+    # --------------------------------------------------------
+    # 7) Señal de posible inversión
+    # --------------------------------------------------------
+    medio = niveles.get("MEDIO", [])
+    alto = niveles.get("ALTO", [])
+
+    print("\n--- COMPARACION MEDIO VS ALTO ---")
+
+    for nombre, grupo in [
+        ("MEDIO", medio),
+        ("ALTO", alto),
+    ]:
+        t, w, l, wr_g, act = resumen(grupo)
+        print(
+            nombre,
+            "| total:", t,
+            "| win:", w,
+            "| loss:", l,
+            "| WR:", str(wr_g) + "%",
+            "| activos:", act,
+        )
+
+    if medio and alto:
+        _, _, _, wr_medio, _ = resumen(medio)
+        _, _, _, wr_alto, _ = resumen(alto)
+
+        print(
+            "DIFERENCIA MEDIO - ALTO:",
+            str(round(wr_medio - wr_alto, 2)) + " puntos",
+        )
+
+    print("==============================================\n")
+
+
+
+def imprimir_c7_confirmacion_vs_espera(resultados):
+    """
+    C7 — ACCION_CONFIRMACION × ESPERA REAL
+
+    Auditoría pura. No cambia decisiones ni operaciones.
+
+    Compara:
+      motor_confirmacion -> ESPERAR_2 / ESPERAR_3
+    contra:
+      auditoria_protocolo_espera_velas real
+
+    Universo:
+      señales OPERAR_CON_PROTOCOLO que llegaron a una salida
+      auditable de protocolo.
+
+    Separa por:
+      - acción confirmación
+      - espera real
+      - protocolo
+      - estado operada/cancelada
+    """
+
+    modo = (
+        "TRAIN"
+        if MODO_EXPERIMENTO
+        == MODO_EXPERIMENTO_AUDITORIA_TRAIN
+        else "VALIDACION"
+    )
+
+    filas = [
+        r for r in resultados
+        if str(
+            r.get("cerebro_unico_decision", "")
+            or ""
+        ).upper().strip() == "OPERAR_CON_PROTOCOLO"
+    ]
+
+    print(
+        "\n===== C7 CONFIRMACION × ESPERA REAL — "
+        + modo
+        + " ====="
+    )
+
+    if not filas:
+        print("No hay señales OPERAR_CON_PROTOCOLO.")
+        print("==============================================")
+        return
+
+    def resultado_fila(r):
+        return str(
+            r.get("resultado_hipotetico", "")
+            or r.get("resultado", "")
+            or ""
+        ).upper().strip()
+
+    def resumen(grupo):
+        total = len(grupo)
+        win = sum(
+            1 for r in grupo
+            if resultado_fila(r) == "WIN"
+        )
+        loss = total - win
+        wr = round((win / total) * 100, 2) if total else 0
+        activos = len({
+            str(r.get("activo", "") or "")
+            for r in grupo
+            if str(r.get("activo", "") or "")
+        })
+        return total, win, loss, wr, activos
+
+    def accion_confirmacion(r):
+        return str(
+            r.get("auditoria_protocolo_accion_confirmacion", "")
+            or r.get("accion_confirmacion_ia", "")
+            or "SIN_DATO"
+        ).upper().strip()
+
+    def espera_real(r):
+        try:
+            return int(
+                r.get("auditoria_protocolo_espera_velas", -1)
+            )
+        except Exception:
+            return -1
+
+    def protocolo(r):
+        return str(
+            r.get("auditoria_protocolo_tipo", "")
+            or "SIN_PROTOCOLO"
+        ).upper().strip()
+
+    def categoria_relacion(accion, espera):
+        """
+        Clasifica si el protocolo terminó entrando antes,
+        exactamente o después de lo sugerido.
+        """
+
+        if espera < 0:
+            return "SIN_ENTRADA"
+
+        if accion == "ESPERAR_2":
+            objetivo = 2
+        elif accion == "ESPERAR_3":
+            objetivo = 3
+        else:
+            return "SIN_OBJETIVO"
+
+        if espera < objetivo:
+            return "ANTES_DE_LO_SUGERIDO"
+
+        if espera == objetivo:
+            return "EXACTAMENTE_LO_SUGERIDO"
+
+        return "DESPUES_DE_LO_SUGERIDO"
+
+    # --------------------------------------------------------
+    # GLOBAL
+    # --------------------------------------------------------
+    print("\n--- GLOBAL ACCION × ESPERA REAL ---")
+
+    grupos = {}
+
+    for r in filas:
+        accion = accion_confirmacion(r)
+        espera = espera_real(r)
+
+        if espera >= 5:
+            espera_txt = "5+"
+        else:
+            espera_txt = str(espera)
+
+        grupos.setdefault(
+            (accion, espera_txt),
+            [],
+        ).append(r)
+
+    for (accion, espera_txt), grupo in sorted(
+        grupos.items(),
+        key=lambda kv: (-len(kv[1]), kv[0][0], kv[0][1]),
+    ):
+        t, w, l, wr, act = resumen(grupo)
+
+        print(
+            accion,
+            "| espera_real:", espera_txt,
+            "| total:", t,
+            "| win:", w,
+            "| loss:", l,
+            "| WR:", str(wr) + "%",
+            "| activos:", act,
+        )
+
+    # --------------------------------------------------------
+    # RELACIÓN CON LA RECOMENDACIÓN
+    # --------------------------------------------------------
+    print("\n--- CUMPLIMIENTO DE LA RECOMENDACION ---")
+
+    grupos = {}
+
+    for r in filas:
+        accion = accion_confirmacion(r)
+        espera = espera_real(r)
+        relacion = categoria_relacion(
+            accion,
+            espera,
+        )
+
+        grupos.setdefault(
+            (accion, relacion),
+            [],
+        ).append(r)
+
+    for (accion, relacion), grupo in sorted(
+        grupos.items(),
+        key=lambda kv: (-len(kv[1]), kv[0][0], kv[0][1]),
+    ):
+        t, w, l, wr, act = resumen(grupo)
+
+        print(
+            accion,
+            "|", relacion,
+            "| total:", t,
+            "| win:", w,
+            "| loss:", l,
+            "| WR:", str(wr) + "%",
+            "| activos:", act,
+        )
+
+    # --------------------------------------------------------
+    # PROTOCOLO × ACCIÓN × RELACIÓN
+    # --------------------------------------------------------
+    print("\n--- PROTOCOLO × ACCION × RELACION ---")
+
+    grupos = {}
+
+    for r in filas:
+        p = protocolo(r)
+        accion = accion_confirmacion(r)
+        espera = espera_real(r)
+        relacion = categoria_relacion(
+            accion,
+            espera,
+        )
+
+        grupos.setdefault(
+            (p, accion, relacion),
+            [],
+        ).append(r)
+
+    for (p, accion, relacion), grupo in sorted(
+        grupos.items(),
+        key=lambda kv: (
+            -len(kv[1]),
+            kv[0][0],
+            kv[0][1],
+            kv[0][2],
+        ),
+    ):
+        t, w, l, wr, act = resumen(grupo)
+
+        print(
+            p,
+            "|", accion,
+            "|", relacion,
+            "| total:", t,
+            "| win:", w,
+            "| loss:", l,
+            "| WR:", str(wr) + "%",
+            "| activos:", act,
+        )
+
+    # --------------------------------------------------------
+    # PROTOCOLO × ACCIÓN × ESPERA EXACTA
+    # --------------------------------------------------------
+    print("\n--- PROTOCOLO × ACCION × ESPERA EXACTA ---")
+
+    grupos = {}
+
+    for r in filas:
+        p = protocolo(r)
+        accion = accion_confirmacion(r)
+        espera = espera_real(r)
+
+        if espera >= 5:
+            espera_txt = "5+"
+        else:
+            espera_txt = str(espera)
+
+        grupos.setdefault(
+            (p, accion, espera_txt),
+            [],
+        ).append(r)
+
+    for (p, accion, espera_txt), grupo in sorted(
+        grupos.items(),
+        key=lambda kv: (
+            -len(kv[1]),
+            kv[0][0],
+            kv[0][1],
+            kv[0][2],
+        ),
+    ):
+        t, w, l, wr, act = resumen(grupo)
+
+        print(
+            p,
+            "|", accion,
+            "| espera:", espera_txt,
+            "| total:", t,
+            "| win:", w,
+            "| loss:", l,
+            "| WR:", str(wr) + "%",
+            "| activos:", act,
+        )
+
+    # --------------------------------------------------------
+    # SOLO OPERADAS
+    # --------------------------------------------------------
+    print("\n--- SOLO OPERADAS: ACCION × RELACION ---")
+
+    operadas = [
+        r for r in filas
+        if str(
+            r.get("estado_operacion", "")
+            or ""
+        ).upper().strip() == "OPERADA_PROTOCOLO"
+    ]
+
+    grupos = {}
+
+    for r in operadas:
+        accion = accion_confirmacion(r)
+        espera = espera_real(r)
+        relacion = categoria_relacion(
+            accion,
+            espera,
+        )
+
+        grupos.setdefault(
+            (accion, relacion),
+            [],
+        ).append(r)
+
+    for (accion, relacion), grupo in sorted(
+        grupos.items(),
+        key=lambda kv: (-len(kv[1]), kv[0][0], kv[0][1]),
+    ):
+        t, w, l, wr, act = resumen(grupo)
+
+        print(
+            accion,
+            "|", relacion,
+            "| total:", t,
+            "| win:", w,
+            "| loss:", l,
+            "| WR:", str(wr) + "%",
+            "| activos:", act,
+        )
+
+    # --------------------------------------------------------
+    # RESUMEN DE COHERENCIA
+    # --------------------------------------------------------
+    print("\n--- RESUMEN COHERENCIA ---")
+
+    con_objetivo = [
+        r for r in filas
+        if accion_confirmacion(r)
+        in {"ESPERAR_2", "ESPERAR_3"}
+    ]
+
+    exactas = []
+    antes = []
+    despues = []
+    sin_entrada = []
+
+    for r in con_objetivo:
+        rel = categoria_relacion(
+            accion_confirmacion(r),
+            espera_real(r),
+        )
+
+        if rel == "EXACTAMENTE_LO_SUGERIDO":
+            exactas.append(r)
+        elif rel == "ANTES_DE_LO_SUGERIDO":
+            antes.append(r)
+        elif rel == "DESPUES_DE_LO_SUGERIDO":
+            despues.append(r)
+        elif rel == "SIN_ENTRADA":
+            sin_entrada.append(r)
+
+    total_obj = len(con_objetivo)
+
+    print("Señales con objetivo de espera:", total_obj)
+    print(
+        "Exactamente:",
+        len(exactas),
+        "|",
+        str(
+            round(
+                (len(exactas) / total_obj) * 100,
+                2,
+            )
+            if total_obj else 0
+        ) + "%",
+    )
+    print(
+        "Antes:",
+        len(antes),
+        "|",
+        str(
+            round(
+                (len(antes) / total_obj) * 100,
+                2,
+            )
+            if total_obj else 0
+        ) + "%",
+    )
+    print(
+        "Después:",
+        len(despues),
+        "|",
+        str(
+            round(
+                (len(despues) / total_obj) * 100,
+                2,
+            )
+            if total_obj else 0
+        ) + "%",
+    )
+    print(
+        "Sin entrada:",
+        len(sin_entrada),
+        "|",
+        str(
+            round(
+                (len(sin_entrada) / total_obj) * 100,
+                2,
+            )
+            if total_obj else 0
+        ) + "%",
+    )
+
+    print("==============================================\n")
+
+
+
+def imprimir_c8_evento_tecnico(resultados):
+    """
+    C8 — EVENTO TECNICO QUE DISPARA LA ENTRADA
+
+    Auditoría pura: NO modifica decisiones.
+
+    Usa únicamente información ya emitida por motor_protocolos:
+      - auditoria_protocolo_motivo / motivo_ejecucion
+      - auditoria_protocolo_tipo
+      - auditoria_protocolo_espera_velas
+      - accion_confirmacion_ia
+      - subtipo_setup
+      - resultado
+
+    Objetivo:
+    identificar QUÉ evento técnico real acompaña las entradas
+    tempranas, exactas y tardías, especialmente en
+    RUPTURA_RESISTENCIA.
+    """
+
+    modo = (
+        "TRAIN"
+        if MODO_EXPERIMENTO
+        == MODO_EXPERIMENTO_AUDITORIA_TRAIN
+        else "VALIDACION"
+    )
+
+    filas = [
+        r for r in resultados
+        if str(
+            r.get("estado_operacion", "")
+            or ""
+        ).upper().strip() == "OPERADA_PROTOCOLO"
+    ]
+
+    print(
+        "\n===== C8 EVENTO TECNICO DE ENTRADA — "
+        + modo
+        + " ====="
+    )
+
+    if not filas:
+        print("No hay operaciones de protocolo.")
+        print("==============================================")
+        return
+
+    def resultado_fila(r):
+        return str(
+            r.get("resultado", "")
+            or ""
+        ).upper().strip()
+
+    def resumen(grupo):
+        total = len(grupo)
+        win = sum(
+            1 for r in grupo
+            if resultado_fila(r) == "WIN"
+        )
+        loss = total - win
+        wr = round((win / total) * 100, 2) if total else 0
+        activos = len({
+            str(r.get("activo", "") or "")
+            for r in grupo
+            if str(r.get("activo", "") or "")
+        })
+        return total, win, loss, wr, activos
+
+    def protocolo(r):
+        return str(
+            r.get("auditoria_protocolo_tipo", "")
+            or "SIN_PROTOCOLO"
+        ).upper().strip()
+
+    def motivo(r):
+        return str(
+            r.get("auditoria_protocolo_motivo", "")
+            or r.get("motivo_ejecucion", "")
+            or "SIN_MOTIVO"
+        ).upper().strip()
+
+    def accion(r):
+        return str(
+            r.get("auditoria_protocolo_accion_confirmacion", "")
+            or r.get("accion_confirmacion_ia", "")
+            or "SIN_DATO"
+        ).upper().strip()
+
+    def espera(r):
+        try:
+            return int(
+                r.get("auditoria_protocolo_espera_velas", -1)
+            )
+        except Exception:
+            return -1
+
+    def relacion(r):
+        e = espera(r)
+        a = accion(r)
+
+        if e < 0:
+            return "SIN_ENTRADA"
+
+        if a == "ESPERAR_2":
+            objetivo = 2
+        elif a == "ESPERAR_3":
+            objetivo = 3
+        else:
+            return "SIN_OBJETIVO"
+
+        if e < objetivo:
+            return "ANTES"
+        if e == objetivo:
+            return "EXACTA"
+        return "DESPUES"
+
+    def familia_evento(texto):
+        """
+        Agrupa el motivo sin inventar nuevas señales.
+        Solo resume palabras que ya aparecen en el motivo real.
+        """
+        t = str(texto or "").upper()
+
+        if "CONTINUIDAD" in t:
+            return "CONTINUIDAD"
+
+        if "RECHAZO" in t:
+            return "RECHAZO"
+
+        if "IMPULSO" in t:
+            return "IMPULSO"
+
+        if "CONFIRMACION_MEDIA" in t or t.endswith("_MEDIA"):
+            return "CONFIRMACION_MEDIA"
+
+        if "RECUPERACION" in t:
+            return "RECUPERACION"
+
+        return "OTRO"
+
+    total, win, loss, wr, activos = resumen(filas)
+
+    print(
+        "OPERADAS PROTOCOLO:",
+        total,
+        "| WIN:", win,
+        "| LOSS:", loss,
+        "| WR:", str(wr) + "%",
+        "| activos:", activos,
+    )
+
+    # --------------------------------------------------------
+    # EVENTO EXACTO GLOBAL
+    # --------------------------------------------------------
+    print("\n--- EVENTO EXACTO GLOBAL ---")
+
+    grupos = {}
+
+    for r in filas:
+        m = motivo(r)
+        grupos.setdefault(m, []).append(r)
+
+    for m, grupo in sorted(
+        grupos.items(),
+        key=lambda kv: (-len(kv[1]), kv[0]),
+    ):
+        t, w, l, wr_g, act = resumen(grupo)
+
+        print(
+            m,
+            "| total:", t,
+            "| win:", w,
+            "| loss:", l,
+            "| WR:", str(wr_g) + "%",
+            "| activos:", act,
+        )
+
+    # --------------------------------------------------------
+    # FAMILIA EVENTO GLOBAL
+    # --------------------------------------------------------
+    print("\n--- FAMILIA EVENTO GLOBAL ---")
+
+    grupos = {}
+
+    for r in filas:
+        f = familia_evento(motivo(r))
+        grupos.setdefault(f, []).append(r)
+
+    for f, grupo in sorted(
+        grupos.items(),
+        key=lambda kv: -len(kv[1]),
+    ):
+        t, w, l, wr_g, act = resumen(grupo)
+
+        print(
+            f,
+            "| total:", t,
+            "| win:", w,
+            "| loss:", l,
+            "| WR:", str(wr_g) + "%",
+            "| activos:", act,
+        )
+
+    # --------------------------------------------------------
+    # PROTOCOLO × EVENTO EXACTO
+    # --------------------------------------------------------
+    print("\n--- PROTOCOLO × EVENTO EXACTO ---")
+
+    grupos = {}
+
+    for r in filas:
+        clave = (
+            protocolo(r),
+            motivo(r),
+        )
+        grupos.setdefault(clave, []).append(r)
+
+    for (p, m), grupo in sorted(
+        grupos.items(),
+        key=lambda kv: (-len(kv[1]), kv[0][0], kv[0][1]),
+    ):
+        t, w, l, wr_g, act = resumen(grupo)
+
+        print(
+            p,
+            "|", m,
+            "| total:", t,
+            "| win:", w,
+            "| loss:", l,
+            "| WR:", str(wr_g) + "%",
+            "| activos:", act,
+        )
+
+    # --------------------------------------------------------
+    # PROTOCOLO × EVENTO × RELACION TEMPORAL
+    # --------------------------------------------------------
+    print("\n--- PROTOCOLO × EVENTO × TIMING ---")
+
+    grupos = {}
+
+    for r in filas:
+        clave = (
+            protocolo(r),
+            familia_evento(motivo(r)),
+            relacion(r),
+        )
+        grupos.setdefault(clave, []).append(r)
+
+    for (p, f, rel), grupo in sorted(
+        grupos.items(),
+        key=lambda kv: (
+            -len(kv[1]),
+            kv[0][0],
+            kv[0][1],
+            kv[0][2],
+        ),
+    ):
+        t, w, l, wr_g, act = resumen(grupo)
+
+        print(
+            p,
+            "| evento:", f,
+            "| timing:", rel,
+            "| total:", t,
+            "| win:", w,
+            "| loss:", l,
+            "| WR:", str(wr_g) + "%",
+            "| activos:", act,
+        )
+
+    # --------------------------------------------------------
+    # RUPTURA_RESISTENCIA — FOCO C8
+    # --------------------------------------------------------
+    ruptura = [
+        r for r in filas
+        if protocolo(r) == "RUPTURA_RESISTENCIA"
+    ]
+
+    print("\n--- FOCO RUPTURA_RESISTENCIA ---")
+
+    if ruptura:
+        t, w, l, wr_g, act = resumen(ruptura)
+        print(
+            "TOTAL",
+            "| total:", t,
+            "| win:", w,
+            "| loss:", l,
+            "| WR:", str(wr_g) + "%",
+            "| activos:", act,
+        )
+
+        grupos = {}
+
+        for r in ruptura:
+            clave = (
+                accion(r),
+                str(espera(r)),
+                familia_evento(motivo(r)),
+                str(
+                    r.get("subtipo_setup", "")
+                    or "SIN_SUBTIPO"
+                ).upper().strip(),
+            )
+
+            grupos.setdefault(clave, []).append(r)
+
+        for (
+            accion_txt,
+            espera_txt,
+            evento_txt,
+            subtipo_txt,
+        ), grupo in sorted(
+            grupos.items(),
+            key=lambda kv: (
+                -len(kv[1]),
+                kv[0][0],
+                kv[0][1],
+                kv[0][2],
+                kv[0][3],
+            ),
+        ):
+            # Mostrar grupos de al menos 2 para evitar ruido extremo.
+            if len(grupo) < 2:
+                continue
+
+            t, w, l, wr_g, act = resumen(grupo)
+
+            print(
+                accion_txt,
+                "| espera:", espera_txt,
+                "| evento:", evento_txt,
+                "| subtipo:", subtipo_txt,
+                "| total:", t,
+                "| win:", w,
+                "| loss:", l,
+                "| WR:", str(wr_g) + "%",
+                "| activos:", act,
+            )
+
+    # --------------------------------------------------------
+    # ENTRADAS ANTES DE LO SUGERIDO
+    # --------------------------------------------------------
+    tempranas = [
+        r for r in filas
+        if relacion(r) == "ANTES"
+    ]
+
+    print("\n--- SOLO ENTRADAS ANTES DE LO SUGERIDO ---")
+
+    grupos = {}
+
+    for r in tempranas:
+        clave = (
+            protocolo(r),
+            familia_evento(motivo(r)),
+            accion(r),
+            str(espera(r)),
+        )
+
+        grupos.setdefault(clave, []).append(r)
+
+    for (p, f, a, e), grupo in sorted(
+        grupos.items(),
+        key=lambda kv: (
+            -len(kv[1]),
+            kv[0][0],
+            kv[0][1],
+        ),
+    ):
+        t, w, l, wr_g, act = resumen(grupo)
+
+        print(
+            p,
+            "| evento:", f,
+            "| accion:", a,
+            "| espera_real:", e,
+            "| total:", t,
+            "| win:", w,
+            "| loss:", l,
+            "| WR:", str(wr_g) + "%",
+            "| activos:", act,
+        )
+
+    print("==============================================\n")
 
 
 def imprimir_resumen(resultados):
@@ -3733,9 +5616,19 @@ def imprimir_resumen(resultados):
 
     imprimir_auditoria_motor_protocolos(resultados)
 
-    imprimir_probabilidad_protocolo_train(resultados)
+    imprimir_matriz_setup_riesgo(resultados)
 
-    imprimir_probabilidad_protocolo_validacion(resultados)
+    imprimir_c3_bypass_vetos_sombra(resultados)
+
+    imprimir_c5_timing_ruptura_resistencia(resultados)
+
+    imprimir_c6_auditoria_confirmacion(resultados)
+
+    imprimir_c7_confirmacion_vs_espera(resultados)
+
+    imprimir_c8_evento_tecnico(resultados)
+
+    imprimir_probabilidad_protocolo_train(resultados)
 
     imprimir_validacion_recuperacion_sombra(resultados)
 

@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "prior": 0.5695364238410596,
-  "total_train": 151,
-  "wins_train": 86,
+  "prior": 0.5661375661375662,
+  "total_train": 189,
+  "wins_train": 107,
   "tablas": {
     "PROTOCOLO_SUBTIPO": {
       "campos": [
@@ -36,12 +36,14 @@
             "SWEEP",
             "SWEEP_SIMPLE"
           ],
-          "total": 18,
-          "win": 12,
+          "total": 28,
+          "win": 16,
           "activos": [
             "AIG-OTC",
             "COFFEE-OTC",
+            "HK33-OTC",
             "LTCUSD-OTC",
+            "MANAUSD-OTC",
             "NZDCHF-OTC",
             "NZDJPY-OTC",
             "US2000-OTC",
@@ -54,14 +56,15 @@
             "SWEEP",
             "SWEEP_RUPTURA_CONFIRMABLE"
           ],
-          "total": 29,
-          "win": 19,
+          "total": 41,
+          "win": 25,
           "activos": [
             "AIG-OTC",
             "COFFEE-OTC",
             "EURCAD-OTC",
             "HK33-OTC",
             "LTCUSD-OTC",
+            "MANAUSD-OTC",
             "NZDCHF-OTC",
             "NZDJPY-OTC",
             "US2000-OTC",
@@ -74,13 +77,14 @@
             "RUPTURA_RESISTENCIA",
             "SWEEP_CON_RECHAZO_AGOTAMIENTO"
           ],
-          "total": 4,
-          "win": 0,
+          "total": 5,
+          "win": 1,
           "activos": [
             "AIG-OTC",
             "HK33-OTC",
             "LTCUSD-OTC",
-            "US2000-OTC"
+            "US2000-OTC",
+            "USDSGD-OTC"
           ]
         },
         {
@@ -88,8 +92,8 @@
             "CHOCH",
             "CHOCH_CON_PA_A_FAVOR"
           ],
-          "total": 21,
-          "win": 14,
+          "total": 23,
+          "win": 16,
           "activos": [
             "AIG-OTC",
             "COFFEE-OTC",
@@ -127,8 +131,8 @@
             "RUPTURA_RESISTENCIA",
             "SWEEP_RUPTURA_CONFIRMABLE"
           ],
-          "total": 21,
-          "win": 11,
+          "total": 33,
+          "win": 18,
           "activos": [
             "AIG-OTC",
             "COFFEE-OTC",
@@ -138,7 +142,8 @@
             "NZDJPY-OTC",
             "US2000-OTC",
             "USDMXN-OTC",
-            "USDSGD-OTC"
+            "USDSGD-OTC",
+            "USDTHB-OTC"
           ]
         },
         {
@@ -146,8 +151,8 @@
             "SWEEP",
             "SWEEP_CON_RECHAZO_AGOTAMIENTO"
           ],
-          "total": 9,
-          "win": 3,
+          "total": 10,
+          "win": 4,
           "activos": [
             "AIG-OTC",
             "COFFEE-OTC",
@@ -202,14 +207,15 @@
             "SWEEP",
             "TENDENCIA_BAJISTA"
           ],
-          "total": 24,
-          "win": 17,
+          "total": 28,
+          "win": 20,
           "activos": [
             "AIG-OTC",
             "COFFEE-OTC",
             "EURCAD-OTC",
             "HK33-OTC",
             "LTCUSD-OTC",
+            "MANAUSD-OTC",
             "US2000-OTC",
             "USDMXN-OTC",
             "USDTHB-OTC"
@@ -220,8 +226,8 @@
             "SWEEP",
             "RANGO"
           ],
-          "total": 22,
-          "win": 13,
+          "total": 30,
+          "win": 15,
           "activos": [
             "AIG-OTC",
             "COFFEE-OTC",
@@ -241,15 +247,16 @@
             "RUPTURA_RESISTENCIA",
             "RANGO"
           ],
-          "total": 8,
-          "win": 5,
+          "total": 13,
+          "win": 9,
           "activos": [
             "COFFEE-OTC",
             "EURCAD-OTC",
             "LTCUSD-OTC",
             "NZDJPY-OTC",
             "US2000-OTC",
-            "USDSGD-OTC"
+            "USDSGD-OTC",
+            "USDTHB-OTC"
           ]
         },
         {
@@ -257,8 +264,8 @@
             "CHOCH",
             "TENDENCIA_BAJISTA"
           ],
-          "total": 21,
-          "win": 14,
+          "total": 23,
+          "win": 16,
           "activos": [
             "AIG-OTC",
             "COFFEE-OTC",
@@ -290,35 +297,40 @@
         },
         {
           "clave": [
-            "RUPTURA_RESISTENCIA",
-            "TENDENCIA_BAJISTA"
+            "SWEEP",
+            "TENDENCIA_ALCISTA"
           ],
-          "total": 14,
-          "win": 5,
+          "total": 21,
+          "win": 10,
           "activos": [
             "AIG-OTC",
             "COFFEE-OTC",
             "EURCAD-OTC",
             "HK33-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
             "NZDJPY-OTC",
-            "US2000-OTC",
-            "USDMXN-OTC",
-            "USDSGD-OTC"
+            "USDMXN-OTC"
           ]
         },
         {
           "clave": [
-            "SWEEP",
-            "TENDENCIA_ALCISTA"
+            "RUPTURA_RESISTENCIA",
+            "TENDENCIA_BAJISTA"
           ],
-          "total": 10,
-          "win": 4,
+          "total": 22,
+          "win": 9,
           "activos": [
             "AIG-OTC",
             "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
             "NZDCHF-OTC",
             "NZDJPY-OTC",
-            "USDMXN-OTC"
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
           ]
         },
         {
@@ -438,14 +450,35 @@
         {
           "clave": [
             "SWEEP",
-            "ALTO"
+            "MEDIO"
           ],
-          "total": 12,
+          "total": 23,
           "win": 10,
           "activos": [
             "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "ALTO"
+          ],
+          "total": 14,
+          "win": 11,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
             "EURCAD-OTC",
             "LTCUSD-OTC",
+            "NZDCHF-OTC",
             "NZDJPY-OTC",
             "USDMXN-OTC",
             "USDTHB-OTC"
@@ -456,8 +489,8 @@
             "CHOCH",
             "MEDIO"
           ],
-          "total": 12,
-          "win": 9,
+          "total": 14,
+          "win": 11,
           "activos": [
             "AIG-OTC",
             "COFFEE-OTC",
@@ -479,6 +512,22 @@
           "activos": [
             "EURCAD-OTC",
             "NZDJPY-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "MEDIO"
+          ],
+          "total": 9,
+          "win": 6,
+          "activos": [
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "MANAUSD-OTC",
+            "NZDJPY-OTC",
+            "USDSGD-OTC",
             "USDTHB-OTC"
           ]
         },
@@ -555,13 +604,17 @@
             "RUPTURA_RESISTENCIA",
             "ALTO"
           ],
-          "total": 6,
-          "win": 2,
+          "total": 13,
+          "win": 5,
           "activos": [
             "AIG-OTC",
             "COFFEE-OTC",
+            "EURCAD-OTC",
+            "NZDCHF-OTC",
             "NZDJPY-OTC",
-            "US2000-OTC"
+            "US2000-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
           ]
         },
         {
@@ -594,31 +647,6 @@
           "activos": [
             "COFFEE-OTC",
             "NZDCHF-OTC"
-          ]
-        },
-        {
-          "clave": [
-            "SWEEP",
-            "MEDIO"
-          ],
-          "total": 2,
-          "win": 0,
-          "activos": [
-            "COFFEE-OTC",
-            "USDMXN-OTC"
-          ]
-        },
-        {
-          "clave": [
-            "RUPTURA_RESISTENCIA",
-            "MEDIO"
-          ],
-          "total": 3,
-          "win": 1,
-          "activos": [
-            "HK33-OTC",
-            "MANAUSD-OTC",
-            "NZDJPY-OTC"
           ]
         }
       ]
@@ -693,6 +721,27 @@
         },
         {
           "clave": [
+            "SWEEP",
+            "MEDIO"
+          ],
+          "total": 33,
+          "win": 16,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
             "CHOCH",
             "ALTO"
           ],
@@ -731,45 +780,34 @@
         },
         {
           "clave": [
-            "CHOCH",
-            "MEDIO"
-          ],
-          "total": 4,
-          "win": 3,
-          "activos": [
-            "MANAUSD-OTC",
-            "US2000-OTC",
-            "USDMXN-OTC",
-            "USDSGD-OTC"
-          ]
-        },
-        {
-          "clave": [
-            "SWEEP",
-            "MEDIO"
-          ],
-          "total": 10,
-          "win": 5,
-          "activos": [
-            "AIG-OTC",
-            "EURCAD-OTC",
-            "HK33-OTC",
-            "LTCUSD-OTC",
-            "NZDCHF-OTC",
-            "NZDJPY-OTC",
-            "USDMXN-OTC",
-            "USDSGD-OTC"
-          ]
-        },
-        {
-          "clave": [
             "RUPTURA_RESISTENCIA",
             "MEDIO"
           ],
-          "total": 5,
-          "win": 4,
+          "total": 18,
+          "win": 12,
           "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
             "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "CHOCH",
+            "MEDIO"
+          ],
+          "total": 6,
+          "win": 5,
+          "activos": [
+            "EURCAD-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
             "US2000-OTC",
             "USDMXN-OTC",
             "USDSGD-OTC"
@@ -821,14 +859,15 @@
             "SWEEP",
             "2"
           ],
-          "total": 28,
-          "win": 16,
+          "total": 37,
+          "win": 22,
           "activos": [
             "AIG-OTC",
             "COFFEE-OTC",
             "EURCAD-OTC",
             "HK33-OTC",
             "LTCUSD-OTC",
+            "MANAUSD-OTC",
             "NZDJPY-OTC",
             "US2000-OTC",
             "USDMXN-OTC",
@@ -840,9 +879,10 @@
             "RUPTURA_RESISTENCIA",
             "5+"
           ],
-          "total": 1,
+          "total": 2,
           "win": 0,
           "activos": [
+            "AIG-OTC",
             "LTCUSD-OTC"
           ]
         },
@@ -851,13 +891,15 @@
             "SWEEP",
             "3"
           ],
-          "total": 19,
-          "win": 12,
+          "total": 28,
+          "win": 15,
           "activos": [
             "AIG-OTC",
             "COFFEE-OTC",
             "EURCAD-OTC",
+            "HK33-OTC",
             "LTCUSD-OTC",
+            "MANAUSD-OTC",
             "NZDCHF-OTC",
             "NZDJPY-OTC",
             "US2000-OTC",
@@ -871,8 +913,8 @@
             "CHOCH",
             "1"
           ],
-          "total": 10,
-          "win": 6,
+          "total": 12,
+          "win": 8,
           "activos": [
             "COFFEE-OTC",
             "EURCAD-OTC",
@@ -897,6 +939,41 @@
         },
         {
           "clave": [
+            "RUPTURA_RESISTENCIA",
+            "1"
+          ],
+          "total": 11,
+          "win": 5,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "NZDJPY-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "4"
+          ],
+          "total": 14,
+          "win": 8,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
             "CHOCH",
             "2"
           ],
@@ -913,21 +990,6 @@
         },
         {
           "clave": [
-            "RUPTURA_RESISTENCIA",
-            "1"
-          ],
-          "total": 8,
-          "win": 3,
-          "activos": [
-            "AIG-OTC",
-            "EURCAD-OTC",
-            "HK33-OTC",
-            "NZDJPY-OTC",
-            "USDSGD-OTC"
-          ]
-        },
-        {
-          "clave": [
             "REACCION_ZONA",
             "2"
           ],
@@ -935,23 +997,6 @@
           "win": 0,
           "activos": [
             "NZDCHF-OTC"
-          ]
-        },
-        {
-          "clave": [
-            "SWEEP",
-            "4"
-          ],
-          "total": 9,
-          "win": 6,
-          "activos": [
-            "AIG-OTC",
-            "EURCAD-OTC",
-            "HK33-OTC",
-            "LTCUSD-OTC",
-            "NZDCHF-OTC",
-            "US2000-OTC",
-            "USDTHB-OTC"
           ]
         },
         {
@@ -971,13 +1016,34 @@
             "RUPTURA_RESISTENCIA",
             "3"
           ],
-          "total": 4,
+          "total": 6,
           "win": 1,
           "activos": [
             "AIG-OTC",
             "MANAUSD-OTC",
             "NZDCHF-OTC",
-            "NZDJPY-OTC"
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "2"
+          ],
+          "total": 18,
+          "win": 13,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
           ]
         },
         {
@@ -1017,9 +1083,10 @@
             "RUPTURA_RESISTENCIA",
             "4"
           ],
-          "total": 2,
+          "total": 3,
           "win": 1,
           "activos": [
+            "NZDCHF-OTC",
             "US2000-OTC"
           ]
         },
@@ -1035,23 +1102,6 @@
             "HK33-OTC",
             "NZDCHF-OTC",
             "NZDJPY-OTC",
-            "USDSGD-OTC"
-          ]
-        },
-        {
-          "clave": [
-            "RUPTURA_RESISTENCIA",
-            "2"
-          ],
-          "total": 12,
-          "win": 7,
-          "activos": [
-            "AIG-OTC",
-            "COFFEE-OTC",
-            "EURCAD-OTC",
-            "LTCUSD-OTC",
-            "US2000-OTC",
-            "USDMXN-OTC",
             "USDSGD-OTC"
           ]
         },
@@ -1132,10 +1182,11 @@
             "SWEEP",
             "IMPULSO_BAJISTA_MEDIO"
           ],
-          "total": 8,
+          "total": 9,
           "win": 6,
           "activos": [
             "LTCUSD-OTC",
+            "NZDCHF-OTC",
             "US2000-OTC",
             "USDMXN-OTC",
             "USDTHB-OTC"
@@ -1170,6 +1221,27 @@
         {
           "clave": [
             "SWEEP",
+            "SIN_CONTEXTO_CLARO"
+          ],
+          "total": 35,
+          "win": 19,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
             "IMPULSO_ALCISTA_AGOTANDOSE"
           ],
           "total": 11,
@@ -1188,8 +1260,8 @@
             "CHOCH",
             "IMPULSO_BAJISTA_MEDIO"
           ],
-          "total": 21,
-          "win": 14,
+          "total": 23,
+          "win": 16,
           "activos": [
             "AIG-OTC",
             "COFFEE-OTC",
@@ -1225,15 +1297,17 @@
             "RUPTURA_RESISTENCIA",
             "SIN_CONTEXTO_CLARO"
           ],
-          "total": 7,
-          "win": 5,
+          "total": 12,
+          "win": 9,
           "activos": [
             "EURCAD-OTC",
             "LTCUSD-OTC",
             "MANAUSD-OTC",
             "NZDCHF-OTC",
+            "NZDJPY-OTC",
             "US2000-OTC",
-            "USDMXN-OTC"
+            "USDMXN-OTC",
+            "USDTHB-OTC"
           ]
         },
         {
@@ -1252,37 +1326,21 @@
         },
         {
           "clave": [
-            "SWEEP",
-            "SIN_CONTEXTO_CLARO"
+            "RUPTURA_RESISTENCIA",
+            "IMPULSO_BAJISTA_MEDIO"
           ],
-          "total": 14,
-          "win": 9,
+          "total": 15,
+          "win": 7,
           "activos": [
             "AIG-OTC",
             "COFFEE-OTC",
             "EURCAD-OTC",
-            "HK33-OTC",
             "NZDCHF-OTC",
             "NZDJPY-OTC",
             "US2000-OTC",
             "USDMXN-OTC",
+            "USDSGD-OTC",
             "USDTHB-OTC"
-          ]
-        },
-        {
-          "clave": [
-            "RUPTURA_RESISTENCIA",
-            "IMPULSO_BAJISTA_MEDIO"
-          ],
-          "total": 9,
-          "win": 4,
-          "activos": [
-            "AIG-OTC",
-            "COFFEE-OTC",
-            "NZDJPY-OTC",
-            "US2000-OTC",
-            "USDMXN-OTC",
-            "USDSGD-OTC"
           ]
         },
         {
@@ -1367,6 +1425,18 @@
         },
         {
           "clave": [
+            "RUPTURA_RESISTENCIA",
+            "IMPULSO_BAJISTA_AGOTANDOSE"
+          ],
+          "total": 3,
+          "win": 2,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC"
+          ]
+        },
+        {
+          "clave": [
             "PULLBACK",
             "IMPULSO_ALCISTA_MEDIO"
           ],
@@ -1422,6 +1492,18 @@
         },
         {
           "clave": [
+            "RUPTURA_RESISTENCIA",
+            "RECHAZO_COMPRADOR_OBSERVADO"
+          ],
+          "total": 2,
+          "win": 1,
+          "activos": [
+            "HK33-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
             "REACCION_ZONA",
             "AGOTAMIENTO_ALCISTA_CONFIRMADO"
           ],
@@ -1430,18 +1512,6 @@
           "activos": [
             "COFFEE-OTC",
             "NZDCHF-OTC"
-          ]
-        },
-        {
-          "clave": [
-            "RUPTURA_RESISTENCIA",
-            "IMPULSO_BAJISTA_AGOTANDOSE"
-          ],
-          "total": 2,
-          "win": 2,
-          "activos": [
-            "AIG-OTC",
-            "EURCAD-OTC"
           ]
         },
         {
@@ -1468,6 +1538,17 @@
         },
         {
           "clave": [
+            "SWEEP",
+            "RECHAZO_VENDEDOR_HISTORICO"
+          ],
+          "total": 1,
+          "win": 1,
+          "activos": [
+            "COFFEE-OTC"
+          ]
+        },
+        {
+          "clave": [
             "RUPTURA_RESISTENCIA",
             "AGOTAMIENTO_BAJISTA_CONFIRMADO"
           ],
@@ -1486,17 +1567,6 @@
           "win": 1,
           "activos": [
             "EURCAD-OTC"
-          ]
-        },
-        {
-          "clave": [
-            "RUPTURA_RESISTENCIA",
-            "RECHAZO_COMPRADOR_OBSERVADO"
-          ],
-          "total": 1,
-          "win": 0,
-          "activos": [
-            "HK33-OTC"
           ]
         }
       ]
@@ -1583,13 +1653,29 @@
         {
           "clave": [
             "SWEEP",
+            "RANGO",
+            "MEDIO"
+          ],
+          "total": 7,
+          "win": 2,
+          "activos": [
+            "AIG-OTC",
+            "LTCUSD-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
             "TENDENCIA_BAJISTA",
             "ALTO"
           ],
-          "total": 8,
-          "win": 7,
+          "total": 9,
+          "win": 8,
           "activos": [
             "AIG-OTC",
+            "COFFEE-OTC",
             "EURCAD-OTC",
             "LTCUSD-OTC",
             "USDMXN-OTC",
@@ -1602,8 +1688,8 @@
             "TENDENCIA_BAJISTA",
             "MEDIO"
           ],
-          "total": 12,
-          "win": 9,
+          "total": 14,
+          "win": 11,
           "activos": [
             "AIG-OTC",
             "COFFEE-OTC",
@@ -1630,6 +1716,38 @@
         },
         {
           "clave": [
+            "RUPTURA_RESISTENCIA",
+            "RANGO",
+            "MEDIO"
+          ],
+          "total": 4,
+          "win": 3,
+          "activos": [
+            "NZDJPY-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "TENDENCIA_ALCISTA",
+            "MEDIO"
+          ],
+          "total": 13,
+          "win": 6,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "MANAUSD-OTC",
+            "NZDJPY-OTC",
+            "USDMXN-OTC"
+          ]
+        },
+        {
+          "clave": [
             "CHOCH",
             "TENDENCIA_BAJISTA",
             "MUY_BAJO"
@@ -1645,6 +1763,19 @@
             "US2000-OTC",
             "USDMXN-OTC",
             "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "TENDENCIA_BAJISTA",
+            "MEDIO"
+          ],
+          "total": 3,
+          "win": 2,
+          "activos": [
+            "HK33-OTC",
+            "MANAUSD-OTC"
           ]
         },
         {
@@ -1709,12 +1840,43 @@
             "TENDENCIA_BAJISTA",
             "ALTO"
           ],
-          "total": 4,
-          "win": 1,
+          "total": 9,
+          "win": 3,
           "activos": [
             "AIG-OTC",
+            "EURCAD-OTC",
+            "NZDCHF-OTC",
             "NZDJPY-OTC",
-            "US2000-OTC"
+            "US2000-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "RANGO",
+            "ALTO"
+          ],
+          "total": 3,
+          "win": 2,
+          "activos": [
+            "COFFEE-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "TENDENCIA_BAJISTA",
+            "MEDIO"
+          ],
+          "total": 4,
+          "win": 2,
+          "activos": [
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "NZDJPY-OTC",
+            "USDTHB-OTC"
           ]
         },
         {
@@ -1760,18 +1922,6 @@
           "clave": [
             "RUPTURA_RESISTENCIA",
             "RANGO",
-            "ALTO"
-          ],
-          "total": 1,
-          "win": 1,
-          "activos": [
-            "COFFEE-OTC"
-          ]
-        },
-        {
-          "clave": [
-            "RUPTURA_RESISTENCIA",
-            "RANGO",
             "MUY_BAJO"
           ],
           "total": 2,
@@ -1794,6 +1944,20 @@
             "COFFEE-OTC",
             "USDMXN-OTC",
             "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "RANGO",
+            "ALTO"
+          ],
+          "total": 3,
+          "win": 1,
+          "activos": [
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "USDMXN-OTC"
           ]
         },
         {
@@ -1896,32 +2060,6 @@
         },
         {
           "clave": [
-            "SWEEP",
-            "TENDENCIA_ALCISTA",
-            "MEDIO"
-          ],
-          "total": 2,
-          "win": 0,
-          "activos": [
-            "COFFEE-OTC",
-            "USDMXN-OTC"
-          ]
-        },
-        {
-          "clave": [
-            "SWEEP",
-            "RANGO",
-            "ALTO"
-          ],
-          "total": 2,
-          "win": 1,
-          "activos": [
-            "LTCUSD-OTC",
-            "USDMXN-OTC"
-          ]
-        },
-        {
-          "clave": [
             "REACCION_ZONA",
             "TENDENCIA_ALCISTA",
             "BAJO"
@@ -1955,30 +2093,6 @@
           "win": 1,
           "activos": [
             "MANAUSD-OTC"
-          ]
-        },
-        {
-          "clave": [
-            "RUPTURA_RESISTENCIA",
-            "RANGO",
-            "MEDIO"
-          ],
-          "total": 1,
-          "win": 0,
-          "activos": [
-            "NZDJPY-OTC"
-          ]
-        },
-        {
-          "clave": [
-            "RUPTURA_RESISTENCIA",
-            "TENDENCIA_BAJISTA",
-            "MEDIO"
-          ],
-          "total": 1,
-          "win": 0,
-          "activos": [
-            "HK33-OTC"
           ]
         }
       ]
@@ -2014,11 +2128,13 @@
             "SWEEP_SIMPLE",
             "2"
           ],
-          "total": 8,
-          "win": 5,
+          "total": 11,
+          "win": 6,
           "activos": [
             "AIG-OTC",
+            "COFFEE-OTC",
             "LTCUSD-OTC",
+            "MANAUSD-OTC",
             "NZDJPY-OTC",
             "USDMXN-OTC",
             "USDTHB-OTC"
@@ -2030,14 +2146,16 @@
             "SWEEP_RUPTURA_CONFIRMABLE",
             "2"
           ],
-          "total": 14,
-          "win": 10,
+          "total": 20,
+          "win": 15,
           "activos": [
             "AIG-OTC",
             "COFFEE-OTC",
             "EURCAD-OTC",
             "HK33-OTC",
             "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDJPY-OTC",
             "US2000-OTC",
             "USDMXN-OTC",
             "USDTHB-OTC"
@@ -2061,8 +2179,8 @@
             "SWEEP_RUPTURA_CONFIRMABLE",
             "3"
           ],
-          "total": 8,
-          "win": 5,
+          "total": 12,
+          "win": 6,
           "activos": [
             "AIG-OTC",
             "EURCAD-OTC",
@@ -2079,8 +2197,8 @@
             "CHOCH_CON_PA_A_FAVOR",
             "1"
           ],
-          "total": 10,
-          "win": 6,
+          "total": 12,
+          "win": 8,
           "activos": [
             "COFFEE-OTC",
             "EURCAD-OTC",
@@ -2110,14 +2228,48 @@
             "SWEEP_SIMPLE",
             "3"
           ],
-          "total": 8,
-          "win": 5,
+          "total": 12,
+          "win": 6,
           "activos": [
             "AIG-OTC",
             "COFFEE-OTC",
+            "HK33-OTC",
             "LTCUSD-OTC",
+            "MANAUSD-OTC",
             "NZDCHF-OTC",
             "US2000-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "SWEEP_RUPTURA_CONFIRMABLE",
+            "1"
+          ],
+          "total": 9,
+          "win": 5,
+          "activos": [
+            "AIG-OTC",
+            "EURCAD-OTC",
+            "NZDJPY-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "SWEEP_SIMPLE",
+            "4"
+          ],
+          "total": 5,
+          "win": 4,
+          "activos": [
+            "COFFEE-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
             "USDTHB-OTC"
           ]
         },
@@ -2140,27 +2292,12 @@
         },
         {
           "clave": [
-            "RUPTURA_RESISTENCIA",
-            "SWEEP_RUPTURA_CONFIRMABLE",
-            "1"
-          ],
-          "total": 6,
-          "win": 3,
-          "activos": [
-            "AIG-OTC",
-            "EURCAD-OTC",
-            "NZDJPY-OTC",
-            "USDSGD-OTC"
-          ]
-        },
-        {
-          "clave": [
             "SWEEP",
             "SWEEP_CON_RECHAZO_AGOTAMIENTO",
             "3"
           ],
-          "total": 3,
-          "win": 2,
+          "total": 4,
+          "win": 3,
           "activos": [
             "COFFEE-OTC",
             "USDMXN-OTC",
@@ -2185,7 +2322,7 @@
             "SWEEP_RUPTURA_CONFIRMABLE",
             "4"
           ],
-          "total": 7,
+          "total": 9,
           "win": 4,
           "activos": [
             "AIG-OTC",
@@ -2193,6 +2330,7 @@
             "HK33-OTC",
             "LTCUSD-OTC",
             "NZDCHF-OTC",
+            "NZDJPY-OTC",
             "US2000-OTC"
           ]
         },
@@ -2215,12 +2353,34 @@
             "SWEEP_RUPTURA_CONFIRMABLE",
             "3"
           ],
-          "total": 3,
+          "total": 5,
           "win": 0,
           "activos": [
             "AIG-OTC",
             "NZDCHF-OTC",
-            "NZDJPY-OTC"
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "SWEEP_RUPTURA_CONFIRMABLE",
+            "2"
+          ],
+          "total": 16,
+          "win": 12,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
           ]
         },
         {
@@ -2287,24 +2447,6 @@
         },
         {
           "clave": [
-            "RUPTURA_RESISTENCIA",
-            "SWEEP_RUPTURA_CONFIRMABLE",
-            "2"
-          ],
-          "total": 11,
-          "win": 7,
-          "activos": [
-            "AIG-OTC",
-            "COFFEE-OTC",
-            "EURCAD-OTC",
-            "LTCUSD-OTC",
-            "US2000-OTC",
-            "USDMXN-OTC",
-            "USDSGD-OTC"
-          ]
-        },
-        {
-          "clave": [
             "PULLBACK",
             "PULLBACK_GENERICO",
             "2"
@@ -2321,15 +2463,14 @@
         },
         {
           "clave": [
-            "SWEEP",
-            "SWEEP_SIMPLE",
-            "4"
+            "RUPTURA_RESISTENCIA",
+            "SWEEP_RUPTURA_CONFIRMABLE",
+            "5+"
           ],
-          "total": 2,
-          "win": 2,
+          "total": 1,
+          "win": 0,
           "activos": [
-            "LTCUSD-OTC",
-            "USDTHB-OTC"
+            "AIG-OTC"
           ]
         },
         {
@@ -2352,10 +2493,11 @@
             "SWEEP_CON_RECHAZO_AGOTAMIENTO",
             "2"
           ],
-          "total": 1,
-          "win": 0,
+          "total": 2,
+          "win": 1,
           "activos": [
-            "AIG-OTC"
+            "AIG-OTC",
+            "USDSGD-OTC"
           ]
         },
         {
@@ -2368,6 +2510,19 @@
           "win": 1,
           "activos": [
             "NZDJPY-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "SWEEP_RUPTURA_CONFIRMABLE",
+            "4"
+          ],
+          "total": 2,
+          "win": 1,
+          "activos": [
+            "NZDCHF-OTC",
+            "US2000-OTC"
           ]
         },
         {
@@ -2419,18 +2574,6 @@
           "win": 0,
           "activos": [
             "NZDJPY-OTC"
-          ]
-        },
-        {
-          "clave": [
-            "RUPTURA_RESISTENCIA",
-            "SWEEP_RUPTURA_CONFIRMABLE",
-            "4"
-          ],
-          "total": 1,
-          "win": 1,
-          "activos": [
-            "US2000-OTC"
           ]
         },
         {
@@ -2507,6 +2650,28 @@
         {
           "clave": [
             "SWEEP",
+            "MEDIO",
+            "3"
+          ],
+          "total": 14,
+          "win": 5,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "MANAUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
             "ALTO",
             "3"
           ],
@@ -2555,6 +2720,55 @@
         },
         {
           "clave": [
+            "RUPTURA_RESISTENCIA",
+            "MEDIO",
+            "1"
+          ],
+          "total": 4,
+          "win": 3,
+          "activos": [
+            "EURCAD-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "MEDIO",
+            "2"
+          ],
+          "total": 11,
+          "win": 7,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "HK33-OTC",
+            "MANAUSD-OTC",
+            "NZDJPY-OTC",
+            "USDMXN-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "SWEEP",
+            "MEDIO",
+            "4"
+          ],
+          "total": 8,
+          "win": 4,
+          "activos": [
+            "AIG-OTC",
+            "COFFEE-OTC",
+            "EURCAD-OTC",
+            "HK33-OTC",
+            "LTCUSD-OTC",
+            "NZDCHF-OTC",
+            "NZDJPY-OTC"
+          ]
+        },
+        {
+          "clave": [
             "CHOCH",
             "ALTO",
             "2"
@@ -2575,9 +2789,11 @@
             "MEDIO",
             "1"
           ],
-          "total": 2,
-          "win": 2,
+          "total": 4,
+          "win": 4,
           "activos": [
+            "EURCAD-OTC",
+            "NZDCHF-OTC",
             "USDMXN-OTC",
             "USDSGD-OTC"
           ]
@@ -2595,22 +2811,6 @@
             "EURCAD-OTC",
             "HK33-OTC",
             "NZDJPY-OTC"
-          ]
-        },
-        {
-          "clave": [
-            "SWEEP",
-            "MEDIO",
-            "3"
-          ],
-          "total": 5,
-          "win": 2,
-          "activos": [
-            "AIG-OTC",
-            "LTCUSD-OTC",
-            "NZDCHF-OTC",
-            "NZDJPY-OTC",
-            "USDSGD-OTC"
           ]
         },
         {
@@ -2667,6 +2867,24 @@
             "MANAUSD-OTC",
             "NZDCHF-OTC",
             "NZDJPY-OTC"
+          ]
+        },
+        {
+          "clave": [
+            "RUPTURA_RESISTENCIA",
+            "MEDIO",
+            "2"
+          ],
+          "total": 10,
+          "win": 9,
+          "activos": [
+            "EURCAD-OTC",
+            "LTCUSD-OTC",
+            "NZDJPY-OTC",
+            "US2000-OTC",
+            "USDMXN-OTC",
+            "USDSGD-OTC",
+            "USDTHB-OTC"
           ]
         },
         {
@@ -2748,35 +2966,6 @@
         },
         {
           "clave": [
-            "SWEEP",
-            "MEDIO",
-            "4"
-          ],
-          "total": 3,
-          "win": 2,
-          "activos": [
-            "AIG-OTC",
-            "EURCAD-OTC",
-            "LTCUSD-OTC"
-          ]
-        },
-        {
-          "clave": [
-            "RUPTURA_RESISTENCIA",
-            "MEDIO",
-            "2"
-          ],
-          "total": 4,
-          "win": 3,
-          "activos": [
-            "LTCUSD-OTC",
-            "US2000-OTC",
-            "USDMXN-OTC",
-            "USDSGD-OTC"
-          ]
-        },
-        {
-          "clave": [
             "PULLBACK",
             "MEDIO",
             "2"
@@ -2793,12 +2982,12 @@
           "clave": [
             "RUPTURA_RESISTENCIA",
             "MEDIO",
-            "1"
+            "5+"
           ],
           "total": 1,
-          "win": 1,
+          "win": 0,
           "activos": [
-            "USDSGD-OTC"
+            "AIG-OTC"
           ]
         },
         {
@@ -2840,6 +3029,19 @@
         },
         {
           "clave": [
+            "RUPTURA_RESISTENCIA",
+            "MEDIO",
+            "3"
+          ],
+          "total": 2,
+          "win": 0,
+          "activos": [
+            "US2000-OTC",
+            "USDTHB-OTC"
+          ]
+        },
+        {
+          "clave": [
             "PULLBACK",
             "MEDIO",
             "3"
@@ -2869,6 +3071,18 @@
         },
         {
           "clave": [
+            "RUPTURA_RESISTENCIA",
+            "MEDIO",
+            "4"
+          ],
+          "total": 1,
+          "win": 0,
+          "activos": [
+            "NZDCHF-OTC"
+          ]
+        },
+        {
+          "clave": [
             "CHOCH",
             "MEDIO",
             "2"
@@ -2877,19 +3091,6 @@
           "win": 0,
           "activos": [
             "MANAUSD-OTC"
-          ]
-        },
-        {
-          "clave": [
-            "SWEEP",
-            "MEDIO",
-            "2"
-          ],
-          "total": 2,
-          "win": 1,
-          "activos": [
-            "HK33-OTC",
-            "USDMXN-OTC"
           ]
         },
         {
