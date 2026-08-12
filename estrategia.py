@@ -4,6 +4,7 @@ from zonas import *
 from mercado import obtener_velas
 from motor_setup import (enriquecer_senal_con_setup,clasificar_setup_estrategico)
 
+from motor_candidatos import seleccionar_mejor_candidata_v3
 import time
 import estado
 
@@ -1459,7 +1460,10 @@ def evaluar_senal_candidata(activo, ctx, senal):
     
     return senal
 
-def analizar_activo(activo, modo_backtest_diagnostico=False):
+def analizar_activo(
+    activo,
+    modo_backtest_diagnostico=False,
+):
     """
     Orquestador principal del análisis por activo.
 
@@ -1468,12 +1472,14 @@ def analizar_activo(activo, modo_backtest_diagnostico=False):
     - preparar el contexto de mercado;
     - generar todas las señales candidatas;
     - evaluar cada candidata con el Cerebro Único;
-    - comparar los resultados finales;
+    - ordenar las candidatas usando el ranking oficial V3;
     - devolver la mejor señal disponible.
 
-    estrategia.py no decide por orden de aparición.
-    La candidata ganadora se selecciona después de que
-    todas hayan sido evaluadas por el Cerebro Único.
+    estrategia.py NO decide si una operación es buena o mala.
+
+    Todas las candidatas son evaluadas primero por el Cerebro Único.
+    Después motor_candidatos.py selecciona cuál de las candidatas
+    ya evaluadas tiene mayor prioridad estadística V3.
     """
 
     ctx = leer_contexto_grafico(activo)
@@ -1481,16 +1487,24 @@ def analizar_activo(activo, modo_backtest_diagnostico=False):
     if ctx is None:
         return None
 
-    ctx = preparar_contexto_mercado(activo, ctx)
+    ctx = preparar_contexto_mercado(
+        activo,
+        ctx,
+    )
 
     ctx["_modo_backtest_diagnostico"] = bool(
         modo_backtest_diagnostico
     )
 
-    if not validar_contexto_base(activo, ctx):
+    if not validar_contexto_base(
+        activo,
+        ctx,
+    ):
         return None
 
-    senales = motor_estrategias_profesional(ctx)
+    senales = motor_estrategias_profesional(
+        ctx
+    )
 
     if not senales:
         return None
@@ -1500,13 +1514,28 @@ def analizar_activo(activo, modo_backtest_diagnostico=False):
 
     candidatas_evaluadas = []
 
-    # Evaluamos todas las candidatas principales.
-    # Ninguna gana simplemente por aparecer primero.
-    for posicion, senal in enumerate(senales[:4], start=1):
+    # ========================================================
+    # EVALUAR TODAS LAS CANDIDATAS PRINCIPALES
+    # ========================================================
+    #
+    # Ninguna señal gana por aparecer primero.
+    #
+    # motor_estrategias genera candidatos.
+    # estrategia prepara evidencia.
+    # Cerebro Único evalúa cada candidato.
+    # motor_candidatos selecciona posteriormente.
+    # ========================================================
+
+    for posicion, senal in enumerate(
+        senales[:4],
+        start=1,
+    ):
         if not isinstance(senal, dict):
             continue
 
-        senal["_ranking_estrategia_inicial"] = posicion
+        senal[
+            "_ranking_estrategia_inicial"
+        ] = posicion
 
         senal_final = evaluar_senal_candidata(
             activo,
@@ -1517,128 +1546,92 @@ def analizar_activo(activo, modo_backtest_diagnostico=False):
         if senal_final is None:
             continue
 
-        candidatas_evaluadas.append(senal_final)
+        candidatas_evaluadas.append(
+            senal_final
+        )
 
     if not candidatas_evaluadas:
         return None
 
-    prioridad_decision = {
-        "OPERAR": 3,
-        "OPERAR_CON_PROTOCOLO": 2,
-        "NO_OPERAR": 1,
-        "ERROR": 0,
-    }
+    # ========================================================
+    # FASE C-B1 — RANKING ÚNICO V3
+    # ========================================================
+    #
+    # ANTES:
+    #
+    # estrategia.py volvía a escoger usando:
+    # - confianza legacy;
+    # - consenso;
+    # - score_final;
+    # - puntaje;
+    # - prioridad.
+    #
+    # Y paralelamente calculaba cuál habría elegido V3,
+    # pero solamente como sombra.
+    #
+    # AHORA:
+    #
+    # Las candidatas ya fueron evaluadas por el Cerebro Único.
+    # estrategia.py NO vuelve a decidir.
+    #
+    # motor_candidatos.py únicamente las ORDENA utilizando
+    # información ya producida por V3:
+    #
+    # - decisión oficial;
+    # - probabilidad histórica V3;
+    # - muestra histórica;
+    # - score/puntaje únicamente como desempate.
+    #
+    # No se calcula aprendizaje aquí.
+    # No se recalcula probabilidad.
+    # No se crea otro Cerebro.
+    # ========================================================
 
-    def clave_seleccion(senal):
-        accion = str(
-            senal.get(
-                "decision_unificada_accion",
-                senal.get("decision_bootiq", "NO_OPERAR"),
-            )
-        ).upper()
-
-        confianza = float(
-            senal.get(
-                "auditoria_confianza_final",
-                senal.get(
-                    "confianza_final_cerebro",
-                    senal.get("confianza_bootiq", 0),
-                ),
-            )
-            or 0
+    mejor_senal = (
+        seleccionar_mejor_candidata_v3(
+            candidatas_evaluadas
         )
-
-        score_final = float(
-            senal.get("score_final", 0) or 0
-        )
-
-        nivel_consenso = str(
-            senal.get("nivel_consenso", "MUY_BAJO")
-        ).upper()
-
-        prioridad_consenso = {
-            "PREMIUM": 6,
-            "BUENO": 5,
-            "ALTO": 4,
-            "MEDIO": 3,
-            "BAJO": 2,
-            "MUY_BAJO": 1,
-        }.get(nivel_consenso, 0)
-
-        puntaje = float(
-            senal.get("puntaje", 0) or 0
-        )
-
-        prioridad_original = float(
-            senal.get("prioridad", 0) or 0
-        )
-
-        return (
-            prioridad_decision.get(accion, 0),
-            confianza,
-            prioridad_consenso,
-            score_final,
-            puntaje,
-            prioridad_original,
-        )
-
-    mejor_senal = max(
-        candidatas_evaluadas,
-        key=clave_seleccion,
-    )
-    def clave_seleccion_v3_sombra(senal):
-        probabilidad = float(
-            senal.get(
-                "probabilidad_v3",
-                senal.get("probabilidad_estimada", 0),
-            )
-            or 0
-        )
-    
-        muestra = int(
-            float(
-                senal.get("muestra_probabilidad", 0)
-                or 0
-            )
-        )
-    
-        operar_sombra = bool(
-            senal.get("operar_estadistico_sombra", False)
-        )
-    
-        return (
-            1 if operar_sombra else 0,
-            probabilidad,
-            muestra,
-        )
-    
-    
-    mejor_senal_v3_sombra = max(
-        candidatas_evaluadas,
-        key=clave_seleccion_v3_sombra,
     )
 
-    mejor_senal["cantidad_candidatas_evaluadas"] = len(
+    if mejor_senal is None:
+        return None
+
+    # ========================================================
+    # AUDITORÍA DE COMPETENCIA ENTRE ESTRATEGIAS
+    # ========================================================
+
+    mejor_senal[
+        "cantidad_candidatas_evaluadas"
+    ] = len(
         candidatas_evaluadas
     )
-    
-    mejor_senal["resumen_competencia_estrategias"] = [
+
+    mejor_senal[
+        "resumen_competencia_estrategias"
+    ] = [
         {
             "patron": candidata.get(
                 "patron",
                 "SIN_PATRON",
             ),
+
             "direccion": candidata.get(
                 "direccion",
                 "SIN_DIRECCION",
             ),
+
             "decision": candidata.get(
-                "decision_unificada_accion",
+                "cerebro_unico_decision",
                 candidata.get(
-                    "decision_bootiq",
-                    "NO_OPERAR",
+                    "decision_unificada_accion",
+                    candidata.get(
+                        "decision_bootiq",
+                        "NO_OPERAR",
+                    ),
                 ),
             ),
+
+            # Se conserva para diagnóstico legacy.
             "confianza": candidata.get(
                 "auditoria_confianza_final",
                 candidata.get(
@@ -1649,49 +1642,134 @@ def analizar_activo(activo, modo_backtest_diagnostico=False):
                     ),
                 ),
             ),
+
+            # Información V3 que ahora sí importa
+            # para entender por qué ganó.
+            "probabilidad_v3": candidata.get(
+                "probabilidad_v3",
+                candidata.get(
+                    "probabilidad_estimada",
+                    0,
+                ),
+            ),
+
+            "muestra_probabilidad": (
+                candidata.get(
+                    "muestra_probabilidad",
+                    0,
+                )
+            ),
+
+            "confiabilidad_probabilidad": (
+                candidata.get(
+                    "confiabilidad_probabilidad",
+                    "SIN_DATOS",
+                )
+            ),
+
+            "fuente_probabilidad_principal": (
+                candidata.get(
+                    "fuente_probabilidad_principal",
+                    "",
+                )
+            ),
+
+            # Compatibilidad / desempate.
             "score_final": candidata.get(
                 "score_final",
                 0,
             ),
+
             "nivel_consenso": candidata.get(
                 "nivel_consenso",
                 "MUY_BAJO",
             ),
-        }
-        for candidata in candidatas_evaluadas
-    ]
-    mejor_senal["seleccion_v3_sombra_patron"] = (
-        mejor_senal_v3_sombra.get("patron", "")
-    )
-    
-    mejor_senal["seleccion_v3_sombra_direccion"] = (
-        mejor_senal_v3_sombra.get("direccion", "")
-    )
-    
-    mejor_senal["seleccion_v3_sombra_probabilidad"] = (
-        mejor_senal_v3_sombra.get(
-            "probabilidad_v3",
-            mejor_senal_v3_sombra.get(
-                "probabilidad_estimada",
+
+            "ranking_inicial": candidata.get(
+                "_ranking_estrategia_inicial",
                 0,
             ),
-        )
+        }
+
+        for candidata in candidatas_evaluadas
+    ]
+
+    # ========================================================
+    # COMPATIBILIDAD CON REPORTES V3 SOMBRA ANTERIORES
+    # ========================================================
+    #
+    # Estos nombres se mantienen temporalmente para que
+    # backtest_bot_real.py no pierda columnas/reportes.
+    #
+    # Ya NO existe una segunda selección V3 en estrategia.py.
+    # La candidata V3 oficial es mejor_senal.
+    # ========================================================
+
+    mejor_senal[
+        "seleccion_v3_sombra_patron"
+    ] = mejor_senal.get(
+        "patron",
+        "",
     )
-    
-    mejor_senal["seleccion_v3_sombra_decision"] = (
-        mejor_senal_v3_sombra.get(
+
+    mejor_senal[
+        "seleccion_v3_sombra_direccion"
+    ] = mejor_senal.get(
+        "direccion",
+        "",
+    )
+
+    mejor_senal[
+        "seleccion_v3_sombra_probabilidad"
+    ] = mejor_senal.get(
+        "probabilidad_v3",
+        mejor_senal.get(
+            "probabilidad_estimada",
+            0,
+        ),
+    )
+
+    mejor_senal[
+        "seleccion_v3_sombra_decision"
+    ] = mejor_senal.get(
+        "cerebro_unico_decision",
+        mejor_senal.get(
             "decision_estadistica_sombra",
             "SIN_DATOS",
-        )
+        ),
     )
-    
-    mejor_senal["seleccion_v3_sombra_misma_que_actual"] = (
-        mejor_senal_v3_sombra is mejor_senal
+
+    mejor_senal[
+        "seleccion_v3_sombra_misma_que_actual"
+    ] = True
+
+    mejor_senal[
+        "seleccion_v3_sombra_muestra"
+    ] = mejor_senal.get(
+        "muestra_probabilidad",
+        0,
     )
-    mejor_senal["seleccion_v3_sombra_muestra"] = (
-        mejor_senal_v3_sombra.get(
-            "muestra_probabilidad",
+
+    # Auditoría explícita de la nueva arquitectura.
+    mejor_senal[
+        "ranking_candidatas_origen"
+    ] = "MOTOR_CANDIDATOS_V3"
+
+    mejor_senal[
+        "ranking_candidatas_probabilidad"
+    ] = mejor_senal.get(
+        "probabilidad_v3",
+        mejor_senal.get(
+            "probabilidad_estimada",
             0,
-        )
+        ),
     )
+
+    mejor_senal[
+        "ranking_candidatas_muestra"
+    ] = mejor_senal.get(
+        "muestra_probabilidad",
+        0,
+    )
+
     return mejor_senal

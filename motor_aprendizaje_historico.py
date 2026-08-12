@@ -593,7 +593,289 @@ def _clave_legacy(senal):
         _txt(senal.get("tipo_mercado")),
         _txt(senal.get("estado_tendencia")),
     ])
+def _normalizar_protocolo(senal):
+    """
+    Obtiene el protocolo técnico realmente evaluado.
 
+    No decide.
+    No crea información si el protocolo todavía no ocurrió.
+    """
+
+    protocolo = _normalizar_token(
+        senal.get("auditoria_protocolo_tipo")
+    )
+
+    if not protocolo:
+        return ""
+
+    if protocolo in {
+        "SIN_PROTOCOLO",
+        "VETO_PREVIO",
+    }:
+        return ""
+
+    return protocolo
+
+
+def _normalizar_evento_protocolo(senal):
+    """
+    Evento técnico exacto que produjo o canceló la entrada.
+    """
+
+    motivo = _normalizar_token(
+        senal.get("auditoria_protocolo_motivo")
+    )
+
+    if not motivo:
+        return ""
+
+    return motivo
+
+
+def _normalizar_espera_protocolo(senal):
+    """
+    Agrupa la espera real sin fabricar timing.
+
+    -1 significa que no hubo entrada y no participa
+    como evidencia de una operación ejecutada.
+    """
+
+    try:
+        espera = int(
+            float(
+                senal.get(
+                    "auditoria_protocolo_espera_velas",
+                    -1,
+                )
+            )
+        )
+    except (TypeError, ValueError):
+        return ""
+
+    if espera < 0:
+        return ""
+
+    if espera >= 5:
+        return "5_MAS"
+
+    return str(espera)
+
+
+def _claves_protocolo(senal):
+    """
+    Construye únicamente memoria POST-PROTOCOLO.
+
+    Estas claves existen solamente después de que
+    motor_protocolos haya encontrado una entrada técnica.
+
+    No sustituyen las claves históricas generales.
+    Son una segunda capa de evidencia.
+    """
+
+    protocolo = _normalizar_protocolo(senal)
+
+    operada = bool(
+        senal.get(
+            "auditoria_protocolo_operada",
+            False,
+        )
+    )
+
+    # No aprender como entrada válida algo que nunca se ejecutó.
+    if not protocolo or not operada:
+        return []
+
+    subtipo = _normalizar_token(
+        senal.get("auditoria_protocolo_subtipo")
+        or senal.get("subtipo_setup")
+    )
+
+    evento = _normalizar_evento_protocolo(
+        senal
+    )
+
+    espera = _normalizar_espera_protocolo(
+        senal
+    )
+
+    nivel_riesgo = _normalizar_token(
+        senal.get(
+            "auditoria_protocolo_nivel_riesgo"
+        )
+    )
+
+    nivel_confirmacion = _normalizar_token(
+        senal.get(
+            "auditoria_protocolo_nivel_confirmacion"
+        )
+    )
+
+    accion_confirmacion = _normalizar_token(
+        senal.get(
+            "auditoria_protocolo_accion_confirmacion"
+        )
+    )
+
+    mercado = _normalizar_mercado(senal)
+    tendencia = _normalizar_tendencia(senal)
+
+    direccion = (
+        _txt(senal.get("direccion"))
+        or "SIN_DIRECCION"
+    )
+
+    claves = []
+    vistos = set()
+
+    # ========================================================
+    # NIVELES CON BUENA CAPACIDAD DE GENERALIZACIÓN
+    # ========================================================
+
+    _agregar_clave(
+        claves,
+        vistos,
+        "PROTOCOLO",
+        [protocolo],
+    )
+
+    _agregar_clave(
+        claves,
+        vistos,
+        "PROTOCOLO_DIRECCION",
+        [protocolo, direccion],
+    )
+
+    if subtipo:
+        _agregar_clave(
+            claves,
+            vistos,
+            "PROTOCOLO_SUBTIPO",
+            [protocolo, subtipo],
+        )
+
+    if evento:
+        _agregar_clave(
+            claves,
+            vistos,
+            "PROTOCOLO_EVENTO",
+            [protocolo, evento],
+        )
+
+    if espera:
+        _agregar_clave(
+            claves,
+            vistos,
+            "PROTOCOLO_ESPERA",
+            [protocolo, espera],
+        )
+
+    if nivel_riesgo:
+        _agregar_clave(
+            claves,
+            vistos,
+            "PROTOCOLO_RIESGO",
+            [protocolo, nivel_riesgo],
+        )
+
+    if nivel_confirmacion:
+        _agregar_clave(
+            claves,
+            vistos,
+            "PROTOCOLO_CONFIRMACION",
+            [
+                protocolo,
+                nivel_confirmacion,
+            ],
+        )
+
+    if accion_confirmacion:
+        _agregar_clave(
+            claves,
+            vistos,
+            "PROTOCOLO_ACCION_CONFIRMACION",
+            [
+                protocolo,
+                accion_confirmacion,
+            ],
+        )
+
+    # ========================================================
+    # CONTEXTO
+    # ========================================================
+
+    if mercado and mercado != "SIN_MERCADO":
+        _agregar_clave(
+            claves,
+            vistos,
+            "PROTOCOLO_MERCADO",
+            [protocolo, mercado],
+        )
+
+    if tendencia and tendencia != "SIN_TENDENCIA":
+        _agregar_clave(
+            claves,
+            vistos,
+            "PROTOCOLO_TENDENCIA",
+            [protocolo, tendencia],
+        )
+
+    # ========================================================
+    # COMBINACIONES TÉCNICAS CONTROLADAS
+    # ========================================================
+    #
+    # No creamos combinaciones de 6-8 variables porque
+    # destruiríamos la muestra.
+    # ========================================================
+
+    if subtipo and espera:
+        _agregar_clave(
+            claves,
+            vistos,
+            "PROTOCOLO_SUBTIPO_ESPERA",
+            [
+                protocolo,
+                subtipo,
+                espera,
+            ],
+        )
+
+    if evento and espera:
+        _agregar_clave(
+            claves,
+            vistos,
+            "PROTOCOLO_EVENTO_ESPERA",
+            [
+                protocolo,
+                evento,
+                espera,
+            ],
+        )
+
+    if evento and nivel_riesgo:
+        _agregar_clave(
+            claves,
+            vistos,
+            "PROTOCOLO_EVENTO_RIESGO",
+            [
+                protocolo,
+                evento,
+                nivel_riesgo,
+            ],
+        )
+
+    if evento and nivel_confirmacion:
+        _agregar_clave(
+            claves,
+            vistos,
+            "PROTOCOLO_EVENTO_CONFIRMACION",
+            [
+                protocolo,
+                evento,
+                nivel_confirmacion,
+            ],
+        )
+
+    return claves
 
 def _claves_jerarquicas(senal):
     """
@@ -601,6 +883,11 @@ def _claves_jerarquicas(senal):
 
     Las claves antiguas se conservan. Las nuevas se crean únicamente cuando
     existen evidencias reales en el registro, evitando fabricar contexto.
+
+    C-C1:
+    - las claves post-protocolo se agregan de forma independiente;
+    - la firma exacta no depende de PA + SETUP + MERCADO simultáneamente;
+    - la función siempre devuelve una lista de claves.
     """
 
     activo = _txt(senal.get("activo")) or "SIN_ACTIVO"
@@ -616,7 +903,12 @@ def _claves_jerarquicas(senal):
     firma_mercado = _firma_tokens(evidencias["mercado"])
     firma_estrategia = _firma_tokens(evidencias["estrategia"])
 
-    componentes_setup = [familia, tipo_setup, subtipo_setup]
+    componentes_setup = [
+        familia,
+        tipo_setup,
+        subtipo_setup,
+    ]
+
     firma_setup_contextual = _firma_tokens(
         componentes_setup + evidencias["estrategia"]
     )
@@ -624,9 +916,6 @@ def _claves_jerarquicas(senal):
     claves = []
     vistos = set()
 
-    # --------------------------------------------------------
-    # Niveles anteriores: compatibilidad con memoria existente.
-    # --------------------------------------------------------
     _agregar_clave(claves, vistos, "FAMILIA", [familia])
     _agregar_clave(
         claves, vistos, "FAMILIA_DIRECCION", [familia, direccion]
@@ -650,10 +939,6 @@ def _claves_jerarquicas(senal):
         [activo, direccion, familia, mercado, tendencia],
     )
 
-    # --------------------------------------------------------
-    # Niveles nuevos: evidencias individuales por origen.
-    # Cada evidencia también aprende por separado para asegurar muestra.
-    # --------------------------------------------------------
     for token in evidencias["pa"]:
         _agregar_clave(claves, vistos, "PA", [token])
         _agregar_clave(
@@ -661,27 +946,28 @@ def _claves_jerarquicas(senal):
         )
 
     for token in evidencias["mercado"]:
-        _agregar_clave(claves, vistos, "MERCADO_EVIDENCIAS", [token])
+        _agregar_clave(
+            claves, vistos, "MERCADO_EVIDENCIAS", [token]
+        )
 
     for token in evidencias["estrategia"]:
-        _agregar_clave(claves, vistos, "SETUP_EVIDENCIAS", [token])
+        _agregar_clave(
+            claves, vistos, "SETUP_EVIDENCIAS", [token]
+        )
 
-    # Firmas completas por origen.
     if firma_pa:
         _agregar_clave(claves, vistos, "PA", [firma_pa])
+
     if firma_mercado:
         _agregar_clave(
             claves, vistos, "MERCADO_EVIDENCIAS", [firma_mercado]
         )
+
     if firma_setup_contextual:
         _agregar_clave(
             claves, vistos, "SETUP_EVIDENCIAS", [firma_setup_contextual]
         )
 
-    # --------------------------------------------------------
-    # Combinaciones cruzadas. Estas son las claves que permiten
-    # aprender cuándo PA, setup y mercado funcionan juntos.
-    # --------------------------------------------------------
     if firma_pa and firma_mercado:
         _agregar_clave(
             claves, vistos, "PA_MERCADO", [firma_pa, firma_mercado]
@@ -708,8 +994,7 @@ def _claves_jerarquicas(senal):
             [firma_pa, firma_setup_contextual, firma_mercado],
         )
 
-    # Firma exacta: prioriza la generada por motor_decision.py. Si no existe,
-    # la construye con las evidencias disponibles y contexto esencial.
+    # FIRMA EXACTA: independiente de PA+SETUP+MERCADO simultáneos.
     firma_exacta_recibida = _normalizar_token(
         senal.get("firma_evidencias_exacta")
         or senal.get("firma_exacta")
@@ -737,8 +1022,17 @@ def _claves_jerarquicas(senal):
             [firma_exacta],
         )
 
-    return claves
+    # C-C1: memoria post-protocolo independiente.
+    for item in _claves_protocolo(senal):
+        clave = item.get("clave")
 
+        if not clave or clave in vistos:
+            continue
+
+        vistos.add(clave)
+        claves.append(item)
+
+    return claves
 
 def _clave(senal):
     """
@@ -1280,7 +1574,366 @@ def evaluar_aprendizaje_historico(senal, memoria=None):
         ),
     }
 
+def _prioridad_nivel_post_protocolo(nivel):
+    """
+    Prioridad específica de las fuentes C-C2.
 
+    La entrada técnica real debe pesar más que
+    el contexto general del protocolo.
+    """
+
+    prioridades = {
+        "PROTOCOLO_EVENTO_ESPERA": 100,
+        "PROTOCOLO_SUBTIPO_ESPERA": 95,
+        "PROTOCOLO_EVENTO_CONFIRMACION": 90,
+        "PROTOCOLO_EVENTO_RIESGO": 85,
+        "PROTOCOLO_EVENTO": 80,
+        "PROTOCOLO_ESPERA": 75,
+        "PROTOCOLO_SUBTIPO": 70,
+        "PROTOCOLO_CONFIRMACION": 65,
+        "PROTOCOLO_ACCION_CONFIRMACION": 62,
+        "PROTOCOLO_RIESGO": 60,
+        "PROTOCOLO_MERCADO": 45,
+        "PROTOCOLO_TENDENCIA": 40,
+        "PROTOCOLO_DIRECCION": 35,
+        "PROTOCOLO": 30,
+    }
+
+    return prioridades.get(_txt(nivel), 0)
+
+
+def _combinar_fuentes_post_protocolo(fuentes):
+    """
+    Combinación exclusiva C-C2.
+
+    Prioriza evento + espera real + subtipo.
+    El contexto general solo funciona como respaldo.
+    No decide si operar; solo estima probabilidad post-protocolo.
+    """
+
+    if not fuentes:
+        return {
+            "probabilidad_estimada": PRIOR_WINRATE,
+            "intervalo_inferior": PRIOR_WINRATE,
+            "intervalo_superior": PRIOR_WINRATE,
+            "muestra": 0,
+            "wins": 0,
+            "losses": 0,
+            "fuente_principal": None,
+            "fuente_respaldo": None,
+            "peso_fuente_principal": 0.0,
+            "peso_fuente_respaldo": 0.0,
+        }
+
+    candidatas = []
+
+    for fuente in fuentes:
+        total = _entero(fuente.get("total"), 0)
+        if total < MIN_MUESTRA_APORTE:
+            continue
+
+        nivel = _txt(fuente.get("nivel"))
+        prioridad = _prioridad_nivel_post_protocolo(nivel)
+        if prioridad <= 0:
+            continue
+
+        factor = _factor_muestra(total)
+        score = prioridad * (0.70 + 0.30 * factor)
+        candidatas.append((score, prioridad, total, fuente))
+
+    if not candidatas:
+        return {
+            "probabilidad_estimada": PRIOR_WINRATE,
+            "intervalo_inferior": PRIOR_WINRATE,
+            "intervalo_superior": PRIOR_WINRATE,
+            "muestra": 0,
+            "wins": 0,
+            "losses": 0,
+            "fuente_principal": None,
+            "fuente_respaldo": None,
+            "peso_fuente_principal": 0.0,
+            "peso_fuente_respaldo": 0.0,
+        }
+
+    candidatas.sort(key=lambda item: (item[0], item[1], item[2]), reverse=True)
+    principal = candidatas[0][3]
+    prioridad_principal = _prioridad_nivel_post_protocolo(principal.get("nivel"))
+
+    respaldo = None
+    candidatas_respaldo = []
+
+    for _, prioridad, total, fuente in candidatas[1:]:
+        if fuente.get("clave") == principal.get("clave"):
+            continue
+        if prioridad >= prioridad_principal:
+            continue
+        if total < MIN_MUESTRA_CONFIABLE:
+            continue
+        candidatas_respaldo.append((prioridad, total, fuente))
+
+    if candidatas_respaldo:
+        candidatas_respaldo.sort(key=lambda item: (item[0], item[1]), reverse=True)
+        respaldo = candidatas_respaldo[0][2]
+
+    prob_principal = _numero(principal.get("probabilidad_ajustada"), PRIOR_WINRATE)
+    total_principal = _entero(principal.get("total"), 0)
+    factor_principal = _factor_muestra(total_principal)
+
+    peso_principal = min(0.92, max(0.70, 0.65 + (0.27 * factor_principal)))
+    peso_respaldo = 0.0
+
+    if respaldo:
+        prob_respaldo = _numero(respaldo.get("probabilidad_ajustada"), PRIOR_WINRATE)
+        peso_respaldo = 1.0 - peso_principal
+        probabilidad = (prob_principal * peso_principal) + (prob_respaldo * peso_respaldo)
+    else:
+        probabilidad = prob_principal
+        peso_principal = 1.0
+
+    intervalo_inferior = _numero(principal.get("intervalo_inferior"), probabilidad)
+    intervalo_superior = _numero(principal.get("intervalo_superior"), probabilidad)
+
+    return {
+        "probabilidad_estimada": round(probabilidad, 2),
+        "intervalo_inferior": round(intervalo_inferior, 2),
+        "intervalo_superior": round(intervalo_superior, 2),
+        "muestra": total_principal,
+        "wins": _entero(principal.get("wins"), 0),
+        "losses": _entero(principal.get("losses"), 0),
+        "fuente_principal": principal,
+        "fuente_respaldo": respaldo,
+        "peso_fuente_principal": round(peso_principal, 3),
+        "peso_fuente_respaldo": round(peso_respaldo, 3),
+    }
+
+
+def evaluar_aprendizaje_post_protocolo(
+    senal,
+    memoria=None,
+):
+    """
+    Evalúa EXCLUSIVAMENTE la evidencia generada
+    después de que motor_protocolos encontró
+    una entrada técnica.
+
+    No mezcla:
+    - familia general;
+    - PA general;
+    - mercado general;
+    - setup general.
+
+    Solo consulta memoria PROTOCOLO_*.
+
+    No decide la operación.
+    Devuelve probabilidad y diagnóstico.
+    """
+
+    if not isinstance(senal, dict):
+        senal = {}
+
+    if memoria is None:
+        memoria = cargar_aprendizaje()
+
+    if not isinstance(memoria, dict):
+        memoria = {}
+
+    claves = _claves_protocolo(senal)
+
+    fuentes = []
+    descartadas = []
+
+    for item in claves:
+        nivel = item.get("nivel", "")
+        clave = item.get("clave", "")
+
+        if not clave:
+            continue
+
+        data = memoria.get(clave)
+
+        if not data:
+            descartadas.append({
+                "nivel": nivel,
+                "clave": clave,
+                "motivo": "SIN_DATOS",
+            })
+            continue
+
+        total = _entero(
+            data.get("total"),
+            0,
+        )
+
+        wins = _entero(
+            data.get("wins"),
+            0,
+        )
+
+        losses = _entero(
+            data.get("losses"),
+            0,
+        )
+
+        winrate = _numero(
+            data.get("winrate"),
+            0.0,
+        )
+
+        if total < MIN_MUESTRA_APORTE:
+            descartadas.append({
+                "nivel": nivel,
+                "clave": clave,
+                "motivo": "MUESTRA_INSUFICIENTE",
+                "total": total,
+            })
+            continue
+
+        ajuste, decision = _calcular_ajuste(
+            total=total,
+            winrate=winrate,
+        )
+
+        factor = _factor_muestra(total)
+
+        probabilidad = _probabilidad_suavizada(
+            wins,
+            losses,
+        )
+
+        inferior, superior = (
+            _intervalo_probabilidad(
+                wins,
+                losses,
+            )
+        )
+
+        fuentes.append({
+            "nivel": nivel,
+            "clave": clave,
+            "total": total,
+            "wins": wins,
+            "losses": losses,
+            "winrate": round(
+                winrate,
+                2,
+            ),
+            "ajuste": ajuste,
+            "decision": decision,
+            "confiabilidad": (
+                _confiabilidad_muestra(total)
+            ),
+            "peso_nivel": 1.0,
+            "factor_muestra": round(
+                factor,
+                3,
+            ),
+            "peso_efectivo": round(
+                factor,
+                3,
+            ),
+            "probabilidad_ajustada": (
+                probabilidad
+            ),
+            "intervalo_inferior": inferior,
+            "intervalo_superior": superior,
+        })
+
+    combinado = (
+        _combinar_fuentes_post_protocolo(
+            fuentes
+        )
+    )
+
+    if not fuentes:
+        return {
+            "aprendizaje_post_protocolo_encontrado": False,
+            "claves_consultadas_post_protocolo": [
+                item.get("clave")
+                for item in claves
+            ],
+            "fuentes_post_protocolo": [],
+            "claves_descartadas_post_protocolo": descartadas,
+            "probabilidad_post_protocolo": PRIOR_WINRATE,
+            "intervalo_post_protocolo_inferior": PRIOR_WINRATE,
+            "intervalo_post_protocolo_superior": PRIOR_WINRATE,
+            "muestra_post_protocolo": 0,
+            "wins_post_protocolo": 0,
+            "losses_post_protocolo": 0,
+            "confiabilidad_post_protocolo": "SIN_DATOS",
+            "fuente_post_protocolo_principal": None,
+            "fuente_post_protocolo_respaldo": None,
+        }
+
+    muestra = combinado.get(
+        "muestra",
+        0,
+    )
+
+    return {
+        "aprendizaje_post_protocolo_encontrado": True,
+
+        "claves_consultadas_post_protocolo": [
+            item.get("clave")
+            for item in claves
+        ],
+
+        "fuentes_post_protocolo": fuentes,
+
+        "claves_descartadas_post_protocolo": (
+            descartadas
+        ),
+
+        "probabilidad_post_protocolo": (
+            combinado.get(
+                "probabilidad_estimada",
+                PRIOR_WINRATE,
+            )
+        ),
+
+        "intervalo_post_protocolo_inferior": (
+            combinado.get(
+                "intervalo_inferior",
+                PRIOR_WINRATE,
+            )
+        ),
+
+        "intervalo_post_protocolo_superior": (
+            combinado.get(
+                "intervalo_superior",
+                PRIOR_WINRATE,
+            )
+        ),
+
+        "muestra_post_protocolo": muestra,
+
+        "wins_post_protocolo": combinado.get(
+            "wins",
+            0,
+        ),
+
+        "losses_post_protocolo": combinado.get(
+            "losses",
+            0,
+        ),
+
+        "confiabilidad_post_protocolo": (
+            _confiabilidad_muestra(
+                muestra
+            )
+        ),
+
+        "fuente_post_protocolo_principal": (
+            combinado.get(
+                "fuente_principal"
+            )
+        ),
+
+        "fuente_post_protocolo_respaldo": (
+            combinado.get(
+                "fuente_respaldo"
+            )
+        ),
+    }
 def _resultado_real(registro):
     """Devuelve WIN o LOSS únicamente para operaciones ejecutadas."""
 
@@ -1501,7 +2154,399 @@ def generar_aprendizaje_desde_resultados(
 
     return filas
 
+def actualizar_aprendizaje_post_protocolo(
+    resultados,
+    ruta=RUTA_APRENDIZAJE,
+):
+    """
+    C-C2 — Actualiza EXCLUSIVAMENTE memoria PROTOCOLO_*.
 
+    REGLAS:
+    - conserva intacta toda la memoria general existente;
+    - elimina/reemplaza únicamente filas PROTOCOLO_*;
+    - aprende solo de OPERADA_PROTOCOLO;
+    - utiliza resultado REAL de la operación;
+    - NO utiliza resultado_hipotetico;
+    - NO modifica FAMILIA_*, PA_*, MERCADO_*, SETUP_*, etc.
+
+    Esto permite congelar el Cerebro inicial y entrenar
+    independientemente la segunda evaluación post-protocolo.
+    """
+
+    # ========================================================
+    # 1. LEER Y CONGELAR MEMORIA GENERAL EXISTENTE
+    # ========================================================
+
+    filas_generales = []
+
+    if os.path.exists(ruta):
+        try:
+            with open(
+                ruta,
+                "r",
+                encoding="utf-8-sig",
+                newline="",
+            ) as archivo:
+                reader = csv.DictReader(archivo)
+
+                for row in reader:
+                    nivel = _txt(
+                        row.get("nivel")
+                    )
+
+                    clave = str(
+                        row.get("clave", "")
+                        or ""
+                    ).strip()
+
+                    # Las filas post-protocolo se regeneran.
+                    if (
+                        nivel.startswith("PROTOCOLO")
+                        or clave.startswith("PROTOCOLO")
+                    ):
+                        continue
+
+                    filas_generales.append(
+                        dict(row)
+                    )
+
+        except (OSError, csv.Error) as error:
+            raise RuntimeError(
+                "No se pudo leer la memoria histórica "
+                "existente antes de actualizar C-C2: "
+                + str(error)
+            )
+
+    # ========================================================
+    # 2. APRENDER ÚNICAMENTE OPERACIONES POST-PROTOCOLO
+    # ========================================================
+
+    grupos = defaultdict(
+        lambda: {
+            "total": 0,
+            "wins": 0,
+            "losses": 0,
+            "nivel": "",
+            "ejemplo": {},
+        }
+    )
+
+    operaciones_protocolo = 0
+    ignoradas = 0
+
+    for registro in resultados or []:
+        if not isinstance(registro, dict):
+            ignoradas += 1
+            continue
+
+        # ----------------------------------------------------
+        # Solo una entrada realmente ejecutada por protocolo.
+        # ----------------------------------------------------
+
+        estado_operacion = _txt(
+            registro.get(
+                "estado_operacion"
+            )
+        )
+
+        if estado_operacion != "OPERADA_PROTOCOLO":
+            continue
+
+        # ----------------------------------------------------
+        # IMPORTANTE:
+        # aquí usamos resultado REAL.
+        #
+        # NO resultado_hipotetico.
+        # ----------------------------------------------------
+
+        resultado = _resultado_real(
+            registro
+        )
+
+        if resultado not in RESULTADOS_VALIDOS:
+            ignoradas += 1
+            continue
+
+        claves = _claves_protocolo(
+            registro
+        )
+
+        if not claves:
+            ignoradas += 1
+            continue
+
+        operaciones_protocolo += 1
+
+        for item in claves:
+            nivel = item.get(
+                "nivel",
+                "",
+            )
+
+            clave = item.get(
+                "clave",
+                "",
+            )
+
+            if not clave:
+                continue
+
+            grupo = grupos[clave]
+
+            grupo["nivel"] = nivel
+
+            if not grupo["ejemplo"]:
+                grupo["ejemplo"] = registro
+
+            grupo["total"] += 1
+
+            if resultado == "WIN":
+                grupo["wins"] += 1
+
+            elif resultado == "LOSS":
+                grupo["losses"] += 1
+
+    # ========================================================
+    # 3. CONSTRUIR FILAS PROTOCOLO_*
+    # ========================================================
+
+    filas_protocolo = []
+
+    for clave, datos in grupos.items():
+        total = datos["total"]
+        wins = datos["wins"]
+        losses = datos["losses"]
+
+        if total <= 0:
+            continue
+
+        winrate = round(
+            (wins / total) * 100,
+            2,
+        )
+
+        ajuste, decision = (
+            _calcular_ajuste(
+                total=total,
+                winrate=winrate,
+            )
+        )
+
+        probabilidad = (
+            _probabilidad_suavizada(
+                wins,
+                losses,
+            )
+        )
+
+        (
+            intervalo_inferior,
+            intervalo_superior,
+        ) = _intervalo_probabilidad(
+            wins,
+            losses,
+        )
+
+        ejemplo = datos["ejemplo"]
+
+        evidencias = (
+            _evidencias_por_origen(
+                ejemplo
+            )
+        )
+
+        filas_protocolo.append({
+            "nivel": datos["nivel"],
+            "clave": clave,
+            "total": total,
+            "wins": wins,
+            "losses": losses,
+            "winrate": winrate,
+
+            "ajuste_confianza": ajuste,
+
+            "decision_aprendizaje": (
+                decision
+            ),
+
+            "confiabilidad_muestra": (
+                _confiabilidad_muestra(
+                    total
+                )
+            ),
+
+            "probabilidad_ajustada": (
+                probabilidad
+            ),
+
+            "intervalo_inferior": (
+                intervalo_inferior
+            ),
+
+            "intervalo_superior": (
+                intervalo_superior
+            ),
+
+            "activo": ejemplo.get(
+                "activo",
+                "",
+            ),
+
+            "direccion": ejemplo.get(
+                "direccion",
+                "",
+            ),
+
+            "familia_setup": (
+                _familia_setup(
+                    ejemplo
+                )
+            ),
+
+            "tipo_mercado": (
+                _normalizar_mercado(
+                    ejemplo
+                )
+            ),
+
+            "estado_tendencia": (
+                _normalizar_tendencia(
+                    ejemplo
+                )
+            ),
+
+            "firma_pa": _firma_tokens(
+                evidencias["pa"]
+            ),
+
+            "firma_mercado": (
+                _firma_tokens(
+                    evidencias["mercado"]
+                )
+            ),
+
+            "firma_estrategia": (
+                _firma_tokens(
+                    evidencias["estrategia"]
+                )
+            ),
+
+            "firma_evidencias_exacta": (
+                ejemplo.get(
+                    "firma_evidencias_exacta",
+                    ejemplo.get(
+                        "firma_exacta",
+                        "",
+                    ),
+                )
+            ),
+        })
+
+    filas_protocolo.sort(
+        key=lambda fila: (
+            _entero(
+                fila.get("total"),
+                0,
+            ),
+            _numero(
+                fila.get("winrate"),
+                0.0,
+            ),
+        ),
+        reverse=True,
+    )
+
+    # ========================================================
+    # 4. UNIR:
+    #
+    # MEMORIA GENERAL CONGELADA
+    # +
+    # MEMORIA PROTOCOLO NUEVA
+    # ========================================================
+
+    filas_finales = (
+        filas_generales
+        + filas_protocolo
+    )
+
+    campos = [
+        "nivel",
+        "clave",
+        "total",
+        "wins",
+        "losses",
+        "winrate",
+        "ajuste_confianza",
+        "decision_aprendizaje",
+        "confiabilidad_muestra",
+        "probabilidad_ajustada",
+        "intervalo_inferior",
+        "intervalo_superior",
+        "activo",
+        "direccion",
+        "familia_setup",
+        "tipo_mercado",
+        "estado_tendencia",
+        "firma_pa",
+        "firma_mercado",
+        "firma_estrategia",
+        "firma_evidencias_exacta",
+    ]
+
+    directorio = os.path.dirname(
+        os.path.abspath(ruta)
+    )
+
+    if directorio:
+        os.makedirs(
+            directorio,
+            exist_ok=True,
+        )
+
+    with open(
+        ruta,
+        "w",
+        newline="",
+        encoding="utf-8",
+    ) as archivo:
+        writer = csv.DictWriter(
+            archivo,
+            fieldnames=campos,
+            extrasaction="ignore",
+        )
+
+        writer.writeheader()
+        writer.writerows(
+            filas_finales
+        )
+
+    print(
+        "C-C2 memoria post-protocolo actualizada."
+    )
+
+    print(
+        "Memoria general preservada:",
+        len(filas_generales),
+        "filas.",
+    )
+
+    print(
+        "Memoria PROTOCOLO_* generada:",
+        len(filas_protocolo),
+        "filas.",
+    )
+
+    print(
+        "Operaciones reales protocolo utilizadas:",
+        operaciones_protocolo,
+    )
+
+    print(
+        "Registros protocolo ignorados:",
+        ignoradas,
+    )
+
+    return filas_protocolo
 def probar_motor_aprendizaje():
     """Prueba memoria anterior y nuevas combinaciones de evidencias."""
 

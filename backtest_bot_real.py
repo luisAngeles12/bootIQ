@@ -25,13 +25,19 @@ import estrategia
 from motor_protocolos import buscar_entrada_confirmada
 import motor_protocolos as motor_protocolos_mod
 from contexto_mercado import detectar_tipo_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
-from motor_aprendizaje_historico import generar_aprendizaje_desde_resultados
+from motor_aprendizaje_historico import (
+    generar_aprendizaje_desde_resultados,
+    actualizar_aprendizaje_post_protocolo,
+)
+from motor_candidatos import ordenar_candidatas_v3
+from motor_decision import evaluar_decision_post_protocolo
 
 
 CARPETA_DATA = "data_backtest"
 SALIDA = "backtest_bot_real_resultados.csv"
 
 MAX_ACTIVOS_ANALIZAR = 20
+MAX_SENALES_POR_RONDA = 20
 LIMITE_DATASETS = 160
 PASO_RONDA = 1
 
@@ -61,6 +67,11 @@ TOTAL_DATASETS_VALIDACION = 4
 
 BUILD_ID = "BOOTIQ_BACKTEST_V5_SOMBRA_ESTADISTICA_2026_08_01"
 ACTUALIZAR_APRENDIZAJE = False
+# ============================================================
+# C-C2 — ACTUALIZACIÓN EXCLUSIVA POST-PROTOCOLO
+# ============================================================
+
+ACTUALIZAR_APRENDIZAJE_PROTOCOLO = False
 DATASETS_USADOS_BACKTEST = 0
 AUDITORIA_DATASETS = {
     "cargados": 0,
@@ -961,7 +972,60 @@ def crear_registro_resultado(
         "auditoria_protocolo_tendencia": senal.get("auditoria_protocolo_tendencia", ""),
         "auditoria_protocolo_pa_tipo": senal.get("auditoria_protocolo_pa_tipo", ""),
         "auditoria_protocolo_probabilidad": senal.get("auditoria_protocolo_probabilidad", 0),
+        # ==================================================
+        # C-C2 — APRENDIZAJE POST-PROTOCOLO
+        # ==================================================
 
+        "decision_post_protocolo": senal.get(
+            "decision_post_protocolo",
+            "SIN_DATOS",
+        ),
+
+        "autoriza_post_protocolo": bool(
+            senal.get(
+                "autoriza_post_protocolo",
+                True,
+            )
+        ),
+
+        "probabilidad_post_protocolo": senal.get(
+            "probabilidad_post_protocolo",
+            0,
+        ),
+
+        "intervalo_post_protocolo_inferior": senal.get(
+            "intervalo_post_protocolo_inferior",
+            0,
+        ),
+
+        "intervalo_post_protocolo_superior": senal.get(
+            "intervalo_post_protocolo_superior",
+            0,
+        ),
+
+        "muestra_post_protocolo": senal.get(
+            "muestra_post_protocolo",
+            0,
+        ),
+
+        "confiabilidad_post_protocolo": senal.get(
+            "confiabilidad_post_protocolo",
+            "SIN_DATOS",
+        ),
+
+        "fuente_post_protocolo_principal": _texto(
+            senal.get(
+                "fuente_post_protocolo_principal",
+                "",
+            )
+        ),
+
+        "fuente_post_protocolo_respaldo": _texto(
+            senal.get(
+                "fuente_post_protocolo_respaldo",
+                "",
+            )
+        ),
         # ==================================================
         # VALIDACIÓN RECUPERACIÓN VETO SETUP — SOMBRA
         # ==================================================
@@ -1615,13 +1679,11 @@ def ejecutar_backtest(datasets):
             senal["_index"] = i
             senales_ronda.append(senal)
 
-        senales_ronda.sort(
-            key=lambda x: (
-                x.get("score_final", 0),
-                x.get("prioridad", 0),
-                x.get("puntaje", 0),
-            ),
-            reverse=True,
+        # Ranking único BootIQ V3.
+        # No recalcula aprendizaje ni decide:
+        # solo ordena señales ya evaluadas por el Cerebro Único.
+        senales_ronda = ordenar_candidatas_v3(
+            senales_ronda
         )
 
         if ronda % 100 == 0:
@@ -1632,7 +1694,7 @@ def ejecutar_backtest(datasets):
                 len(senales_ronda),
             )
 
-        for senal in senales_ronda[:MAX_ACTIVOS_ANALIZAR]:
+        for senal in senales_ronda[:MAX_SENALES_POR_RONDA]:
             velas = senal["_velas"]
             idx = senal["_index"]
 
@@ -1842,6 +1904,76 @@ def ejecutar_backtest(datasets):
                         )
                     )
                     continue
+                # ========================================================
+                # C-C2 — EVALUACIÓN POST-PROTOCOLO EN SOMBRA
+                # ========================================================
+                
+                decision_post = (
+                    evaluar_decision_post_protocolo(
+                        senal
+                    )
+                )
+                
+                senal["decision_post_protocolo"] = (
+                    decision_post.get(
+                        "decision_post_protocolo",
+                        "SIN_DATOS",
+                    )
+                )
+                
+                senal["autoriza_post_protocolo"] = (
+                    decision_post.get(
+                        "autoriza_post_protocolo",
+                        True,
+                    )
+                )
+                
+                senal["probabilidad_post_protocolo"] = (
+                    decision_post.get(
+                        "probabilidad_post_protocolo",
+                        0,
+                    )
+                )
+                
+                senal[
+                    "intervalo_post_protocolo_inferior"
+                ] = decision_post.get(
+                    "intervalo_post_protocolo_inferior",
+                    0,
+                )
+                
+                senal[
+                    "intervalo_post_protocolo_superior"
+                ] = decision_post.get(
+                    "intervalo_post_protocolo_superior",
+                    0,
+                )
+                
+                senal["muestra_post_protocolo"] = (
+                    decision_post.get(
+                        "muestra_post_protocolo",
+                        0,
+                    )
+                )
+                
+                senal[
+                    "confiabilidad_post_protocolo"
+                ] = decision_post.get(
+                    "confiabilidad_post_protocolo",
+                    "SIN_DATOS",
+                )
+                
+                senal[
+                    "fuente_post_protocolo_principal"
+                ] = decision_post.get(
+                    "fuente_post_protocolo_principal"
+                )
+                
+                senal[
+                    "fuente_post_protocolo_respaldo"
+                ] = decision_post.get(
+                    "fuente_post_protocolo_respaldo"
+                )
 
                 resultados.append(
                     crear_registro_resultado(
@@ -2100,7 +2232,16 @@ def guardar_resultados(resultados):
         "auditoria_protocolo_tendencia",
         "auditoria_protocolo_pa_tipo",
         "auditoria_protocolo_probabilidad",
-
+        # C-C2 — aprendizaje post-protocolo.
+        "decision_post_protocolo",
+        "autoriza_post_protocolo",
+        "probabilidad_post_protocolo",
+        "intervalo_post_protocolo_inferior",
+        "intervalo_post_protocolo_superior",
+        "muestra_post_protocolo",
+        "confiabilidad_post_protocolo",
+        "fuente_post_protocolo_principal",
+        "fuente_post_protocolo_respaldo",
         "bootiq_resultado_estado_operacion",
         "bootiq_resultado_motivo_ejecucion",
         "bootiq_resultado_resultado",
@@ -5350,7 +5491,328 @@ def imprimir_c8_evento_tecnico(resultados):
 
     print("==============================================\n")
 
+def imprimir_cc2_probabilidad_post_protocolo(
+    resultados,
+):
+    """
+    C-C2 — calibración oficial POST-PROTOCOLO.
 
+    IMPORTANTE:
+    - NO construye ningún modelo;
+    - NO aprende;
+    - NO recalcula probabilidades;
+    - NO modifica operaciones.
+
+    Únicamente mide la probabilidad que ya produjo:
+
+        motor_aprendizaje_historico.py
+            ->
+        evaluar_aprendizaje_post_protocolo()
+            ->
+        motor_decision.py
+            ->
+        evaluar_decision_post_protocolo()
+    """
+
+    modo = (
+        "TRAIN"
+        if MODO_EXPERIMENTO
+        == MODO_EXPERIMENTO_AUDITORIA_TRAIN
+        else "VALIDACION"
+    )
+
+    operadas = [
+        r
+        for r in resultados
+        if r.get("estado_operacion")
+        == "OPERADA_PROTOCOLO"
+    ]
+
+    print(
+        "\n===== C-C2 PROBABILIDAD POST-PROTOCOLO — "
+        + modo
+        + " ====="
+    )
+
+    if not operadas:
+        print(
+            "No hay operaciones de protocolo "
+            "para evaluar."
+        )
+        print(
+            "============================================"
+        )
+        return
+
+    con_datos = [
+        r
+        for r in operadas
+        if str(
+            r.get(
+                "decision_post_protocolo",
+                "",
+            )
+        ).upper().strip()
+        == "EVALUAR"
+    ]
+
+    sin_datos = len(operadas) - len(con_datos)
+
+    print(
+        "Operaciones protocolo:",
+        len(operadas),
+    )
+
+    print(
+        "Con aprendizaje post-protocolo:",
+        len(con_datos),
+    )
+
+    print(
+        "Sin datos post-protocolo:",
+        sin_datos,
+    )
+
+    if not con_datos:
+        print(
+            "ERROR DIAGNOSTICO: ninguna operación "
+            "recibió aprendizaje post-protocolo."
+        )
+        print(
+            "============================================"
+        )
+        return
+
+    # ========================================================
+    # CALIBRACIÓN
+    # ========================================================
+
+    rangos = [
+        ("<45", None, 45),
+        ("45-49", 45, 50),
+        ("50-54", 50, 55),
+        ("55-59", 55, 60),
+        ("60-64", 60, 65),
+        ("65+", 65, None),
+    ]
+
+    print(
+        "\n--- CALIBRACION POST-PROTOCOLO ---"
+    )
+
+    for etiqueta, minimo, maximo in rangos:
+        grupo = []
+
+        for r in con_datos:
+            try:
+                prob = float(
+                    r.get(
+                        "probabilidad_post_protocolo",
+                        0,
+                    )
+                    or 0
+                )
+            except (TypeError, ValueError):
+                continue
+
+            if (
+                minimo is not None
+                and prob < minimo
+            ):
+                continue
+
+            if (
+                maximo is not None
+                and prob >= maximo
+            ):
+                continue
+
+            grupo.append(r)
+
+        total = len(grupo)
+
+        wins = sum(
+            1
+            for r in grupo
+            if r.get("resultado") == "WIN"
+        )
+
+        losses = total - wins
+
+        wr = (
+            round(
+                (wins / total) * 100,
+                2,
+            )
+            if total
+            else 0
+        )
+
+        activos = len({
+            str(
+                r.get("activo", "")
+                or ""
+            )
+            for r in grupo
+            if str(
+                r.get("activo", "")
+                or ""
+            )
+        })
+
+        print(
+            etiqueta,
+            "| total:",
+            total,
+            "| win:",
+            wins,
+            "| loss:",
+            losses,
+            "| WR:",
+            str(wr) + "%",
+            "| activos:",
+            activos,
+        )
+
+    # ========================================================
+    # POR CONFIABILIDAD
+    # ========================================================
+
+    print(
+        "\n--- CONFIABILIDAD POST-PROTOCOLO ---"
+    )
+
+    grupos_confianza = {}
+
+    for r in con_datos:
+        clave = str(
+            r.get(
+                "confiabilidad_post_protocolo",
+                "SIN_DATOS",
+            )
+            or "SIN_DATOS"
+        ).upper().strip()
+
+        grupos_confianza.setdefault(
+            clave,
+            [],
+        ).append(r)
+
+    for clave, grupo in sorted(
+        grupos_confianza.items(),
+        key=lambda x: -len(x[1]),
+    ):
+        total = len(grupo)
+
+        wins = sum(
+            1
+            for r in grupo
+            if r.get("resultado") == "WIN"
+        )
+
+        losses = total - wins
+
+        wr = (
+            round(
+                (wins / total) * 100,
+                2,
+            )
+            if total
+            else 0
+        )
+
+        print(
+            clave,
+            "| total:",
+            total,
+            "| win:",
+            wins,
+            "| loss:",
+            losses,
+            "| WR:",
+            str(wr) + "%",
+        )
+
+    # ========================================================
+    # TOP CUANTILES
+    # ========================================================
+
+    ordenadas = sorted(
+        con_datos,
+        key=lambda r: float(
+            r.get(
+                "probabilidad_post_protocolo",
+                0,
+            )
+            or 0
+        ),
+        reverse=True,
+    )
+
+    print(
+        "\n--- TOP CUANTILES POST-PROTOCOLO ---"
+    )
+
+    for porcentaje in [
+        25,
+        40,
+        50,
+        60,
+        75,
+        100,
+    ]:
+        n = max(
+            1,
+            int(
+                round(
+                    len(ordenadas)
+                    * porcentaje
+                    / 100
+                )
+            ),
+        )
+
+        grupo = ordenadas[:n]
+
+        wins = sum(
+            1
+            for r in grupo
+            if r.get("resultado") == "WIN"
+        )
+
+        losses = len(grupo) - wins
+
+        wr = round(
+            (wins / len(grupo)) * 100,
+            2,
+        )
+
+        corte = float(
+            grupo[-1].get(
+                "probabilidad_post_protocolo",
+                0,
+            )
+            or 0
+        )
+
+        print(
+            "TOP",
+            str(porcentaje) + "%",
+            "| total:",
+            len(grupo),
+            "| win:",
+            wins,
+            "| loss:",
+            losses,
+            "| WR:",
+            str(wr) + "%",
+            "| prob mínima:",
+            str(round(corte, 2)) + "%",
+        )
+
+    print(
+        "============================================\n"
+    )
 def imprimir_resumen(resultados):
     operadas = [
         r for r in resultados
@@ -5628,9 +6090,20 @@ def imprimir_resumen(resultados):
 
     imprimir_c8_evento_tecnico(resultados)
 
-    imprimir_probabilidad_protocolo_train(resultados)
+    # C-C2 oficial.
+    imprimir_cc2_probabilidad_post_protocolo(
+        resultados
+    )
 
-    imprimir_validacion_recuperacion_sombra(resultados)
+    # Modelo paralelo antiguo:
+    # se deja temporalmente apagado.
+    # imprimir_probabilidad_protocolo_train(
+    #     resultados
+    # )
+
+    imprimir_validacion_recuperacion_sombra(
+        resultados
+    )
 
 
 def main():
@@ -5662,18 +6135,51 @@ def main():
     )
 
     print(
+        "Política ranking:",
+        "MOTOR_CANDIDATOS_V3",
+        "| TOP señales por ronda:",
+        MAX_SENALES_POR_RONDA,
+    )
+
+    print(
         "Ejecutando backtest usando analizar_activo() real..."
     )
 
     resultados = ejecutar_backtest(datasets)
 
     guardar_resultados(resultados)
+    if (
+        ACTUALIZAR_APRENDIZAJE
+        and ACTUALIZAR_APRENDIZAJE_PROTOCOLO
+    ):
+        raise RuntimeError(
+            "No se puede actualizar memoria general "
+            "y memoria post-protocolo simultáneamente."
+        )
+    # ========================================================
+    # APRENDIZAJE
+    # ========================================================
 
     if ACTUALIZAR_APRENDIZAJE:
         generar_aprendizaje_desde_resultados(
             resultados,
             incluir_hipoteticos=True,
         )
+
+        print(
+            "Memoria general regenerada."
+        )
+
+    elif ACTUALIZAR_APRENDIZAJE_PROTOCOLO:
+        actualizar_aprendizaje_post_protocolo(
+            resultados
+        )
+
+        print(
+            "C-C2: memoria general congelada; "
+            "solo PROTOCOLO_* fue actualizado."
+        )
+
     else:
         print(
             "Aprendizaje histórico congelado: "

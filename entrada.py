@@ -9,7 +9,7 @@ from config import (
 )
 from utils import segundo_actual
 from confirmacion_entrada import evaluar_confirmacion_entrada
-
+from motor_decision import evaluar_decision_post_protocolo
 # ============================================================
 # CEREBRO INTERMEDIO DE ENTRADA — MODO DIAGNÓSTICO
 # ============================================================
@@ -1118,13 +1118,115 @@ def procesar_senales_pendientes(abrir_operacion):
                 "| micro:",
                 razon_micro
             )
-            # La señal ya superó todas las validaciones técnicas
-            # del flujo de pendientes.
+            # ========================================================
+            # C-C2C — SEGUNDA EVALUACIÓN DEL CEREBRO
+            # ========================================================
+            #
+            # La señal ya superó las validaciones técnicas del flujo
+            # de pendientes.
+            #
+            # Si llegó aquí porque el Cerebro exigió protocolo,
+            # consultamos ahora la memoria histórica POST-PROTOCOLO.
+            #
+            # IMPORTANTE:
+            # en esta fase todavía NO bloqueamos.
+            # Solo registramos la evaluación para medirla en TRAIN.
+            # ========================================================
+            
             if senal.get("requiere_protocolo_cerebro", False):
                 senal["protocolo_confirmado"] = True
+            
+                decision_post = (
+                    evaluar_decision_post_protocolo(
+                        senal
+                    )
+                )
+            
+                senal["decision_post_protocolo"] = (
+                    decision_post.get(
+                        "decision_post_protocolo",
+                        "SIN_DATOS",
+                    )
+                )
+            
+                senal["autoriza_post_protocolo"] = (
+                    decision_post.get(
+                        "autoriza_post_protocolo",
+                        True,
+                    )
+                )
+            
+                senal["probabilidad_post_protocolo"] = (
+                    decision_post.get(
+                        "probabilidad_post_protocolo",
+                        0,
+                    )
+                )
+            
+                senal[
+                    "intervalo_post_protocolo_inferior"
+                ] = decision_post.get(
+                    "intervalo_post_protocolo_inferior",
+                    0,
+                )
+            
+                senal[
+                    "intervalo_post_protocolo_superior"
+                ] = decision_post.get(
+                    "intervalo_post_protocolo_superior",
+                    0,
+                )
+            
+                senal["muestra_post_protocolo"] = (
+                    decision_post.get(
+                        "muestra_post_protocolo",
+                        0,
+                    )
+                )
+            
+                senal[
+                    "confiabilidad_post_protocolo"
+                ] = decision_post.get(
+                    "confiabilidad_post_protocolo",
+                    "SIN_DATOS",
+                )
+            
+                senal[
+                    "fuente_post_protocolo_principal"
+                ] = decision_post.get(
+                    "fuente_post_protocolo_principal"
+                )
+            
+                senal[
+                    "fuente_post_protocolo_respaldo"
+                ] = decision_post.get(
+                    "fuente_post_protocolo_respaldo"
+                )
+            
+                print(
+                    "EVALUACION POST-PROTOCOLO:",
+                    activo,
+                    "| prob:",
+                    senal.get(
+                        "probabilidad_post_protocolo",
+                        0,
+                    ),
+                    "| muestra:",
+                    senal.get(
+                        "muestra_post_protocolo",
+                        0,
+                    ),
+                    "| confiabilidad:",
+                    senal.get(
+                        "confiabilidad_post_protocolo",
+                        "SIN_DATOS",
+                    ),
+                )
+            
+            # Todavía no bloqueamos en C-C2.
             if abrir_operacion(senal):
                 abiertas += 1
-
+            
         except Exception as e:
             print("Error procesando señal pendiente:", e)
 

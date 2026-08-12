@@ -1,5 +1,8 @@
 from detector_riesgo_compuesto import evaluar_riesgo_compuesto
-from motor_aprendizaje_historico import evaluar_aprendizaje_historico
+from motor_aprendizaje_historico import (
+    evaluar_aprendizaje_historico,
+    evaluar_aprendizaje_post_protocolo,
+)
 
 
 # ============================================================
@@ -1089,7 +1092,142 @@ def _evaluar_legacy_opcional(
         ),
     }
 
+def evaluar_decision_post_protocolo(
+    evidencia,
+):
+    """
+    Segunda evaluación del Cerebro Único.
 
+    Se ejecuta únicamente DESPUÉS de que
+    motor_protocolos haya encontrado una
+    entrada técnica.
+
+    No recalcula protocolo.
+    No aprende aquí.
+    No usa campos legacy.
+
+    Consume exclusivamente aprendizaje
+    post-protocolo generado en TRAIN.
+    """
+
+    if not isinstance(evidencia, dict):
+        evidencia = {}
+
+    aprendizaje = (
+        evaluar_aprendizaje_post_protocolo(
+            evidencia
+        )
+    )
+
+    encontrado = bool(
+        aprendizaje.get(
+            "aprendizaje_post_protocolo_encontrado",
+            False,
+        )
+    )
+
+    probabilidad = _num(
+        aprendizaje.get(
+            "probabilidad_post_protocolo",
+            0,
+        ),
+        0.0,
+    )
+
+    inferior = _num(
+        aprendizaje.get(
+            "intervalo_post_protocolo_inferior",
+            probabilidad,
+        ),
+        probabilidad,
+    )
+
+    superior = _num(
+        aprendizaje.get(
+            "intervalo_post_protocolo_superior",
+            probabilidad,
+        ),
+        probabilidad,
+    )
+
+    muestra = int(
+        aprendizaje.get(
+            "muestra_post_protocolo",
+            0,
+        )
+        or 0
+    )
+
+    confiabilidad = aprendizaje.get(
+        "confiabilidad_post_protocolo",
+        "SIN_DATOS",
+    )
+
+    # ========================================================
+    # C-C2 — TODAVÍA SIN VETO PRODUCTIVO
+    # ========================================================
+    #
+    # Primero medimos la probabilidad post-protocolo
+    # usando exclusivamente TRAIN.
+    #
+    # No bloqueamos todavía.
+    # ========================================================
+
+    return {
+        "decision_post_protocolo": (
+            "EVALUAR"
+            if encontrado
+            else "SIN_DATOS"
+        ),
+
+        "autoriza_post_protocolo": True,
+
+        "probabilidad_post_protocolo": (
+            round(
+                probabilidad,
+                2,
+            )
+        ),
+
+        "intervalo_post_protocolo_inferior": (
+            round(
+                inferior,
+                2,
+            )
+        ),
+
+        "intervalo_post_protocolo_superior": (
+            round(
+                superior,
+                2,
+            )
+        ),
+
+        "muestra_post_protocolo": muestra,
+
+        "confiabilidad_post_protocolo": (
+            confiabilidad
+        ),
+
+        "fuente_post_protocolo_principal": (
+            aprendizaje.get(
+                "fuente_post_protocolo_principal"
+            )
+        ),
+
+        "fuente_post_protocolo_respaldo": (
+            aprendizaje.get(
+                "fuente_post_protocolo_respaldo"
+            )
+        ),
+
+        "fuentes_post_protocolo": (
+            aprendizaje.get(
+                "fuentes_post_protocolo",
+                [],
+            )
+        ),
+    }
 # ============================================================
 # CEREBRO ÚNICO OFICIAL BOOTIQ
 # ============================================================

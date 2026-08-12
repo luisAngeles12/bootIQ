@@ -1,5 +1,6 @@
 import time
 import estado
+from motor_candidatos import ordenar_candidatas_v3
 from config import (
     MOSTRAR_ESTADISTICAS_CADA_RONDAS,
     STOP_LOSS,
@@ -197,13 +198,8 @@ def main():
         if senales:
             print("\nSeñales preparadas:", len(senales))
 
-            senales = sorted(
-                senales,
-                key=lambda x: (
-                    x.get("prioridad", 0),
-                    x["puntaje"]
-                ),
-                reverse=True
+            senales = ordenar_candidatas_v3(
+                senales
             )
 
             for s in senales[:5]:
