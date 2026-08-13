@@ -37,6 +37,7 @@ CONFIABILIDADES_OPERAR_DIRECTO = {
     "ALTA",
     "MEDIA",
 }
+PERMITIR_ENTRADA_DIRECTA = False
 # ============================================================
 # AUDITORÍA LEGACY OPCIONAL
 # ============================================================
@@ -721,35 +722,174 @@ def clasificar_decision_estadistica_sombra(
         **datos_estadisticos,
     }
 
+def evaluar_aptitud_entrada_directa(evidencia):
+    """
+    Evalúa si una señal ya autorizada estadísticamente
+    puede ejecutarse DIRECTA.
 
+    No decide si operar.
+    No bloquea una señal.
+    Solo determina si la ejecución necesita protocolo técnico.
+    """
+
+    evidencia = (
+        evidencia
+        if isinstance(evidencia, dict)
+        else {}
+    )
+
+    subtipo_setup = _txt(
+        evidencia.get("subtipo_setup", "")
+    )
+
+    modo_entrada_setup = _txt(
+        evidencia.get("modo_entrada_setup", "")
+    )
+
+    pa_tipo = _txt(
+        evidencia.get("pa_tipo", "")
+    )
+
+    requiere_ruptura = bool(
+        evidencia.get(
+            "requiere_ruptura_setup",
+            False,
+        )
+    )
+
+    requiere_confirmacion = bool(
+        evidencia.get(
+            "requiere_confirmacion_setup",
+            False,
+        )
+    )
+
+    riesgo_critico = bool(
+        evidencia.get(
+            "riesgo_estructural_critico_setup",
+            False,
+        )
+    )
+
+    ruptura_confirmada = bool(
+        evidencia.get(
+            "ruptura_confirmada",
+            False,
+        )
+    )
+
+    motivos = []
+
+    # ========================================================
+    # CONDICIONES QUE OBLIGAN A USAR PROTOCOLO
+    # ========================================================
+
+    if (
+        requiere_ruptura
+        and not ruptura_confirmada
+    ):
+        motivos.append(
+            "Setup requiere ruptura pendiente."
+        )
+
+    if requiere_confirmacion:
+        motivos.append(
+            "Setup requiere confirmación pendiente."
+        )
+
+    if riesgo_critico:
+        motivos.append(
+            "Riesgo estructural crítico presente."
+        )
+
+    if subtipo_setup == "zona_sin_ruptura":
+        motivos.append(
+            "Zona sin ruptura requiere validación técnica."
+        )
+
+    if pa_tipo == "sin_contexto_claro":
+        motivos.append(
+            "Price Action sin contexto claro."
+        )
+
+    if (
+        "esperar" in modo_entrada_setup
+        or "no_operar" in modo_entrada_setup
+        or "cancelar" in modo_entrada_setup
+    ):
+        motivos.append(
+            "Modo de setup no autoriza entrada inmediata."
+        )
+
+    if motivos:
+        return {
+            "apta": False,
+            "motivos": motivos,
+        }
+
+    # ========================================================
+    # EVIDENCIA POSITIVA DE ENTRADA DIRECTA
+    # ========================================================
+
+    pa_claro = pa_tipo not in {
+        "",
+        "sin_contexto_claro",
+    }
+
+    modo_directo = (
+        "directa" in modo_entrada_setup
+    )
+
+    estructura_resuelta = (
+        ruptura_confirmada
+        or pa_claro
+        or modo_directo
+    )
+
+    if not estructura_resuelta:
+        return {
+            "apta": False,
+            "motivos": [
+                "No existe confirmación técnica suficiente "
+                "para justificar entrada directa."
+            ],
+        }
+
+    return {
+        "apta": True,
+        "motivos": [
+            "Estructura técnica apta para entrada directa."
+        ],
+    }
 def convertir_decision_v3_a_oficial(
     resultado_decision_sombra,
+    evidencia=None,
 ):
     """
     Convierte la clasificación estadística V3 al contrato
     operativo oficial.
 
-    Principio:
-    - NO recalcula probabilidad;
-    - NO cambia la clasificación estadística original;
-    - NO bloquea una señal que V3 autorizó;
-    - decide solamente si la autorización puede ser DIRECTA
-      o necesita PROTOCOLO.
+    La estadística decide si la señal queda autorizada.
 
-    OPERAR_SOMBRA:
-        -> OPERAR solamente con evidencia estadística sólida.
-        -> de lo contrario OPERAR_CON_PROTOCOLO.
+    La estructura técnica decide solamente si esa autorización
+    puede ejecutarse DIRECTA o debe pasar por PROTOCOLO.
 
-    OPERAR_CON_PROTOCOLO_SOMBRA:
-        -> OPERAR_CON_PROTOCOLO.
-
-    resto:
-        -> NO_OPERAR.
+    Una señal autorizada nunca se convierte en NO_OPERAR
+    únicamente por fallar la aptitud de entrada directa.
     """
 
     resultado = (
         resultado_decision_sombra
-        if isinstance(resultado_decision_sombra, dict)
+        if isinstance(
+            resultado_decision_sombra,
+            dict,
+        )
+        else {}
+    )
+
+    evidencia = (
+        evidencia
+        if isinstance(evidencia, dict)
         else {}
     )
 
@@ -810,16 +950,42 @@ def convertir_decision_v3_a_oficial(
     if decision_sombra == "OPERAR_SOMBRA":
 
         evidencia_directa_solida = (
-            muestra >= MIN_MUESTRA_OPERAR_DIRECTO
+            muestra
+            >= MIN_MUESTRA_OPERAR_DIRECTO
             and confiabilidad
             in CONFIABILIDADES_OPERAR_DIRECTO
+        )
+
+        diagnostico_directa = (
+            evaluar_aptitud_entrada_directa(
+                evidencia
+            )
+        )
+
+        aptitud_tecnica_directa = bool(
+            diagnostico_directa.get(
+                "apta",
+                False,
+            )
+        )
+
+        motivos_directa = list(
+            diagnostico_directa.get(
+                "motivos",
+                [],
+            )
+            or []
         )
 
         # ====================================================
         # DIRECTA
         # ====================================================
 
-        if evidencia_directa_solida:
+        if (
+            PERMITIR_ENTRADA_DIRECTA
+            and evidencia_directa_solida
+            and aptitud_tecnica_directa
+        ):
             return {
                 "decision": "OPERAR",
                 "decision_legacy": (
@@ -830,12 +996,15 @@ def convertir_decision_v3_a_oficial(
                 "modo_ejecucion": "DIRECTA",
                 "bloquear_por_riesgo": False,
                 "riesgo_extremo_diagnostico": False,
+
                 "origen_autoridad": (
                     "PROBABILIDAD_HISTORICA_V3"
                 ),
+
                 "decision_sombra_origen": (
                     decision_sombra
                 ),
+
                 "nivel_probabilidad": nivel,
                 "clave_probabilidad": clave,
 
@@ -843,16 +1012,44 @@ def convertir_decision_v3_a_oficial(
                 "directa_muestra": muestra,
                 "directa_confiabilidad": confiabilidad,
 
+                "directa_aptitud_tecnica": True,
+                "directa_motivos_tecnicos": (
+                    motivos_directa
+                ),
+
                 "motivo": (
-                    "V3 estadístico autorizó entrada directa "
-                    "con evidencia histórica suficiente. "
+                    "V3 autorizó entrada directa "
+                    "con evidencia estadística y "
+                    "estructura técnica suficientes. "
                     + motivo_sombra
                 ).strip(),
             }
 
         # ====================================================
-        # V3 AUTORIZÓ, PERO NO ENTRADA DIRECTA
+        # AUTORIZADA, PERO REQUIERE PROTOCOLO
         # ====================================================
+
+        razones = []
+        
+        if not PERMITIR_ENTRADA_DIRECTA:
+            razones.append(
+                "entrada directa desactivada; "
+                "se exige confirmación técnica"
+            )
+        
+        if not evidencia_directa_solida:
+            razones.append(
+                "evidencia estadística insuficiente "
+                "para entrada directa"
+            )
+        
+        if not aptitud_tecnica_directa:
+            razones.append(
+                "estructura técnica requiere protocolo"
+            )
+        razon_texto = "; ".join(
+            razones
+        )
 
         return {
             "decision": "OPERAR_CON_PROTOCOLO",
@@ -864,24 +1061,37 @@ def convertir_decision_v3_a_oficial(
             "modo_ejecucion": "PROTOCOLO",
             "bloquear_por_riesgo": False,
             "riesgo_extremo_diagnostico": False,
+
             "origen_autoridad": (
                 "PROBABILIDAD_HISTORICA_V3"
             ),
+
             "decision_sombra_origen": (
                 decision_sombra
             ),
+
             "nivel_probabilidad": nivel,
             "clave_probabilidad": clave,
 
-            "directa_evidencia_solida": False,
+            "directa_evidencia_solida": (
+                evidencia_directa_solida
+            ),
+
             "directa_muestra": muestra,
             "directa_confiabilidad": confiabilidad,
 
+            "directa_aptitud_tecnica": (
+                aptitud_tecnica_directa
+            ),
+
+            "directa_motivos_tecnicos": (
+                motivos_directa
+            ),
+
             "motivo": (
-                "V3 autorizó la señal, pero la evidencia "
-                "histórica todavía no es suficientemente "
-                "sólida para entrada directa; "
-                "se exige protocolo. "
+                "V3 autorizó la señal, pero "
+                + razon_texto
+                + "; se exige protocolo. "
                 + motivo_sombra
             ).strip(),
         }
@@ -904,18 +1114,26 @@ def convertir_decision_v3_a_oficial(
             "modo_ejecucion": "PROTOCOLO",
             "bloquear_por_riesgo": False,
             "riesgo_extremo_diagnostico": False,
+
             "origen_autoridad": (
                 "PROBABILIDAD_HISTORICA_V3"
             ),
+
             "decision_sombra_origen": (
                 decision_sombra
             ),
+
             "nivel_probabilidad": nivel,
             "clave_probabilidad": clave,
 
             "directa_evidencia_solida": False,
             "directa_muestra": muestra,
             "directa_confiabilidad": confiabilidad,
+
+            "directa_aptitud_tecnica": False,
+            "directa_motivos_tecnicos": [
+                "La clasificación estadística ya exige protocolo."
+            ],
 
             "motivo": (
                 "V3 estadístico autorizó operación "
@@ -936,12 +1154,15 @@ def convertir_decision_v3_a_oficial(
         "modo_ejecucion": "BLOQUEADA",
         "bloquear_por_riesgo": False,
         "riesgo_extremo_diagnostico": False,
+
         "origen_autoridad": (
             "PROBABILIDAD_HISTORICA_V3"
         ),
+
         "decision_sombra_origen": (
             decision_sombra
         ),
+
         "nivel_probabilidad": nivel,
         "clave_probabilidad": clave,
 
@@ -949,12 +1170,14 @@ def convertir_decision_v3_a_oficial(
         "directa_muestra": muestra,
         "directa_confiabilidad": confiabilidad,
 
+        "directa_aptitud_tecnica": False,
+        "directa_motivos_tecnicos": [],
+
         "motivo": (
             "V3 estadístico no autorizó operación. "
             + motivo_sombra
         ).strip(),
     }
-
 def clasificar_decision_final(confianza, riesgo_nivel):
     """
     Traduce la confianza y el riesgo final a la decisión
@@ -1640,6 +1863,7 @@ def evaluar_decision_cerebro_unico(evidencia):
     # ========================================================
     resultado_decision_oficial = convertir_decision_v3_a_oficial(
         resultado_decision_sombra,
+        evidencia=evidencia,
     )
 
     auditoria_separacion_v3 = construir_auditoria_separacion_v3(

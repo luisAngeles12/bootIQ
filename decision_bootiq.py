@@ -496,7 +496,61 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         senal["cerebro_unico_riesgo_puntos"] = riesgo_puntos
         senal["cerebro_unico_bloquear_por_riesgo"] = bloquear_por_riesgo
         senal["cerebro_unico_motivos"] = motivos_texto
-
+        # =====================================================
+        # AUDITORÍA DE ENTRADA DIRECTA V3
+        # =====================================================
+        # Solo transporte de información.
+        # No modifica la decisión oficial.
+        
+        senal["directa_evidencia_solida"] = bool(
+            decision_cerebro.get(
+                "directa_evidencia_solida",
+                False,
+            )
+        )
+        
+        try:
+            senal["directa_muestra"] = int(
+                float(
+                    decision_cerebro.get(
+                        "directa_muestra",
+                        0,
+                    )
+                    or 0
+                )
+            )
+        except (TypeError, ValueError):
+            senal["directa_muestra"] = 0
+        
+        senal["directa_confiabilidad"] = str(
+            decision_cerebro.get(
+                "directa_confiabilidad",
+                "SIN_DATOS",
+            )
+            or "SIN_DATOS"
+        ).upper().strip()
+        
+        senal["directa_nivel_probabilidad"] = str(
+            decision_cerebro.get(
+                "directa_nivel_probabilidad",
+                decision_cerebro.get(
+                    "nivel_probabilidad",
+                    "",
+                ),
+            )
+            or ""
+        ).upper().strip()
+        
+        senal["directa_clave_probabilidad"] = str(
+            decision_cerebro.get(
+                "directa_clave_probabilidad",
+                decision_cerebro.get(
+                    "clave_probabilidad",
+                    "",
+                ),
+            )
+            or ""
+        ).strip()
         # =====================================================
         # MODO SOMBRA ESTADÍSTICO BOOTIQ V3
         # =====================================================
@@ -545,7 +599,12 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
             "requiere_protocolo_estadistico_sombra", False
         )
         senal.setdefault("motivo_decision_estadistica_sombra", "")
-
+        # Garantías defensivas de auditoría directa V3.
+        senal.setdefault("directa_evidencia_solida", False)
+        senal.setdefault("directa_muestra", 0)
+        senal.setdefault("directa_confiabilidad", "SIN_DATOS")
+        senal.setdefault("directa_nivel_probabilidad", "")
+        senal.setdefault("directa_clave_probabilidad", "")
         # Alias de Fase 4: no representan una segunda decisión.
         senal["fase4_evaluada"] = True
         senal["fase4_confianza"] = confianza
