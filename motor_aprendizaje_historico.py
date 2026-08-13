@@ -252,8 +252,16 @@ def _seleccionar_fuente_principal(fuentes):
         # Las fuentes específicas transferibles y las ligadas al activo
         # necesitan muestra confiable. Las intermedias/generales pueden
         # empezar a aportar desde MIN_MUESTRA_APORTE.
-        if grupo in {"ESPECIFICO", "ESPECIALIZACION_ACTIVO"}:
-            muestra_minima_grupo = MIN_MUESTRA_CONFIABLE
+        if grupo == "ESPECIFICO":
+            muestra_minima_grupo = max(
+                MIN_MUESTRA_CONFIABLE,
+                20,
+            )
+        elif grupo == "ESPECIALIZACION_ACTIVO":
+            muestra_minima_grupo = max(
+                MIN_MUESTRA_CONFIABLE,
+                20,
+            )
         else:
             muestra_minima_grupo = MIN_MUESTRA_APORTE
 
@@ -1625,6 +1633,10 @@ def _combinar_fuentes(fuentes):
     respaldo actúa como estabilizador, pero su influencia disminuye cuando
     la principal tiene suficiente muestra.
 
+    Si no existe una fuente de respaldo válida, la fuente principal se
+    estabiliza contra PRIOR_WINRATE para evitar que una muestra relativamente
+    pequeña tenga 100% de autoridad.
+
     La incertidumbre se expresa mediante confiabilidad e intervalo; no se
     aplasta automáticamente una señal específica hasta el promedio general.
     """
@@ -1653,28 +1665,44 @@ def _combinar_fuentes(fuentes):
     muestras = []
 
     for fuente in fuentes:
-        peso = _numero(fuente.get("peso_efectivo"), 0.0)
+        peso = _numero(
+            fuente.get("peso_efectivo"),
+            0.0,
+        )
 
         if peso <= 0:
             continue
 
-        suma_ajustes += _numero(
-            fuente.get("ajuste"),
-            0.0,
-        ) * peso
+        suma_ajustes += (
+            _numero(
+                fuente.get("ajuste"),
+                0.0,
+            )
+            * peso
+        )
 
-        suma_winrate += _numero(
-            fuente.get("winrate"),
-            0.0,
-        ) * peso
+        suma_winrate += (
+            _numero(
+                fuente.get("winrate"),
+                0.0,
+            )
+            * peso
+        )
 
         peso_total += peso
-        muestras.append(_entero(fuente.get("total"), 0))
+
+        muestras.append(
+            _entero(
+                fuente.get("total"),
+                0,
+            )
+        )
 
     if peso_total > 0:
         ajuste_final = _limitar_ajuste(
             suma_ajustes / peso_total
         )
+
         winrate_final = round(
             suma_winrate / peso_total,
             2,
@@ -1683,7 +1711,10 @@ def _combinar_fuentes(fuentes):
         ajuste_final = 0.0
         winrate_final = 0.0
 
-    principal = _seleccionar_fuente_principal(fuentes)
+    principal = _seleccionar_fuente_principal(
+        fuentes
+    )
+
     respaldo = _seleccionar_fuente_respaldo(
         fuentes,
         principal,
@@ -1694,67 +1725,123 @@ def _combinar_fuentes(fuentes):
 
     if principal:
         prob_principal = _numero(
-            principal.get("probabilidad_ajustada"),
+            principal.get(
+                "probabilidad_ajustada"
+            ),
             PRIOR_WINRATE,
         )
+
         total_principal = _entero(
             principal.get("total"),
             0,
         )
-        factor_principal = _factor_muestra(total_principal)
 
-        # La principal manda progresivamente según su muestra.
-        # Con poca muestra conserva al menos 65% de autoridad; con
-        # historial sólido alcanza hasta 95%.
+        factor_principal = _factor_muestra(
+            total_principal
+        )
+
+        # La principal gana autoridad progresivamente.
+        #
+        # Con poca muestra:
+        # aproximadamente 50% de autoridad.
+        #
+        # Con muestra sólida:
+        # puede llegar hasta 85%.
+        #
+        # Esto evita que una fuente específica con poca
+        # evidencia domine excesivamente la probabilidad.
         peso_principal = min(
-            0.95,
+            0.85,
             max(
-                0.65,
-                0.60 + (0.35 * factor_principal),
+                0.50,
+                0.45
+                + (
+                    0.40
+                    * factor_principal
+                ),
             ),
+        )
+
+        peso_respaldo = (
+            1.0 - peso_principal
         )
 
         if respaldo:
             prob_respaldo = _numero(
-                respaldo.get("probabilidad_ajustada"),
+                respaldo.get(
+                    "probabilidad_ajustada"
+                ),
                 PRIOR_WINRATE,
             )
-            peso_respaldo = 1.0 - peso_principal
 
             probabilidad = (
-                prob_principal * peso_principal
-                + prob_respaldo * peso_respaldo
+                prob_principal
+                * peso_principal
+                +
+                prob_respaldo
+                * peso_respaldo
             )
+
         else:
-            probabilidad = prob_principal
-            peso_principal = 1.0
-            peso_respaldo = 0.0
+            # Si no existe una fuente histórica
+            # independiente de respaldo, usamos el prior
+            # general como estabilizador.
+            #
+            # De esta forma la principal nunca obtiene
+            # automáticamente 100% de autoridad.
+            probabilidad = (
+                prob_principal
+                * peso_principal
+                +
+                PRIOR_WINRATE
+                * peso_respaldo
+            )
 
         intervalo_inferior = _numero(
-            principal.get("intervalo_inferior"),
-            probabilidad,
-        )
-        intervalo_superior = _numero(
-            principal.get("intervalo_superior"),
+            principal.get(
+                "intervalo_inferior"
+            ),
             probabilidad,
         )
 
-        muestra_representativa = total_principal
+        intervalo_superior = _numero(
+            principal.get(
+                "intervalo_superior"
+            ),
+            probabilidad,
+        )
+
+        muestra_representativa = (
+            total_principal
+        )
+
         wins_representativos = _entero(
             principal.get("wins"),
             0,
         )
+
         losses_representativos = _entero(
             principal.get("losses"),
             0,
         )
+
     else:
         probabilidad = PRIOR_WINRATE
-        intervalo_inferior = PRIOR_WINRATE
-        intervalo_superior = PRIOR_WINRATE
-        muestra_representativa = (
-            max(muestras) if muestras else 0
+
+        intervalo_inferior = (
+            PRIOR_WINRATE
         )
+
+        intervalo_superior = (
+            PRIOR_WINRATE
+        )
+
+        muestra_representativa = (
+            max(muestras)
+            if muestras
+            else 0
+        )
+
         wins_representativos = 0
         losses_representativos = 0
 
@@ -1764,8 +1851,14 @@ def _combinar_fuentes(fuentes):
         "muestra": muestra_representativa,
         "wins": wins_representativos,
         "losses": losses_representativos,
-        "peso_total": round(peso_total, 3),
-        "probabilidad_estimada": round(probabilidad, 2),
+        "peso_total": round(
+            peso_total,
+            3,
+        ),
+        "probabilidad_estimada": round(
+            probabilidad,
+            2,
+        ),
         "intervalo_inferior": round(
             intervalo_inferior,
             2,
@@ -1785,7 +1878,6 @@ def _combinar_fuentes(fuentes):
             3,
         ),
     }
-
 
 def evaluar_aprendizaje_historico(senal, memoria=None):
     """

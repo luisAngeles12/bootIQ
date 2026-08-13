@@ -59,7 +59,7 @@ MODO_EXPERIMENTO_AUDITORIA_TRAIN = "AUDITORIA_TRAIN"
 MODO_EXPERIMENTO_VALIDACION = "VALIDACION"
 
 # Durante esta fase, cambiar únicamente esta línea.
-MODO_EXPERIMENTO = MODO_EXPERIMENTO_AUDITORIA_TRAIN
+MODO_EXPERIMENTO = MODO_EXPERIMENTO_VALIDACION
 
 TOTAL_DATASETS_EXPERIMENTO = 16
 TOTAL_DATASETS_TRAIN = 12
@@ -654,6 +654,10 @@ def crear_registro_resultado(
 
     direccion = senal.get("direccion", "")
 
+    # ==================================================
+    # RESULTADOS
+    # ==================================================
+
     # Resultado fijo del universo:
     # siempre se calcula desde la vela donde nació la señal.
     info_hipotetico = resultado_binario(
@@ -662,18 +666,23 @@ def crear_registro_resultado(
         direccion,
     )
 
-    # Resultado de la entrada usada por la operación.
-    # Para canceladas, idx_entrada normalmente será igual a idx.
+    # Resultado real según la entrada utilizada.
     info_resultado = resultado_binario(
         velas,
         idx_entrada,
         direccion,
     )
+
+    # ==================================================
+    # DECISIÓN BOOTIQ
+    # ==================================================
+
     decision_bootiq = (
         decision_bootiq
         if isinstance(decision_bootiq, dict)
         else {}
     )
+
     decision_bootiq_plana = {}
 
     decision_oficial = str(
@@ -681,7 +690,51 @@ def crear_registro_resultado(
         or "NO_OPERAR"
     ).upper().strip()
 
+    # ==================================================
+    # C-C2 — FUENTES POST-PROTOCOLO
+    # ==================================================
+    #
+    # IMPORTANTE:
+    # motor_aprendizaje_historico entrega estas fuentes
+    # como diccionarios completos.
+    #
+    # Ejemplo:
+    #
+    # {
+    #     "nivel": "...",
+    #     "clave": "...",
+    #     "total": ...,
+    #     "wins": ...,
+    #     "losses": ...,
+    #     "winrate": ...,
+    #     ...
+    # }
+    #
+    # Antes la auditoría buscaba campos separados y terminaba
+    # mostrando SIN_NIVEL | SIN_CLAVE.
+    # ==================================================
+
+    fuente_cc2_principal = senal.get(
+        "fuente_post_protocolo_principal",
+        {},
+    )
+
+    if not isinstance(fuente_cc2_principal, dict):
+        fuente_cc2_principal = {}
+
+    fuente_cc2_respaldo = senal.get(
+        "fuente_post_protocolo_respaldo",
+        {},
+    )
+
+    if not isinstance(fuente_cc2_respaldo, dict):
+        fuente_cc2_respaldo = {}
+
     registro = {
+        # ==================================================
+        # DATOS GENERALES
+        # ==================================================
+
         "tipo": senal.get("tipo", ""),
         "activo": senal.get("activo", ""),
         "fecha": velas[idx_entrada]["from"],
@@ -694,135 +747,274 @@ def crear_registro_resultado(
         "consenso": senal.get("consenso", 0),
         "nivel_consenso": senal.get("nivel_consenso", ""),
         "ajuste_consenso": senal.get("ajuste_consenso", 0),
+
         "razones_consenso": _texto(
             senal.get("razones_consenso", "")
         ),
+
         "calidad": senal.get("calidad", ""),
         "rsi": senal.get("rsi", ""),
+
+        # ==================================================
+        # MERCADO
+        # ==================================================
 
         "tipo_mercado": senal.get("tipo_mercado", ""),
         "calidad_mercado": senal.get("calidad_mercado", ""),
         "score_mercado": senal.get("score_mercado", 0),
         "estado_tendencia": senal.get("estado_tendencia", ""),
         "fuerza_tendencia": senal.get("fuerza_tendencia", 0),
-        "direccion_tendencia": senal.get("direccion_tendencia", ""),
+        "direccion_tendencia": senal.get(
+            "direccion_tendencia",
+            "",
+        ),
+
+        # ==================================================
+        # PRICE ACTION
+        # ==================================================
 
         "accion_precio": senal.get("accion_precio", ""),
+
         "razon_accion_precio": _texto(
             senal.get("razon_accion_precio", "")
         ),
+
         "pa_tipo": senal.get("pa_tipo", ""),
         "pa_direccion": senal.get("pa_direccion", ""),
         "pa_fuerza": senal.get("pa_fuerza", 0),
-        "pa_razon": _texto(senal.get("pa_razon", "")),
+
+        "pa_razon": _texto(
+            senal.get("pa_razon", "")
+        ),
+
         "bootiq_evidencias_price_action": _tipos_evidencias(
             senal.get("pa_evidencias", [])
         ),
-        
+
         "bootiq_evidencias_mercado": _tipos_evidencias(
             senal.get("mercado_evidencias", [])
         ),
-        # Evidencias estructuradas utilizadas por el Cerebro Único.
+
         "evidencia_pa": _tipos_evidencias(
             senal.get("pa_evidencias", [])
         ),
+
         "evidencia_mercado": _tipos_evidencias(
             senal.get("mercado_evidencias", [])
         ),
-         "pa_evidencias_detalle": _texto(
+
+        "pa_evidencias_detalle": _texto(
             senal.get("pa_evidencias", [])
         ),
 
         "mercado_evidencias_detalle": _texto(
             senal.get("mercado_evidencias", [])
         ),
-        "base_estrategia": senal.get("base_estrategia", ""),
-        "riesgos_base": _texto(senal.get("riesgos_base", "")),
+
+        # ==================================================
+        # ESTRATEGIA BASE
+        # ==================================================
+
+        "base_estrategia": senal.get(
+            "base_estrategia",
+            "",
+        ),
+
+        "riesgos_base": _texto(
+            senal.get("riesgos_base", "")
+        ),
+
         "fortalezas_base": _texto(
             senal.get("fortalezas_base", "")
         ),
 
+        # ==================================================
+        # RUPTURA
+        # ==================================================
+
         "ruptura_confirmada": senal.get(
-            "ruptura_confirmada", False
+            "ruptura_confirmada",
+            False,
         ),
-        "tipo_ruptura": senal.get("tipo_ruptura", ""),
+
+        "tipo_ruptura": senal.get(
+            "tipo_ruptura",
+            "",
+        ),
+
         "razon_ruptura": _texto(
             senal.get("razon_ruptura", "")
         ),
 
-        "tipo_setup": senal.get("tipo_setup", "INDEFINIDO"),
-        "calidad_setup": senal.get("calidad_setup", "MEDIA"),
+        # ==================================================
+        # SETUP
+        # ==================================================
+
+        "tipo_setup": senal.get(
+            "tipo_setup",
+            "INDEFINIDO",
+        ),
+
+        "calidad_setup": senal.get(
+            "calidad_setup",
+            "MEDIA",
+        ),
+
         "modo_entrada_setup": senal.get(
-            "modo_entrada_setup", "DIRECTA"
+            "modo_entrada_setup",
+            "DIRECTA",
         ),
+
         "requiere_ruptura_setup": bool(
-            senal.get("requiere_ruptura_setup", False)
+            senal.get(
+                "requiere_ruptura_setup",
+                False,
+            )
         ),
+
         "requiere_confirmacion_setup": bool(
-            senal.get("requiere_confirmacion_setup", False)
+            senal.get(
+                "requiere_confirmacion_setup",
+                False,
+            )
         ),
+
         "riesgo_estructural_critico_setup": bool(
             senal.get(
                 "riesgo_estructural_critico_setup",
                 (
                     "no_operar"
                     in str(
-                        senal.get("modo_entrada_setup", "")
+                        senal.get(
+                            "modo_entrada_setup",
+                            "",
+                        )
                         or ""
                     ).lower()
                     or
                     "cancelar"
                     in str(
-                        senal.get("modo_entrada_setup", "")
+                        senal.get(
+                            "modo_entrada_setup",
+                            "",
+                        )
                         or ""
                     ).lower()
                 ),
             )
         ),
+
         "puntaje_extra_setup": senal.get(
-            "puntaje_extra_setup", 0
+            "puntaje_extra_setup",
+            0,
         ),
+
         "riesgo_extra_setup": senal.get(
-            "riesgo_extra_setup", 0
+            "riesgo_extra_setup",
+            0,
         ),
-        "balance_setup": senal.get("balance_setup", 0),
+
+        "balance_setup": senal.get(
+            "balance_setup",
+            0,
+        ),
+
         "a_favor_tendencia": senal.get(
-            "a_favor_tendencia", False
+            "a_favor_tendencia",
+            False,
         ),
+
         "razones_setup": _texto(
             senal.get("razones_setup", "")
         ),
-        "familia_setup": senal.get("familia_setup", ""),
-        "subtipo_setup": senal.get("subtipo_setup", ""),
-        "protocolo_sugerido": senal.get(
-            "protocolo_sugerido", ""
-        ),
-        "nivel_setup": senal.get("nivel_setup", ""),
-        "estado_setup": senal.get("estado_setup", ""),
-        "confianza_setup": senal.get("confianza_setup", 0),
-        "razones_clasificador_setup": _texto(
-            senal.get("razones_clasificador_setup", "")
-        ),
-        "riesgo_protocolo": senal.get("riesgo_protocolo", 0),
-        "nivel_riesgo_protocolo": senal.get(
-            "nivel_riesgo_protocolo", ""
-        ),
-        "razon_riesgo_protocolo": _texto(
-            senal.get("razon_riesgo_protocolo", "")
+
+        "familia_setup": senal.get(
+            "familia_setup",
+            "",
         ),
 
+        "subtipo_setup": senal.get(
+            "subtipo_setup",
+            "",
+        ),
+
+        "protocolo_sugerido": senal.get(
+            "protocolo_sugerido",
+            "",
+        ),
+
+        "nivel_setup": senal.get(
+            "nivel_setup",
+            "",
+        ),
+
+        "estado_setup": senal.get(
+            "estado_setup",
+            "",
+        ),
+
+        "confianza_setup": senal.get(
+            "confianza_setup",
+            0,
+        ),
+
+        "razones_clasificador_setup": _texto(
+            senal.get(
+                "razones_clasificador_setup",
+                "",
+            )
+        ),
+
+        # ==================================================
+        # RIESGO PROTOCOLO
+        # ==================================================
+
+        "riesgo_protocolo": senal.get(
+            "riesgo_protocolo",
+            0,
+        ),
+
+        "nivel_riesgo_protocolo": senal.get(
+            "nivel_riesgo_protocolo",
+            "",
+        ),
+
+        "razon_riesgo_protocolo": _texto(
+            senal.get(
+                "razon_riesgo_protocolo",
+                "",
+            )
+        ),
+
+        # ==================================================
+        # CONFIRMACIÓN IA
+        # ==================================================
+
         "indice_confirmacion_ia": senal.get(
-            "indice_confirmacion_ia", 0
+            "indice_confirmacion_ia",
+            0,
         ),
+
         "nivel_confirmacion_ia": senal.get(
-            "nivel_confirmacion_ia", ""
+            "nivel_confirmacion_ia",
+            "",
         ),
+
         "accion_confirmacion_ia": senal.get(
-            "accion_confirmacion_ia", ""
+            "accion_confirmacion_ia",
+            "",
         ),
+
         "razon_confirmacion_ia": _texto(
-            senal.get("razon_confirmacion_ia", "")
+            senal.get(
+                "razon_confirmacion_ia",
+                "",
+            )
         ),
+
+        # ==================================================
+        # EJECUCIÓN
+        # ==================================================
 
         "idx_senal": idx,
         "idx_entrada": idx_entrada,
@@ -830,151 +1022,330 @@ def crear_registro_resultado(
         "estado_operacion": estado_operacion,
         "espera_velas": idx_entrada - idx,
 
-        # Campos oficiales del Cerebro Único.
+        # ==================================================
+        # CEREBRO ÚNICO
+        # ==================================================
+
         "cerebro_unico_decision": decision_oficial,
+
         "cerebro_unico_decision_legacy": senal.get(
-            "cerebro_unico_decision_legacy", decision_oficial
+            "cerebro_unico_decision_legacy",
+            decision_oficial,
         ),
+
         "cerebro_unico_operar": bool(
-            senal.get("cerebro_unico_operar", False)
+            senal.get(
+                "cerebro_unico_operar",
+                False,
+            )
         ),
+
         "cerebro_unico_confianza": senal.get(
-            "cerebro_unico_confianza", 0
+            "cerebro_unico_confianza",
+            0,
         ),
+
         "cerebro_unico_requiere_protocolo": bool(
             senal.get(
-                "cerebro_unico_requiere_protocolo", False
+                "cerebro_unico_requiere_protocolo",
+                False,
             )
         ),
+
         "cerebro_unico_modo_ejecucion": senal.get(
-            "cerebro_unico_modo_ejecucion", "BLOQUEADA"
+            "cerebro_unico_modo_ejecucion",
+            "BLOQUEADA",
         ),
+
         "cerebro_unico_bloquear_por_riesgo": bool(
             senal.get(
-                "cerebro_unico_bloquear_por_riesgo", False
+                "cerebro_unico_bloquear_por_riesgo",
+                False,
             )
         ),
+
         "cerebro_unico_riesgo": senal.get(
-            "cerebro_unico_riesgo", ""
+            "cerebro_unico_riesgo",
+            "",
         ),
+
         "cerebro_unico_riesgo_puntos": senal.get(
-            "cerebro_unico_riesgo_puntos", 0
+            "cerebro_unico_riesgo_puntos",
+            0,
         ),
+
         "cerebro_unico_motivos": _texto(
-            senal.get("cerebro_unico_motivos", "")
+            senal.get(
+                "cerebro_unico_motivos",
+                "",
+            )
         ),
 
         # ==================================================
-        # MODO SOMBRA ESTADÍSTICO BOOTIQ V3
+        # MODO SOMBRA ESTADÍSTICO
         # ==================================================
-        # Solo auditoría. Estos campos nunca controlan la ejecución.
+
         "modo_probabilidad": senal.get(
-            "modo_probabilidad", "SOMBRA"
+            "modo_probabilidad",
+            "SOMBRA",
         ),
+
         "probabilidad_estimada": senal.get(
-            "probabilidad_estimada", 0
+            "probabilidad_estimada",
+            0,
         ),
+
         "intervalo_probabilidad_inferior": senal.get(
-            "intervalo_probabilidad_inferior", 0
+            "intervalo_probabilidad_inferior",
+            0,
         ),
+
         "intervalo_probabilidad_superior": senal.get(
-            "intervalo_probabilidad_superior", 0
+            "intervalo_probabilidad_superior",
+            0,
         ),
+
         "muestra_probabilidad": senal.get(
-            "muestra_probabilidad", 0
+            "muestra_probabilidad",
+            0,
         ),
+
         "wins_probabilidad": senal.get(
-            "wins_probabilidad", 0
+            "wins_probabilidad",
+            0,
         ),
+
         "losses_probabilidad": senal.get(
-            "losses_probabilidad", 0
+            "losses_probabilidad",
+            0,
         ),
+
         "confiabilidad_probabilidad": senal.get(
-            "confiabilidad_probabilidad", "SIN_DATOS"
+            "confiabilidad_probabilidad",
+            "SIN_DATOS",
         ),
+
         "fuente_probabilidad_principal": _texto(
-            senal.get("fuente_probabilidad_principal", "")
+            senal.get(
+                "fuente_probabilidad_principal",
+                "",
+            )
         ),
+
         "fuente_probabilidad_respaldo": _texto(
-            senal.get("fuente_probabilidad_respaldo", "")
+            senal.get(
+                "fuente_probabilidad_respaldo",
+                "",
+            )
         ),
+
         "nivel_probabilidad_principal": senal.get(
-            "nivel_probabilidad_principal", ""
+            "nivel_probabilidad_principal",
+            "",
         ),
+
         "clave_probabilidad_principal": senal.get(
-            "clave_probabilidad_principal", ""
+            "clave_probabilidad_principal",
+            "",
         ),
+
         "decision_estadistica_sombra": senal.get(
-            "decision_estadistica_sombra", "SIN_DATOS"
+            "decision_estadistica_sombra",
+            "SIN_DATOS",
         ),
+
         "operar_estadistico_sombra": bool(
-            senal.get("operar_estadistico_sombra", False)
+            senal.get(
+                "operar_estadistico_sombra",
+                False,
+            )
         ),
+
         "requiere_protocolo_estadistico_sombra": bool(
             senal.get(
-                "requiere_protocolo_estadistico_sombra", False
+                "requiere_protocolo_estadistico_sombra",
+                False,
             )
         ),
+
         "motivo_decision_estadistica_sombra": _texto(
-            senal.get("motivo_decision_estadistica_sombra", "")
+            senal.get(
+                "motivo_decision_estadistica_sombra",
+                "",
+            )
         ),
 
-        # Alias legacy. Solo reflejan al Cerebro Único.
-        "fase4_evaluada": senal.get("fase4_evaluada", True),
+        # ==================================================
+        # AUDITORÍA ENTRADA DIRECTA V3
+        # ==================================================
+        # Diagnóstico únicamente. No modifica decisiones.
+        "directa_evidencia_solida": bool(
+            senal.get("directa_evidencia_solida", False)
+        ),
+        "directa_muestra": senal.get("directa_muestra", 0),
+        "directa_confiabilidad": senal.get(
+            "directa_confiabilidad", "SIN_DATOS"
+        ),
+        "directa_nivel_probabilidad": senal.get(
+            "directa_nivel_probabilidad",
+            senal.get("nivel_probabilidad_principal", ""),
+        ),
+        "directa_clave_probabilidad": senal.get(
+            "directa_clave_probabilidad",
+            senal.get("clave_probabilidad_principal", ""),
+        ),
+
+        # ==================================================
+        # LEGACY FASE 4
+        # ==================================================
+
+        "fase4_evaluada": senal.get(
+            "fase4_evaluada",
+            True,
+        ),
+
         "fase4_permitir_operacion": bool(
             senal.get(
                 "fase4_permitir_operacion",
-                senal.get("cerebro_unico_operar", False),
+                senal.get(
+                    "cerebro_unico_operar",
+                    False,
+                ),
             )
         ),
+
         "fase4_modo": senal.get(
             "fase4_modo",
             senal.get(
-                "cerebro_unico_modo_ejecucion", "BLOQUEADA"
+                "cerebro_unico_modo_ejecucion",
+                "BLOQUEADA",
             ),
         ),
+
         "fase4_confianza": senal.get(
             "fase4_confianza",
-            senal.get("cerebro_unico_confianza", 0),
+            senal.get(
+                "cerebro_unico_confianza",
+                0,
+            ),
         ),
+
         "fase4_decision": senal.get(
-            "fase4_decision", decision_oficial
+            "fase4_decision",
+            decision_oficial,
         ),
+
         "fase4_debe_bloquear": bool(
             senal.get(
                 "fase4_debe_bloquear",
-                not senal.get("cerebro_unico_operar", False),
+                not senal.get(
+                    "cerebro_unico_operar",
+                    False,
+                ),
             )
         ),
+
         "fase4_motivo": _texto(
             senal.get(
                 "fase4_motivo",
-                senal.get("cerebro_unico_motivos", ""),
+                senal.get(
+                    "cerebro_unico_motivos",
+                    "",
+                ),
             )
         ),
 
         # ==================================================
         # AUDITORÍA MOTOR PROTOCOLOS
         # ==================================================
-        "auditoria_protocolo_tipo": senal.get("auditoria_protocolo_tipo", ""),
-        "auditoria_protocolo_subtipo": senal.get("auditoria_protocolo_subtipo", ""),
-        "auditoria_protocolo_familia": senal.get("auditoria_protocolo_familia", ""),
-        "auditoria_protocolo_operada": bool(
-            senal.get("auditoria_protocolo_operada", False)
+
+        "auditoria_protocolo_tipo": senal.get(
+            "auditoria_protocolo_tipo",
+            "",
         ),
-        "auditoria_protocolo_idx_senal": senal.get("auditoria_protocolo_idx_senal", -1),
-        "auditoria_protocolo_idx_entrada": senal.get("auditoria_protocolo_idx_entrada", -1),
-        "auditoria_protocolo_espera_velas": senal.get("auditoria_protocolo_espera_velas", -1),
-        "auditoria_protocolo_motivo": senal.get("auditoria_protocolo_motivo", ""),
-        "auditoria_protocolo_riesgo": senal.get("auditoria_protocolo_riesgo", 0),
-        "auditoria_protocolo_nivel_riesgo": senal.get("auditoria_protocolo_nivel_riesgo", ""),
-        "auditoria_protocolo_indice_confirmacion": senal.get("auditoria_protocolo_indice_confirmacion", 0),
-        "auditoria_protocolo_nivel_confirmacion": senal.get("auditoria_protocolo_nivel_confirmacion", ""),
-        "auditoria_protocolo_accion_confirmacion": senal.get("auditoria_protocolo_accion_confirmacion", ""),
-        "auditoria_protocolo_tipo_mercado": senal.get("auditoria_protocolo_tipo_mercado", ""),
-        "auditoria_protocolo_tendencia": senal.get("auditoria_protocolo_tendencia", ""),
-        "auditoria_protocolo_pa_tipo": senal.get("auditoria_protocolo_pa_tipo", ""),
-        "auditoria_protocolo_probabilidad": senal.get("auditoria_protocolo_probabilidad", 0),
+
+        "auditoria_protocolo_subtipo": senal.get(
+            "auditoria_protocolo_subtipo",
+            "",
+        ),
+
+        "auditoria_protocolo_familia": senal.get(
+            "auditoria_protocolo_familia",
+            "",
+        ),
+
+        "auditoria_protocolo_operada": bool(
+            senal.get(
+                "auditoria_protocolo_operada",
+                False,
+            )
+        ),
+
+        "auditoria_protocolo_idx_senal": senal.get(
+            "auditoria_protocolo_idx_senal",
+            -1,
+        ),
+
+        "auditoria_protocolo_idx_entrada": senal.get(
+            "auditoria_protocolo_idx_entrada",
+            -1,
+        ),
+
+        "auditoria_protocolo_espera_velas": senal.get(
+            "auditoria_protocolo_espera_velas",
+            -1,
+        ),
+
+        "auditoria_protocolo_motivo": senal.get(
+            "auditoria_protocolo_motivo",
+            "",
+        ),
+
+        "auditoria_protocolo_riesgo": senal.get(
+            "auditoria_protocolo_riesgo",
+            0,
+        ),
+
+        "auditoria_protocolo_nivel_riesgo": senal.get(
+            "auditoria_protocolo_nivel_riesgo",
+            "",
+        ),
+
+        "auditoria_protocolo_indice_confirmacion": senal.get(
+            "auditoria_protocolo_indice_confirmacion",
+            0,
+        ),
+
+        "auditoria_protocolo_nivel_confirmacion": senal.get(
+            "auditoria_protocolo_nivel_confirmacion",
+            "",
+        ),
+
+        "auditoria_protocolo_accion_confirmacion": senal.get(
+            "auditoria_protocolo_accion_confirmacion",
+            "",
+        ),
+
+        "auditoria_protocolo_tipo_mercado": senal.get(
+            "auditoria_protocolo_tipo_mercado",
+            "",
+        ),
+
+        "auditoria_protocolo_tendencia": senal.get(
+            "auditoria_protocolo_tendencia",
+            "",
+        ),
+
+        "auditoria_protocolo_pa_tipo": senal.get(
+            "auditoria_protocolo_pa_tipo",
+            "",
+        ),
+
+        "auditoria_protocolo_probabilidad": senal.get(
+            "auditoria_protocolo_probabilidad",
+            0,
+        ),
+
         # ==================================================
         # C-C2 — APRENDIZAJE POST-PROTOCOLO
         # ==================================================
@@ -1017,149 +1388,443 @@ def crear_registro_resultado(
         ),
 
         "fuente_post_protocolo_principal": _texto(
-            senal.get(
-                "fuente_post_protocolo_principal",
+            fuente_cc2_principal
+        ),
+
+        "fuente_post_protocolo_respaldo": _texto(
+            fuente_cc2_respaldo
+        ),
+
+        # ==================================================
+        # C-C2 — IDENTIDAD DIRECTA DE FUENTES
+        # ==================================================
+
+        "nivel_post_protocolo_principal": (
+            fuente_cc2_principal.get(
+                "nivel",
                 "",
             )
         ),
 
-        "fuente_post_protocolo_respaldo": _texto(
-            senal.get(
-                "fuente_post_protocolo_respaldo",
+        "clave_post_protocolo_principal": (
+            fuente_cc2_principal.get(
+                "clave",
                 "",
             )
         ),
+
+        "nivel_post_protocolo_respaldo": (
+            fuente_cc2_respaldo.get(
+                "nivel",
+                "",
+            )
+        ),
+
+        "clave_post_protocolo_respaldo": (
+            fuente_cc2_respaldo.get(
+                "clave",
+                "",
+            )
+        ),
+
+        # ==================================================
+        # C-C2 — AUDITORÍA DE GENERALIZACIÓN
+        # ==================================================
+        #
+        # Se usa primero el campo cc2_* si ya existe.
+        # Si no existe, se extrae directamente de la fuente
+        # real retornada por C-C2.
+        # ==================================================
+
+        "cc2_nivel_principal": (
+            senal.get("cc2_nivel_principal")
+            or fuente_cc2_principal.get(
+                "nivel",
+                "",
+            )
+        ),
+
+        "cc2_clave_principal": (
+            senal.get("cc2_clave_principal")
+            or fuente_cc2_principal.get(
+                "clave",
+                "",
+            )
+        ),
+
+        "cc2_train_total_principal": senal.get(
+            "cc2_train_total_principal",
+            fuente_cc2_principal.get(
+                "total",
+                0,
+            ),
+        ),
+
+        "cc2_train_wins_principal": senal.get(
+            "cc2_train_wins_principal",
+            fuente_cc2_principal.get(
+                "wins",
+                0,
+            ),
+        ),
+
+        "cc2_train_losses_principal": senal.get(
+            "cc2_train_losses_principal",
+            fuente_cc2_principal.get(
+                "losses",
+                0,
+            ),
+        ),
+
+        "cc2_train_winrate_principal": senal.get(
+            "cc2_train_winrate_principal",
+            fuente_cc2_principal.get(
+                "winrate",
+                0,
+            ),
+        ),
+
+        "cc2_probabilidad_ajustada_principal": senal.get(
+            "cc2_probabilidad_ajustada_principal",
+            fuente_cc2_principal.get(
+                "probabilidad_ajustada",
+                fuente_cc2_principal.get(
+                    "probabilidad",
+                    0,
+                ),
+            ),
+        ),
+
+        "cc2_ajuste_principal": senal.get(
+            "cc2_ajuste_principal",
+            fuente_cc2_principal.get(
+                "ajuste",
+                0,
+            ),
+        ),
+
+        "cc2_confiabilidad_principal": (
+            senal.get("cc2_confiabilidad_principal")
+            or fuente_cc2_principal.get(
+                "confiabilidad",
+                "",
+            )
+        ),
+
+        "cc2_factor_muestra_principal": senal.get(
+            "cc2_factor_muestra_principal",
+            fuente_cc2_principal.get(
+                "factor_muestra",
+                0,
+            ),
+        ),
+
+        "cc2_nivel_respaldo": (
+            senal.get("cc2_nivel_respaldo")
+            or fuente_cc2_respaldo.get(
+                "nivel",
+                "",
+            )
+        ),
+
+        "cc2_clave_respaldo": (
+            senal.get("cc2_clave_respaldo")
+            or fuente_cc2_respaldo.get(
+                "clave",
+                "",
+            )
+        ),
+
+        "cc2_train_total_respaldo": senal.get(
+            "cc2_train_total_respaldo",
+            fuente_cc2_respaldo.get(
+                "total",
+                0,
+            ),
+        ),
+
+        "cc2_train_winrate_respaldo": senal.get(
+            "cc2_train_winrate_respaldo",
+            fuente_cc2_respaldo.get(
+                "winrate",
+                0,
+            ),
+        ),
+
+        "cc2_probabilidad_ajustada_respaldo": senal.get(
+            "cc2_probabilidad_ajustada_respaldo",
+            fuente_cc2_respaldo.get(
+                "probabilidad_ajustada",
+                fuente_cc2_respaldo.get(
+                    "probabilidad",
+                    0,
+                ),
+            ),
+        ),
+
+        "cc2_fuentes_usadas": _texto(
+            senal.get(
+                "cc2_fuentes_usadas",
+                [],
+            )
+        ),
+
+        "cc2_claves_consultadas": _texto(
+            senal.get(
+                "cc2_claves_consultadas",
+                [],
+            )
+        ),
+
+        "cc2_claves_descartadas": _texto(
+            senal.get(
+                "cc2_claves_descartadas",
+                [],
+            )
+        ),
+
         # ==================================================
         # VALIDACIÓN RECUPERACIÓN VETO SETUP — SOMBRA
         # ==================================================
+
         "recuperacion_sombra_candidata": bool(
             senal.get(
                 "recuperacion_sombra_candidata",
                 False,
             )
         ),
+
         "recuperacion_sombra_sobrevive_protocolo": bool(
             senal.get(
                 "recuperacion_sombra_sobrevive_protocolo",
                 False,
             )
         ),
+
         "recuperacion_sombra_idx_entrada": senal.get(
             "recuperacion_sombra_idx_entrada",
             "",
         ),
+
         "recuperacion_sombra_motivo": senal.get(
             "recuperacion_sombra_motivo",
             "",
         ),
+
         "recuperacion_sombra_resultado": senal.get(
             "recuperacion_sombra_resultado",
             "",
         ),
+
         "recuperacion_sombra_espera_velas": senal.get(
             "recuperacion_sombra_espera_velas",
             0,
         ),
 
-        # ====================================================
+        # ==================================================
         # C3 — BYPASS SOMBRA DE VETOS
-        # ====================================================
+        # ==================================================
+
         "c3_sombra_aplicada": bool(
-            senal.get("c3_sombra_aplicada", False)
+            senal.get(
+                "c3_sombra_aplicada",
+                False,
+            )
         ),
+
         "c3_sombra_grupo_veto": senal.get(
-            "c3_sombra_grupo_veto", ""
+            "c3_sombra_grupo_veto",
+            "",
         ),
+
         "c3_sombra_protocolo": senal.get(
-            "c3_sombra_protocolo", ""
+            "c3_sombra_protocolo",
+            "",
         ),
+
         "c3_sombra_idx_entrada": senal.get(
             "c3_sombra_idx_entrada",
             -1,
         ),
+
         "c3_sombra_motivo": senal.get(
-            "c3_sombra_motivo", ""
+            "c3_sombra_motivo",
+            "",
         ),
+
         "c3_sombra_encuentra_entrada": bool(
-            senal.get("c3_sombra_encuentra_entrada", False)
+            senal.get(
+                "c3_sombra_encuentra_entrada",
+                False,
+            )
         ),
+
         "c3_sombra_resultado": senal.get(
-            "c3_sombra_resultado", ""
+            "c3_sombra_resultado",
+            "",
         ),
+
         "c3_sombra_espera_velas": senal.get(
             "c3_sombra_espera_velas",
             -1,
         ),
+
         "c3_sombra_riesgo": senal.get(
             "c3_sombra_riesgo",
             0,
         ),
+
         "c3_sombra_nivel_riesgo": senal.get(
             "c3_sombra_nivel_riesgo",
-            ""
+            "",
         ),
+
         "c3_sombra_confirmacion": senal.get(
             "c3_sombra_confirmacion",
-            ""
+            "",
         ),
 
-        "resultado": info_resultado["resultado"],
-        "resultado_hipotetico": info_hipotetico["resultado"],
+        # ==================================================
+        # RESULTADOS
+        # ==================================================
+
+        "resultado": info_resultado[
+            "resultado"
+        ],
+
+        "resultado_hipotetico": info_hipotetico[
+            "resultado"
+        ],
 
         "fecha_senal": velas[idx]["from"],
-        "precio_entrada_hipotetico": velas[idx]["close"],
-        "precio_cierre_hipotetico": velas[idx + 1]["close"],
 
-        "precio_entrada": velas[idx_entrada]["close"],
-        "precio_cierre": velas[idx_entrada + 1]["close"],
+        "precio_entrada_hipotetico": velas[idx][
+            "close"
+        ],
 
-        "movimiento": info_resultado["movimiento"],
+        "precio_cierre_hipotetico": velas[
+            idx + 1
+        ]["close"],
+
+        "precio_entrada": velas[
+            idx_entrada
+        ]["close"],
+
+        "precio_cierre": velas[
+            idx_entrada + 1
+        ]["close"],
+
+        "movimiento": info_resultado[
+            "movimiento"
+        ],
+
         "distancia_resultado": info_resultado[
             "distancia_resultado"
         ],
-        "excursion_favor": info_resultado["excursion_favor"],
-        "excursion_contra": info_resultado["excursion_contra"],
+
+        "excursion_favor": info_resultado[
+            "excursion_favor"
+        ],
+
+        "excursion_contra": info_resultado[
+            "excursion_contra"
+        ],
+
         "fuerza_cierre_siguiente": info_resultado[
             "fuerza_cierre_siguiente"
         ],
-        "open_siguiente": info_resultado["open_siguiente"],
-        "close_siguiente": info_resultado["close_siguiente"],
-        "high_siguiente": info_resultado["high_siguiente"],
-        "low_siguiente": info_resultado["low_siguiente"],
+
+        "open_siguiente": info_resultado[
+            "open_siguiente"
+        ],
+
+        "close_siguiente": info_resultado[
+            "close_siguiente"
+        ],
+
+        "high_siguiente": info_resultado[
+            "high_siguiente"
+        ],
+
+        "low_siguiente": info_resultado[
+            "low_siguiente"
+        ],
+
+        # ==================================================
+        # DECISIÓN UNIFICADA
+        # ==================================================
 
         "decision_unificada_accion": senal.get(
-            "decision_unificada_accion", decision_oficial
+            "decision_unificada_accion",
+            decision_oficial,
         ),
+
         "decision_unificada_score": senal.get(
-            "decision_unificada_score", 0
+            "decision_unificada_score",
+            0,
         ),
+
         "decision_unificada_confianza": senal.get(
-            "decision_unificada_confianza", 0
+            "decision_unificada_confianza",
+            0,
         ),
+
         "decision_unificada_razones": _texto(
-            senal.get("decision_unificada_razones", "")
+            senal.get(
+                "decision_unificada_razones",
+                "",
+            )
         ),
+
         "decision_unificada_advertencias": _texto(
-            senal.get("decision_unificada_advertencias", "")
+            senal.get(
+                "decision_unificada_advertencias",
+                "",
+            )
         ),
+
         "decision_unificada_bloqueos": _texto(
-            senal.get("decision_unificada_bloqueos", "")
+            senal.get(
+                "decision_unificada_bloqueos",
+                "",
+            )
         ),
-        "razon": _texto(senal.get("razon", "")),
+
+        "razon": _texto(
+            senal.get(
+                "razon",
+                "",
+            )
+        ),
+
         "ajuste_ponderacion": senal.get(
-            "ajuste_ponderacion", 0
+            "ajuste_ponderacion",
+            0,
         ),
+
         "motivos_ponderacion": _texto(
-            senal.get("motivos_ponderacion", "")
+            senal.get(
+                "motivos_ponderacion",
+                "",
+            )
         ),
+
         "pesos_aplicados": _texto(
-            senal.get("pesos_aplicados", "")
+            senal.get(
+                "pesos_aplicados",
+                "",
+            )
         ),
+
         "confianza_final_cerebro": senal.get(
             "confianza_final_cerebro",
-            senal.get("cerebro_unico_confianza", 0),
+            senal.get(
+                "cerebro_unico_confianza",
+                0,
+            ),
         ),
-         # ==================================================
+
+        # ==================================================
         # AUDITORÍA INTERNA DEL CEREBRO ÚNICO
         # ==================================================
 
@@ -1205,7 +1870,10 @@ def crear_registro_resultado(
 
         "auditoria_confianza_final": senal.get(
             "auditoria_confianza_final",
-            senal.get("cerebro_unico_confianza", 0),
+            senal.get(
+                "cerebro_unico_confianza",
+                0,
+            ),
         ),
 
         "auditoria_motivos_price_action": senal.get(
@@ -1225,8 +1893,8 @@ def crear_registro_resultado(
     }
 
     registro.update(decision_bootiq_plana)
-    return registro
 
+    return registro
 
 def es_candidata_recuperacion_veto_sombra(senal):
     """
@@ -2129,6 +2797,13 @@ def guardar_resultados(resultados):
         "requiere_protocolo_estadistico_sombra",
         "motivo_decision_estadistica_sombra",
 
+        # Auditoría de entrada directa V3.
+        "directa_evidencia_solida",
+        "directa_muestra",
+        "directa_confiabilidad",
+        "directa_nivel_probabilidad",
+        "directa_clave_probabilidad",
+
         "fase4_evaluada",
         "fase4_permitir_operacion",
         "fase4_modo",
@@ -2235,7 +2910,9 @@ def guardar_resultados(resultados):
         "auditoria_protocolo_tendencia",
         "auditoria_protocolo_pa_tipo",
         "auditoria_protocolo_probabilidad",
-        # C-C2 — aprendizaje post-protocolo.
+        # ==================================================
+        # C-C2 — APRENDIZAJE POST-PROTOCOLO
+        # ==================================================
         "decision_post_protocolo",
         "autoriza_post_protocolo",
         "probabilidad_post_protocolo",
@@ -2245,6 +2922,39 @@ def guardar_resultados(resultados):
         "confiabilidad_post_protocolo",
         "fuente_post_protocolo_principal",
         "fuente_post_protocolo_respaldo",
+        
+        # ==================================================
+        # C-C2 — IDENTIDAD DIRECTA DE FUENTES
+        # ==================================================
+        "nivel_post_protocolo_principal",
+        "clave_post_protocolo_principal",
+        "nivel_post_protocolo_respaldo",
+        "clave_post_protocolo_respaldo",
+        
+        # ==================================================
+        # C-C2 — AUDITORÍA DE GENERALIZACIÓN
+        # ==================================================
+        "cc2_nivel_principal",
+        "cc2_clave_principal",
+        "cc2_train_total_principal",
+        "cc2_train_wins_principal",
+        "cc2_train_losses_principal",
+        "cc2_train_winrate_principal",
+        "cc2_probabilidad_ajustada_principal",
+        "cc2_ajuste_principal",
+        "cc2_confiabilidad_principal",
+        "cc2_factor_muestra_principal",
+        
+        "cc2_nivel_respaldo",
+        "cc2_clave_respaldo",
+        "cc2_train_total_respaldo",
+        "cc2_train_winrate_respaldo",
+        "cc2_probabilidad_ajustada_respaldo",
+        
+        "cc2_fuentes_usadas",
+        "cc2_claves_consultadas",
+        "cc2_claves_descartadas",
+        
         "bootiq_resultado_estado_operacion",
         "bootiq_resultado_motivo_ejecucion",
         "bootiq_resultado_resultado",
@@ -5816,6 +6526,137 @@ def imprimir_cc2_probabilidad_post_protocolo(
     print(
         "============================================\n"
     )
+
+
+def imprimir_cc2_sombra_cuello_protocolo(resultados):
+    """
+    Auditoría sombra del cuello de botella post-protocolo.
+
+    NO modifica decisiones ni operaciones.
+    Usa exclusivamente operaciones que el protocolo ya ejecutó y
+    compara varios cortes fijos de probabilidad C-C2.
+
+    Objetivo: comprobar fuera de muestra si C-C2 separa mejor las
+    entradas de protocolo antes de convertirlo en filtro real.
+    """
+
+    modo = (
+        "TRAIN"
+        if MODO_EXPERIMENTO
+        == MODO_EXPERIMENTO_AUDITORIA_TRAIN
+        else "VALIDACION"
+    )
+
+    operadas = [
+        r for r in resultados
+        if r.get("estado_operacion") == "OPERADA_PROTOCOLO"
+    ]
+
+    con_datos = [
+        r for r in operadas
+        if str(r.get("decision_post_protocolo", ""))
+        .upper().strip() == "EVALUAR"
+    ]
+
+    print(
+        "\n===== C-C2 SOMBRA CUELLO PROTOCOLO — "
+        + modo
+        + " ====="
+    )
+
+    if not operadas:
+        print("No hay operaciones de protocolo.")
+        print("===============================================\n")
+        return
+
+    total = len(operadas)
+    wins = sum(1 for r in operadas if r.get("resultado") == "WIN")
+    losses = total - wins
+    wr = round((wins / total) * 100, 2) if total else 0
+
+    print("PROTOCOLO ACTUAL")
+    print(
+        "Total:", total,
+        "| WIN:", wins,
+        "| LOSS:", losses,
+        "| WR:", str(wr) + "%",
+    )
+    print(
+        "Con datos C-C2:", len(con_datos),
+        "| Sin datos:", total - len(con_datos),
+    )
+
+    if not con_datos:
+        print("No existen datos C-C2 para auditar.")
+        print("===============================================\n")
+        return
+
+    def probabilidad(r):
+        try:
+            return float(r.get("probabilidad_post_protocolo", 0) or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def resumen(grupo):
+        t = len(grupo)
+        w = sum(1 for r in grupo if r.get("resultado") == "WIN")
+        l = t - w
+        wr_g = round((w / t) * 100, 2) if t else 0
+        activos = len({
+            str(r.get("activo", "") or "").strip()
+            for r in grupo
+            if str(r.get("activo", "") or "").strip()
+        })
+        return t, w, l, wr_g, activos
+
+    print("\n--- CORTES FIJOS C-C2 (SOLO SOMBRA) ---")
+
+    for corte in (45.0, 50.0, 52.5, 55.0):
+        aprobadas = [r for r in con_datos if probabilidad(r) >= corte]
+        rechazadas = [r for r in con_datos if probabilidad(r) < corte]
+
+        at, aw, al, awr, aa = resumen(aprobadas)
+        rt, rw, rl, rwr, ra = resumen(rechazadas)
+
+        print("\nCorte probabilidad >=", corte)
+        print(
+            "APROBADAS SOMBRA",
+            "| total:", at,
+            "| win:", aw,
+            "| loss:", al,
+            "| WR:", str(awr) + "%",
+            "| activos:", aa,
+        )
+        print(
+            "RECHAZADAS SOMBRA",
+            "| total:", rt,
+            "| win:", rw,
+            "| loss:", rl,
+            "| WR hipotético:", str(rwr) + "%",
+            "| activos:", ra,
+        )
+
+    print("\n--- CONFIABILIDAD C-C2 ---")
+    grupos = {}
+    for r in con_datos:
+        clave = str(
+            r.get("confiabilidad_post_protocolo", "SIN_DATOS")
+            or "SIN_DATOS"
+        ).upper().strip()
+        grupos.setdefault(clave, []).append(r)
+
+    for clave, grupo in sorted(grupos.items(), key=lambda kv: -len(kv[1])):
+        t, w, l, wr_g, activos = resumen(grupo)
+        print(
+            clave,
+            "| total:", t,
+            "| win:", w,
+            "| loss:", l,
+            "| WR:", str(wr_g) + "%",
+            "| activos:", activos,
+        )
+
+    print("===============================================\n")
 def reevaluar_cc2_post_entrenamiento(resultados):
     """
     C-C2 — segunda pasada exclusivamente estadística.
@@ -5909,7 +6750,116 @@ def reevaluar_cc2_post_entrenamiento(resultados):
             "fuente_post_protocolo_respaldo",
             "",
         )
-
+        # ========================================================
+        # AUDITORÍA DETALLADA C-C2
+        # ========================================================
+        
+        fuente_principal = decision_post.get(
+            "fuente_post_protocolo_principal"
+        )
+        
+        if not isinstance(fuente_principal, dict):
+            fuente_principal = {}
+        
+        fuente_respaldo = decision_post.get(
+            "fuente_post_protocolo_respaldo"
+        )
+        
+        if not isinstance(fuente_respaldo, dict):
+            fuente_respaldo = {}
+        
+        registro["cc2_nivel_principal"] = (
+            fuente_principal.get("nivel", "")
+        )
+        
+        registro["cc2_clave_principal"] = (
+            fuente_principal.get("clave", "")
+        )
+        
+        registro["cc2_train_total_principal"] = (
+            fuente_principal.get("total", 0)
+        )
+        
+        registro["cc2_train_wins_principal"] = (
+            fuente_principal.get("wins", 0)
+        )
+        
+        registro["cc2_train_losses_principal"] = (
+            fuente_principal.get("losses", 0)
+        )
+        
+        registro["cc2_train_winrate_principal"] = (
+            fuente_principal.get("winrate", 0)
+        )
+        
+        registro["cc2_probabilidad_ajustada_principal"] = (
+            fuente_principal.get(
+                "probabilidad_ajustada",
+                0,
+            )
+        )
+        
+        registro["cc2_ajuste_principal"] = (
+            fuente_principal.get("ajuste", 0)
+        )
+        
+        registro["cc2_confiabilidad_principal"] = (
+            fuente_principal.get(
+                "confiabilidad",
+                "SIN_DATOS",
+            )
+        )
+        
+        registro["cc2_factor_muestra_principal"] = (
+            fuente_principal.get(
+                "factor_muestra",
+                0,
+            )
+        )
+        
+        registro["cc2_nivel_respaldo"] = (
+            fuente_respaldo.get("nivel", "")
+        )
+        
+        registro["cc2_clave_respaldo"] = (
+            fuente_respaldo.get("clave", "")
+        )
+        
+        registro["cc2_train_total_respaldo"] = (
+            fuente_respaldo.get("total", 0)
+        )
+        
+        registro["cc2_train_winrate_respaldo"] = (
+            fuente_respaldo.get("winrate", 0)
+        )
+        
+        registro["cc2_probabilidad_ajustada_respaldo"] = (
+            fuente_respaldo.get(
+                "probabilidad_ajustada",
+                0,
+            )
+        )
+        
+        registro["cc2_fuentes_usadas"] = (
+            decision_post.get(
+                "fuentes_post_protocolo",
+                [],
+            )
+        )
+        
+        registro["cc2_claves_consultadas"] = (
+            decision_post.get(
+                "claves_consultadas_post_protocolo",
+                [],
+            )
+        )
+        
+        registro["cc2_claves_descartadas"] = (
+            decision_post.get(
+                "claves_descartadas_post_protocolo",
+                [],
+            )
+        )
         if (
             str(
                 registro.get(
@@ -5947,6 +6897,384 @@ def reevaluar_cc2_post_entrenamiento(resultados):
     )
 
     return resultados
+
+def imprimir_auditoria_generalizacion_cc2(resultados):
+    """
+    Diagnóstico TRAIN -> VALIDACIÓN de C-C2.
+
+    No decide.
+    No bloquea.
+    No aprende.
+    Solo muestra qué fuente histórica produjo
+    las probabilidades post-protocolo.
+    """
+
+    operaciones = [
+        r
+        for r in resultados
+        if r.get("estado_operacion")
+        == "OPERADA_PROTOCOLO"
+        and str(
+            r.get(
+                "decision_post_protocolo",
+                "",
+            )
+        ).upper().strip()
+        == "EVALUAR"
+    ]
+
+    print(
+        "\n===== C-C2 AUDITORIA GENERALIZACION ====="
+    )
+
+    print(
+        "Operaciones C-C2 evaluables:",
+        len(operaciones),
+    )
+
+    if not operaciones:
+        print(
+            "No existen operaciones C-C2 evaluables."
+        )
+        print(
+            "========================================\n"
+        )
+        return
+
+    grupos = {}
+
+    for r in operaciones:
+
+        nivel = str(
+            r.get(
+                "cc2_nivel_principal",
+                "SIN_NIVEL",
+            )
+            or "SIN_NIVEL"
+        )
+
+        clave = str(
+            r.get(
+                "cc2_clave_principal",
+                "SIN_CLAVE",
+            )
+            or "SIN_CLAVE"
+        )
+
+        llave = (
+            nivel,
+            clave,
+        )
+
+        if llave not in grupos:
+            grupos[llave] = {
+                "total": 0,
+                "win": 0,
+                "loss": 0,
+                "train_total": r.get(
+                    "cc2_train_total_principal",
+                    0,
+                ),
+                "train_wr": r.get(
+                    "cc2_train_winrate_principal",
+                    0,
+                ),
+                "prob_train": r.get(
+                    "cc2_probabilidad_ajustada_principal",
+                    0,
+                ),
+                "activos": set(),
+            }
+
+        grupo = grupos[llave]
+
+        grupo["total"] += 1
+
+        if r.get("resultado") == "WIN":
+            grupo["win"] += 1
+        else:
+            grupo["loss"] += 1
+
+        activo = str(
+            r.get("activo", "")
+            or ""
+        )
+
+        if activo:
+            grupo["activos"].add(activo)
+
+    ordenados = sorted(
+        grupos.items(),
+        key=lambda item: (
+            item[1]["total"],
+            item[1]["train_total"],
+        ),
+        reverse=True,
+    )
+
+    print(
+        "\n--- FUENTE PRINCIPAL TRAIN VS RESULTADO ACTUAL ---"
+    )
+
+    for (nivel, clave), g in ordenados:
+
+        wr_actual = round(
+            (
+                g["win"]
+                / g["total"]
+            ) * 100,
+            2,
+        )
+
+        print(
+            nivel,
+            "|",
+            clave,
+            "| train total:",
+            g["train_total"],
+            "| train WR:",
+            str(g["train_wr"]) + "%",
+            "| prob train:",
+            str(g["prob_train"]) + "%",
+            "| valid total:",
+            g["total"],
+            "| valid WIN:",
+            g["win"],
+            "| valid LOSS:",
+            g["loss"],
+            "| valid WR:",
+            str(wr_actual) + "%",
+            "| activos:",
+            len(g["activos"]),
+        )
+
+    print(
+        "========================================\n"
+    )
+
+
+def imprimir_auditoria_operaciones_directas(resultados):
+    """
+    Auditoría específica de OPERADA_DIRECTA.
+
+    No modifica decisiones, operaciones ni aprendizaje.
+    Usa el resultado real para estudiar qué separa WIN de LOSS
+    antes de tocar nuevos umbrales en motor_decision.py.
+    """
+
+    directas = [
+        r for r in resultados
+        if str(r.get("estado_operacion", "") or "").upper().strip()
+        == "OPERADA_DIRECTA"
+    ]
+
+    modo = (
+        "TRAIN"
+        if MODO_EXPERIMENTO == MODO_EXPERIMENTO_AUDITORIA_TRAIN
+        else "VALIDACION"
+    )
+
+    print("\n===== AUDITORIA OPERACIONES DIRECTAS — " + modo + " =====")
+
+    if not directas:
+        print("No hay operaciones directas.")
+        print("==============================================\n")
+        return
+
+    def resumen(grupo):
+        total = len(grupo)
+        wins = sum(
+            1 for r in grupo
+            if str(r.get("resultado", "") or "").upper().strip() == "WIN"
+        )
+        losses = total - wins
+        wr = round((wins / total) * 100, 2) if total else 0
+        activos = len({
+            str(r.get("activo", "") or "").strip()
+            for r in grupo
+            if str(r.get("activo", "") or "").strip()
+        })
+        return total, wins, losses, wr, activos
+
+    def normalizar(valor, defecto="SIN_DATO"):
+        texto = str(valor or "").strip()
+        return texto if texto else defecto
+
+    def bin_muestra(valor):
+        try:
+            muestra = int(float(valor or 0))
+        except (TypeError, ValueError):
+            return "SIN_DATO"
+        if muestra < 20:
+            return "<20"
+        if muestra < 30:
+            return "20-29"
+        if muestra < 50:
+            return "30-49"
+        if muestra < 100:
+            return "50-99"
+        return "100+"
+
+    def bin_probabilidad(valor):
+        try:
+            prob = float(valor or 0)
+        except (TypeError, ValueError):
+            return "SIN_DATO"
+        if prob < 55:
+            return "<55"
+        if prob < 57.5:
+            return "55-57.49"
+        if prob < 60:
+            return "57.5-59.99"
+        if prob < 65:
+            return "60-64.99"
+        return "65+"
+
+    def imprimir_grupos(titulo, selector):
+        grupos = {}
+        for r in directas:
+            clave = selector(r)
+            grupos.setdefault(clave, []).append(r)
+
+        print("\n---", titulo, "---")
+        filas = []
+        for clave, grupo in grupos.items():
+            total, wins, losses, wr, activos = resumen(grupo)
+            filas.append((clave, total, wins, losses, wr, activos))
+
+        filas.sort(key=lambda x: (-x[1], -x[4], str(x[0])))
+        for clave, total, wins, losses, wr, activos in filas[:40]:
+            print(
+                clave,
+                "| total:", total,
+                "| win:", wins,
+                "| loss:", losses,
+                "| WR:", str(wr) + "%",
+                "| activos:", activos,
+            )
+
+    total, wins, losses, wr, activos = resumen(directas)
+    print(
+        "TOTAL DIRECTAS:", total,
+        "| WIN:", wins,
+        "| LOSS:", losses,
+        "| WR:", str(wr) + "%",
+        "| activos:", activos,
+    )
+
+    con_muestra = []
+    for r in directas:
+        try:
+            muestra = float(r.get("directa_muestra", 0) or 0)
+        except (TypeError, ValueError):
+            muestra = 0
+        if muestra > 0:
+            con_muestra.append(r)
+
+    print("Con auditoría de muestra:", len(con_muestra), "/", total)
+    if not con_muestra:
+        print(
+            "ADVERTENCIA: directa_muestra no llegó a las operaciones directas. "
+            "Revisar propagación desde motor_decision.py."
+        )
+
+    imprimir_grupos(
+        "POR EVIDENCIA SOLIDA",
+        lambda r: str(bool(r.get("directa_evidencia_solida", False))).upper(),
+    )
+    imprimir_grupos(
+        "POR CONFIABILIDAD",
+        lambda r: normalizar(r.get("directa_confiabilidad", "SIN_DATOS"), "SIN_DATOS").upper(),
+    )
+    imprimir_grupos(
+        "POR RANGO DE MUESTRA",
+        lambda r: bin_muestra(r.get("directa_muestra", 0)),
+    )
+    imprimir_grupos(
+        "POR NIVEL PROBABILIDAD",
+        lambda r: normalizar(
+            r.get("directa_nivel_probabilidad", "")
+            or r.get("nivel_probabilidad_principal", ""),
+            "SIN_NIVEL",
+        ).upper(),
+    )
+    imprimir_grupos(
+        "POR RANGO PROBABILIDAD",
+        lambda r: bin_probabilidad(r.get("probabilidad_estimada", 0)),
+    )
+    imprimir_grupos(
+        "POR TIPO SETUP",
+        lambda r: normalizar(r.get("tipo_setup", ""), "SIN_TIPO").upper(),
+    )
+    imprimir_grupos(
+        "POR SUBTIPO SETUP",
+        lambda r: normalizar(r.get("subtipo_setup", ""), "SIN_SUBTIPO").upper(),
+    )
+    imprimir_grupos(
+        "POR MERCADO",
+        lambda r: normalizar(r.get("tipo_mercado", ""), "SIN_MERCADO").upper(),
+    )
+    imprimir_grupos(
+        "POR TENDENCIA",
+        lambda r: normalizar(r.get("estado_tendencia", ""), "SIN_TENDENCIA").upper(),
+    )
+    imprimir_grupos(
+        "POR PA",
+        lambda r: normalizar(r.get("pa_tipo", ""), "SIN_PA").upper(),
+    )
+    imprimir_grupos(
+        "NIVEL PROBABILIDAD × CONFIABILIDAD",
+        lambda r: (
+            normalizar(
+                r.get("directa_nivel_probabilidad", "")
+                or r.get("nivel_probabilidad_principal", ""),
+                "SIN_NIVEL",
+            ).upper()
+            + " | "
+            + normalizar(r.get("directa_confiabilidad", "SIN_DATOS"), "SIN_DATOS").upper()
+        ),
+    )
+    imprimir_grupos(
+        "RANGO MUESTRA × RANGO PROBABILIDAD",
+        lambda r: (
+            bin_muestra(r.get("directa_muestra", 0))
+            + " | "
+            + bin_probabilidad(r.get("probabilidad_estimada", 0))
+        ),
+    )
+    imprimir_grupos(
+        "SUBTIPO SETUP × MERCADO",
+        lambda r: (
+            normalizar(r.get("subtipo_setup", ""), "SIN_SUBTIPO").upper()
+            + " | "
+            + normalizar(r.get("tipo_mercado", ""), "SIN_MERCADO").upper()
+        ),
+    )
+
+    print("\n--- CLAVES PRINCIPALES DIRECTAS ---")
+    claves = {}
+    for r in directas:
+        clave = normalizar(
+            r.get("directa_clave_probabilidad", "")
+            or r.get("clave_probabilidad_principal", ""),
+            "SIN_CLAVE",
+        )
+        claves.setdefault(clave, []).append(r)
+
+    for clave, grupo in sorted(claves.items(), key=lambda kv: -len(kv[1]))[:30]:
+        total, wins, losses, wr, activos = resumen(grupo)
+        print(
+            clave,
+            "| total:", total,
+            "| win:", wins,
+            "| loss:", losses,
+            "| WR:", str(wr) + "%",
+            "| activos:", activos,
+        )
+
+    print("==============================================\n")
+
+
 def imprimir_resumen(resultados):
     operadas = [
         r for r in resultados
@@ -6156,6 +7484,11 @@ def imprimir_resumen(resultados):
 
     imprimir_comparacion_sombra(resultados)
 
+    # Auditoría específica del cuello actual: entradas directas.
+    imprimir_auditoria_operaciones_directas(
+        resultados
+    )
+
     # Reportes de ejecución real.
     imprimir_tabla_resumen(
         "POR MOTIVO EJECUCION",
@@ -6229,6 +7562,13 @@ def imprimir_resumen(resultados):
         resultados
     )
 
+    # Auditoría sombra del cuello principal: protocolo.
+    imprimir_cc2_sombra_cuello_protocolo(
+        resultados
+    )
+    imprimir_auditoria_generalizacion_cc2(
+        resultados
+    )
     # Modelo paralelo antiguo:
     # se deja temporalmente apagado.
     # imprimir_probabilidad_protocolo_train(

@@ -22,7 +22,21 @@ UMBRAL_PROBABILIDAD_SOMBRA_OPERAR = 55.0
 UMBRAL_PROBABILIDAD_SOMBRA_PROTOCOLO = 50.0
 MIN_MUESTRA_SOMBRA = 12
 
+# ============================================================
+# SEGURIDAD DE ENTRADA DIRECTA V3
+# ============================================================
+# Una señal puede tener probabilidad suficiente para operar,
+# pero la entrada DIRECTA exige una evidencia histórica más sólida.
+#
+# Si no cumple estas condiciones no se bloquea:
+# baja a OPERAR_CON_PROTOCOLO.
 
+MIN_MUESTRA_OPERAR_DIRECTO = 20
+
+CONFIABILIDADES_OPERAR_DIRECTO = {
+    "ALTA",
+    "MEDIA",
+}
 # ============================================================
 # AUDITORÍA LEGACY OPCIONAL
 # ============================================================
@@ -514,22 +528,98 @@ def clasificar_decision_estadistica_sombra(
     confiabilidad,
     fuente_principal=None,
 ):
-    """Clasifica la probabilidad nueva sin afectar la operación real."""
-    probabilidad = _num(probabilidad, 0.0)
-    intervalo_inferior = _num(intervalo_inferior, probabilidad)
-    intervalo_superior = _num(intervalo_superior, probabilidad)
+    """
+    Clasifica la probabilidad histórica V3.
+
+    Esta función:
+    - no ejecuta operaciones;
+    - no ejecuta protocolos;
+    - no recalcula aprendizaje;
+    - conserva muestra y confiabilidad para que la capa
+      operativa pueda distinguir una autorización directa
+      sólida de una que todavía requiere protocolo.
+    """
+
+    probabilidad = _num(
+        probabilidad,
+        0.0,
+    )
+
+    intervalo_inferior = _num(
+        intervalo_inferior,
+        probabilidad,
+    )
+
+    intervalo_superior = _num(
+        intervalo_superior,
+        probabilidad,
+    )
 
     try:
-        muestra = int(float(muestra or 0))
+        muestra = int(
+            float(
+                muestra or 0
+            )
+        )
     except (TypeError, ValueError):
         muestra = 0
 
-    confiabilidad = str(confiabilidad or "SIN_DATOS").upper().strip()
+    confiabilidad = str(
+        confiabilidad
+        or "SIN_DATOS"
+    ).upper().strip()
+
     fuente_principal = (
-        fuente_principal if isinstance(fuente_principal, dict) else {}
+        fuente_principal
+        if isinstance(
+            fuente_principal,
+            dict,
+        )
+        else {}
     )
-    nivel = str(fuente_principal.get("nivel", "") or "").upper().strip()
-    clave = str(fuente_principal.get("clave", "") or "").strip()
+
+    nivel = str(
+        fuente_principal.get(
+            "nivel",
+            "",
+        )
+        or ""
+    ).upper().strip()
+
+    clave = str(
+        fuente_principal.get(
+            "clave",
+            "",
+        )
+        or ""
+    ).strip()
+
+    # ========================================================
+    # CONTRATO COMÚN DE AUDITORÍA
+    # ========================================================
+
+    datos_estadisticos = {
+        "nivel": nivel,
+        "clave": clave,
+        "muestra": muestra,
+        "confiabilidad": confiabilidad,
+        "probabilidad": round(
+            probabilidad,
+            2,
+        ),
+        "intervalo_inferior": round(
+            intervalo_inferior,
+            2,
+        ),
+        "intervalo_superior": round(
+            intervalo_superior,
+            2,
+        ),
+    }
+
+    # ========================================================
+    # SOMBRA DESACTIVADA
+    # ========================================================
 
     if not MODO_SOMBRA_ESTADISTICO:
         return {
@@ -537,88 +627,124 @@ def clasificar_decision_estadistica_sombra(
             "operar": False,
             "requiere_protocolo": False,
             "modo": "DIAGNOSTICO",
-            "motivo": "Modo sombra estadístico desactivado.",
-            "nivel": nivel,
-            "clave": clave,
+            "motivo": (
+                "Modo sombra estadístico desactivado."
+            ),
+            **datos_estadisticos,
         }
 
-    if not fuente_principal or muestra <= 0:
+    # ========================================================
+    # SIN FUENTE UTILIZABLE
+    # ========================================================
+
+    if (
+        not fuente_principal
+        or muestra <= 0
+    ):
         return {
             "decision": "SIN_DATOS_ESTADISTICOS",
             "operar": False,
             "requiere_protocolo": False,
             "modo": "DIAGNOSTICO",
-            "motivo": "Sin fuente histórica principal utilizable.",
-            "nivel": nivel,
-            "clave": clave,
+            "motivo": (
+                "Sin fuente histórica principal utilizable."
+            ),
+            **datos_estadisticos,
         }
+
+    # ========================================================
+    # MUESTRA INSUFICIENTE
+    # ========================================================
 
     if muestra < MIN_MUESTRA_SOMBRA:
         return {
-            "decision": "NO_OPERAR_SOMBRA_MUESTRA_INSUFICIENTE",
+            "decision": (
+                "NO_OPERAR_SOMBRA_"
+                "MUESTRA_INSUFICIENTE"
+            ),
             "operar": False,
             "requiere_protocolo": False,
             "modo": "DIAGNOSTICO",
             "motivo": (
-                f"Probabilidad sombra {probabilidad:.2f}%, pero muestra "
-                f"{muestra} < {MIN_MUESTRA_SOMBRA}."
+                f"Probabilidad sombra "
+                f"{probabilidad:.2f}%, pero muestra "
+                f"{muestra} < "
+                f"{MIN_MUESTRA_SOMBRA}."
             ),
-            "nivel": nivel,
-            "clave": clave,
+            **datos_estadisticos,
         }
 
-    if probabilidad >= UMBRAL_PROBABILIDAD_SOMBRA_OPERAR:
+    # ========================================================
+    # CLASIFICACIÓN ESTADÍSTICA
+    # ========================================================
+
+    if (
+        probabilidad
+        >= UMBRAL_PROBABILIDAD_SOMBRA_OPERAR
+    ):
         decision = "OPERAR_SOMBRA"
         operar_sombra = True
         requiere_protocolo_sombra = False
-    elif probabilidad >= UMBRAL_PROBABILIDAD_SOMBRA_PROTOCOLO:
-        decision = "OPERAR_CON_PROTOCOLO_SOMBRA"
+
+    elif (
+        probabilidad
+        >= UMBRAL_PROBABILIDAD_SOMBRA_PROTOCOLO
+    ):
+        decision = (
+            "OPERAR_CON_PROTOCOLO_SOMBRA"
+        )
         operar_sombra = True
         requiere_protocolo_sombra = True
+
     else:
         decision = "NO_OPERAR_SOMBRA"
         operar_sombra = False
         requiere_protocolo_sombra = False
 
     motivo = (
-        f"Probabilidad sombra {probabilidad:.2f}% | intervalo "
-        f"{intervalo_inferior:.2f}%–{intervalo_superior:.2f}% | "
-        f"muestra {muestra} | confiabilidad {confiabilidad}."
+        f"Probabilidad sombra "
+        f"{probabilidad:.2f}% | intervalo "
+        f"{intervalo_inferior:.2f}%–"
+        f"{intervalo_superior:.2f}% | "
+        f"muestra {muestra} | "
+        f"confiabilidad {confiabilidad}."
     )
 
     return {
         "decision": decision,
         "operar": operar_sombra,
-        "requiere_protocolo": requiere_protocolo_sombra,
+        "requiere_protocolo": (
+            requiere_protocolo_sombra
+        ),
         "modo": "DIAGNOSTICO",
         "motivo": motivo,
-        "nivel": nivel,
-        "clave": clave,
+        **datos_estadisticos,
     }
-
 
 
 def convertir_decision_v3_a_oficial(
     resultado_decision_sombra,
 ):
     """
-    Convierte la clasificación estadística V3 al contrato operativo
-    oficial de BootIQ.
+    Convierte la clasificación estadística V3 al contrato
+    operativo oficial.
 
-    IMPORTANTE:
-    - no recalcula probabilidad;
-    - no modifica umbrales;
-    - no consulta otros motores;
-    - no aplica protocolo;
-    - no altera aprendizaje.
+    Principio:
+    - NO recalcula probabilidad;
+    - NO cambia la clasificación estadística original;
+    - NO bloquea una señal que V3 autorizó;
+    - decide solamente si la autorización puede ser DIRECTA
+      o necesita PROTOCOLO.
 
-    Solo traduce:
-        OPERAR_SOMBRA
-            -> OPERAR
-        OPERAR_CON_PROTOCOLO_SOMBRA
-            -> OPERAR_CON_PROTOCOLO
-        cualquier otra salida
-            -> NO_OPERAR
+    OPERAR_SOMBRA:
+        -> OPERAR solamente con evidencia estadística sólida.
+        -> de lo contrario OPERAR_CON_PROTOCOLO.
+
+    OPERAR_CON_PROTOCOLO_SOMBRA:
+        -> OPERAR_CON_PROTOCOLO.
+
+    resto:
+        -> NO_OPERAR.
     """
 
     resultado = (
@@ -628,62 +754,179 @@ def convertir_decision_v3_a_oficial(
     )
 
     decision_sombra = str(
-        resultado.get("decision", "SIN_DATOS")
+        resultado.get(
+            "decision",
+            "SIN_DATOS",
+        )
         or "SIN_DATOS"
     ).upper().strip()
 
     motivo_sombra = str(
-        resultado.get("motivo", "")
+        resultado.get(
+            "motivo",
+            "",
+        )
         or ""
     ).strip()
 
     nivel = str(
-        resultado.get("nivel", "")
+        resultado.get(
+            "nivel",
+            "",
+        )
         or ""
     ).upper().strip()
 
     clave = str(
-        resultado.get("clave", "")
+        resultado.get(
+            "clave",
+            "",
+        )
         or ""
     ).strip()
 
-    if decision_sombra == "OPERAR_SOMBRA":
-        return {
-            "decision": "OPERAR",
-            "decision_legacy": "OPERAR_DIRECTO_O_CONFIRMADO",
-            "operar": True,
-            "requiere_protocolo": False,
-            "modo_ejecucion": "DIRECTA",
-            "bloquear_por_riesgo": False,
-            "riesgo_extremo_diagnostico": False,
-            "origen_autoridad": "PROBABILIDAD_HISTORICA_V3",
-            "decision_sombra_origen": decision_sombra,
-            "nivel_probabilidad": nivel,
-            "clave_probabilidad": clave,
-            "motivo": (
-                "V3 estadístico autorizó entrada directa. "
-                + motivo_sombra
-            ).strip(),
-        }
+    muestra = int(
+        _num(
+            resultado.get(
+                "muestra",
+                0,
+            ),
+            0,
+        )
+    )
 
-    if decision_sombra == "OPERAR_CON_PROTOCOLO_SOMBRA":
+    confiabilidad = str(
+        resultado.get(
+            "confiabilidad",
+            "SIN_DATOS",
+        )
+        or "SIN_DATOS"
+    ).upper().strip()
+
+    # ========================================================
+    # V3 AUTORIZA OPERACIÓN
+    # ========================================================
+
+    if decision_sombra == "OPERAR_SOMBRA":
+
+        evidencia_directa_solida = (
+            muestra >= MIN_MUESTRA_OPERAR_DIRECTO
+            and confiabilidad
+            in CONFIABILIDADES_OPERAR_DIRECTO
+        )
+
+        # ====================================================
+        # DIRECTA
+        # ====================================================
+
+        if evidencia_directa_solida:
+            return {
+                "decision": "OPERAR",
+                "decision_legacy": (
+                    "OPERAR_DIRECTO_O_CONFIRMADO"
+                ),
+                "operar": True,
+                "requiere_protocolo": False,
+                "modo_ejecucion": "DIRECTA",
+                "bloquear_por_riesgo": False,
+                "riesgo_extremo_diagnostico": False,
+                "origen_autoridad": (
+                    "PROBABILIDAD_HISTORICA_V3"
+                ),
+                "decision_sombra_origen": (
+                    decision_sombra
+                ),
+                "nivel_probabilidad": nivel,
+                "clave_probabilidad": clave,
+
+                "directa_evidencia_solida": True,
+                "directa_muestra": muestra,
+                "directa_confiabilidad": confiabilidad,
+
+                "motivo": (
+                    "V3 estadístico autorizó entrada directa "
+                    "con evidencia histórica suficiente. "
+                    + motivo_sombra
+                ).strip(),
+            }
+
+        # ====================================================
+        # V3 AUTORIZÓ, PERO NO ENTRADA DIRECTA
+        # ====================================================
+
         return {
             "decision": "OPERAR_CON_PROTOCOLO",
-            "decision_legacy": "OPERAR_CON_CONFIRMACION",
+            "decision_legacy": (
+                "OPERAR_CON_CONFIRMACION"
+            ),
             "operar": True,
             "requiere_protocolo": True,
             "modo_ejecucion": "PROTOCOLO",
             "bloquear_por_riesgo": False,
             "riesgo_extremo_diagnostico": False,
-            "origen_autoridad": "PROBABILIDAD_HISTORICA_V3",
-            "decision_sombra_origen": decision_sombra,
+            "origen_autoridad": (
+                "PROBABILIDAD_HISTORICA_V3"
+            ),
+            "decision_sombra_origen": (
+                decision_sombra
+            ),
             "nivel_probabilidad": nivel,
             "clave_probabilidad": clave,
+
+            "directa_evidencia_solida": False,
+            "directa_muestra": muestra,
+            "directa_confiabilidad": confiabilidad,
+
             "motivo": (
-                "V3 estadístico autorizó operación con protocolo. "
+                "V3 autorizó la señal, pero la evidencia "
+                "histórica todavía no es suficientemente "
+                "sólida para entrada directa; "
+                "se exige protocolo. "
                 + motivo_sombra
             ).strip(),
         }
+
+    # ========================================================
+    # V3 AUTORIZA SOLO CON PROTOCOLO
+    # ========================================================
+
+    if (
+        decision_sombra
+        == "OPERAR_CON_PROTOCOLO_SOMBRA"
+    ):
+        return {
+            "decision": "OPERAR_CON_PROTOCOLO",
+            "decision_legacy": (
+                "OPERAR_CON_CONFIRMACION"
+            ),
+            "operar": True,
+            "requiere_protocolo": True,
+            "modo_ejecucion": "PROTOCOLO",
+            "bloquear_por_riesgo": False,
+            "riesgo_extremo_diagnostico": False,
+            "origen_autoridad": (
+                "PROBABILIDAD_HISTORICA_V3"
+            ),
+            "decision_sombra_origen": (
+                decision_sombra
+            ),
+            "nivel_probabilidad": nivel,
+            "clave_probabilidad": clave,
+
+            "directa_evidencia_solida": False,
+            "directa_muestra": muestra,
+            "directa_confiabilidad": confiabilidad,
+
+            "motivo": (
+                "V3 estadístico autorizó operación "
+                "condicionada a protocolo. "
+                + motivo_sombra
+            ).strip(),
+        }
+
+    # ========================================================
+    # NO AUTORIZADA
+    # ========================================================
 
     return {
         "decision": "NO_OPERAR",
@@ -693,16 +936,24 @@ def convertir_decision_v3_a_oficial(
         "modo_ejecucion": "BLOQUEADA",
         "bloquear_por_riesgo": False,
         "riesgo_extremo_diagnostico": False,
-        "origen_autoridad": "PROBABILIDAD_HISTORICA_V3",
-        "decision_sombra_origen": decision_sombra,
+        "origen_autoridad": (
+            "PROBABILIDAD_HISTORICA_V3"
+        ),
+        "decision_sombra_origen": (
+            decision_sombra
+        ),
         "nivel_probabilidad": nivel,
         "clave_probabilidad": clave,
+
+        "directa_evidencia_solida": False,
+        "directa_muestra": muestra,
+        "directa_confiabilidad": confiabilidad,
+
         "motivo": (
-            "V3 estadístico no autorizó la operación. "
+            "V3 estadístico no autorizó operación. "
             + motivo_sombra
         ).strip(),
     }
-
 
 def clasificar_decision_final(confianza, riesgo_nivel):
     """
@@ -1227,6 +1478,19 @@ def evaluar_decision_post_protocolo(
                 [],
             )
         ),
+        "claves_consultadas_post_protocolo": (
+            aprendizaje.get(
+                "claves_consultadas_post_protocolo",
+                [],
+            )
+        ),
+        
+        "claves_descartadas_post_protocolo": (
+            aprendizaje.get(
+                "claves_descartadas_post_protocolo",
+                [],
+            )
+        ),
     }
 # ============================================================
 # CEREBRO ÚNICO OFICIAL BOOTIQ
@@ -1380,7 +1644,7 @@ def evaluar_decision_cerebro_unico(evidencia):
 
     auditoria_separacion_v3 = construir_auditoria_separacion_v3(
         resultado_confianza=resultado_confianza_legacy,
-        resultado_decision_oficial=resultado_decision_legacy,
+        resultado_decision_oficial=resultado_decision_oficial,
         probabilidad_estimada=probabilidad_estimada,
         muestra_probabilidad=muestra_probabilidad,
         confiabilidad_probabilidad=confiabilidad_probabilidad,
@@ -1507,6 +1771,50 @@ def evaluar_decision_cerebro_unico(evidencia):
         "ajuste_estrategia": ajuste_estrategia,
         "resultado_decision_final": resultado_decision_oficial,
         "resultado_decision_oficial": resultado_decision_oficial,
+        # ==================================================
+        # AUDITORÍA DE ENTRADA DIRECTA V3
+        # ==================================================
+        
+        "directa_evidencia_solida": bool(
+            resultado_decision_oficial.get(
+                "directa_evidencia_solida",
+                False,
+            )
+        ),
+        
+        "directa_muestra": int(
+            _num(
+                resultado_decision_oficial.get(
+                    "directa_muestra",
+                    0,
+                ),
+                0,
+            )
+        ),
+        
+        "directa_confiabilidad": str(
+            resultado_decision_oficial.get(
+                "directa_confiabilidad",
+                "SIN_DATOS",
+            )
+            or "SIN_DATOS"
+        ).upper().strip(),
+        
+        "directa_nivel_probabilidad": str(
+            resultado_decision_oficial.get(
+                "nivel_probabilidad",
+                "",
+            )
+            or ""
+        ).upper().strip(),
+        
+        "directa_clave_probabilidad": str(
+            resultado_decision_oficial.get(
+                "clave_probabilidad",
+                "",
+            )
+            or ""
+        ).strip(),
         "resultado_decision_legacy": resultado_decision_legacy,
         "riesgo_nivel": riesgo_nivel,
         "riesgo_puntos": riesgo_puntos,

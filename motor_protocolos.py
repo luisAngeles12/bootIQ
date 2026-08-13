@@ -134,6 +134,84 @@ def _pullback_recuperado(velas, idx, direccion):
     return False
 
 
+
+def _ventana_sweep(senal, idx, velas):
+    """
+    Devuelve la ventana temporal válida para SWEEP.
+
+    Objetivo:
+    - respetar la recomendación de motor_confirmacion;
+    - permitir confirmaciones tempranas fuertes;
+    - evitar entradas demasiado tardías, que en validación
+      están degradando claramente el rendimiento.
+
+    Retorna:
+        inicio_busqueda, objetivo, fin_exclusivo
+    """
+    accion = _txt(
+        senal.get("accion_confirmacion_ia")
+    )
+
+    limite = len(velas) - 1
+
+    if accion == "esperar_3":
+        inicio = idx + 1
+        objetivo = idx + 3
+        fin = idx + 4
+    elif accion == "esperar_2":
+        inicio = idx + 1
+        objetivo = idx + 2
+        fin = idx + 3
+    else:
+        inicio = idx + 1
+        objetivo = idx + 2
+        fin = idx + 3
+
+    inicio = min(inicio, limite)
+    objetivo = min(objetivo, limite)
+    fin = min(fin, limite)
+
+    if fin <= inicio:
+        fin = min(inicio + 1, limite)
+
+    return inicio, objetivo, fin
+
+
+
+def _ventana_confirmacion(senal, idx, velas):
+    """
+    Define la ventana máxima permitida para protocolos que deben
+    respetar ESPERAR_2 / ESPERAR_3 de motor_confirmacion.
+
+    ESPERAR_2: permite entrada en +1 o +2.
+    ESPERAR_3: permite entrada en +1, +2 o +3.
+
+    La última vela disponible nunca se usa como entrada porque el
+    backtest necesita una vela posterior para calcular el resultado.
+    """
+    accion = _txt(senal.get("accion_confirmacion_ia"))
+    ultimo_idx_entrada = len(velas) - 2
+
+    if accion == "esperar_3":
+        inicio = idx + 1
+        objetivo = idx + 3
+    elif accion == "esperar_2":
+        inicio = idx + 1
+        objetivo = idx + 2
+    else:
+        inicio = idx + 1
+        objetivo = idx + 2
+
+    inicio = min(inicio, ultimo_idx_entrada)
+    objetivo = min(objetivo, ultimo_idx_entrada)
+    fin = min(objetivo + 1, ultimo_idx_entrada + 1)
+
+    if fin <= inicio:
+        fin = min(inicio + 1, ultimo_idx_entrada + 1)
+
+    return inicio, objetivo, fin
+
+
 def _tipo_protocolo(senal):
     texto = " ".join([
         _txt(senal.get("subtipo_setup")),
@@ -305,55 +383,113 @@ def _entrada_directa_permitida(senal):
 
     return False
 def _protocolo_sweep(velas, idx, senal):
+    """
+    Protocolo SWEEP con timing coordinado con motor_confirmacion.
+
+    Regla:
+    - la recomendación ESPERAR_2 / ESPERAR_3 define la ventana;
+    - una confirmación fuerte puede entrar antes del objetivo;
+    - no se persiguen confirmaciones tardías fuera de la ventana;
+    - la confirmación media solo se acepta en el objetivo o antes.
+    """
+
     direccion = _direccion(senal)
     subtipo = _txt(senal.get("subtipo_setup"))
 
+    inicio, objetivo, fin = _ventana_sweep(
+        senal,
+        idx,
+        velas,
+    )
+
     def confirmacion_fuerte(j):
-        return _ruptura_micro(velas, j, direccion) and _impulso(velas[j], direccion)
+        return (
+            _ruptura_micro(velas, j, direccion)
+            and _impulso(velas[j], direccion)
+        )
 
     def confirmacion_media(j):
-        return _ruptura_micro(velas, j, direccion) or (
-            _rechazo(velas[j], direccion) and _impulso(velas[j], direccion)
+        return (
+            _ruptura_micro(velas, j, direccion)
+            or (
+                _rechazo(velas[j], direccion)
+                and _impulso(velas[j], direccion)
+            )
         )
 
     if subtipo == "sweep_simple":
-        for j in range(idx + 2, min(idx + 5, len(velas) - 1)):
+        for j in range(inicio, fin):
             if confirmacion_fuerte(j):
-                return j, "PROTOCOLO_SWEEP_SIMPLE_RUPTURA_IMPULSO_ESPERA_2"
+                return (
+                    j,
+                    "PROTOCOLO_SWEEP_SIMPLE_"
+                    "RUPTURA_IMPULSO_TIMING_IA",
+                )
 
         return None, "CANCELADA_SWEEP_SIMPLE"
 
     if subtipo == "sweep_ruptura_confirmable":
-        for j in range(idx + 2, min(idx + 5, len(velas) - 1)):
+        for j in range(inicio, fin):
             if confirmacion_fuerte(j):
-                return j, "PROTOCOLO_SWEEP_RUPTURA_CONFIRMABLE_IMPULSO_ESPERA_2"
+                return (
+                    j,
+                    "PROTOCOLO_SWEEP_RUPTURA_CONFIRMABLE_"
+                    "IMPULSO_TIMING_IA",
+                )
 
-        for j in range(idx + 2, min(idx + 5, len(velas) - 1)):
+        fin_media = min(objetivo + 1, fin)
+
+        for j in range(inicio, fin_media):
             if confirmacion_media(j):
-                return j, "PROTOCOLO_SWEEP_RUPTURA_CONFIRMABLE_MEDIA"
+                return (
+                    j,
+                    "PROTOCOLO_SWEEP_RUPTURA_CONFIRMABLE_"
+                    "MEDIA_TIMING_IA",
+                )
 
         return None, "CANCELADA_SWEEP_RUPTURA_NO_CONFIRMADA"
 
     if subtipo == "sweep_con_rechazo_agotamiento":
-        for j in range(idx + 1, min(idx + 5, len(velas) - 1)):
-            if _rechazo(velas[j], direccion) and _impulso(velas[j], direccion):
-                return j, "PROTOCOLO_SWEEP_RECHAZO_AGOTAMIENTO_CONFIRMADO"
+        for j in range(inicio, fin):
+            if (
+                _rechazo(velas[j], direccion)
+                and _impulso(velas[j], direccion)
+            ):
+                return (
+                    j,
+                    "PROTOCOLO_SWEEP_RECHAZO_AGOTAMIENTO_"
+                    "CONFIRMADO_TIMING_IA",
+                )
 
-        for j in range(idx + 2, min(idx + 5, len(velas) - 1)):
+        for j in range(inicio, fin):
             if confirmacion_fuerte(j):
-                return j, "PROTOCOLO_SWEEP_AGOTAMIENTO_RUPTURA_IMPULSO"
+                return (
+                    j,
+                    "PROTOCOLO_SWEEP_AGOTAMIENTO_"
+                    "RUPTURA_IMPULSO_TIMING_IA",
+                )
 
         return None, "CANCELADA_SWEEP_AGOTAMIENTO_SIN_CONFIRMACION"
 
-    for j in range(idx + 2, min(idx + 5, len(velas) - 1)):
+    for j in range(inicio, fin):
         if confirmacion_fuerte(j):
-            return j, "PROTOCOLO_SWEEP_RUPTURA_IMPULSO_ESPERA_2"
+            return (
+                j,
+                "PROTOCOLO_SWEEP_RUPTURA_IMPULSO_TIMING_IA",
+            )
 
-    for j in range(idx + 2, min(idx + 5, len(velas) - 1)):
+    fin_media = min(objetivo + 1, fin)
+
+    for j in range(inicio, fin_media):
         if confirmacion_media(j):
-            return j, "PROTOCOLO_SWEEP_CONFIRMACION_MEDIA"
+            return (
+                j,
+                "PROTOCOLO_SWEEP_CONFIRMACION_MEDIA_TIMING_IA",
+            )
 
     return None, "CANCELADA_SWEEP_SIN_RECHAZO_VALIDO"
+
+
 def _protocolo_choch(velas, idx, senal):
     direccion = _direccion(senal)
     subtipo = _txt(senal.get("subtipo_setup"))
@@ -554,16 +690,44 @@ def _protocolo_pullback(velas, idx, senal):
         "CANCELADA_PULLBACK_SIN_CONFIRMACION_TECNICA",
     )
 def _protocolo_reaccion_zona(velas, idx, senal):
+    """
+    Confirma una reacción de zona sin entrar automáticamente en la
+    vela donde nació la señal.
+
+    Cambio aislado de esta prueba:
+    - zona_rechazo_confirmado deja de usar entrada inmediata;
+    - exige continuidad mediante una vela de impulso a favor;
+    - respeta ESPERAR_2 / ESPERAR_3;
+    - los demás subtipos conservan su comportamiento anterior.
+    """
     direccion = _direccion(senal)
     subtipo = _txt(senal.get("subtipo_setup"))
+
+    if direccion not in ["call", "put"]:
+        return None, "CANCELADA_ZONA_DIRECCION_INVALIDA"
 
     if subtipo == "zona_sin_ruptura":
         return None, "CANCELADA_ZONA_SIN_RUPTURA"
 
     if subtipo == "zona_rechazo_confirmado":
-        return (
+        inicio, _, fin = _ventana_confirmacion(
+            senal,
             idx,
-            "PROTOCOLO_ZONA_RECHAZO_CONFIRMADO_ENTRADA_INMEDIATA",
+            velas,
+        )
+
+        for j in range(inicio, fin):
+            if _impulso(velas[j], direccion):
+                return (
+                    j,
+                    "PROTOCOLO_ZONA_RECHAZO_CONFIRMADO_"
+                    "IMPULSO_TIMING_IA",
+                )
+
+        return (
+            None,
+            "CANCELADA_ZONA_RECHAZO_CONFIRMADO_"
+            "SIN_CONTINUIDAD",
         )
 
     if subtipo == "zona_generica":
@@ -581,22 +745,25 @@ def _protocolo_reaccion_zona(velas, idx, senal):
 
 def _protocolo_ruptura_resistencia(velas, idx, senal):
     """
-    Confirma una ruptura real antes de autorizar la entrada.
+    Confirma una ruptura real respetando el timing recomendado por
+    motor_confirmacion.
 
-    El protocolo no entra en la vela original porque la señal fue
-    clasificada precisamente como pendiente de ruptura.
+    ESPERAR_2: solo se aceptan entradas hasta vela +2.
+    ESPERAR_3: solo se aceptan entradas hasta vela +3.
     """
-
     direccion = _direccion(senal)
 
     if direccion not in ["call", "put"]:
         return None, "CANCELADA_RUPTURA_DIRECCION_INVALIDA"
 
-    inicio = idx + 1
-    final = min(idx + 5, len(velas) - 1)
+    inicio, objetivo, fin = _ventana_confirmacion(
+        senal,
+        idx,
+        velas,
+    )
 
     # Nivel 1: ruptura acompañada de impulso.
-    for j in range(inicio, final):
+    for j in range(inicio, fin):
         if (
             _ruptura_micro(velas, j, direccion)
             and _impulso(velas[j], direccion)
@@ -606,16 +773,22 @@ def _protocolo_ruptura_resistencia(velas, idx, senal):
                 "PROTOCOLO_RUPTURA_RESISTENCIA_CONFIRMADA_IMPULSO",
             )
 
-    # Nivel 2: ruptura seguida de conservación del nivel.
-    for j in range(inicio, final):
+    # Nivel 2: ruptura seguida de conservación del nivel, siempre
+    # dentro de la ventana temporal permitida.
+    for j in range(inicio, fin):
         if not _ruptura_micro(velas, j, direccion):
             continue
 
-        if j + 1 >= len(velas) - 1:
+        idx_confirmacion = j + 1
+
+        if idx_confirmacion > objetivo:
+            continue
+
+        if idx_confirmacion >= len(velas) - 1:
             continue
 
         vela_ruptura = velas[j]
-        vela_confirmacion = velas[j + 1]
+        vela_confirmacion = velas[idx_confirmacion]
 
         if direccion == "call":
             conserva_nivel = (
@@ -626,7 +799,6 @@ def _protocolo_ruptura_resistencia(velas, idx, senal):
                 vela_confirmacion["close"]
                 > vela_confirmacion["open"]
             )
-
         else:
             conserva_nivel = (
                 vela_confirmacion["close"]
@@ -639,7 +811,7 @@ def _protocolo_ruptura_resistencia(velas, idx, senal):
 
         if conserva_nivel and confirma_direccion:
             return (
-                j + 1,
+                idx_confirmacion,
                 "PROTOCOLO_RUPTURA_RESISTENCIA_CONFIRMADA_CONTINUIDAD",
             )
 
