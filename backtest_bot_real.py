@@ -59,7 +59,7 @@ MODO_EXPERIMENTO_AUDITORIA_TRAIN = "AUDITORIA_TRAIN"
 MODO_EXPERIMENTO_VALIDACION = "VALIDACION"
 
 # Durante esta fase, cambiar únicamente esta línea.
-MODO_EXPERIMENTO = MODO_EXPERIMENTO_VALIDACION
+MODO_EXPERIMENTO = MODO_EXPERIMENTO_AUDITORIA_TRAIN
 
 TOTAL_DATASETS_EXPERIMENTO = 16
 TOTAL_DATASETS_TRAIN = 12
@@ -71,7 +71,10 @@ ACTUALIZAR_APRENDIZAJE = False
 # C-C2 — ACTUALIZACIÓN EXCLUSIVA POST-PROTOCOLO
 # ============================================================
 
-ACTUALIZAR_APRENDIZAJE_PROTOCOLO = False
+ACTUALIZAR_APRENDIZAJE_PROTOCOLO = (
+    MODO_EXPERIMENTO == MODO_EXPERIMENTO_AUDITORIA_TRAIN
+)
+
 DATASETS_USADOS_BACKTEST = 0
 AUDITORIA_DATASETS = {
     "cargados": 0,
@@ -5813,6 +5816,137 @@ def imprimir_cc2_probabilidad_post_protocolo(
     print(
         "============================================\n"
     )
+def reevaluar_cc2_post_entrenamiento(resultados):
+    """
+    C-C2 — segunda pasada exclusivamente estadística.
+
+    Se utiliza después de generar/actualizar la memoria
+    PROTOCOLO_* en TRAIN.
+
+    NO vuelve a ejecutar estrategia, protocolos ni operaciones.
+    Solo vuelve a consultar C-C2 para operaciones ya ejecutadas.
+    """
+
+    total_operadas = 0
+    con_datos = 0
+    sin_datos = 0
+
+    for registro in resultados:
+
+        if (
+            registro.get("estado_operacion")
+            != "OPERADA_PROTOCOLO"
+        ):
+            continue
+
+        total_operadas += 1
+
+        decision_post = (
+            evaluar_decision_post_protocolo(
+                registro
+            )
+        )
+
+        registro["decision_post_protocolo"] = (
+            decision_post.get(
+                "decision_post_protocolo",
+                "SIN_DATOS",
+            )
+        )
+
+        registro["autoriza_post_protocolo"] = (
+            decision_post.get(
+                "autoriza_post_protocolo",
+                True,
+            )
+        )
+
+        registro["probabilidad_post_protocolo"] = (
+            decision_post.get(
+                "probabilidad_post_protocolo",
+                0,
+            )
+        )
+
+        registro[
+            "intervalo_post_protocolo_inferior"
+        ] = decision_post.get(
+            "intervalo_post_protocolo_inferior",
+            0,
+        )
+
+        registro[
+            "intervalo_post_protocolo_superior"
+        ] = decision_post.get(
+            "intervalo_post_protocolo_superior",
+            0,
+        )
+
+        registro["muestra_post_protocolo"] = (
+            decision_post.get(
+                "muestra_post_protocolo",
+                0,
+            )
+        )
+
+        registro[
+            "confiabilidad_post_protocolo"
+        ] = decision_post.get(
+            "confiabilidad_post_protocolo",
+            "SIN_DATOS",
+        )
+
+        registro[
+            "fuente_post_protocolo_principal"
+        ] = decision_post.get(
+            "fuente_post_protocolo_principal",
+            "",
+        )
+
+        registro[
+            "fuente_post_protocolo_respaldo"
+        ] = decision_post.get(
+            "fuente_post_protocolo_respaldo",
+            "",
+        )
+
+        if (
+            str(
+                registro.get(
+                    "decision_post_protocolo",
+                    "",
+                )
+            ).upper().strip()
+            == "EVALUAR"
+        ):
+            con_datos += 1
+        else:
+            sin_datos += 1
+
+    print(
+        "\n===== C-C2 REEVALUACION POST-TRAIN ====="
+    )
+
+    print(
+        "Operaciones protocolo reevaluadas:",
+        total_operadas,
+    )
+
+    print(
+        "Con aprendizaje C-C2:",
+        con_datos,
+    )
+
+    print(
+        "Sin aprendizaje C-C2:",
+        sin_datos,
+    )
+
+    print(
+        "========================================\n"
+    )
+
+    return resultados
 def imprimir_resumen(resultados):
     operadas = [
         r for r in resultados
@@ -6147,7 +6281,7 @@ def main():
 
     resultados = ejecutar_backtest(datasets)
 
-    guardar_resultados(resultados)
+    # guardar_resultados(resultados)
     if (
         ACTUALIZAR_APRENDIZAJE
         and ACTUALIZAR_APRENDIZAJE_PROTOCOLO
@@ -6171,21 +6305,29 @@ def main():
         )
 
     elif ACTUALIZAR_APRENDIZAJE_PROTOCOLO:
-        actualizar_aprendizaje_post_protocolo(
+        filas_cc2 = actualizar_aprendizaje_post_protocolo(
             resultados
         )
-
+    
         print(
             "C-C2: memoria general congelada; "
             "solo PROTOCOLO_* fue actualizado."
         )
-
+    
+        print(
+            "Filas C-C2 generadas:",
+            len(filas_cc2),
+        )
+    
+        resultados = reevaluar_cc2_post_entrenamiento(
+            resultados
+        )
     else:
         print(
             "Aprendizaje histórico congelado: "
             "no se sobrescribió durante esta prueba."
         )
-
+    guardar_resultados(resultados)
     imprimir_resumen(resultados)
 
     print("Archivo generado:", SALIDA)

@@ -32,14 +32,26 @@ Z_INTERVALO = 1.96
 # Pesos relativos por nivel histórico.
 # No necesitan sumar 1 porque luego se normalizan.
 PESOS_NIVELES = {
-    # Memoria estructural anterior: se conserva por compatibilidad.
+    # ========================================================
+    # C-D1 — MEMORIA TRANSFERIBLE ENTRE ACTIVOS
+    # ========================================================
+    # Estas claves NO contienen el activo. Son la columna vertebral
+    # del aprendizaje porque pueden reutilizarse en símbolos nunca vistos.
+    "CONTEXTO_TECNICO": 1.20,
+    "CONTEXTO_SETUP": 1.25,
+    "CONTEXTO_PA": 1.30,
+
+    # Memoria estructural general.
     "FAMILIA": 0.85,
     "FAMILIA_DIRECCION": 0.95,
     "FAMILIA_MERCADO": 0.85,
     "FAMILIA_TENDENCIA": 0.85,
-    "ACTIVO_FAMILIA": 0.60,
-    "ACTIVO_DIRECCION": 0.50,
-    "CLAVE_ESPECIFICA": 1.00,
+
+    # Especialización por activo: se conserva, pero deja de ser la
+    # autoridad principal del aprendizaje transferible.
+    "ACTIVO_FAMILIA": 0.35,
+    "ACTIVO_DIRECCION": 0.30,
+    "CLAVE_ESPECIFICA": 0.40,
 
     # Memoria del Cerebro Único basada en evidencias observadas.
     "PA": 0.90,
@@ -129,15 +141,20 @@ def _intervalo_probabilidad(wins, losses):
 
 
 def _prioridad_nivel(nivel):
-    """Orden de especificidad usado solo para elegir fuente principal."""
+    """Orden para elegir la fuente principal del aprendizaje general."""
 
     prioridades = {
-        "FIRMA_EVIDENCIAS_EXACTA": 16,
-        "PA_SETUP_MERCADO": 15,
-        "PA_SETUP": 14,
-        "PA_MERCADO": 13,
-        "SETUP_MERCADO": 12,
-        "CLAVE_ESPECIFICA": 11,
+        # Evidencia transferible de mayor precisión.
+        "FIRMA_EVIDENCIAS_EXACTA": 18,
+        "PA_SETUP_MERCADO": 17,
+        "CONTEXTO_PA": 16,
+        "CONTEXTO_SETUP": 15,
+        "CONTEXTO_TECNICO": 14,
+        "PA_SETUP": 13,
+        "PA_MERCADO": 12,
+        "SETUP_MERCADO": 11,
+
+        # Memoria intermedia/general transferible.
         "PA_DIRECCION": 10,
         "FAMILIA_TENDENCIA": 9,
         "FAMILIA_MERCADO": 8,
@@ -145,9 +162,12 @@ def _prioridad_nivel(nivel):
         "SETUP_EVIDENCIAS": 6,
         "PA": 5,
         "MERCADO_EVIDENCIAS": 4,
-        "ACTIVO_FAMILIA": 3,
-        "ACTIVO_DIRECCION": 2,
-        "FAMILIA": 1,
+        "FAMILIA": 3,
+
+        # C-D1: memoria ligada al símbolo, solo especialización.
+        "CLAVE_ESPECIFICA": 2,
+        "ACTIVO_FAMILIA": 1,
+        "ACTIVO_DIRECCION": 1,
         "LEGACY": 0,
     }
     return prioridades.get(_txt(nivel), 0)
@@ -156,10 +176,12 @@ def _prioridad_nivel(nivel):
 NIVELES_ESPECIFICOS = {
     "FIRMA_EVIDENCIAS_EXACTA",
     "PA_SETUP_MERCADO",
+    "CONTEXTO_PA",
+    "CONTEXTO_SETUP",
+    "CONTEXTO_TECNICO",
     "PA_SETUP",
     "PA_MERCADO",
     "SETUP_MERCADO",
-    "CLAVE_ESPECIFICA",
 }
 
 NIVELES_INTERMEDIOS = {
@@ -174,9 +196,13 @@ NIVELES_GENERALES = {
     "FAMILIA_MERCADO",
     "FAMILIA",
     "MERCADO_EVIDENCIAS",
+    "LEGACY",
+}
+
+NIVELES_ESPECIALIZACION_ACTIVO = {
+    "CLAVE_ESPECIFICA",
     "ACTIVO_FAMILIA",
     "ACTIVO_DIRECCION",
-    "LEGACY",
 }
 
 
@@ -189,23 +215,26 @@ def _grupo_nivel(nivel):
     if nivel in NIVELES_INTERMEDIOS:
         return "INTERMEDIO"
 
+    if nivel in NIVELES_ESPECIALIZACION_ACTIVO:
+        return "ESPECIALIZACION_ACTIVO"
+
     return "GENERAL"
 
 
 def _seleccionar_fuente_principal(fuentes):
     """
-    Selecciona primero una fuente específica o intermedia con muestra
-    suficiente. Los niveles generales solo pueden ser principales cuando
-    no existe una alternativa más informativa.
+    C-D1 — selecciona primero conocimiento transferible.
 
-    Esto evita que FAMILIA_MERCADO o FAMILIA dominen la mayoría de señales
-    únicamente por tener mucha muestra.
+    La memoria dependiente del activo se conserva, pero solo puede ser
+    principal cuando no existe ninguna fuente transferible utilizable.
+    De este modo el bot aprende comportamiento técnico, no nombres de activos.
     """
 
     candidatas_por_grupo = {
         "ESPECIFICO": [],
         "INTERMEDIO": [],
         "GENERAL": [],
+        "ESPECIALIZACION_ACTIVO": [],
     }
 
     for fuente in fuentes or []:
@@ -220,11 +249,11 @@ def _seleccionar_fuente_principal(fuentes):
         factor = _factor_muestra(total)
         confiabilidad = _confiabilidad_muestra(total)
 
-        # Requisitos mínimos distintos según el nivel.
-        if grupo == "ESPECIFICO":
+        # Las fuentes específicas transferibles y las ligadas al activo
+        # necesitan muestra confiable. Las intermedias/generales pueden
+        # empezar a aportar desde MIN_MUESTRA_APORTE.
+        if grupo in {"ESPECIFICO", "ESPECIALIZACION_ACTIVO"}:
             muestra_minima_grupo = MIN_MUESTRA_CONFIABLE
-        elif grupo == "INTERMEDIO":
-            muestra_minima_grupo = MIN_MUESTRA_APORTE
         else:
             muestra_minima_grupo = MIN_MUESTRA_APORTE
 
@@ -242,11 +271,11 @@ def _seleccionar_fuente_principal(fuentes):
             "INSUFICIENTE": -5.0,
         }.get(confiabilidad, 0.0)
 
-        # Bonificación estructural moderada por grupo.
         bono_grupo = {
             "ESPECIFICO": 6.0,
             "INTERMEDIO": 3.0,
             "GENERAL": 0.0,
+            "ESPECIALIZACION_ACTIVO": -4.0,
         }[grupo]
 
         score = (
@@ -260,8 +289,13 @@ def _seleccionar_fuente_principal(fuentes):
             (score, total, prioridad, fuente)
         )
 
-    # Orden de búsqueda deliberado.
-    for grupo in ("ESPECIFICO", "INTERMEDIO", "GENERAL"):
+    # La especialización por activo queda deliberadamente al final.
+    for grupo in (
+        "ESPECIFICO",
+        "INTERMEDIO",
+        "GENERAL",
+        "ESPECIALIZACION_ACTIVO",
+    ):
         candidatas = candidatas_por_grupo[grupo]
 
         if not candidatas:
@@ -279,11 +313,10 @@ def _seleccionar_fuente_principal(fuentes):
 
 def _seleccionar_fuente_respaldo(fuentes, principal):
     """
-    Selecciona una fuente más general que la principal.
+    Selecciona un respaldo transferible y más general que la principal.
 
-    El respaldo estabiliza la probabilidad, pero no puede pertenecer al mismo
-    nivel ni repetir la misma clave. Se priorizan niveles generales con muestra
-    confiable y, en segundo término, niveles intermedios distintos.
+    C-D1: las fuentes ACTIVO_* y CLAVE_ESPECIFICA nunca estabilizan una
+    probabilidad general; solo sirven como especialización diagnóstica.
     """
 
     principal = principal if isinstance(principal, dict) else {}
@@ -304,6 +337,10 @@ def _seleccionar_fuente_respaldo(fuentes, principal):
 
         grupo = _grupo_nivel(fuente.get("nivel"))
 
+        # Nunca usamos especialización de activo como respaldo general.
+        if grupo == "ESPECIALIZACION_ACTIVO":
+            continue
+
         if grupo_principal == "ESPECIFICO":
             if grupo == "GENERAL":
                 candidatas_generales.append((total, fuente))
@@ -314,9 +351,15 @@ def _seleccionar_fuente_respaldo(fuentes, principal):
             if grupo == "GENERAL":
                 candidatas_generales.append((total, fuente))
 
+        elif grupo_principal == "ESPECIALIZACION_ACTIVO":
+            # Si solo quedó memoria del activo, buscamos primero cualquier
+            # contexto transferible confiable como respaldo.
+            if grupo == "GENERAL":
+                candidatas_generales.append((total, fuente))
+            elif grupo == "INTERMEDIO":
+                candidatas_intermedias.append((total, fuente))
+
         else:
-            # Si la principal ya es general, no se añade otro respaldo
-            # correlacionado que diluya aún más la señal.
             continue
 
     if candidatas_generales:
@@ -352,21 +395,201 @@ def _normalizar_token(valor):
         token = token.replace("__", "_")
 
     return token.strip("_")
+def _banda_fuerza_evidencia(valor):
+    """
+    Convierte una fuerza numérica continua en una banda estable.
 
+    No aprende el número exacto para evitar crear una clave
+    distinta por cada pequeño cambio de fuerza.
+    """
+
+    if valor in (None, ""):
+        return ""
+
+    fuerza = _numero(
+        valor,
+        -1.0,
+    )
+
+    if fuerza < 0:
+        return ""
+
+    if fuerza < 40:
+        return "FZA_0_39"
+
+    if fuerza < 60:
+        return "FZA_40_59"
+
+    if fuerza < 75:
+        return "FZA_60_74"
+
+    return "FZA_75_MAS"
+
+
+def _token_evidencia_enriquecida(item):
+    """
+    Construye una representación contextual estable
+    de una evidencia estructurada.
+
+    Ejemplo:
+
+    IMPULSO_BAJISTA_MEDIO
+        +
+    direccion PUT
+        +
+    fuerza 67
+        +
+    confirmada True
+        ↓
+    IMPULSO_BAJISTA_MEDIO__DIR_PUT__FZA_60_74__CONF_SI
+
+    No decide si la evidencia es buena o mala.
+    Solo conserva información que anteriormente se perdía.
+    """
+
+    if not isinstance(item, dict):
+        return ""
+
+    tipo = _normalizar_token(
+        item.get("tipo")
+        or item.get("evidencia")
+        or item.get("nombre")
+        or item.get("codigo")
+        or item.get("familia")
+    )
+
+    if not tipo:
+        return ""
+
+    componentes = [
+        tipo,
+    ]
+
+    # ========================================================
+    # DIRECCION
+    # ========================================================
+
+    direccion = _normalizar_token(
+        item.get("direccion")
+    )
+
+    if direccion:
+        componentes.append(
+            f"DIR_{direccion}"
+        )
+
+    # ========================================================
+    # FUERZA
+    # ========================================================
+
+    banda_fuerza = (
+        _banda_fuerza_evidencia(
+            item.get("fuerza")
+        )
+    )
+
+    if banda_fuerza:
+        componentes.append(
+            banda_fuerza
+        )
+
+    # ========================================================
+    # CONFIRMACION
+    # ========================================================
+
+    if "confirmada" in item:
+        confirmada = item.get(
+            "confirmada"
+        )
+
+        if isinstance(confirmada, str):
+            confirmada_txt = (
+                confirmada
+                .strip()
+                .lower()
+            )
+
+            confirmada = (
+                confirmada_txt
+                in {
+                    "true",
+                    "1",
+                    "si",
+                    "sí",
+                    "yes",
+                }
+            )
+
+        componentes.append(
+            "CONF_SI"
+            if bool(confirmada)
+            else "CONF_NO"
+        )
+
+    # ========================================================
+    # CATEGORIA
+    # ========================================================
+
+    categoria = _normalizar_token(
+        item.get("categoria")
+    )
+
+    if categoria:
+        componentes.append(
+            f"CAT_{categoria}"
+        )
+
+    # Si únicamente existe el tipo, no creamos
+    # una copia redundante.
+    if len(componentes) <= 1:
+        return ""
+
+    return "__".join(
+        componentes
+    )
 
 def _extraer_tokens(valor):
     """
     Extrae evidencias desde listas, diccionarios o textos serializados.
 
-    Acepta tanto las estructuras originales de Price Action como las firmas
-    ya construidas por motor_decision.py.
+    FASE INTELIGENCIA:
+    cuando recibe una evidencia estructurada conserva dos niveles:
+
+    1. token BASE
+       Ej:
+       IMPULSO_BAJISTA_MEDIO
+
+    2. token CONTEXTUAL
+       Ej:
+       IMPULSO_BAJISTA_MEDIO__DIR_PUT__
+       FZA_60_74__CONF_SI__CAT_PRICE_ACTION
+
+    El token base mantiene compatibilidad con la memoria anterior.
+    El contextual permite que BootIQ aprenda diferencias que antes
+    estaban siendo descartadas.
+
+    Esta función NO asigna si una evidencia es buena o mala.
     """
 
     tokens = []
 
+    def agregar_token(token):
+        token = _normalizar_token(
+            token
+        )
+
+        if token:
+            tokens.append(
+                token
+            )
+
     def agregar(item):
         if item is None:
             return
+
+        # ====================================================
+        # EVIDENCIA ESTRUCTURADA
+        # ====================================================
 
         if isinstance(item, dict):
             candidato = (
@@ -376,40 +599,100 @@ def _extraer_tokens(valor):
                 or item.get("codigo")
                 or item.get("familia")
             )
-            token = _normalizar_token(candidato)
-            if token:
-                tokens.append(token)
+
+            # -----------------------------------------------
+            # 1. TOKEN BASE
+            #
+            # Se conserva para compatibilidad.
+            # -----------------------------------------------
+
+            agregar_token(
+                candidato
+            )
+
+            # -----------------------------------------------
+            # 2. TOKEN CONTEXTUAL
+            #
+            # Conserva información que antes se perdía.
+            # -----------------------------------------------
+
+            enriquecido = (
+                _token_evidencia_enriquecida(
+                    item
+                )
+            )
+
+            if enriquecido:
+                agregar_token(
+                    enriquecido
+                )
+
             return
 
-        if isinstance(item, (list, tuple, set)):
+        # ====================================================
+        # LISTAS / TUPLAS / SETS
+        # ====================================================
+
+        if isinstance(
+            item,
+            (
+                list,
+                tuple,
+                set,
+            ),
+        ):
             for subitem in item:
-                agregar(subitem)
+                agregar(
+                    subitem
+                )
+
             return
 
-        texto = str(item or "").strip()
+        # ====================================================
+        # TEXTO SERIALIZADO
+        # ====================================================
+
+        texto = str(
+            item or ""
+        ).strip()
+
         if not texto:
             return
 
-        # Las auditorías suelen serializar listas con " | ".
-        partes = re.split(r"\s*[|;,]\s*", texto)
-        for parte in partes:
-            token = _normalizar_token(parte)
-            if token:
-                tokens.append(token)
+        partes = re.split(
+            r"\s*[|;,]\s*",
+            texto,
+        )
 
-    agregar(valor)
+        for parte in partes:
+            agregar_token(
+                parte
+            )
+
+    agregar(
+        valor
+    )
+
+    # ========================================================
+    # ELIMINAR DUPLICADOS SIN PERDER ORDEN
+    # ========================================================
 
     vistos = set()
     salida = []
+
     for token in tokens:
         if token in vistos:
             continue
-        vistos.add(token)
-        salida.append(token)
 
-    return sorted(salida)
+        vistos.add(
+            token
+        )
 
+        salida.append(
+            token
+        )
 
+    return salida
 def _primer_valor(senal, nombres):
     for nombre in nombres:
         valor = senal.get(nombre)
@@ -916,6 +1199,43 @@ def _claves_jerarquicas(senal):
     claves = []
     vistos = set()
 
+    # ========================================================
+    # C-D1 — MEMORIA TRANSFERIBLE ENTRE ACTIVOS
+    # ========================================================
+    # Ninguna de estas claves contiene `activo`. El mismo patrón
+    # aprendido en un símbolo puede reutilizarse en otro distinto.
+    _agregar_clave(
+        claves,
+        vistos,
+        "CONTEXTO_TECNICO",
+        [direccion, familia, mercado, tendencia],
+    )
+
+    if tipo_setup or subtipo_setup:
+        _agregar_clave(
+            claves,
+            vistos,
+            "CONTEXTO_SETUP",
+            [
+                direccion,
+                familia,
+                tipo_setup,
+                subtipo_setup,
+                mercado,
+            ],
+        )
+
+    if firma_pa:
+        _agregar_clave(
+            claves,
+            vistos,
+            "CONTEXTO_PA",
+            [direccion, familia, firma_pa, mercado],
+        )
+
+    # ========================================================
+    # MEMORIA ESTRUCTURAL GENERAL + ESPECIALIZACION POR ACTIVO
+    # ========================================================
     _agregar_clave(claves, vistos, "FAMILIA", [familia])
     _agregar_clave(
         claves, vistos, "FAMILIA_DIRECCION", [familia, direccion]
@@ -1037,12 +1357,22 @@ def _claves_jerarquicas(senal):
 def _clave(senal):
     """
     Mantiene compatibilidad con código externo que espere una sola clave.
-    Devuelve la clave específica jerárquica.
+
+    C-D1: devuelve primero la clave técnica transferible. La antigua
+    CLAVE_ESPECIFICA por activo sigue existiendo dentro de la memoria,
+    pero deja de representar la identidad principal de una señal.
     """
 
-    for item in _claves_jerarquicas(senal):
-        if item["nivel"] == "CLAVE_ESPECIFICA":
-            return item["clave"]
+    claves = _claves_jerarquicas(senal)
+
+    for nivel_objetivo in (
+        "CONTEXTO_TECNICO",
+        "FAMILIA_DIRECCION",
+        "CLAVE_ESPECIFICA",
+    ):
+        for item in claves:
+            if item["nivel"] == nivel_objetivo:
+                return item["clave"]
 
     return _clave_legacy(senal)
 
@@ -2574,6 +2904,9 @@ def probar_motor_aprendizaje():
     claves = _claves_jerarquicas(senal)
     niveles = {item["nivel"] for item in claves}
 
+    assert "CONTEXTO_TECNICO" in niveles
+    assert "CONTEXTO_SETUP" in niveles
+    assert "CONTEXTO_PA" in niveles
     assert "FAMILIA" in niveles
     assert "PA" in niveles
     assert "PA_MERCADO" in niveles
