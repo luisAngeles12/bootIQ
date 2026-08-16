@@ -7,6 +7,9 @@ from config import (
     FUERZA_MAXIMA_VELA_NORMAL,
     SEGUNDO_MAXIMO_VELA_CORRIDA
 )
+from motor_protocolos import (
+    evaluar_protocolo_live_sombra,
+)
 from utils import segundo_actual
 from confirmacion_entrada import evaluar_confirmacion_entrada
 from motor_decision import evaluar_decision_post_protocolo
@@ -21,7 +24,90 @@ from motor_decision import evaluar_decision_post_protocolo
 #
 # True:
 # - restaura temporalmente el comportamiento anterior.
+
 ENTRADA_CEREBRO_INTERMEDIO_OPERATIVO = False
+
+
+def registrar_paridad_protocolo_live(
+    senal,
+    resultado_live,
+    razon_live="",
+):
+    """
+    Compara la decisión técnica final del flujo LIVE actual
+    contra motor_protocolos.py ejecutado en sombra.
+
+    No cambia ninguna decisión.
+    Solo registra COINCIDE / CONFLICTO / SIN_COMPARAR.
+    """
+
+    estado_sombra = str(
+        senal.get(
+            "protocolo_live_sombra_estado",
+            "SIN_DATOS",
+        )
+        or "SIN_DATOS"
+    ).upper().strip()
+
+    resultado_live = str(
+        resultado_live
+        or "SIN_DATOS"
+    ).upper().strip()
+
+    razon_live = str(
+        razon_live
+        or ""
+    ).strip()
+
+    if estado_sombra in [
+        "SIN_DATOS",
+        "SENAL_NO_ENCONTRADA",
+        "ERROR",
+    ]:
+        estado_paridad = "SIN_COMPARAR"
+
+    else:
+        sombra_entraria = (
+            estado_sombra == "CONFIRMADA"
+        )
+
+        live_entraria = (
+            resultado_live == "ENTRAR"
+        )
+
+        if sombra_entraria == live_entraria:
+            estado_paridad = "COINCIDE"
+        else:
+            estado_paridad = "CONFLICTO"
+
+    senal["paridad_live_estado"] = estado_paridad
+    senal["paridad_live_resultado_actual"] = resultado_live
+    senal["paridad_live_razon_actual"] = razon_live
+    senal["paridad_live_estado_sombra"] = estado_sombra
+    senal["paridad_live_motivo_sombra"] = senal.get(
+        "protocolo_live_sombra_motivo",
+        "",
+    )
+
+    print(
+        "PARIDAD BACKTEST-LIVE:",
+        senal.get("activo", ""),
+        "|",
+        estado_paridad,
+        "| sombra:",
+        estado_sombra,
+        "| live:",
+        resultado_live,
+        "| motivo sombra:",
+        senal.get(
+            "protocolo_live_sombra_motivo",
+            "",
+        ),
+        "| motivo live:",
+        razon_live,
+    )
+
+    return estado_paridad
 
 def _bool(v, default=False):
     if isinstance(v, bool):
@@ -55,7 +141,7 @@ def es_pullback_bajista_fuerte(senal):
 
 def validar_vela_exacta_entrada(activo, direccion):
     try:
-        candles = estado.Iq.get_candles(activo, CANDLE_TIME, 5, time.time())
+        candles = estado.Iq.get_candles(activo, CANDLE_TIME, 8, time.time())
 
         if not candles or len(candles) < 4:
             return False, "velas insuficientes"
@@ -385,7 +471,7 @@ def esperar_mejor_entrada(senal):
             candles = estado.Iq.get_candles(
                 activo,
                 CANDLE_TIME,
-                5,
+                8,
                 time.time()
             )
 
@@ -467,9 +553,47 @@ def guardar_senal_pendiente(senal, motivo_pendiente="ENTRADA_NORMAL"):
             return False
 
     senal_pendiente = senal.copy()
+    
     senal_pendiente["hora_detectada"] = time.time()
-    senal_pendiente["vela_detectada"] = int(time.time() // CANDLE_TIME)
-    senal_pendiente["motivo_pendiente"] = motivo_pendiente
+    
+    # ============================================================
+    # PASO 5.5A — ANCLAR LA PENDIENTE A LA VELA REAL DE SEÑAL
+    # ============================================================
+    
+    vela_senal_from = senal_pendiente.get(
+        "vela_senal_from"
+    )
+    
+    try:
+        vela_senal_from = int(
+            float(vela_senal_from)
+        )
+    except (TypeError, ValueError):
+        vela_senal_from = 0
+    
+    if vela_senal_from > 0:
+        senal_pendiente["vela_detectada"] = int(
+            vela_senal_from // CANDLE_TIME
+        )
+    
+        senal_pendiente[
+            "vela_detectada_fuente"
+        ] = "VELA_SENAL_EXACTA"
+    
+    else:
+        # Compatibilidad defensiva.
+        # No debería utilizarse en señales nuevas después de 5.5A.
+        senal_pendiente["vela_detectada"] = int(
+            time.time() // CANDLE_TIME
+        )
+    
+        senal_pendiente[
+            "vela_detectada_fuente"
+        ] = "FALLBACK_TIME"
+    
+    senal_pendiente[
+        "motivo_pendiente"
+    ] = motivo_pendiente
 
     estado.senales_pendientes.append(senal_pendiente)
 
@@ -479,7 +603,22 @@ def guardar_senal_pendiente(senal, motivo_pendiente="ENTRADA_NORMAL"):
         senal["direccion"],
         senal["patron"],
         "| motivo:",
-        motivo_pendiente
+        motivo_pendiente,
+        "| vela_from:",
+        senal_pendiente.get(
+            "vela_senal_from",
+            0
+        ),
+        "| bucket:",
+        senal_pendiente.get(
+            "vela_detectada",
+            -1
+        ),
+        "| fuente:",
+        senal_pendiente.get(
+            "vela_detectada_fuente",
+            "SIN_DATOS"
+        ),
     )
 
     return True
@@ -737,16 +876,48 @@ def procesar_senales_pendientes(abrir_operacion):
             tipo_ruptura = str(senal.get("tipo_ruptura", "SIN_DATOS")).lower()
             ruptura_confirmada = senal.get("ruptura_confirmada", False)
             motivo_pendiente = senal.get("motivo_pendiente", "ENTRADA_NORMAL")
+            requiere_protocolo_cerebro = _bool(
+                senal.get(
+                    "requiere_protocolo_cerebro",
+                    False,
+                )
+            )
             pullback_bajista_fuerte = es_pullback_bajista_fuerte(senal)
 
-            # El protocolo puede cancelar una señal, pero nunca cambiar
-            # la decisión ni la dirección definida por el Cerebro Único.
-            if motivo_pendiente == "CANCELAR_PROTOCOLO_RIESGO_CRITICO":
+            # ========================================================
+            # PASO 5.4A — VETO LEGACY SIN AUTORIDAD SOBRE EL CEREBRO
+            # ========================================================
+            if (
+                motivo_pendiente
+                == "CANCELAR_PROTOCOLO_RIESGO_CRITICO"
+                and not requiere_protocolo_cerebro
+            ):
+                senal[
+                    "entrada_auditoria_veto_setup_bypass_cerebro"
+                ] = False
+
                 print(
-                    "SEÑAL PENDIENTE CANCELADA POR RIESGO CRÍTICO DE SETUP:",
+                    "SEÑAL PENDIENTE CANCELADA POR "
+                    "RIESGO CRÍTICO DE SETUP:",
                     activo,
                 )
                 continue
+
+            if (
+                motivo_pendiente
+                == "CANCELAR_PROTOCOLO_RIESGO_CRITICO"
+                and requiere_protocolo_cerebro
+            ):
+                senal[
+                    "entrada_auditoria_veto_setup_bypass_cerebro"
+                ] = True
+
+                print(
+                    "VETO LEGACY DE RIESGO OMITIDO "
+                    "POR AUTORIDAD DEL CEREBRO:",
+                    activo,
+                    "| señal continúa a motor_protocolos.py",
+                )
 
             pendiente_por_ruptura = motivo_pendiente in [
                 "ESPERANDO_RUPTURA_RESISTENCIA",
@@ -764,32 +935,478 @@ def procesar_senales_pendientes(abrir_operacion):
                 restantes.append(senal)
                 continue
 
-            max_velas_pendiente = 3 if pendiente_por_ruptura else 2
+            # ========================================================
+            # EXPIRACIÓN LEGACY
+            # ========================================================
+            #
+            # Las señales controladas por motor_protocolos.py
+            # NO pueden expirar por una ventana inventada aquí.
+            #
+            # Su ventana temporal pertenece al protocolo.
+            # ========================================================
 
-            if vela_actual - senal["vela_detectada"] > max_velas_pendiente:
-                print("SEÑAL PENDIENTE EXPIRADA:", activo)
-                continue
+            if not requiere_protocolo_cerebro:
+                max_velas_pendiente = (
+                    3
+                    if pendiente_por_ruptura
+                    else 2
+                )
+
+                if (
+                    vela_actual
+                    - senal["vela_detectada"]
+                    > max_velas_pendiente
+                ):
+                    print(
+                        "SEÑAL PENDIENTE EXPIRADA:",
+                        activo
+                    )
+                    continue
 
             if segundo < VENTANA_ENTRADA_INICIO:
                 restantes.append(senal)
                 continue
 
             if segundo > VENTANA_ENTRADA_FIN:
-                print("SEÑAL PENDIENTE CANCELADA POR TIEMPO:", activo)
-                continue
+                if requiere_protocolo_cerebro:
+                    # No destruir la señal.
+                    # Esperamos la próxima ventana de evaluación.
+                    restantes.append(senal)
+                    continue
 
+                print(
+                    "SEÑAL PENDIENTE CANCELADA POR TIEMPO:",
+                    activo
+                )
+                continue
+            # ========================================================
+            # PASO 5.5C — SOLO VELAS CERRADAS PARA EL PROTOCOLO
+            # ========================================================
+            
+            ahora_protocolo = time.time()
+            
             candles = estado.Iq.get_candles(
                 activo,
                 CANDLE_TIME,
-                5,
-                time.time()
+                8,
+                ahora_protocolo,
             )
-
+            
             if not candles or len(candles) < 4:
                 restantes.append(senal)
                 continue
+            
+            candles = sorted(
+                candles,
+                key=lambda x: x["from"]
+            )
+            
+            # --------------------------------------------------------
+            # IMPORTANTE:
+            #
+            # IQ puede devolver como última vela la vela que está
+            # formándose en este mismo instante.
+            #
+            # BACKTEST trabaja con velas históricas ya cerradas.
+            #
+            # Por paridad, motor_protocolos.py solo puede recibir
+            # velas cuyo periodo ya terminó.
+            # --------------------------------------------------------
+            
+            bucket_actual = int(
+                ahora_protocolo // CANDLE_TIME
+            )
+            
+            candles_protocolo = []
+            
+            for vela in candles:
+                try:
+                    bucket_vela = int(
+                        float(vela["from"])
+                        // CANDLE_TIME
+                    )
+                except Exception:
+                    continue
+            
+                if bucket_vela < bucket_actual:
+                    candles_protocolo.append(
+                        vela
+                    )
+            
+            if len(candles_protocolo) < 4:
+                restantes.append(senal)
+                continue
+            
+            senal[
+                "auditoria_5_5c_solo_velas_cerradas"
+            ] = True
+            
+            senal[
+                "auditoria_5_5c_bucket_actual"
+            ] = bucket_actual
+            
+            senal[
+                "auditoria_5_5c_ultima_vela_cerrada_from"
+            ] = int(
+                float(
+                    candles_protocolo[-1]["from"]
+                )
+            )
+            
+            # ========================================================
+            # PASO 5 — PARIDAD BACKTEST ↔ LIVE (SOLO SOMBRA)
+            # ========================================================
+            # NO abre operaciones, NO cancela señales y NO sustituye
+            # todavía la lógica LIVE existente. Solo registra qué
+            # habría decidido motor_protocolos.py con las velas
+            # disponibles en este instante.
+            # ========================================================
+            try:
+                print(
+                    "PARIDAD VELAS 5.5C:",
+                    activo,
+                    "| vela actual bucket:",
+                    bucket_actual,
+                    "| ultima cerrada from:",
+                    senal.get(
+                        "auditoria_5_5c_ultima_vela_cerrada_from"
+                    ),
+                    "| velas IQ:",
+                    len(candles),
+                    "| velas cerradas:",
+                    len(candles_protocolo),
+                )
+                protocolo_live = evaluar_protocolo_live_sombra(
+                    candles_protocolo,
+                    senal,
+                    CANDLE_TIME,
+                )
 
-            candles = sorted(candles, key=lambda x: x["from"])
+                senal["protocolo_live_sombra_estado"] = (
+                    protocolo_live.get("estado", "SIN_DATOS")
+                )
+                senal["protocolo_live_sombra_motivo"] = (
+                    protocolo_live.get("motivo", "")
+                )
+                senal["protocolo_live_sombra_espera"] = (
+                    protocolo_live.get("espera_velas", -1)
+                )
+                senal["protocolo_live_sombra_tipo"] = (
+                    protocolo_live.get("protocolo", "")
+                )
+                senal["protocolo_live_sombra_idx_entrada"] = (
+                    protocolo_live.get("idx_entrada", None)
+                )
+                # ============================================================
+                # PASO 5.5B — VELA EXACTA DE CONFIRMACIÓN DEL PROTOCOLO
+                # ============================================================
+                
+                idx_entrada_live = senal.get(
+                    "protocolo_live_sombra_idx_entrada"
+                )
+                
+                senal["protocolo_live_vela_entrada_from"] = None
+                senal["protocolo_live_vela_entrada_open"] = None
+                senal["protocolo_live_vela_entrada_close"] = None
+                senal["protocolo_live_vela_entrada_high"] = None
+                senal["protocolo_live_vela_entrada_low"] = None
+                senal["protocolo_live_espera_timestamp"] = -1
+                
+                if (
+                    isinstance(idx_entrada_live, int)
+                    and 0 <= idx_entrada_live < len(
+                        candles_protocolo
+                    )
+                ):
+                    vela_entrada_live = (
+                        candles_protocolo[
+                            idx_entrada_live
+                        ]
+                    )
+                
+                    try:
+                        vela_entrada_from = int(
+                            float(
+                                vela_entrada_live["from"]
+                            )
+                        )
+                
+                        senal[
+                            "protocolo_live_vela_entrada_from"
+                        ] = vela_entrada_from
+                
+                        senal[
+                            "protocolo_live_vela_entrada_open"
+                        ] = float(
+                            vela_entrada_live["open"]
+                        )
+                
+                        senal[
+                            "protocolo_live_vela_entrada_close"
+                        ] = float(
+                            vela_entrada_live["close"]
+                        )
+                
+                        senal[
+                            "protocolo_live_vela_entrada_high"
+                        ] = float(
+                            vela_entrada_live["max"]
+                        )
+                
+                        senal[
+                            "protocolo_live_vela_entrada_low"
+                        ] = float(
+                            vela_entrada_live["min"]
+                        )
+                
+                        vela_senal_from = int(
+                            float(
+                                senal.get(
+                                    "vela_senal_from",
+                                    0,
+                                )
+                                or 0
+                            )
+                        )
+                
+                        if vela_senal_from > 0:
+                            senal[
+                                "protocolo_live_espera_timestamp"
+                            ] = int(
+                                (
+                                    vela_entrada_from
+                                    - vela_senal_from
+                                )
+                                // CANDLE_TIME
+                            )
+                
+                    except Exception as e:
+                        print(
+                            "ERROR AUDITORIA 5.5B:",
+                            activo,
+                            e,
+                        )
+                print(
+                    "PROTOCOLO LIVE SOMBRA:",
+                    activo,
+                    "| estado:",
+                    senal["protocolo_live_sombra_estado"],
+                    "| protocolo:",
+                    senal["protocolo_live_sombra_tipo"],
+                    "| espera motor:",
+                    senal["protocolo_live_sombra_espera"],
+                    "| idx entrada:",
+                    senal["protocolo_live_sombra_idx_entrada"],
+                    "| vela señal from:",
+                    senal.get(
+                        "vela_senal_from",
+                        0,
+                    ),
+                    "| vela entrada from:",
+                    senal.get(
+                        "protocolo_live_vela_entrada_from"
+                    ),
+                    "| espera timestamp:",
+                    senal.get(
+                        "protocolo_live_espera_timestamp",
+                        -1,
+                    ),
+                    "| motivo:",
+                    senal["protocolo_live_sombra_motivo"],
+                )
+
+            except Exception as e:
+                # La auditoría sombra nunca puede romper el flujo LIVE.
+                senal["protocolo_live_sombra_estado"] = "ERROR"
+                senal["protocolo_live_sombra_motivo"] = str(e)
+                senal["protocolo_live_sombra_espera"] = -1
+                senal["protocolo_live_sombra_tipo"] = ""
+                senal["protocolo_live_sombra_idx_entrada"] = None
+                senal["protocolo_live_vela_entrada_from"] = None
+                senal["protocolo_live_vela_entrada_open"] = None
+                senal["protocolo_live_vela_entrada_close"] = None
+                senal["protocolo_live_vela_entrada_high"] = None
+                senal["protocolo_live_vela_entrada_low"] = None
+                senal["protocolo_live_espera_timestamp"] = -1
+                print(
+                    "ERROR PROTOCOLO LIVE SOMBRA:",
+                    activo,
+                    e,
+                )
+
+            # ========================================================
+            # PASO 5.4B — AUTORIDAD OPERATIVA DEL PROTOCOLO
+            # ========================================================
+            # Solo aplica a señales que el Cerebro clasificó como
+            # OPERAR_CON_PROTOCOLO.
+            #
+            # motor_protocolos.py decide.
+            # entrada.py ejecuta.
+            # ========================================================
+            if requiere_protocolo_cerebro:
+                estado_protocolo = str(
+                    senal.get(
+                        "protocolo_live_sombra_estado",
+                        "SIN_DATOS",
+                    )
+                    or "SIN_DATOS"
+                ).upper().strip()
+
+                motivo_protocolo = str(
+                    senal.get(
+                        "protocolo_live_sombra_motivo",
+                        "",
+                    )
+                    or ""
+                )
+
+                if estado_protocolo in [
+                    "SIN_DATOS",
+                    "SENAL_NO_ENCONTRADA",
+                    "ERROR",
+                ]:
+                    registrar_paridad_protocolo_live(
+                        senal,
+                        "SIN_DATOS",
+                        motivo_protocolo,
+                    )
+                    restantes.append(senal)
+                    continue
+
+                if estado_protocolo == "ESPERAR":
+                    registrar_paridad_protocolo_live(
+                        senal,
+                        "ESPERAR",
+                        motivo_protocolo,
+                    )
+                    restantes.append(senal)
+                    continue
+
+                if estado_protocolo == "CANCELADA":
+                    registrar_paridad_protocolo_live(
+                        senal,
+                        "NO_OPERAR",
+                        motivo_protocolo,
+                    )
+                    print(
+                        "SEÑAL CANCELADA POR PROTOCOLO:",
+                        activo,
+                        "|",
+                        motivo_protocolo,
+                    )
+                    continue
+
+                if estado_protocolo == "CONFIRMACION_PASADA":
+                    registrar_paridad_protocolo_live(
+                        senal,
+                        "NO_OPERAR",
+                        motivo_protocolo,
+                    )
+                    print(
+                        "SEÑAL DESCARTADA — CONFIRMACIÓN YA PASÓ:",
+                        activo,
+                        "|",
+                        motivo_protocolo,
+                    )
+                    continue
+
+                if estado_protocolo == "CONFIRMADA":
+                    senal["protocolo_confirmado"] = True
+                    senal["entrada_confirmada"] = True
+                    senal[
+                        "motivo_confirmacion_protocolo_live"
+                    ] = motivo_protocolo
+                    senal[
+                        "tipo_protocolo_live"
+                    ] = senal.get(
+                        "protocolo_live_sombra_tipo",
+                        "",
+                    )
+
+                    decision_post = evaluar_decision_post_protocolo(
+                        senal
+                    )
+
+                    senal["decision_post_protocolo"] = decision_post.get(
+                        "decision_post_protocolo",
+                        "SIN_DATOS",
+                    )
+                    senal["autoriza_post_protocolo"] = decision_post.get(
+                        "autoriza_post_protocolo",
+                        True,
+                    )
+                    senal["probabilidad_post_protocolo"] = decision_post.get(
+                        "probabilidad_post_protocolo",
+                        0,
+                    )
+                    senal[
+                        "intervalo_post_protocolo_inferior"
+                    ] = decision_post.get(
+                        "intervalo_post_protocolo_inferior",
+                        0,
+                    )
+                    senal[
+                        "intervalo_post_protocolo_superior"
+                    ] = decision_post.get(
+                        "intervalo_post_protocolo_superior",
+                        0,
+                    )
+                    senal["muestra_post_protocolo"] = decision_post.get(
+                        "muestra_post_protocolo",
+                        0,
+                    )
+                    senal[
+                        "confiabilidad_post_protocolo"
+                    ] = decision_post.get(
+                        "confiabilidad_post_protocolo",
+                        "SIN_DATOS",
+                    )
+                    senal[
+                        "fuente_post_protocolo_principal"
+                    ] = decision_post.get(
+                        "fuente_post_protocolo_principal"
+                    )
+                    senal[
+                        "fuente_post_protocolo_respaldo"
+                    ] = decision_post.get(
+                        "fuente_post_protocolo_respaldo"
+                    )
+
+                    print(
+                        "PROTOCOLO AUTORIZÓ ENTRADA:",
+                        activo,
+                        "| protocolo:",
+                        senal.get(
+                            "protocolo_live_sombra_tipo",
+                            "",
+                        ),
+                        "| espera:",
+                        senal.get(
+                            "protocolo_live_sombra_espera",
+                            -1,
+                        ),
+                        "| motivo:",
+                        motivo_protocolo,
+                    )
+
+                    registrar_paridad_protocolo_live(
+                        senal,
+                        "ENTRAR",
+                        motivo_protocolo,
+                    )
+
+                    if abrir_operacion(senal):
+                        abiertas += 1
+
+                    continue
+
+                print(
+                    "ESTADO DE PROTOCOLO DESCONOCIDO:",
+                    activo,
+                    estado_protocolo,
+                )
+                restantes.append(senal)
+                continue
 
             # =========================
             # RESOLVER PENDIENTE POR ZONA
@@ -1035,6 +1652,11 @@ def procesar_senales_pendientes(abrir_operacion):
                 )
 
                 if not confirmacion_fuerte:
+                    registrar_paridad_protocolo_live(
+                        senal,
+                        "BLOQUEAR",
+                        "zona contraria cerca sin ruptura/retest real",
+                    )
                     print(
                         "SEÑAL PENDIENTE BLOQUEADA:",
                         activo,
@@ -1049,6 +1671,11 @@ def procesar_senales_pendientes(abrir_operacion):
                         activo
                     )
                 else:
+                    registrar_paridad_protocolo_live(
+                        senal,
+                        "BLOQUEAR",
+                        "continuación sana no válida contra zona cercana",
+                    )
                     print(
                         "SEÑAL PENDIENTE BLOQUEADA:",
                         activo,
@@ -1084,6 +1711,11 @@ def procesar_senales_pendientes(abrir_operacion):
                         )
 
                     else:
+                        registrar_paridad_protocolo_live(
+                            senal,
+                            "BLOQUEAR",
+                            razon_vela,
+                        )
                         print("SEÑAL PENDIENTE BLOQUEADA:", activo, razon_vela)
                         continue
 
@@ -1101,6 +1733,11 @@ def procesar_senales_pendientes(abrir_operacion):
                 )
             
                 if not ok_micro:
+                    registrar_paridad_protocolo_live(
+                        senal,
+                        "BLOQUEAR",
+                        razon_micro,
+                    )
                     print(
                         "SEÑAL PENDIENTE BLOQUEADA POR MICRO:",
                         activo,
@@ -1224,6 +1861,12 @@ def procesar_senales_pendientes(abrir_operacion):
                 )
             
             # Todavía no bloqueamos en C-C2.
+            registrar_paridad_protocolo_live(
+                senal,
+                "ENTRAR",
+                "flujo LIVE actual confirmó la entrada",
+            )
+
             if abrir_operacion(senal):
                 abiertas += 1
             

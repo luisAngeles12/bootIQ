@@ -940,6 +940,370 @@ def _registrar_auditoria_protocolo(
     )
 
     return idx_entrada, motivo
+def _max_espera_protocolo_live(senal):
+    """
+    Devuelve el máximo de velas REALES que un protocolo
+    puede esperar antes de considerar terminada su ventana.
+
+    No cambia ninguna regla de entrada.
+    Solo permite distinguir en LIVE:
+
+        ESPERAR
+        vs
+        CANCELADA
+    """
+
+    protocolo_sugerido = _txt(
+        senal.get("protocolo_sugerido")
+    )
+
+    subtipo = _txt(
+        senal.get("subtipo_setup")
+    )
+
+    accion = _txt(
+        senal.get("accion_confirmacion_ia")
+    )
+
+    # Ruptura resistencia/soporte:
+    # ESPERAR_2 → hasta +2
+    # ESPERAR_3 → hasta +3
+    if (
+        protocolo_sugerido
+        == "protocolo_ruptura_resistencia"
+    ):
+        if accion == "esperar_3":
+            return 3
+
+        return 2
+
+    protocolo = _tipo_protocolo(
+        senal
+    )
+
+    # SWEEP respeta la ventana de motor_confirmacion.
+    if protocolo == "SWEEP":
+        if accion == "esperar_3":
+            return 3
+
+        return 2
+
+    # CHOCH tiene ventanas propias.
+    if protocolo == "CHOCH":
+        if subtipo == "choch_con_pa_a_favor":
+            return 4
+
+        if subtipo == "choch_tendencia_debil":
+            return 5
+
+        return 5
+
+    # Pullback puede buscar hasta +5.
+    if protocolo == "PULLBACK":
+        return 5
+
+    # Reacción de zona.
+    if protocolo == "REACCION_ZONA":
+        if subtipo == "zona_rechazo_confirmado":
+            if accion == "esperar_3":
+                return 3
+
+            return 2
+
+        return 3
+
+    # Continuación y genérico buscan hasta +3.
+    if protocolo == "CONTINUACION":
+        return 3
+
+    return 3
+def evaluar_protocolo_live_sombra(
+    velas,
+    senal,
+    candle_time,
+):
+    """
+    Evalúa en SOMBRA qué habría hecho motor_protocolos.py
+    usando únicamente las velas disponibles hasta ahora.
+
+    NO abre operaciones.
+    NO cambia la decisión del Cerebro.
+    NO modifica los protocolos existentes.
+
+    Reutiliza buscar_entrada_confirmada(), la misma autoridad
+    utilizada por el backtest.
+
+    Retorna:
+        CONFIRMADA
+        ESPERAR
+        CONFIRMACION_PASADA
+        SENAL_NO_ENCONTRADA
+        SIN_DATOS
+    """
+
+    if not isinstance(senal, dict):
+        return {
+            "estado": "SIN_DATOS",
+            "idx_entrada": None,
+            "motivo": "senal_invalida",
+            "espera_velas": -1,
+        }
+
+    if not isinstance(velas, list) or len(velas) < 4:
+        return {
+            "estado": "SIN_DATOS",
+            "idx_entrada": None,
+            "motivo": "velas_insuficientes",
+            "espera_velas": -1,
+        }
+
+    try:
+        candle_time = int(candle_time)
+    except (TypeError, ValueError):
+        return {
+            "estado": "SIN_DATOS",
+            "idx_entrada": None,
+            "motivo": "candle_time_invalido",
+            "espera_velas": -1,
+        }
+
+    if candle_time <= 0:
+        return {
+            "estado": "SIN_DATOS",
+            "idx_entrada": None,
+            "motivo": "candle_time_invalido",
+            "espera_velas": -1,
+        }
+
+    velas_ordenadas = sorted(
+        velas,
+        key=lambda v: v["from"],
+    )
+
+    vela_detectada = senal.get(
+        "vela_detectada"
+    )
+
+    if vela_detectada is None:
+        return {
+            "estado": "SIN_DATOS",
+            "idx_entrada": None,
+            "motivo": "senal_sin_vela_detectada",
+            "espera_velas": -1,
+        }
+
+    try:
+        vela_detectada = int(
+            vela_detectada
+        )
+    except (TypeError, ValueError):
+        return {
+            "estado": "SIN_DATOS",
+            "idx_entrada": None,
+            "motivo": "vela_detectada_invalida",
+            "espera_velas": -1,
+        }
+
+    # ========================================================
+    # LOCALIZAR LA VELA DONDE NACIÓ LA SEÑAL
+    # ========================================================
+
+    idx_senal = None
+
+    for i, vela in enumerate(
+        velas_ordenadas
+    ):
+        try:
+            bucket = int(
+                float(vela["from"])
+                // candle_time
+            )
+        except Exception:
+            continue
+
+        if bucket == vela_detectada:
+            idx_senal = i
+            break
+
+    if idx_senal is None:
+        return {
+            "estado": "SENAL_NO_ENCONTRADA",
+            "idx_entrada": None,
+            "motivo": (
+                "la ventana de velas LIVE no contiene "
+                "la vela donde nació la señal"
+            ),
+            "espera_velas": -1,
+        }
+
+    ultimo_idx_real = (
+        len(velas_ordenadas) - 1
+    )
+
+    # ========================================================
+    # VELAS CENTINELA LIVE
+    # ========================================================
+    #
+    # buscar_entrada_confirmada() fue diseñado para backtest
+    # y necesita margen de velas posteriores para evaluar
+    # correctamente la señal.
+    #
+    # En LIVE esas velas futuras todavía no existen.
+    #
+    # Añadimos DOS velas neutrales:
+    # - permiten evaluar la última vela REAL disponible;
+    # - evitan CANCELADA_SIN_VELAS_FUTURAS artificial;
+    # - no pueden confirmar una entrada por sí mismas;
+    # - no introducen información futura real.
+    # ========================================================
+
+    ultima = velas_ordenadas[-1]
+
+    close_ultima = float(
+        ultima["close"]
+    )
+
+    centinela_1 = {
+        "from": (
+            float(ultima["from"])
+            + candle_time
+        ),
+        "open": close_ultima,
+        "close": close_ultima,
+        "max": close_ultima,
+        "min": close_ultima,
+    }
+
+    centinela_2 = {
+        "from": (
+            float(ultima["from"])
+            + (candle_time * 2)
+        ),
+        "open": close_ultima,
+        "close": close_ultima,
+        "max": close_ultima,
+        "min": close_ultima,
+    }
+
+    velas_motor = (
+        list(velas_ordenadas)
+        + [
+            centinela_1,
+            centinela_2,
+        ]
+    )
+
+    # Copia porque motor_protocolos añade campos
+    # de auditoría a la señal.
+    senal_motor = dict(senal)
+
+    idx_entrada, motivo = (
+        buscar_entrada_confirmada(
+            velas_motor,
+            idx_senal,
+            senal_motor,
+        )
+    )
+
+    # ========================================================
+    # NO ENCONTRÓ CONFIRMACIÓN TODAVÍA
+    # ========================================================
+
+    if idx_entrada is None:
+        espera_actual = (
+            ultimo_idx_real
+            - idx_senal
+        )
+
+        max_espera = (
+            _max_espera_protocolo_live(
+                senal_motor
+            )
+        )
+
+        # La ventana técnica del protocolo ya terminó
+        # y nunca apareció una confirmación válida.
+        if espera_actual >= max_espera:
+            return {
+                "estado": "CANCELADA",
+                "idx_entrada": None,
+                "motivo": motivo,
+                "espera_velas": espera_actual,
+                "max_espera_velas": max_espera,
+                "protocolo": senal_motor.get(
+                    "auditoria_protocolo_tipo",
+                    "",
+                ),
+            }
+
+        # Todavía quedan velas dentro de la ventana
+        # donde el mismo protocolo podría confirmar.
+        return {
+            "estado": "ESPERAR",
+            "idx_entrada": None,
+            "motivo": motivo,
+            "espera_velas": espera_actual,
+            "max_espera_velas": max_espera,
+            "protocolo": senal_motor.get(
+                "auditoria_protocolo_tipo",
+                "",
+            ),
+        }
+    espera = (
+        idx_entrada
+        - idx_senal
+    )
+
+    # ========================================================
+    # CONFIRMACIÓN EN LA VELA ACTUAL
+    # ========================================================
+
+    if idx_entrada == ultimo_idx_real:
+        return {
+            "estado": "CONFIRMADA",
+            "idx_entrada": idx_entrada,
+            "motivo": motivo,
+            "espera_velas": espera,
+            "protocolo": senal_motor.get(
+                "auditoria_protocolo_tipo",
+                "",
+            ),
+        }
+
+    # ========================================================
+    # LA CONFIRMACIÓN OCURRIÓ ANTES
+    # ========================================================
+    #
+    # Muy importante:
+    # LIVE NO debe entrar tarde simplemente porque al volver
+    # a mirar el histórico descubre una confirmación vieja.
+    # ========================================================
+
+    if idx_entrada < ultimo_idx_real:
+        return {
+            "estado": "CONFIRMACION_PASADA",
+            "idx_entrada": idx_entrada,
+            "motivo": motivo,
+            "espera_velas": espera,
+            "protocolo": senal_motor.get(
+                "auditoria_protocolo_tipo",
+                "",
+            ),
+        }
+
+    return {
+        "estado": "ESPERAR",
+        "idx_entrada": None,
+        "motivo": motivo,
+        "espera_velas": (
+            ultimo_idx_real
+            - idx_senal
+        ),
+        "protocolo": senal_motor.get(
+            "auditoria_protocolo_tipo",
+            "",
+        ),
+    }
 def buscar_entrada_confirmada(velas, idx, senal):
     """
     Orquestador de protocolos.

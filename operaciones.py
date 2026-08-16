@@ -33,7 +33,31 @@ def normalizar_resultado(resultado):
 
     except Exception:
         return None
+# ============================================================
+# PASO 5.5C — AUDITORÍA DE LA ORDEN REAL DEVUELTA POR IQ
+# ============================================================
 
+def obtener_auditoria_orden_async(
+    order_id,
+    timeout=1.2,
+):
+    inicio = time.time()
+
+    while time.time() - inicio < timeout:
+        try:
+            datos = estado.Iq.get_async_order(
+                int(order_id)
+            )
+
+            if datos is not None:
+                return datos
+
+        except Exception:
+            pass
+
+        time.sleep(0.05)
+
+    return None
 
 def abrir_operacion(senal):
     # ==========================================
@@ -137,14 +161,89 @@ def abrir_operacion(senal):
             return False
 
         if not check:
-            print("Operación rechazada:", activo, tipo)
-            estado.cooldown_activos[activo] = time.time()
+            print(
+                "Operación rechazada:",
+                activo,
+                tipo
+            )
+            estado.cooldown_activos[
+                activo
+            ] = time.time()
             return False
-
-        order_id = str(order_id)
-        segundo_despues = segundo_actual()
-        demora_envio = round(time.time() - tiempo_antes, 3)
         
+        
+        # ============================================================
+        # PASO 5.5C — INSTANTE REAL DE RESPUESTA DE IQ
+        # ============================================================
+        
+        segundo_despues = segundo_actual()
+        tiempo_despues = time.time()
+        
+        demora_envio = round(
+            tiempo_despues - tiempo_antes,
+            3
+        )
+        
+        order_id_original = order_id
+        
+        # Consultar los datos que IQ asocia realmente
+        # a esta operación. Solo diagnóstico.
+        orden_async_5_5c = None
+        
+        if tipo in ["turbo", "binary"]:
+            orden_async_5_5c = (
+                obtener_auditoria_orden_async(
+                    order_id_original,
+                    timeout=1.2,
+                )
+            )
+        
+        order_id = str(order_id_original)
+
+        # ============================================================
+        # PASO 5.5C — MOSTRAR ESTRUCTURA REAL DE LA ORDEN
+        # ============================================================
+        
+        if orden_async_5_5c is None:
+            print(
+                "AUDITORIA 5.5C ORDEN IQ:",
+                activo,
+                "| order_id:",
+                order_id,
+                "| datos: NO_DISPONIBLES",
+            )
+        
+        else:
+            print(
+                "AUDITORIA 5.5C ORDEN IQ:",
+                activo,
+                "| order_id:",
+                order_id,
+                "| tipo dato:",
+                type(
+                    orden_async_5_5c
+                ).__name__,
+            )
+        
+            if isinstance(
+                orden_async_5_5c,
+                dict,
+            ):
+                print(
+                    "AUDITORIA 5.5C CLAVES IQ:",
+                    activo,
+                    "|",
+                    list(
+                        orden_async_5_5c.keys()
+                    ),
+                )
+        
+            print(
+                "AUDITORIA 5.5C DATOS IQ:",
+                activo,
+                "|",
+                orden_async_5_5c,
+            )
         if segundo_despues > 38:
             print(
                 "ADVERTENCIA: operación enviada tarde:",
@@ -170,6 +269,35 @@ def abrir_operacion(senal):
             "balance_antes": balance_antes,
             "segundo_entrada": segundo_despues,
             "demora_envio": demora_envio,
+            # ==========================================
+            # PASO 5.5C — PARIDAD DE EJECUCIÓN
+            # ==========================================
+            
+            "tiempo_envio_inicio": tiempo_antes,
+            "tiempo_respuesta_iq": tiempo_despues,
+            
+            "segundo_antes": segundo_antes,
+            "segundo_entrada": segundo_despues,
+            
+            "vela_confirmacion_from": senal.get(
+                "protocolo_live_vela_entrada_from"
+            ),
+            
+            "precio_confirmacion_close": senal.get(
+                "protocolo_live_vela_entrada_close"
+            ),
+            
+            "precio_confirmacion_open": senal.get(
+                "protocolo_live_vela_entrada_open"
+            ),
+            
+            "precio_confirmacion_high": senal.get(
+                "protocolo_live_vela_entrada_high"
+            ),
+            
+            "precio_confirmacion_low": senal.get(
+                "protocolo_live_vela_entrada_low"
+            ),
         }
         
         estado.operaciones_abiertas.append(op)
@@ -205,7 +333,24 @@ def abrir_operacion(senal):
             "segundo_entrada": segundo_despues,
             "demora_envio": demora_envio,
         })
-
+        print(
+            "AUDITORIA EJECUCION 5.5C:",
+            activo,
+            "| vela confirmacion:",
+            senal.get(
+                "protocolo_live_vela_entrada_from"
+            ),
+            "| close confirmacion:",
+            senal.get(
+                "protocolo_live_vela_entrada_close"
+            ),
+            "| segundo antes:",
+            segundo_antes,
+            "| segundo despues:",
+            segundo_despues,
+            "| demora:",
+            demora_envio,
+        )
         print("OPERACIÓN ABIERTA:", activo, tipo, direccion)
         print("ID:", order_id)
         print("Operaciones abiertas:", len(estado.operaciones_abiertas))

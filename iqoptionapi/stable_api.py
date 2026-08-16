@@ -33,6 +33,7 @@ class IQ_Option:
         self.password = password
         self.suspend = 0.5
         self.thread = None
+
         self.subscribe_candle = []
         self.subscribe_candle_all_size = []
         self.subscribe_mood = []
@@ -79,78 +80,114 @@ class IQ_Option:
         self.SESSION_COOKIE = cookie
 
     def connect(self, sms_code=None):
+        """
+        Conecta/reconecta la sesión IQ Option.
+
+        Mantiene el comportamiento original de la librería,
+        pero evita esperas infinitas si balance_id no llega.
+        """
         try:
             self.api.close()
-        except:
+        except Exception:
             pass
-            # logging.error('**warning** self.api.close() fail')
 
         self.api = IQOptionAPI(
-            "iqoption.com", self.email, self.password)
+            "iqoption.com",
+            self.email,
+            self.password
+        )
+
         check = None
 
-        # 2FA--
+        # 2FA
         if sms_code is not None:
             self.api.setTokenSMS(self.resp_sms)
             status, reason = self.api.connect2fa(sms_code)
+
             if not status:
                 return status, reason
-        # 2FA--
 
-        self.api.set_session(headers=self.SESSION_HEADER,
-                             cookies=self.SESSION_COOKIE)
+        self.api.set_session(
+            headers=self.SESSION_HEADER,
+            cookies=self.SESSION_COOKIE
+        )
 
-        check, reason = self.api.connect()
+        try:
+            check, reason = self.api.connect()
+        except Exception as e:
+            return False, str(e)
 
-        if check == True:
-            # -------------reconnect subscribe_candle
-            self.re_subscribe_stream()
+        if check is True:
 
-            # ---------for async get name: "position-changed", microserviceName
-            while global_value.balance_id == None:
+            # Restaurar streams previamente suscritos.
+            try:
+                self.re_subscribe_stream()
+            except Exception:
                 pass
 
-            self.position_change_all(
-                "subscribeMessage", global_value.balance_id)
+            # Esperar balance_id, pero nunca indefinidamente.
+            inicio_balance = time.time()
 
-            self.order_changed_all("subscribeMessage")
-            self.api.setOptions(1, True)
+            while global_value.balance_id is None:
+                if time.time() - inicio_balance >= 15:
+                    logging.error(
+                        "**error** connect timeout esperando balance_id"
+                    )
+                    return False, "TIMEOUT_BALANCE_ID"
 
-            """
-            self.api.subscribe_position_changed(
-                "position-changed", "multi-option", 2)
+                if not self.check_connect():
+                    return False, "WEBSOCKET_CLOSED_WAITING_BALANCE_ID"
 
-            self.api.subscribe_position_changed(
-                "trading-fx-option.position-changed", "fx-option", 3)
+                time.sleep(0.05)
 
-            self.api.subscribe_position_changed(
-                "position-changed", "crypto", 4)
+            try:
+                self.position_change_all(
+                    "subscribeMessage",
+                    global_value.balance_id
+                )
 
-            self.api.subscribe_position_changed(
-                "position-changed", "forex", 5)
+                self.order_changed_all(
+                    "subscribeMessage"
+                )
 
-            self.api.subscribe_position_changed(
-                "digital-options.position-changed", "digital-option", 6)
+                self.api.setOptions(
+                    1,
+                    True
+                )
 
-            self.api.subscribe_position_changed(
-                "position-changed", "cfd", 7)
-            """
+            except Exception as e:
+                logging.error(
+                    "**error** connect subscriptions: %s",
+                    e
+                )
 
-            # self.get_balance_id()
+                if not self.check_connect():
+                    return False, str(e)
+
             return True, None
-        else:
-            if json.loads(reason)['code'] == 'verify':
-                response = self.api.send_sms_code(json.loads(reason)['token'])
 
-                if response.json()['code'] != 'success':
-                    return False, response.json()['message']
+        # Mantener flujo 2FA original.
+        try:
+            reason_json = json.loads(reason)
 
-                # token_sms
+            if reason_json.get("code") == "verify":
+                response = self.api.send_sms_code(
+                    reason_json["token"]
+                )
+
+                if response.json()["code"] != "success":
+                    return (
+                        False,
+                        response.json()["message"]
+                    )
+
                 self.resp_sms = response
                 return False, "2FA"
-            return False, reason
 
-    # self.update_ACTIVES_OPCODE()
+        except Exception:
+            pass
+
+        return False, reason
 
     def connect_2fa(self, sms_code):
         return self.connect(sms_code=sms_code)
@@ -266,22 +303,58 @@ class IQ_Option:
                 pass
 
     def get_all_init_v2(self):
+        """
+        Obtiene binary/turbo open-time sin iniciar una
+        reconexión interna.
+
+        La autoridad de reconexión pertenece a
+        BootIQ/conexion.py.
+        """
         self.api.api_option_init_all_result_v2 = None
 
-        if self.check_connect() == False:
-            self.connect()
-
-        self.api.get_api_option_init_all_v2()
-        start_t = time.time()
-        while self.api.api_option_init_all_result_v2 == None:
-            if time.time() - start_t >= 30:
-                logging.error('**warning** get_all_init_v2 late 30 sec')
+        try:
+            if not self.check_connect():
+                logging.error(
+                    "**error** get_all_init_v2 websocket disconnected"
+                )
                 return None
+
+        except Exception:
+            return None
+
+        try:
+            self.api.get_api_option_init_all_v2()
+
+        except Exception as e:
+            logging.error(
+                "**error** get_all_init_v2 request failed: %s",
+                e
+            )
+            return None
+
+        inicio = time.time()
+
+        while self.api.api_option_init_all_result_v2 is None:
+
+            try:
+                if not self.check_connect():
+                    logging.error(
+                        "**error** get_all_init_v2 connection lost"
+                    )
+                    return None
+
+            except Exception:
+                return None
+
+            if time.time() - inicio >= 15:
+                logging.error(
+                    "**warning** get_all_init_v2 timeout 15 sec"
+                )
+                return None
+
+            time.sleep(0.01)
+
         return self.api.api_option_init_all_result_v2
-
-        # return OP_code.ACTIVES
-
-    # ------- chek if binary/digit/cfd/stock... if open or not
 
     def __get_binary_open(self):
         # for turbo and binary pairs
@@ -353,31 +426,28 @@ class IQ_Option:
                         self.OPEN_TIME[instruments_type][name]["open"] = True
 
     def get_all_open_time(self):
-        # Solo buscar mercados que usa BootIQ:
-        # binary, turbo y digital.
-        # Evitamos cfd/forex/crypto porque pueden congelar la API.
+        """
+        BootIQ opera actualmente solo TURBO/BINARY.
+    
+        No consultamos DIGITAL porque:
+        - BootIQ no lo utiliza;
+        - puede tardar demasiado;
+        - puede dejar un hilo trabajando sobre un websocket
+          que ya se está reconectando.
+        """
+    
         self.OPEN_TIME = nested_dict(3, dict)
     
-        binary = threading.Thread(target=self.__get_binary_open)
-        digital = threading.Thread(target=self.__get_digital_open)
+        try:
+            self.__get_binary_open()
     
-        binary.daemon = True
-        digital.daemon = True
-    
-        binary.start()
-        digital.start()
-    
-        binary.join(timeout=15)
-        digital.join(timeout=15)
-    
-        if binary.is_alive():
-            print("WARNING: binary/turbo open_time tardó demasiado")
-    
-        if digital.is_alive():
-            print("WARNING: digital open_time tardó demasiado")
+        except Exception as e:
+            logging.error(
+                "**error** binary/turbo open_time: %s",
+                e
+            )
     
         return self.OPEN_TIME
-
     # --------for binary option detail
 
     def get_binary_option_detail(self):
@@ -459,17 +529,82 @@ class IQ_Option:
         return self.api.profile.balance"""
 
     def get_balance(self):
+        """
+        Devuelve el balance de la cuenta activa.
 
+        Si no puede obtenerse, genera una excepción para
+        que la capa superior active la reconexión.
+        """
         balances_raw = self.get_balances()
-        for balance in balances_raw["msg"]:
-            if balance["id"] == global_value.balance_id:
-                return balance["amount"]
 
-    def get_balances(self):
+        if not isinstance(balances_raw, dict):
+            raise RuntimeError(
+                "Respuesta inválida de get_balances"
+            )
+
+        balances = balances_raw.get("msg", [])
+
+        for balance in balances:
+            if balance.get("id") == global_value.balance_id:
+                return balance.get("amount")
+
+        raise RuntimeError(
+            "No se encontró el balance activo de IQ Option"
+        )
+
+    def get_balances(self, timeout=10):
+        """
+        Obtiene balances con timeout.
+
+        No reconecta internamente. Si el websocket cae,
+        lanza ConnectionError para que bot.py use
+        reconectar_iq().
+        """
+        try:
+            if not self.check_connect():
+                raise ConnectionError(
+                    "IQ websocket desconectado antes de get_balances"
+                )
+        except ConnectionError:
+            raise
+        except Exception as e:
+            raise ConnectionError(
+                "No se pudo validar conexión en get_balances"
+            ) from e
+
         self.api.balances_raw = None
-        self.api.get_balances()
-        while self.api.balances_raw == None:
-            pass
+
+        try:
+            self.api.get_balances()
+
+        except Exception as e:
+            raise ConnectionError(
+                "Falló solicitud get_balances"
+            ) from e
+
+        inicio = time.time()
+
+        while self.api.balances_raw is None:
+
+            try:
+                if not self.check_connect():
+                    raise ConnectionError(
+                        "IQ websocket se perdió esperando balances"
+                    )
+            except ConnectionError:
+                raise
+            except Exception as e:
+                raise ConnectionError(
+                    "Error validando conexión mientras esperaba balances"
+                ) from e
+
+            if time.time() - inicio >= timeout:
+                raise TimeoutError(
+                    f"get_balances timeout {timeout} sec"
+                )
+
+            time.sleep(0.01)
+
         return self.api.balances_raw
 
     def get_balance_mode(self):
@@ -547,29 +682,126 @@ class IQ_Option:
     # ________________________self.api.getcandles() wss________________________
 
     def get_candles(self, ACTIVES, interval, count, endtime):
+        """
+        Versión compatible con el comportamiento original de
+        iqoptionapi.
+
+        - Hace una sola solicitud de velas.
+        - Espera la respuesta del websocket.
+        - No ejecuta self.connect() internamente.
+        - Si el websocket cae, devuelve None.
+        - Tiene un límite de seguridad de 30 segundos para
+          evitar una espera infinita.
+
+        La reconexión sigue perteneciendo a conexion.py.
+        """
+
+        if ACTIVES not in OP_code.ACTIVES:
+            print(
+                "Asset {} not found on consts".format(
+                    ACTIVES
+                )
+            )
+            return None
+
+        try:
+            if not self.check_connect():
+                logging.error(
+                    "**error** get_candles websocket disconnected"
+                )
+                return None
+        except Exception:
+            return None
+
         self.api.candles.candles_data = None
-        while True:
+
+        try:
+            self.api.getcandles(
+                OP_code.ACTIVES[ACTIVES],
+                interval,
+                count,
+                endtime
+            )
+        except Exception as e:
+            logging.error(
+                "**error** get_candles request failed | "
+                "activo: %s | error: %s",
+                ACTIVES,
+                e
+            )
+            return None
+
+        inicio = time.time()
+
+        while self.api.candles.candles_data is None:
+
             try:
-                if ACTIVES not in OP_code.ACTIVES:
-                    print('Asset {} not found on consts'.format(ACTIVES))
-                    break
-                self.api.getcandles(
-                    OP_code.ACTIVES[ACTIVES], interval, count, endtime)
-                while self.check_connect and self.api.candles.candles_data == None:
-                    pass
-                if self.api.candles.candles_data != None:
-                    break
-            except:
-                logging.error('**error** get_candles need reconnect')
-                self.connect()
+                if not self.check_connect():
+                    logging.error(
+                        "**error** get_candles connection lost | "
+                        "activo: %s",
+                        ACTIVES
+                    )
+                    return None
+            except Exception:
+                return None
 
-        return self.api.candles.candles_data
+            if time.time() - inicio >= 12:
+                logging.warning(
+                    "**warning** get_candles sin respuesta 12 sec "
+                    "| activo: %s",
+                    ACTIVES
+                )
+                return None
 
-    #######################################################
-    # ______________________________________________________
-    # _____________________REAL TIME CANDLE_________________
-    # ______________________________________________________
-    #######################################################
+            time.sleep(0.01)
+
+        # ============================================================
+        # PASO 5.5 — VALIDAR RESPUESTA DE VELAS
+        # ============================================================
+        
+        datos_candles = self.api.candles.candles_data
+        
+        if not isinstance(datos_candles, list):
+            logging.warning(
+                "**warning** get_candles respuesta invalida "
+                "| activo: %s | tipo: %s",
+                ACTIVES,
+                type(datos_candles).__name__,
+            )
+            return None
+        
+        
+        try:
+            count_esperado = int(count)
+        except (TypeError, ValueError):
+            count_esperado = 0
+        
+        
+        # IQ nunca debería devolver MÁS velas
+        # que las solicitadas.
+        #
+        # Si pedimos 8 y aparecen 1000,
+        # descartamos la respuesta en lugar de
+        # permitir que contamine estrategia/protocolo.
+        if (
+            count_esperado > 0
+            and len(datos_candles) > count_esperado
+        ):
+            logging.warning(
+                "**warning** get_candles respuesta contaminada "
+                "| activo: %s "
+                "| solicitado: %s "
+                "| recibido: %s",
+                ACTIVES,
+                count_esperado,
+                len(datos_candles),
+            )
+        
+            return None
+        
+        
+        return datos_candles
 
     def start_candles_stream(self, ACTIVE, size, maxdict):
 

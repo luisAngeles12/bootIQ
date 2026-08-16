@@ -1,10 +1,11 @@
 import time
 import sys
+import threading
 from iqoptionapi.stable_api import IQ_Option
 
 import estado
 from config import EMAIL, PASSWORD, MODO_CUENTA
-
+_lock_reconexion = threading.Lock()
 
 def actualizar_activos_opcode():
     try:
@@ -62,27 +63,99 @@ def conectar():
     return True
 
 
-def reconectar_iq():
-    try:
-        print("Reconectando IQ Option...", flush=True)
+def reconectar_iq(intentos=3):
+    """
+    Punto único de reconexión controlada de BootIQ.
 
+    Solo devuelve True cuando la conexión quedó
+    realmente restablecida.
+    """
+
+    with _lock_reconexion:
+
+        # Tal vez otra parte ya reconectó mientras
+        # esperábamos el lock.
         try:
-            estado.Iq.connect()
+            if (
+                estado.Iq is not None
+                and estado.Iq.check_connect()
+            ):
+                return True
         except Exception:
             pass
 
-        time.sleep(2)
+        if estado.Iq is None:
+            print(
+                "No existe instancia IQ para reconectar.",
+                flush=True
+            )
+            return False
 
-        try:
-            estado.Iq.change_balance(MODO_CUENTA)
-        except Exception:
-            pass
+        print(
+            "Conexión IQ perdida. "
+            "Iniciando reconexión controlada...",
+            flush=True
+        )
 
-        # No actualizar OPCODE en reconexión.
-        actualizar_activos_opcode()
+        for intento in range(1, intentos + 1):
 
-        return True
+            try:
+                print(
+                    f"Reconexión IQ {intento}/{intentos}...",
+                    flush=True
+                )
 
-    except Exception as e:
-        print("No se pudo reconectar:", e, flush=True)
+                check, reason = estado.Iq.connect()
+
+                try:
+                    conectado = (
+                        bool(check)
+                        and estado.Iq.check_connect()
+                    )
+                except Exception:
+                    conectado = False
+
+                if conectado:
+
+                    try:
+                        estado.Iq.change_balance(
+                            MODO_CUENTA
+                        )
+                    except Exception as e:
+                        print(
+                            "Reconectado, pero no se pudo "
+                            "restaurar la cuenta:",
+                            e,
+                            flush=True
+                        )
+
+                    print(
+                        "IQ Option reconectado correctamente.",
+                        flush=True
+                    )
+
+                    # NO actualizar OPCODE aquí.
+                    # Ya tenemos los códigos cargados.
+                    return True
+
+                print(
+                    "Reconexión no confirmada:",
+                    reason,
+                    flush=True
+                )
+
+            except Exception as e:
+                print(
+                    "Error durante reconexión IQ:",
+                    e,
+                    flush=True
+                )
+
+            time.sleep(2)
+
+        print(
+            "IQ Option continúa desconectado.",
+            flush=True
+        )
+
         return False

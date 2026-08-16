@@ -51,7 +51,12 @@ def leer_contexto_grafico(activo):
     closes = data["close"]
     highs = data["high"]
     lows = data["low"]
-
+    froms = data.get("from", [])
+    
+    if len(froms) != len(closes):
+        return None
+    
+    vela_senal_from = int(froms[-1])
     if len(closes) < 130:
         return None
 
@@ -259,6 +264,11 @@ def leer_contexto_grafico(activo):
     razon_accion_precio_put = diagnostico_pa_put.get("razon", "")
     return {
         "activo": activo,
+        
+        # PASO 5.5A
+        "froms": froms,
+        "vela_senal_from": vela_senal_from,
+        
         "opens": opens,
         "closes": closes,
         "highs": highs,
@@ -1273,6 +1283,28 @@ def evaluar_senal_candidata(activo, ctx, senal):
     
     senal["precio_zona"] = precio_zona
     senal["vol"] = ctx["vol"]
+    # ============================================================
+    # PASO 5.5A — IDENTIDAD EXACTA DE LA VELA DE SEÑAL
+    # ============================================================
+    
+    senal["vela_senal_from"] = int(
+        ctx.get("vela_senal_from", 0) or 0
+    )
+    
+    # OHLC exacto de la vela que originó la señal.
+    # Solo diagnóstico de paridad; no modifica ninguna decisión.
+    senal["vela_senal_open"] = float(
+        ctx.get("ultima_open", 0) or 0
+    )
+    senal["vela_senal_close"] = float(
+        ctx.get("ultima_close", 0) or 0
+    )
+    senal["vela_senal_high"] = float(
+        ctx.get("ultima_high", 0) or 0
+    )
+    senal["vela_senal_low"] = float(
+        ctx.get("ultima_low", 0) or 0
+    )
     senal["tipo_setup"] = senal.get("tipo_setup", "INDEFINIDO")
     senal["calidad_setup"] = senal.get("calidad_setup", "MEDIA")
     senal["modo_entrada_setup"] = senal.get("modo_entrada_setup", "DIRECTA")
