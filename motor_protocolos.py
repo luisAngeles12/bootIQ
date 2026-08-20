@@ -536,6 +536,7 @@ def _protocolo_choch(velas, idx, senal):
             return j, "PROTOCOLO_CHOCH_PULLBACK_CON_IMPULSO_ESPERA_2"
 
     return None, "CANCELADA_CHOCH_SIN_RUPTURA_REAL"
+
 def _protocolo_pullback(velas, idx, senal):
     """
     Protocolo específico para pullbacks.

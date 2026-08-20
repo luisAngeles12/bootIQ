@@ -32,9 +32,8 @@ from motor_aprendizaje_historico import (
 from motor_candidatos import ordenar_candidatas_v3
 from motor_decision import evaluar_decision_post_protocolo
 
-
-CARPETA_DATA = "data_backtest"
-SALIDA = "backtest_bot_real_resultados.csv"
+CARPETA_DATA = "data_backtest_oos"
+SALIDA = "backtest_bootiq_oos_t22_c9_resultados.csv"
 
 MAX_ACTIVOS_ANALIZAR = 20
 MAX_SENALES_POR_RONDA = 20
@@ -57,10 +56,9 @@ MODO_BACKTEST = MODO_BACKTEST_FILTRADO
 
 MODO_EXPERIMENTO_AUDITORIA_TRAIN = "AUDITORIA_TRAIN"
 MODO_EXPERIMENTO_VALIDACION = "VALIDACION"
+MODO_EXPERIMENTO_OUT_OF_SAMPLE = "OUT_OF_SAMPLE"
 
-# Durante esta fase, cambiar únicamente esta línea.
-MODO_EXPERIMENTO = MODO_EXPERIMENTO_VALIDACION
-
+MODO_EXPERIMENTO = MODO_EXPERIMENTO_OUT_OF_SAMPLE
 TOTAL_DATASETS_EXPERIMENTO = 16
 TOTAL_DATASETS_TRAIN = 12
 TOTAL_DATASETS_VALIDACION = 4
@@ -71,9 +69,11 @@ ACTUALIZAR_APRENDIZAJE = False
 # C-C2 — ACTUALIZACIÓN EXCLUSIVA POST-PROTOCOLO
 # ============================================================
 
-ACTUALIZAR_APRENDIZAJE_PROTOCOLO = (
-    MODO_EXPERIMENTO == MODO_EXPERIMENTO_AUDITORIA_TRAIN
-)
+ACTUALIZAR_APRENDIZAJE_PROTOCOLO = False
+
+if MODO_EXPERIMENTO == MODO_EXPERIMENTO_OUT_OF_SAMPLE:
+    ACTUALIZAR_APRENDIZAJE = False
+    ACTUALIZAR_APRENDIZAJE_PROTOCOLO = False
 
 DATASETS_USADOS_BACKTEST = 0
 AUDITORIA_DATASETS = {
@@ -404,6 +404,55 @@ def dividir_datasets_experimento(datasets_seleccionados):
 
 
 def seleccionar_datasets_experimento(datasets_seleccionados):
+    # ========================================================
+    # PASO 6 — OUT OF SAMPLE
+    # ========================================================
+
+    if (
+        MODO_EXPERIMENTO
+        == MODO_EXPERIMENTO_OUT_OF_SAMPLE
+    ):
+        usados = list(datasets_seleccionados)
+
+        if not usados:
+            raise RuntimeError(
+                "OUT_OF_SAMPLE no recibió datasets válidos."
+            )
+
+        print(
+            "\n===== CONFIGURACION OUT OF SAMPLE ====="
+        )
+        print(
+            "Modo:",
+            MODO_EXPERIMENTO
+        )
+        print(
+            "Datasets nuevos usados:",
+            len(usados)
+        )
+        print(
+            "Aprendizaje general:",
+            ACTUALIZAR_APRENDIZAJE
+        )
+        print(
+            "Aprendizaje protocolo:",
+            ACTUALIZAR_APRENDIZAJE_PROTOCOLO
+        )
+        print(
+            "========================================"
+        )
+
+        print(
+            "\nDATASETS OUT OF SAMPLE:"
+        )
+
+        for d in usados:
+            print(
+                " -",
+                d.get("activo", "")
+            )
+
+        return usados
     universo, train, validacion = dividir_datasets_experimento(
         datasets_seleccionados
     )
@@ -502,10 +551,20 @@ def analizar_activo_con_ventana(activo, ventana):
         "close": [v["close"] for v in ventana],
         "high": [v["max"] for v in ventana],
         "low": [v["min"] for v in ventana],
+
+        # PASO 5.5A
+        # Mantener identidad temporal exacta también en BACKTEST.
+        "from": [
+            int(v["from"])
+            for v in ventana
+        ],
     }
 
     original_obtener_velas = estrategia.obtener_velas
-    estrategia.obtener_velas = lambda activo_param: data
+
+    estrategia.obtener_velas = (
+        lambda activo_param: data
+    )
 
     try:
         senal = estrategia.analizar_activo(
@@ -513,10 +572,11 @@ def analizar_activo_con_ventana(activo, ventana):
             modo_backtest_diagnostico=True
         )
     finally:
-        estrategia.obtener_velas = original_obtener_velas
+        estrategia.obtener_velas = (
+            original_obtener_velas
+        )
 
     return senal
-
 
 def resultado_binario(velas, index_entrada, direccion):
     entrada = velas[index_entrada]["close"]

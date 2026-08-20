@@ -7,7 +7,7 @@ from conexion import conectar
 from config import CANDLE_TIME , CANDLE_NUMBER
 from mercado import obtener_activos
 
-CARPETA_DATA = "data_backtest"
+CARPETA_DATA = "data_backtest_oos"
 VELAS_POR_ACTIVO = CANDLE_NUMBER
 MIN_VELAS_VALIDAS = 200
 ESPERA_ENTRE_DESCARGAS = 0.35
