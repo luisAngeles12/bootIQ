@@ -4,7 +4,7 @@ import re
 import math
 from collections import defaultdict
 
-RUTA_APRENDIZAJE = "aprendizaje_historico_bootiq.csv"
+RUTA_APRENDIZAJE = "aprendizaje_historico_bootiq_C9_original.csv"
 
 # ============================================================
 # CONFIGURACIÓN OFICIAL DEL APRENDIZAJE JERÁRQUICO
@@ -223,276 +223,100 @@ def _grupo_nivel(nivel):
 
 def _seleccionar_fuente_principal(fuentes):
     """
-    Selecciona la fuente principal usando primero calidad estadística.
+    C-D1 — selecciona primero conocimiento transferible.
 
-    Principios:
-    - prioriza conocimiento transferible;
-    - la memoria ligada al activo solo puede ser principal si
-      no existe ninguna fuente transferible utilizable;
-    - una fuente específica no gana automáticamente solo por
-      pertenecer a un nivel más detallado;
-    - se favorece evidencia separada del prior, con menor
-      incertidumbre y muestra más confiable.
+    La memoria dependiente del activo se conserva, pero solo puede ser
+    principal cuando no existe ninguna fuente transferible utilizable.
+    De este modo el bot aprende comportamiento técnico, no nombres de activos.
     """
 
-    candidatas_transferibles = []
-    candidatas_activo = []
-
-    ranking_confiabilidad = {
-        "ALTA": 4,
-        "MEDIA": 3,
-        "BAJA": 2,
-        "MUY_BAJA": 1,
-        "INSUFICIENTE": 0,
+    candidatas_por_grupo = {
+        "ESPECIFICO": [],
+        "INTERMEDIO": [],
+        "GENERAL": [],
+        "ESPECIALIZACION_ACTIVO": [],
     }
 
     for fuente in fuentes or []:
-        total = _entero(
-            fuente.get("total"),
-            0,
-        )
+        total = _entero(fuente.get("total"), 0)
 
         if total < MIN_MUESTRA_APORTE:
             continue
 
-        nivel = _txt(
-            fuente.get("nivel")
-        )
+        nivel = _txt(fuente.get("nivel"))
+        grupo = _grupo_nivel(nivel)
+        prioridad = _prioridad_nivel(nivel)
+        factor = _factor_muestra(total)
+        confiabilidad = _confiabilidad_muestra(total)
 
-        grupo = _grupo_nivel(
-            nivel
-        )
-
-        prioridad = _prioridad_nivel(
-            nivel
-        )
-
-        factor = _factor_muestra(
-            total
-        )
-
-        confiabilidad = _confiabilidad_muestra(
-            total
-        )
-
-        # ====================================================
-        # MUESTRA MINIMA SEGUN TIPO DE MEMORIA
-        # ====================================================
-
+        # Las fuentes específicas transferibles y las ligadas al activo
+        # necesitan muestra confiable. Las intermedias/generales pueden
+        # empezar a aportar desde MIN_MUESTRA_APORTE.
         if grupo == "ESPECIFICO":
             muestra_minima_grupo = max(
                 MIN_MUESTRA_CONFIABLE,
                 20,
             )
-
         elif grupo == "ESPECIALIZACION_ACTIVO":
             muestra_minima_grupo = max(
                 MIN_MUESTRA_CONFIABLE,
                 20,
             )
-
         else:
-            muestra_minima_grupo = (
-                MIN_MUESTRA_APORTE
-            )
+            muestra_minima_grupo = MIN_MUESTRA_APORTE
 
         if total < muestra_minima_grupo:
             continue
 
-        # ====================================================
-        # ESTADISTICA DE LA FUENTE
-        # ====================================================
+        score_especificidad = prioridad * factor
+        score_muestra = math.log1p(total) * 1.5
 
-        wins = _entero(
-            fuente.get("wins"),
-            0,
+        bono_confiabilidad = {
+            "ALTA": 3.0,
+            "MEDIA": 2.0,
+            "BAJA": 1.0,
+            "MUY_BAJA": 0.0,
+            "INSUFICIENTE": -5.0,
+        }.get(confiabilidad, 0.0)
+
+        bono_grupo = {
+            "ESPECIFICO": 6.0,
+            "INTERMEDIO": 3.0,
+            "GENERAL": 0.0,
+            "ESPECIALIZACION_ACTIVO": -4.0,
+        }[grupo]
+
+        score = (
+            score_especificidad
+            + score_muestra
+            + bono_confiabilidad
+            + bono_grupo
         )
 
-        losses = _entero(
-            fuente.get("losses"),
-            0,
+        candidatas_por_grupo[grupo].append(
+            (score, total, prioridad, fuente)
         )
 
-        probabilidad_default = (
-            _probabilidad_suavizada(
-                wins,
-                losses,
-            )
-        )
+    # La especialización por activo queda deliberadamente al final.
+    for grupo in (
+        "ESPECIFICO",
+        "INTERMEDIO",
+        "GENERAL",
+        "ESPECIALIZACION_ACTIVO",
+    ):
+        candidatas = candidatas_por_grupo[grupo]
 
-        intervalo_default = (
-            _intervalo_probabilidad(
-                wins,
-                losses,
-            )
-        )
+        if not candidatas:
+            continue
 
-        probabilidad = _numero(
-            fuente.get(
-                "probabilidad_ajustada"
-            ),
-            probabilidad_default,
-        )
-
-        inferior = _numero(
-            fuente.get(
-                "intervalo_inferior"
-            ),
-            intervalo_default[0],
-        )
-
-        superior = _numero(
-            fuente.get(
-                "intervalo_superior"
-            ),
-            intervalo_default[1],
-        )
-
-        if inferior > superior:
-            inferior, superior = (
-                superior,
-                inferior,
-            )
-
-        ancho_intervalo = max(
-            0.0,
-            superior - inferior,
-        )
-
-        # ====================================================
-        # SEPARACION CONFIRMADA DEL PRIOR
-        # ====================================================
-        #
-        # Si TODO el intervalo está por encima del prior,
-        # existe evidencia favorable consistente.
-        #
-        # Si TODO el intervalo está por debajo del prior,
-        # existe evidencia desfavorable consistente.
-        #
-        # Si el prior cae dentro del intervalo, la separación
-        # confirmada es cero.
-        # ====================================================
-
-        if inferior > PRIOR_WINRATE:
-            separacion_confirmada = (
-                inferior - PRIOR_WINRATE
-            )
-
-        elif superior < PRIOR_WINRATE:
-            separacion_confirmada = (
-                PRIOR_WINRATE - superior
-            )
-
-        else:
-            separacion_confirmada = 0.0
-
-        # ====================================================
-        # FUERZA RELATIVA A LA INCERTIDUMBRE
-        # ====================================================
-        #
-        # No basta con alejarse del prior.
-        # También importa cuánto ruido/incertidumbre existe.
-        # ====================================================
-
-        distancia_prior = abs(
-            probabilidad - PRIOR_WINRATE
-        )
-
-        if ancho_intervalo > 0:
-            fuerza_relativa = (
-                distancia_prior
-                / ancho_intervalo
-            )
-        else:
-            fuerza_relativa = 0.0
-
-        rango_confiabilidad = (
-            ranking_confiabilidad.get(
-                confiabilidad,
-                0,
-            )
-        )
-
-        # ====================================================
-        # CRITERIO DE SELECCION
-        # ====================================================
-        #
-        # Se ordena de lo estadístico a lo estructural:
-        #
-        # 1. separación confirmada del prior;
-        # 2. efecto relativo a incertidumbre;
-        # 3. confiabilidad de muestra;
-        # 4. intervalo más estrecho;
-        # 5. autoridad progresiva de muestra;
-        # 6. prioridad estructural del nivel;
-        # 7. tamaño absoluto como desempate.
-        #
-        # De esta forma la especificidad deja de tener
-        # autoridad automática.
-        # ====================================================
-
-        criterio = (
-            round(
-                separacion_confirmada,
-                6,
-            ),
-            round(
-                fuerza_relativa,
-                6,
-            ),
-            rango_confiabilidad,
-            round(
-                -ancho_intervalo,
-                6,
-            ),
-            round(
-                factor,
-                6,
-            ),
-            prioridad,
-            total,
-        )
-
-        candidato = (
-            criterio,
-            fuente,
-        )
-
-        if grupo == "ESPECIALIZACION_ACTIVO":
-            candidatas_activo.append(
-                candidato
-            )
-        else:
-            candidatas_transferibles.append(
-                candidato
-            )
-
-    # ========================================================
-    # PRIMERO MEMORIA TRANSFERIBLE
-    # ========================================================
-
-    if candidatas_transferibles:
-        candidatas_transferibles.sort(
-            key=lambda item: item[0],
+        candidatas.sort(
+            key=lambda item: (item[0], item[1], item[2]),
             reverse=True,
         )
 
-        return candidatas_transferibles[0][1]
-
-    # ========================================================
-    # ACTIVO SOLO COMO ULTIMO RECURSO
-    # ========================================================
-
-    if candidatas_activo:
-        candidatas_activo.sort(
-            key=lambda item: item[0],
-            reverse=True,
-        )
-
-        return candidatas_activo[0][1]
+        return candidatas[0][3]
 
     return None
-
 def _seleccionar_fuente_respaldo(fuentes, principal):
     """
     Selecciona un respaldo transferible y más general que la principal.
@@ -663,10 +487,37 @@ def _token_evidencia_enriquecida(item):
     # ========================================================
     # FUERZA
     # ========================================================
-
+    
+    fuerza_evidencia = item.get("fuerza")
+    
+    modulo_evidencia = _txt(
+        item.get("modulo")
+        or item.get("fuente")
+    )
+    
+    categoria_evidencia = _txt(
+        item.get("categoria")
+    )
+    
+    # Price Action trabaja internamente con fuerza 0.0–1.0,
+    # mientras las bandas históricas trabajan en porcentaje 0–100.
+    # La conversión se hace solo para PA para no alterar las escalas
+    # utilizadas por mercado o estrategia.
+    if (
+        modulo_evidencia == "PRICE_ACTION"
+        or categoria_evidencia == "PRICE_ACTION"
+    ):
+        fuerza_pa = _numero(
+            fuerza_evidencia,
+            -1.0,
+        )
+    
+        if 0.0 <= fuerza_pa <= 1.0:
+            fuerza_evidencia = fuerza_pa * 100.0
+    
     banda_fuerza = (
         _banda_fuerza_evidencia(
-            item.get("fuerza")
+            fuerza_evidencia
         )
     )
 

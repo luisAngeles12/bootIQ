@@ -2,8 +2,8 @@
 # CONFIGURACIÓN GENERAL DEL BOT
 # ============================================================
 # Cambia estos valores por los tuyos.
-EMAIL = "luisangelestejada@gmail.com"
-PASSWORD = "R@putim120799" 
+from credenciales_local import EMAIL, PASSWORD
+
 
 MODO_CUENTA = "PRACTICE"  # PRACTICE o REAL
 TIPOS_MERCADO = ["turbo"]  # Tipos de mercado a operar
