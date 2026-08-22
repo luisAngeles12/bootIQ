@@ -1618,34 +1618,6 @@ def _buscar_fuentes_aprendizaje(senal, memoria):
             "intervalo_superior": intervalo_superior,
         })
 
-    # Compatibilidad con la memoria antigua.
-    if not fuentes:
-        clave_legacy = _clave_legacy(senal)
-        data_legacy = memoria.get(clave_legacy)
-
-        if data_legacy:
-            total = _entero(data_legacy.get("total"), 0)
-            wins = _entero(data_legacy.get("wins"), 0)
-            losses = _entero(data_legacy.get("losses"), 0)
-            winrate = _numero(data_legacy.get("winrate"), 0.0)
-            ajuste, decision = _calcular_ajuste(total, winrate)
-
-            if total >= MIN_MUESTRA_APORTE:
-                factor = _factor_muestra(total)
-                fuentes.append({
-                    "nivel": "LEGACY",
-                    "clave": clave_legacy,
-                    "total": total,
-                    "wins": wins,
-                    "losses": losses,
-                    "winrate": round(winrate, 2),
-                    "ajuste": ajuste,
-                    "decision": decision,
-                    "confiabilidad": _confiabilidad_muestra(total),
-                    "peso_nivel": 1.0,
-                    "factor_muestra": round(factor, 3),
-                    "peso_efectivo": round(factor, 3),
-                })
 
     return fuentes, descartadas
 

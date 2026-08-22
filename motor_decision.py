@@ -13,14 +13,33 @@ UMBRAL_CEREBRO_OPERAR = 62.0
 UMBRAL_CEREBRO_PROTOCOLO = 55.0
 
 # ============================================================
-# MODO SOMBRA ESTADÍSTICO BOOTIQ V3
+# DECISIÓN ESTADÍSTICA OFICIAL BOOTIQ V3
 # ============================================================
-# Estos umbrales NO autorizan operaciones. Solo clasifican la
-# probabilidad nueva para medirla en el backtest.
+#
+# Estos son los únicos umbrales estadísticos utilizados
+# por el Cerebro Único para autorizar o rechazar una señal.
+#
+# La palabra "sombra" queda únicamente como compatibilidad
+# temporal de auditorías y CSV antiguos.
+# ============================================================
+
+UMBRAL_PROBABILIDAD_OPERAR = 55.0
+UMBRAL_PROBABILIDAD_PROTOCOLO = 50.0
+MIN_MUESTRA_PROBABILIDAD = 12
+
+# Compatibilidad temporal con auditorías antiguas.
+# NO gobiernan la decisión oficial.
 MODO_SOMBRA_ESTADISTICO = True
-UMBRAL_PROBABILIDAD_SOMBRA_OPERAR = 55.0
-UMBRAL_PROBABILIDAD_SOMBRA_PROTOCOLO = 50.0
-MIN_MUESTRA_SOMBRA = 12
+
+UMBRAL_PROBABILIDAD_SOMBRA_OPERAR = (
+    UMBRAL_PROBABILIDAD_OPERAR
+)
+
+UMBRAL_PROBABILIDAD_SOMBRA_PROTOCOLO = (
+    UMBRAL_PROBABILIDAD_PROTOCOLO
+)
+
+MIN_MUESTRA_SOMBRA = MIN_MUESTRA_PROBABILIDAD
 
 # ============================================================
 # SEGURIDAD DE ENTRADA DIRECTA V3
@@ -521,7 +540,7 @@ def calcular_confianza_cerebro(
         "auditoria_confianza_legacy": auditoria_confianza,
     }
 
-def clasificar_decision_estadistica_sombra(
+def clasificar_decision_estadistica_oficial(
     probabilidad,
     intervalo_inferior,
     intervalo_superior,
@@ -530,15 +549,15 @@ def clasificar_decision_estadistica_sombra(
     fuente_principal=None,
 ):
     """
-    Clasifica la probabilidad histórica V3.
-
+    Clasifica la probabilidad histórica V3 para la decisión
+    oficial del Cerebro Único.
+    
     Esta función:
+    - decide estadísticamente si una señal puede continuar;
     - no ejecuta operaciones;
     - no ejecuta protocolos;
-    - no recalcula aprendizaje;
-    - conserva muestra y confiabilidad para que la capa
-      operativa pueda distinguir una autorización directa
-      sólida de una que todavía requiere protocolo.
+    - no modifica el aprendizaje;
+    - utiliza muestra y confiabilidad histórica.
     """
 
     probabilidad = _num(
@@ -618,21 +637,6 @@ def clasificar_decision_estadistica_sombra(
         ),
     }
 
-    # ========================================================
-    # SOMBRA DESACTIVADA
-    # ========================================================
-
-    if not MODO_SOMBRA_ESTADISTICO:
-        return {
-            "decision": "SOMBRA_DESACTIVADA",
-            "operar": False,
-            "requiere_protocolo": False,
-            "modo": "DIAGNOSTICO",
-            "motivo": (
-                "Modo sombra estadístico desactivado."
-            ),
-            **datos_estadisticos,
-        }
 
     # ========================================================
     # SIN FUENTE UTILIZABLE
@@ -657,7 +661,7 @@ def clasificar_decision_estadistica_sombra(
     # MUESTRA INSUFICIENTE
     # ========================================================
 
-    if muestra < MIN_MUESTRA_SOMBRA:
+    if muestra < MIN_MUESTRA_PROBABILIDAD:
         return {
             "decision": (
                 "NO_OPERAR_SOMBRA_"
@@ -670,7 +674,7 @@ def clasificar_decision_estadistica_sombra(
                 f"Probabilidad sombra "
                 f"{probabilidad:.2f}%, pero muestra "
                 f"{muestra} < "
-                f"{MIN_MUESTRA_SOMBRA}."
+                f"{MIN_MUESTRA_PROBABILIDAD}."
             ),
             **datos_estadisticos,
         }
@@ -681,7 +685,7 @@ def clasificar_decision_estadistica_sombra(
 
     if (
         probabilidad
-        >= UMBRAL_PROBABILIDAD_SOMBRA_OPERAR
+        >= UMBRAL_PROBABILIDAD_OPERAR
     ):
         decision = "OPERAR_SOMBRA"
         operar_sombra = True
@@ -689,7 +693,7 @@ def clasificar_decision_estadistica_sombra(
 
     elif (
         probabilidad
-        >= UMBRAL_PROBABILIDAD_SOMBRA_PROTOCOLO
+        >= UMBRAL_PROBABILIDAD_PROTOCOLO
     ):
         decision = (
             "OPERAR_CON_PROTOCOLO_SOMBRA"
@@ -862,7 +866,7 @@ def evaluar_aptitud_entrada_directa(evidencia):
         ],
     }
 def convertir_decision_v3_a_oficial(
-    resultado_decision_sombra,
+    resultado_decision_estadistica,
     evidencia=None,
 ):
     """
@@ -879,9 +883,9 @@ def convertir_decision_v3_a_oficial(
     """
 
     resultado = (
-        resultado_decision_sombra
+        resultado_decision_estadistica
         if isinstance(
-            resultado_decision_sombra,
+            resultado_decision_estadistica,
             dict,
         )
         else {}
@@ -893,7 +897,7 @@ def convertir_decision_v3_a_oficial(
         else {}
     )
 
-    decision_sombra = str(
+    decision_estadistica = str(
         resultado.get(
             "decision",
             "SIN_DATOS",
@@ -901,7 +905,7 @@ def convertir_decision_v3_a_oficial(
         or "SIN_DATOS"
     ).upper().strip()
 
-    motivo_sombra = str(
+    motivo_estadistico = str(
         resultado.get(
             "motivo",
             "",
@@ -947,7 +951,7 @@ def convertir_decision_v3_a_oficial(
     # V3 AUTORIZA OPERACIÓN
     # ========================================================
 
-    if decision_sombra == "OPERAR_SOMBRA":
+    if decision_estadistica == "OPERAR_SOMBRA":
 
         evidencia_directa_solida = (
             muestra
@@ -1002,7 +1006,7 @@ def convertir_decision_v3_a_oficial(
                 ),
 
                 "decision_sombra_origen": (
-                    decision_sombra
+                    decision_estadistica
                 ),
 
                 "nivel_probabilidad": nivel,
@@ -1021,7 +1025,7 @@ def convertir_decision_v3_a_oficial(
                     "V3 autorizó entrada directa "
                     "con evidencia estadística y "
                     "estructura técnica suficientes. "
-                    + motivo_sombra
+                    + motivo_estadistico
                 ).strip(),
             }
 
@@ -1067,7 +1071,7 @@ def convertir_decision_v3_a_oficial(
             ),
 
             "decision_sombra_origen": (
-                decision_sombra
+                decision_estadistica
             ),
 
             "nivel_probabilidad": nivel,
@@ -1092,7 +1096,7 @@ def convertir_decision_v3_a_oficial(
                 "V3 autorizó la señal, pero "
                 + razon_texto
                 + "; se exige protocolo. "
-                + motivo_sombra
+                + motivo_estadistico
             ).strip(),
         }
 
@@ -1101,7 +1105,7 @@ def convertir_decision_v3_a_oficial(
     # ========================================================
 
     if (
-        decision_sombra
+        decision_estadistica
         == "OPERAR_CON_PROTOCOLO_SOMBRA"
     ):
         return {
@@ -1120,7 +1124,7 @@ def convertir_decision_v3_a_oficial(
             ),
 
             "decision_sombra_origen": (
-                decision_sombra
+                decision_estadistica
             ),
 
             "nivel_probabilidad": nivel,
@@ -1138,7 +1142,7 @@ def convertir_decision_v3_a_oficial(
             "motivo": (
                 "V3 estadístico autorizó operación "
                 "condicionada a protocolo. "
-                + motivo_sombra
+                + motivo_estadistico
             ).strip(),
         }
 
@@ -1160,7 +1164,7 @@ def convertir_decision_v3_a_oficial(
         ),
 
         "decision_sombra_origen": (
-            decision_sombra
+            decision_estadistica
         ),
 
         "nivel_probabilidad": nivel,
@@ -1175,22 +1179,21 @@ def convertir_decision_v3_a_oficial(
 
         "motivo": (
             "V3 estadístico no autorizó operación. "
-            + motivo_sombra
+            + motivo_estadistico
         ).strip(),
     }
-def clasificar_decision_final(confianza, riesgo_nivel):
+def _clasificar_decision_legacy_auditoria(
+    confianza,
+    riesgo_nivel,
+):
     """
-    Traduce la confianza y el riesgo final a la decisión
-    operativa oficial del Cerebro Único.
+    Clasificador de la arquitectura LEGACY.
 
-    Esta es la única función que define:
-    - si se permite operar;
-    - si se requiere protocolo;
-    - el modo de ejecución;
-    - si existe bloqueo por riesgo.
+    Solo se ejecuta cuando:
+        AUDITORIA_LEGACY_ACTIVA = True
 
-    Los módulos externos solamente informan.
-    No ejecuta protocolos ni operaciones.
+    No participa en la decisión oficial BootIQ V3.
+    No autoriza operaciones en la ruta productiva actual.
     """
 
     confianza = _num(confianza, 0.0)
@@ -1284,26 +1287,28 @@ def construir_auditoria_separacion_v3(
     resultado_decision_sombra,
 ):
     """
-    Separa explícitamente los dos sistemas que hoy conviven en BootIQ V3.
-
-    SISTEMA LEGACY:
-    - motor_inferencia / motor_confianza;
-    - ajustes históricos legacy;
-    - Price Action manual;
-    - estrategia manual;
-    - ponderación manual;
-    - produce la confianza usada por la decisión oficial actual.
-
-    SISTEMA ESTADÍSTICO V3:
+    Auditoría de la arquitectura BootIQ V3.
+    
+    AUTORIDAD OFICIAL:
     - motor_aprendizaje_historico;
     - probabilidad estimada;
-    - muestra;
+    - muestra histórica;
     - confiabilidad;
     - fuente histórica principal;
-    - produce únicamente la decisión sombra.
-
-    Esta función NO cambia ninguna decisión.
-    Solo hace auditable la transición arquitectónica.
+    - clasificación estadística oficial;
+    - motor_decision.py produce la única decisión operativa.
+    
+    ARQUITECTURA LEGACY:
+    - motor_inferencia;
+    - motor_confianza;
+    - ponderación antigua;
+    - confianza legacy.
+    
+    Legacy puede conservarse temporalmente para auditoría,
+    pero no tiene autoridad para autorizar ni bloquear operaciones.
+    
+    Esta función no decide.
+    Solo verifica y documenta la separación arquitectónica.
     """
 
     resultado_confianza = (
@@ -1346,9 +1351,13 @@ def construir_auditoria_separacion_v3(
 
     return {
         "sistemas_separados": True,
-
-        "sistema_oficial_actual": "CONFIANZA_LEGACY",
-        "sistema_estadistico_v3": "PROBABILIDAD_HISTORICA_SOMBRA",
+        "sistema_oficial_actual": "PROBABILIDAD_HISTORICA_V3",
+        "sistema_estadistico_v3": "AUTORIDAD_OFICIAL",
+        "sistema_legacy": (
+            "AUDITORIA_ACTIVA"
+            if AUDITORIA_LEGACY_ACTIVA
+            else "DESACTIVADO"
+        ),
 
         "decision_oficial": decision_oficial,
         "operar_oficial": operar_oficial,
@@ -1546,7 +1555,7 @@ def _evaluar_legacy_opcional(
         50.0,
     )
 
-    resultado_decision = clasificar_decision_final(
+    resultado_decision = _clasificar_decision_legacy_auditoria(
         confianza=confianza,
         riesgo_nivel=riesgo_nivel,
     )
@@ -1820,6 +1829,20 @@ def evaluar_decision_cerebro_unico(evidencia):
         aprendizaje.get("probabilidad_estimada", 0.0),
         0.0,
     )
+    # ========================================================
+    # CONFIANZA OFICIAL V3
+    # ========================================================
+    # La decisión operativa oficial se basa en la probabilidad
+    # histórica V3. Por tanto, la confianza oficial debe
+    # representar esa misma probabilidad.
+    #
+    # La confianza legacy se conserva únicamente para auditoría.
+    # ========================================================
+    
+    confianza_oficial = round(
+        max(0.0, min(100.0, probabilidad_estimada)),
+        2,
+    )
     intervalo_probabilidad_inferior = _num(
         aprendizaje.get(
             "intervalo_probabilidad_inferior",
@@ -1849,22 +1872,24 @@ def evaluar_decision_cerebro_unico(evidencia):
     )
     modo_probabilidad = aprendizaje.get("modo_probabilidad", "SOMBRA")
 
-    resultado_decision_sombra = clasificar_decision_estadistica_sombra(
-        probabilidad=probabilidad_estimada,
-        intervalo_inferior=intervalo_probabilidad_inferior,
-        intervalo_superior=intervalo_probabilidad_superior,
-        muestra=muestra_probabilidad,
-        confiabilidad=confiabilidad_probabilidad,
-        fuente_principal=fuente_probabilidad_principal,
+    resultado_decision_estadistica = (
+        clasificar_decision_estadistica_oficial(
+            probabilidad=probabilidad_estimada,
+            intervalo_inferior=intervalo_probabilidad_inferior,
+            intervalo_superior=intervalo_probabilidad_superior,
+            muestra=muestra_probabilidad,
+            confiabilidad=confiabilidad_probabilidad,
+            fuente_principal=fuente_probabilidad_principal,
+        )
     )
 
     # ========================================================
     # DECISIÓN OFICIAL V3 — AUTORIDAD ESTADÍSTICA
     # ========================================================
     resultado_decision_oficial = convertir_decision_v3_a_oficial(
-        resultado_decision_sombra,
-        evidencia=evidencia,
-    )
+         resultado_decision_estadistica,
+         evidencia=evidencia,
+     )
 
     auditoria_separacion_v3 = construir_auditoria_separacion_v3(
         resultado_confianza=resultado_confianza_legacy,
@@ -1873,7 +1898,7 @@ def evaluar_decision_cerebro_unico(evidencia):
         muestra_probabilidad=muestra_probabilidad,
         confiabilidad_probabilidad=confiabilidad_probabilidad,
         fuente_probabilidad_principal=fuente_probabilidad_principal,
-        resultado_decision_sombra=resultado_decision_sombra,
+        resultado_decision_sombra=resultado_decision_estadistica,
     )
 
     decision = resultado_decision_oficial["decision"]
@@ -1953,9 +1978,18 @@ def evaluar_decision_cerebro_unico(evidencia):
     if motivo_decision:
         motivos.append(motivo_decision)
 
-    motivo_sombra = resultado_decision_sombra.get("motivo", "")
-    if motivo_sombra:
-        motivos.append("Sombra estadística: " + motivo_sombra)
+    motivo_estadistico = (
+        resultado_decision_estadistica.get(
+            "motivo",
+            "",
+        )
+    )
+    
+    if motivo_estadistico:
+        motivos.append(
+            "Decisión estadística: "
+            + motivo_estadistico
+        )
     # ========================================================
     # EVIDENCIAS OFICIALES UTILIZADAS POR EL CEREBRO
     # ========================================================
@@ -1978,7 +2012,7 @@ def evaluar_decision_cerebro_unico(evidencia):
         "riesgo_extremo_diagnostico": riesgo_extremo_diagnostico,
         "pa_evidencias": pa_evidencias,
         "mercado_evidencias": mercado_evidencias,
-        "confianza": confianza_legacy,
+        "confianza": confianza_oficial,
         "confianza_legacy": confianza_legacy,
         "confianza_base": confianza_base_legacy,
         "confianza_base_legacy": confianza_base_legacy,
@@ -2056,11 +2090,12 @@ def evaluar_decision_cerebro_unico(evidencia):
         "ponderacion_estadistica": ponderacion,
 
         # ==================================================
-        # FASE 1 V3 — SEPARACIÓN DE AUTORIDADES
+        # FASE 1 V3 — AUTORIDAD ÚNICA
         # ==================================================
-        # La decisión oficial continúa usando confianza legacy.
-        # La probabilidad histórica permanece sombra.
-        # Estos campos permiten medir ambos sistemas sin mezclarlos.
+        # La probabilidad histórica V3 alimenta la decisión oficial.
+        # La arquitectura legacy queda únicamente como auditoría
+        # opcional y no posee autoridad operativa.
+        # ==================================================
         "origen_decision_oficial": "PROBABILIDAD_HISTORICA_V3",
         "origen_decision_estadistica": "PROBABILIDAD_HISTORICA_V3",
         "origen_decision_legacy": (
@@ -2094,23 +2129,23 @@ def evaluar_decision_cerebro_unico(evidencia):
         "confiabilidad_probabilidad": confiabilidad_probabilidad,
         "fuente_probabilidad_principal": fuente_probabilidad_principal,
         "fuente_probabilidad_respaldo": fuente_probabilidad_respaldo,
-        "decision_estadistica_sombra": resultado_decision_sombra.get(
+        "decision_estadistica_sombra": resultado_decision_estadistica.get(
             "decision", "SIN_DATOS"
         ),
         "operar_estadistico_sombra": bool(
-            resultado_decision_sombra.get("operar", False)
+            resultado_decision_estadistica.get("operar", False)
         ),
         "requiere_protocolo_estadistico_sombra": bool(
-            resultado_decision_sombra.get("requiere_protocolo", False)
+            resultado_decision_estadistica.get("requiere_protocolo", False)
         ),
-        "nivel_probabilidad_principal": resultado_decision_sombra.get(
+        "nivel_probabilidad_principal": resultado_decision_estadistica.get(
             "nivel", ""
         ),
-        "clave_probabilidad_principal": resultado_decision_sombra.get(
+        "clave_probabilidad_principal": resultado_decision_estadistica.get(
             "clave", ""
         ),
-        "motivo_decision_estadistica_sombra": resultado_decision_sombra.get(
+        "motivo_decision_estadistica_sombra": resultado_decision_estadistica.get(
             "motivo", ""
         ),
-        "resultado_decision_estadistica_sombra": resultado_decision_sombra,
+        "resultado_decision_estadistica_sombra": resultado_decision_estadistica,
     }
