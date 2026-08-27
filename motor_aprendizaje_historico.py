@@ -3,8 +3,10 @@ import os
 import re
 import math
 from collections import defaultdict
-
-RUTA_APRENDIZAJE = "aprendizaje_historico_bootiq_C9_original.csv"
+RUTA_APRENDIZAJE = os.getenv(
+    "BOOTIQ_RUTA_APRENDIZAJE",
+    "aprendizaje_historico_bootiq_F4_CC2.csv",
+)
 
 # ============================================================
 # CONFIGURACIÓN OFICIAL DEL APRENDIZAJE JERÁRQUICO
@@ -319,15 +321,31 @@ def _seleccionar_fuente_principal(fuentes):
     return None
 def _seleccionar_fuente_respaldo(fuentes, principal):
     """
-    Selecciona un respaldo transferible y más general que la principal.
+    FASE 1.6-B — selecciona un respaldo transferible
+    y más general que la fuente principal.
 
-    C-D1: las fuentes ACTIVO_* y CLAVE_ESPECIFICA nunca estabilizan una
-    probabilidad general; solo sirven como especialización diagnóstica.
+    Jerarquía de retroceso:
+        ESPECIFICO -> INTERMEDIO -> GENERAL
+        INTERMEDIO -> GENERAL
+
+    Las fuentes ACTIVO_* y CLAVE_ESPECIFICA nunca estabilizan
+    una probabilidad general; solo sirven como especialización.
+
+    Este cambio NO utiliza winrate para escoger el respaldo.
+    Dentro de cada nivel de retroceso se conserva el criterio
+    existente de mayor muestra.
     """
 
-    principal = principal if isinstance(principal, dict) else {}
+    principal = (
+        principal
+        if isinstance(principal, dict)
+        else {}
+    )
+
     clave_principal = principal.get("clave")
-    grupo_principal = _grupo_nivel(principal.get("nivel"))
+    grupo_principal = _grupo_nivel(
+        principal.get("nivel")
+    )
 
     candidatas_generales = []
     candidatas_intermedias = []
@@ -336,54 +354,77 @@ def _seleccionar_fuente_respaldo(fuentes, principal):
         if fuente.get("clave") == clave_principal:
             continue
 
-        total = _entero(fuente.get("total"), 0)
+        total = _entero(
+            fuente.get("total"),
+            0,
+        )
 
         if total < MIN_MUESTRA_CONFIABLE:
             continue
 
-        grupo = _grupo_nivel(fuente.get("nivel"))
+        grupo = _grupo_nivel(
+            fuente.get("nivel")
+        )
 
-        # Nunca usamos especialización de activo como respaldo general.
+        # Nunca utilizamos especialización por activo
+        # como respaldo de una probabilidad general.
         if grupo == "ESPECIALIZACION_ACTIVO":
             continue
 
         if grupo_principal == "ESPECIFICO":
-            if grupo == "GENERAL":
-                candidatas_generales.append((total, fuente))
-            elif grupo == "INTERMEDIO":
-                candidatas_intermedias.append((total, fuente))
+            if grupo == "INTERMEDIO":
+                candidatas_intermedias.append(
+                    (total, fuente)
+                )
+
+            elif grupo == "GENERAL":
+                candidatas_generales.append(
+                    (total, fuente)
+                )
 
         elif grupo_principal == "INTERMEDIO":
             if grupo == "GENERAL":
-                candidatas_generales.append((total, fuente))
+                candidatas_generales.append(
+                    (total, fuente)
+                )
 
         elif grupo_principal == "ESPECIALIZACION_ACTIVO":
-            # Si solo quedó memoria del activo, buscamos primero cualquier
-            # contexto transferible confiable como respaldo.
-            if grupo == "GENERAL":
-                candidatas_generales.append((total, fuente))
-            elif grupo == "INTERMEDIO":
-                candidatas_intermedias.append((total, fuente))
+            # Si solo quedó memoria del activo,
+            # buscamos conocimiento transferible confiable.
+            if grupo == "INTERMEDIO":
+                candidatas_intermedias.append(
+                    (total, fuente)
+                )
+
+            elif grupo == "GENERAL":
+                candidatas_generales.append(
+                    (total, fuente)
+                )
 
         else:
             continue
 
+    # FASE 1.6-B:
+    # Si la principal es específica, retrocedemos primero
+    # un nivel hacia memoria intermedia antes de utilizar
+    # una memoria general mucho más amplia.
     if candidatas_generales:
         candidatas_generales.sort(
             key=lambda item: item[0],
             reverse=True,
         )
+    
         return candidatas_generales[0][1]
-
+    
     if candidatas_intermedias:
         candidatas_intermedias.sort(
             key=lambda item: item[0],
             reverse=True,
         )
+    
         return candidatas_intermedias[0][1]
-
+    
     return None
-
 
 def _normalizar_token(valor):
     """Convierte cualquier evidencia en un token estable para el CSV."""
@@ -735,44 +776,89 @@ def _primer_valor(senal, nombres):
 
 
 def _evidencias_por_origen(senal):
-    """Recupera las evidencias del Cerebro Único con compatibilidad amplia."""
+    """
+    Recupera las evidencias del Cerebro Único con compatibilidad amplia.
 
-    pa = _extraer_tokens(_primer_valor(senal, [
-        "price_action_evidencias",
-        "evidencias_price_action",
-        "evidencias_pa",
-        "evidencia_pa",
-        "pa_evidencias",
-        "pa_profesional_evidencias",
-    ]))
+    FASE 1.7-A:
+    El límite MAX_EVIDENCIAS_POR_ORIGEN se aplica sobre las
+    evidencias originales antes de convertirlas en tokens.
 
-    mercado = _extraer_tokens(_primer_valor(senal, [
-        "mercado_evidencias",
-        "evidencias_mercado",
-        "evidencia_mercado",
-        "contexto_mercado_evidencias",
-    ]))
+    Esto evita que una evidencia estructurada que genere:
+        - token base
+        - token contextual
 
-    estrategia = _extraer_tokens(_primer_valor(senal, [
-        "estrategia_evidencias",
-        "evidencias_estrategia",
-        "evidencia_estrategia",
-        "setup_evidencias",
-    ]))
+    consuma dos posiciones del límite y deje fuera evidencias
+    posteriores.
+    """
 
-    unificadas = _extraer_tokens(_primer_valor(senal, [
-        "evidencias_unificadas",
-        "evidencias_cerebro",
-        "firma_evidencias_exacta",
-        "firma_exacta",
-    ]))
+    def extraer_limitado(valor):
+        """
+        Limita evidencias reales antes de convertirlas en tokens.
+
+        Para listas/tuplas:
+        primero limita la cantidad de evidencias originales y
+        después genera todos sus tokens.
+
+        Para formatos legacy/no estructurados se mantiene la
+        compatibilidad anterior.
+        """
+
+        if isinstance(valor, (list, tuple)):
+            evidencias_limitadas = list(valor)[
+                :MAX_EVIDENCIAS_POR_ORIGEN
+            ]
+
+            return _extraer_tokens(
+                evidencias_limitadas
+            )
+
+        return _extraer_tokens(valor)[
+            :MAX_EVIDENCIAS_POR_ORIGEN
+        ]
+
+    pa = extraer_limitado(
+        _primer_valor(senal, [
+            "price_action_evidencias",
+            "evidencias_price_action",
+            "evidencias_pa",
+            "evidencia_pa",
+            "pa_evidencias",
+            "pa_profesional_evidencias",
+        ])
+    )
+
+    mercado = extraer_limitado(
+        _primer_valor(senal, [
+            "mercado_evidencias",
+            "evidencias_mercado",
+            "evidencia_mercado",
+            "contexto_mercado_evidencias",
+        ])
+    )
+
+    estrategia = extraer_limitado(
+        _primer_valor(senal, [
+            "estrategia_evidencias",
+            "evidencias_estrategia",
+            "evidencia_estrategia",
+            "setup_evidencias",
+        ])
+    )
+
+    unificadas = _extraer_tokens(
+        _primer_valor(senal, [
+            "evidencias_unificadas",
+            "evidencias_cerebro",
+            "firma_evidencias_exacta",
+            "firma_exacta",
+        ])
+    )
 
     # Si solo existe la lista unificada, no inventamos el origen.
     # Aun así se conserva para la firma exacta.
-    pa = pa[:MAX_EVIDENCIAS_POR_ORIGEN]
-    mercado = mercado[:MAX_EVIDENCIAS_POR_ORIGEN]
-    estrategia = estrategia[:MAX_EVIDENCIAS_POR_ORIGEN]
-    unificadas = unificadas[:MAX_COMPONENTES_FIRMA_EXACTA]
+    unificadas = unificadas[
+        :MAX_COMPONENTES_FIRMA_EXACTA
+    ]
 
     return {
         "pa": pa,
@@ -780,7 +866,6 @@ def _evidencias_por_origen(senal):
         "estrategia": estrategia,
         "unificadas": unificadas,
     }
-
 
 def _firma_tokens(tokens):
     tokens = [token for token in tokens if token]
@@ -1454,7 +1539,52 @@ def _factor_muestra(total):
     # Mantiene una contribución mínima controlada desde 5 muestras.
     return round(max(0.20, min(1.0, factor)), 4)
 
+def _factor_estabilidad_memoria(data):
+    """
+    FASE 1.6-H — autoridad temporal de una memoria.
 
+    La estabilidad NO decide si una memoria es buena o mala.
+    Solo mide cuánto se mantuvo en el tiempo la dirección
+    estadística observada.
+
+    Compatibilidad:
+    memorias antiguas sin estabilidad, como C9 original,
+    conservan autoridad 1.0.
+    """
+
+    if not isinstance(data, dict):
+        return 1.0
+
+    if not bool(
+        data.get(
+            "estabilidad_disponible",
+            False,
+        )
+    ):
+        return 1.0
+
+    persistencia = data.get(
+        "persistencia_direccion"
+    )
+
+    if persistencia is None:
+        return 1.0
+
+    persistencia = _numero(
+        persistencia,
+        1.0,
+    )
+
+    return round(
+        max(
+            0.0,
+            min(
+                1.0,
+                persistencia,
+            ),
+        ),
+        4,
+    )
 def _calcular_ajuste(total, winrate):
     """
     Convierte el rendimiento histórico en ajuste moderado
@@ -1488,6 +1618,19 @@ def _calcular_ajuste(total, winrate):
 
 
 def _crear_data_memoria(row):
+    """
+    Construye una memoria utilizable por el Cerebro Único.
+
+    FASE 1.6-C:
+    conserva también las métricas de estabilidad temporal cuando
+    existen en el CSV.
+
+    Compatibilidad:
+    las memorias antiguas como C9 no poseen esas columnas, por lo
+    que se cargan con estabilidad_disponible=False sin modificar
+    su comportamiento actual.
+    """
+
     total = _entero(row.get("total"), 0)
     wins = _entero(row.get("wins"), 0)
     losses = _entero(row.get("losses"), 0)
@@ -1498,33 +1641,131 @@ def _crear_data_memoria(row):
     if total > 0 and wins + losses != total:
         total = wins + losses
 
-    winrate = _numero(row.get("winrate"), 0.0)
+    winrate = _numero(
+        row.get("winrate"),
+        0.0,
+    )
+
     if total > 0 and winrate <= 0 and wins > 0:
-        winrate = (wins / total) * 100
+        winrate = (
+            wins / total
+        ) * 100
 
     ajuste, decision = _calcular_ajuste(
         total=total,
         winrate=winrate,
     )
-    probabilidad = _probabilidad_suavizada(wins, losses)
-    intervalo_inferior, intervalo_superior = _intervalo_probabilidad(
-        wins, losses
+
+    probabilidad = _probabilidad_suavizada(
+        wins,
+        losses,
     )
+
+    (
+        intervalo_inferior,
+        intervalo_superior,
+    ) = _intervalo_probabilidad(
+        wins,
+        losses,
+    )
+
+    # ========================================================
+    # FASE 1.6-C — ESTABILIDAD TEMPORAL
+    # ========================================================
+
+    estabilidad_txt = str(
+        row.get(
+            "estabilidad_disponible",
+            "",
+        )
+        or ""
+    ).strip().lower()
+
+    estabilidad_disponible = (
+        estabilidad_txt
+        in {
+            "true",
+            "1",
+            "si",
+            "sí",
+            "yes",
+        }
+    )
+
+    def numero_opcional(nombre):
+        valor = row.get(nombre)
+
+        if (
+            valor is None
+            or str(valor).strip() == ""
+        ):
+            return None
+
+        try:
+            return float(valor)
+        except (TypeError, ValueError):
+            return None
 
     return {
         "total": total,
         "wins": wins,
         "losses": losses,
-        "winrate": round(winrate, 2),
+        "winrate": round(
+            winrate,
+            2,
+        ),
         "ajuste_confianza": ajuste,
         "decision_aprendizaje": decision,
-        "confiabilidad_muestra": _confiabilidad_muestra(total),
+        "confiabilidad_muestra": (
+            _confiabilidad_muestra(total)
+        ),
         "probabilidad_ajustada": probabilidad,
         "intervalo_inferior": intervalo_inferior,
         "intervalo_superior": intervalo_superior,
-        "nivel": _txt(row.get("nivel")),
-    }
+        "nivel": _txt(
+            row.get("nivel")
+        ),
 
+        # ================================================
+        # ESTABILIDAD TEMPORAL
+        # ================================================
+
+        "estabilidad_disponible": (
+            estabilidad_disponible
+        ),
+        "muestra_estabilidad": _entero(
+            row.get(
+                "muestra_estabilidad",
+                0,
+            ),
+            0,
+        ),
+        "wr_inicio": numero_opcional(
+            "wr_inicio"
+        ),
+        "wr_medio": numero_opcional(
+            "wr_medio"
+        ),
+        "wr_reciente": numero_opcional(
+            "wr_reciente"
+        ),
+        "dispersion_temporal": numero_opcional(
+            "dispersion_temporal"
+        ),
+        "cambio_inicio_reciente": numero_opcional(
+            "cambio_inicio_reciente"
+        ),
+        "bloques_mismo_lado_prior": _entero(
+            row.get(
+                "bloques_mismo_lado_prior",
+                0,
+            ),
+            0,
+        ),
+        "persistencia_direccion": numero_opcional(
+            "persistencia_direccion"
+        ),
+    }
 
 def cargar_aprendizaje(ruta=RUTA_APRENDIZAJE):
     """
@@ -1592,30 +1833,75 @@ def _buscar_fuentes_aprendizaje(senal, memoria):
             })
             continue
 
-        peso_nivel = _numero(PESOS_NIVELES.get(nivel), 1.0)
+        peso_nivel = _numero(
+            PESOS_NIVELES.get(nivel),
+            1.0,
+        )
+        
         factor = _factor_muestra(total)
-        peso_efectivo = peso_nivel * factor
+        
+        factor_estabilidad = (
+            _factor_estabilidad_memoria(
+                data
+            )
+        )
+        
+        peso_efectivo = (
+            peso_nivel
+            * factor
+            * factor_estabilidad
+        )
         probabilidad = _probabilidad_suavizada(wins, losses)
         intervalo_inferior, intervalo_superior = _intervalo_probabilidad(
             wins, losses
         )
 
         fuentes.append({
-            "nivel": nivel,
-            "clave": clave,
-            "total": total,
-            "wins": wins,
-            "losses": losses,
-            "winrate": round(winrate, 2),
-            "ajuste": ajuste,
-            "decision": decision,
-            "confiabilidad": _confiabilidad_muestra(total),
-            "peso_nivel": round(peso_nivel, 3),
-            "factor_muestra": round(factor, 3),
-            "peso_efectivo": round(peso_efectivo, 3),
-            "probabilidad_ajustada": probabilidad,
-            "intervalo_inferior": intervalo_inferior,
-            "intervalo_superior": intervalo_superior,
+           "nivel": nivel,
+           "clave": clave,
+           "total": total,
+           "wins": wins,
+           "losses": losses,
+           "winrate": round(winrate, 2),
+           "ajuste": ajuste,
+           "decision": decision,
+           "confiabilidad": _confiabilidad_muestra(total),
+           "peso_nivel": round(peso_nivel, 3),
+           "factor_muestra": round(factor, 3),
+            "factor_estabilidad": round(
+                factor_estabilidad,
+                3,
+            ),
+           "peso_efectivo": round(peso_efectivo, 3),
+           "probabilidad_ajustada": probabilidad,
+           "intervalo_inferior": intervalo_inferior,
+           "intervalo_superior": intervalo_superior,
+       
+           # FASE 1.6-D — conservar estabilidad temporal
+           # desde la memoria cargada hasta la fuente candidata.
+           "estabilidad_disponible": bool(
+               data.get("estabilidad_disponible", False)
+           ),
+           "muestra_estabilidad": _entero(
+               data.get("muestra_estabilidad"),
+               0,
+           ),
+           "wr_inicio": data.get("wr_inicio"),
+           "wr_medio": data.get("wr_medio"),
+           "wr_reciente": data.get("wr_reciente"),
+           "dispersion_temporal": data.get(
+               "dispersion_temporal"
+           ),
+           "cambio_inicio_reciente": data.get(
+               "cambio_inicio_reciente"
+           ),
+           "bloques_mismo_lado_prior": _entero(
+               data.get("bloques_mismo_lado_prior"),
+               0,
+           ),
+           "persistencia_direccion": data.get(
+               "persistencia_direccion"
+           ),
         })
 
 
@@ -1770,7 +2056,55 @@ def _combinar_fuentes(fuentes):
                 ),
                 PRIOR_WINRATE,
             )
-
+        
+            # ========================================================
+            # FASE 1.6-E — AUTORIDAD RELATIVA REAL
+            # ========================================================
+            # Principal y respaldo ya poseen un peso efectivo calculado
+            # con:
+            #
+            #     peso_nivel * factor_muestra
+            #
+            # En lugar de decidir la mezcla únicamente a partir de la
+            # muestra de la principal, normalizamos la autoridad real de
+            # ambas fuentes.
+            #
+            # No interviene el WR para decidir los pesos.
+            # No se agregan umbrales nuevos.
+            # ========================================================
+        
+            peso_efectivo_principal = max(
+                0.0,
+                _numero(
+                    principal.get("peso_efectivo"),
+                    0.0,
+                ),
+            )
+        
+            peso_efectivo_respaldo = max(
+                0.0,
+                _numero(
+                    respaldo.get("peso_efectivo"),
+                    0.0,
+                ),
+            )
+        
+            suma_pesos_fuentes = (
+                peso_efectivo_principal
+                + peso_efectivo_respaldo
+            )
+        
+            if suma_pesos_fuentes > 0:
+                peso_principal = (
+                    peso_efectivo_principal
+                    / suma_pesos_fuentes
+                )
+        
+                peso_respaldo = (
+                    peso_efectivo_respaldo
+                    / suma_pesos_fuentes
+                )
+        
             probabilidad = (
                 prob_principal
                 * peso_principal
@@ -1778,7 +2112,6 @@ def _combinar_fuentes(fuentes):
                 prob_respaldo
                 * peso_respaldo
             )
-
         else:
             # Si no existe una fuente histórica
             # independiente de respaldo, usamos el prior

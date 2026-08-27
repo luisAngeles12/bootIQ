@@ -1,6 +1,7 @@
 import time
 import queue
 import threading
+import json
 from datetime import datetime
 
 import estado
@@ -199,7 +200,23 @@ def abrir_operacion(senal):
             )
         
         order_id = str(order_id_original)
-
+        # ============================================================
+        # PASO 5.5C — PERSISTIR RESPUESTA REAL DE IQ
+        # ============================================================
+        
+        if orden_async_5_5c is None:
+            auditoria_orden_iq_json = ""
+        else:
+            try:
+                auditoria_orden_iq_json = json.dumps(
+                    orden_async_5_5c,
+                    ensure_ascii=False,
+                    default=str,
+                )
+            except Exception:
+                auditoria_orden_iq_json = str(
+                    orden_async_5_5c
+                )
         # ============================================================
         # PASO 5.5C — MOSTRAR ESTRUCTURA REAL DE LA ORDEN
         # ============================================================
@@ -298,6 +315,11 @@ def abrir_operacion(senal):
             "precio_confirmacion_low": senal.get(
                 "protocolo_live_vela_entrada_low"
             ),
+            "tiempo_expiracion": TIEMPO_EXPIRACION,
+
+            "auditoria_orden_iq_json": (
+                auditoria_orden_iq_json
+            ),
         }
         
         estado.operaciones_abiertas.append(op)
@@ -317,21 +339,57 @@ def abrir_operacion(senal):
         asegurar_historial_csv()
 
         guardar_historial({
-            "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "fecha": datetime.now().strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ),
             "estado": "ABIERTA",
             "order_id": order_id,
             "activo": activo,
             "tipo": tipo,
             "direccion": direccion,
-
+        
             "puntaje": puntaje,
             "patron": patron,
             "rsi": rsi,
             "razon": razon,
-
+        
             "resultado": "",
+        
+            # ==========================================
+            # PASO 5.5C — PARIDAD DE EJECUCIÓN
+            # ==========================================
+        
+            "segundo_antes": segundo_antes,
             "segundo_entrada": segundo_despues,
             "demora_envio": demora_envio,
+        
+            "tiempo_envio_inicio": tiempo_antes,
+            "tiempo_respuesta_iq": tiempo_despues,
+            "tiempo_expiracion": TIEMPO_EXPIRACION,
+        
+            "vela_confirmacion_from": senal.get(
+                "protocolo_live_vela_entrada_from"
+            ),
+        
+            "precio_confirmacion_open": senal.get(
+                "protocolo_live_vela_entrada_open"
+            ),
+        
+            "precio_confirmacion_close": senal.get(
+                "protocolo_live_vela_entrada_close"
+            ),
+        
+            "precio_confirmacion_high": senal.get(
+                "protocolo_live_vela_entrada_high"
+            ),
+        
+            "precio_confirmacion_low": senal.get(
+                "protocolo_live_vela_entrada_low"
+            ),
+        
+            "auditoria_orden_iq_json": (
+                auditoria_orden_iq_json
+            ),
         })
         print(
             "AUDITORIA EJECUCION 5.5C:",

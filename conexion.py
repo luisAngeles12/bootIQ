@@ -121,19 +121,26 @@ def reconectar_iq(intentos=3):
                         estado.Iq.change_balance(
                             MODO_CUENTA
                         )
+                
                     except Exception as e:
                         print(
-                            "Reconectado, pero no se pudo "
-                            "restaurar la cuenta:",
+                            "Reconexión incompleta: "
+                            "no se pudo restaurar la cuenta "
+                            f"{MODO_CUENTA}:",
                             e,
                             flush=True
                         )
-
+                
+                        time.sleep(2)
+                        continue
+                
                     print(
                         "IQ Option reconectado correctamente.",
+                        "| cuenta:",
+                        MODO_CUENTA,
                         flush=True
                     )
-
+                
                     # NO actualizar OPCODE aquí.
                     # Ya tenemos los códigos cargados.
                     return True

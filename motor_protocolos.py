@@ -137,45 +137,16 @@ def _pullback_recuperado(velas, idx, direccion):
 
 def _ventana_sweep(senal, idx, velas):
     """
-    Devuelve la ventana temporal válida para SWEEP.
+    Compatibilidad SWEEP.
 
-    Objetivo:
-    - respetar la recomendación de motor_confirmacion;
-    - permitir confirmaciones tempranas fuertes;
-    - evitar entradas demasiado tardías, que en validación
-      están degradando claramente el rendimiento.
-
-    Retorna:
-        inicio_busqueda, objetivo, fin_exclusivo
+    La autoridad temporal única pertenece a
+    _ventana_confirmacion().
     """
-    accion = _txt(
-        senal.get("accion_confirmacion_ia")
+    return _ventana_confirmacion(
+        senal,
+        idx,
+        velas,
     )
-
-    limite = len(velas) - 1
-
-    if accion == "esperar_3":
-        inicio = idx + 1
-        objetivo = idx + 3
-        fin = idx + 4
-    elif accion == "esperar_2":
-        inicio = idx + 1
-        objetivo = idx + 2
-        fin = idx + 3
-    else:
-        inicio = idx + 1
-        objetivo = idx + 2
-        fin = idx + 3
-
-    inicio = min(inicio, limite)
-    objetivo = min(objetivo, limite)
-    fin = min(fin, limite)
-
-    if fin <= inicio:
-        fin = min(inicio + 1, limite)
-
-    return inicio, objetivo, fin
-
 
 
 def _ventana_confirmacion(senal, idx, velas):
@@ -494,8 +465,16 @@ def _protocolo_choch(velas, idx, senal):
     direccion = _direccion(senal)
     subtipo = _txt(senal.get("subtipo_setup"))
 
+    inicio, _, fin = _ventana_confirmacion(
+        senal,
+        idx,
+        velas,
+    )
+
+    # CHOCH con PA a favor puede confirmar desde la primera
+    # vela posterior, pero nunca fuera de la ventana IA.
     if subtipo == "choch_con_pa_a_favor":
-        for j in range(idx + 1, min(idx + 5, len(velas) - 1)):
+        for j in range(inicio, fin):
             if (
                 _ruptura_micro(velas, j, direccion)
                 and _impulso(velas[j], direccion)
@@ -507,8 +486,10 @@ def _protocolo_choch(velas, idx, senal):
 
         return None, "CANCELADA_CHOCH_PA_FAVOR_SIN_CONFIRMACION"
 
+    # Conserva la condición técnica propia del subtipo,
+    # pero elimina su ventana temporal independiente.
     if subtipo == "choch_tendencia_debil":
-        for j in range(idx + 1, min(idx + 6, len(velas) - 1)):
+        for j in range(inicio, fin):
             if (
                 _ruptura_micro(velas, j, direccion)
                 and _impulso(velas[j], direccion)
@@ -521,22 +502,35 @@ def _protocolo_choch(velas, idx, senal):
 
         return None, "CANCELADA_CHOCH_TENDENCIA_DEBIL"
 
-    for j in range(idx + 2, min(idx + 5, len(velas) - 1)):
+    # El CHOCH genérico históricamente exigía al menos +2.
+    # Conservamos ese requisito técnico, pero respetando
+    # el máximo autorizado por motor_confirmacion.
+    inicio_choch = max(
+        inicio,
+        idx + 2,
+    )
+
+    for j in range(inicio_choch, fin):
         if (
             _ruptura_micro(velas, j, direccion)
             and _impulso(velas[j], direccion)
         ):
-            return j, "PROTOCOLO_CHOCH_RUPTURA_IMPULSO_ESPERA_2"
+            return (
+                j,
+                "PROTOCOLO_CHOCH_RUPTURA_IMPULSO_ESPERA_2",
+            )
 
-    for j in range(idx + 2, min(idx + 6, len(velas) - 1)):
+    for j in range(inicio_choch, fin):
         if (
             _pullback_recuperado(velas, j, direccion)
             and _impulso(velas[j], direccion)
         ):
-            return j, "PROTOCOLO_CHOCH_PULLBACK_CON_IMPULSO_ESPERA_2"
+            return (
+                j,
+                "PROTOCOLO_CHOCH_PULLBACK_CON_IMPULSO_ESPERA_2",
+            )
 
     return None, "CANCELADA_CHOCH_SIN_RUPTURA_REAL"
-
 def _protocolo_pullback(velas, idx, senal):
     """
     Protocolo específico para pullbacks.
@@ -601,13 +595,16 @@ def _protocolo_pullback(velas, idx, senal):
     if calidad_mercado == "sucio":
         return None, "CANCELADA_PULLBACK_MERCADO_SUCIO"
 
-    # ========================================================
-    # VENTANA DE CONFIRMACIÓN
-    # ========================================================
-
-    inicio = idx + 1
-    final = min(idx + 6, len(velas) - 1)
-
+   # ========================================================
+   # VENTANA DE CONFIRMACIÓN
+   # ========================================================
+   # La autoridad temporal pertenece a motor_confirmacion.
+    inicio, _, final = _ventana_confirmacion(
+       senal,
+       idx,
+       velas,
+    )
+   
     # ========================================================
     # NIVEL 1: CONFIRMACIÓN ESTRICTA
     # ========================================================
@@ -692,14 +689,10 @@ def _protocolo_pullback(velas, idx, senal):
     )
 def _protocolo_reaccion_zona(velas, idx, senal):
     """
-    Confirma una reacción de zona sin entrar automáticamente en la
-    vela donde nació la señal.
+    Confirma una reacción de zona.
 
-    Cambio aislado de esta prueba:
-    - zona_rechazo_confirmado deja de usar entrada inmediata;
-    - exige continuidad mediante una vela de impulso a favor;
-    - respeta ESPERAR_2 / ESPERAR_3;
-    - los demás subtipos conservan su comportamiento anterior.
+    Todos los subtipos respetan la misma ventana temporal
+    definida por motor_confirmacion.
     """
     direccion = _direccion(senal)
     subtipo = _txt(senal.get("subtipo_setup"))
@@ -710,13 +703,13 @@ def _protocolo_reaccion_zona(velas, idx, senal):
     if subtipo == "zona_sin_ruptura":
         return None, "CANCELADA_ZONA_SIN_RUPTURA"
 
-    if subtipo == "zona_rechazo_confirmado":
-        inicio, _, fin = _ventana_confirmacion(
-            senal,
-            idx,
-            velas,
-        )
+    inicio, _, fin = _ventana_confirmacion(
+        senal,
+        idx,
+        velas,
+    )
 
+    if subtipo == "zona_rechazo_confirmado":
         for j in range(inicio, fin):
             if _impulso(velas[j], direccion):
                 return (
@@ -732,18 +725,23 @@ def _protocolo_reaccion_zona(velas, idx, senal):
         )
 
     if subtipo == "zona_generica":
-        for j in range(idx, min(idx + 4, len(velas) - 1)):
+        for j in range(inicio, fin):
             if _rechazo(velas[j], direccion):
-                return j, "PROTOCOLO_ZONA_GENERICA_RECHAZO"
+                return (
+                    j,
+                    "PROTOCOLO_ZONA_GENERICA_RECHAZO",
+                )
 
-        return None, "CANCELADA_ZONA_GENERICA_SIN_RECHAZO"
+        return (
+            None,
+            "CANCELADA_ZONA_GENERICA_SIN_RECHAZO",
+        )
 
-    for j in range(idx, min(idx + 4, len(velas) - 1)):
+    for j in range(inicio, fin):
         if _rechazo(velas[j], direccion):
             return j, "PROTOCOLO_ZONA_RECHAZO"
 
     return None, "CANCELADA_ZONA_SIN_RECHAZO"
-
 def _protocolo_ruptura_resistencia(velas, idx, senal):
     """
     Confirma una ruptura real respetando el timing recomendado por
@@ -827,12 +825,23 @@ def _protocolo_continuacion(velas, idx, senal):
     if _entrada_directa_permitida(senal):
         return idx, "PROTOCOLO_CONTINUACION_DIRECTA_PREMIUM"
 
-    for j in range(idx + 1, min(idx + 4, len(velas) - 1)):
-        if _ruptura_micro(velas, j, direccion) and _impulso(velas[j], direccion):
-            return j, "PROTOCOLO_CONTINUACION_RUPTURA_IMPULSO"
+    inicio, _, fin = _ventana_confirmacion(
+        senal,
+        idx,
+        velas,
+    )
+
+    for j in range(inicio, fin):
+        if (
+            _ruptura_micro(velas, j, direccion)
+            and _impulso(velas[j], direccion)
+        ):
+            return (
+                j,
+                "PROTOCOLO_CONTINUACION_RUPTURA_IMPULSO",
+            )
 
     return None, "CANCELADA_CONTINUACION_SIN_IMPULSO"
-
 
 def _protocolo_generico(velas, idx, senal):
     direccion = _direccion(senal)
@@ -840,12 +849,23 @@ def _protocolo_generico(velas, idx, senal):
     if _entrada_directa_permitida(senal):
         return idx, "PROTOCOLO_GENERICO_DIRECTA_PREMIUM"
 
-    for j in range(idx + 1, min(idx + 4, len(velas) - 1)):
-        if _rechazo(velas[j], direccion) and _impulso(velas[j], direccion):
-            return j, "PROTOCOLO_GENERICO_RECHAZO_IMPULSO"
+    inicio, _, fin = _ventana_confirmacion(
+        senal,
+        idx,
+        velas,
+    )
+
+    for j in range(inicio, fin):
+        if (
+            _rechazo(velas[j], direccion)
+            and _impulso(velas[j], direccion)
+        ):
+            return (
+                j,
+                "PROTOCOLO_GENERICO_RECHAZO_IMPULSO",
+            )
 
     return None, "CANCELADA_GENERICO_SIN_CONFIRMACION"
-
 def _registrar_auditoria_protocolo(
     senal,
     idx_senal,
@@ -943,81 +963,23 @@ def _registrar_auditoria_protocolo(
     return idx_entrada, motivo
 def _max_espera_protocolo_live(senal):
     """
-    Devuelve el máximo de velas REALES que un protocolo
-    puede esperar antes de considerar terminada su ventana.
+    Máximo de velas reales permitido en LIVE.
 
-    No cambia ninguna regla de entrada.
-    Solo permite distinguir en LIVE:
+    La autoridad temporal es la misma que usa
+    motor_confirmacion / _ventana_confirmacion.
 
-        ESPERAR
-        vs
-        CANCELADA
+    ESPERAR_2 -> máximo +2
+    ESPERAR_3 -> máximo +3
     """
-
-    protocolo_sugerido = _txt(
-        senal.get("protocolo_sugerido")
-    )
-
-    subtipo = _txt(
-        senal.get("subtipo_setup")
-    )
 
     accion = _txt(
         senal.get("accion_confirmacion_ia")
     )
 
-    # Ruptura resistencia/soporte:
-    # ESPERAR_2 → hasta +2
-    # ESPERAR_3 → hasta +3
-    if (
-        protocolo_sugerido
-        == "protocolo_ruptura_resistencia"
-    ):
-        if accion == "esperar_3":
-            return 3
-
-        return 2
-
-    protocolo = _tipo_protocolo(
-        senal
-    )
-
-    # SWEEP respeta la ventana de motor_confirmacion.
-    if protocolo == "SWEEP":
-        if accion == "esperar_3":
-            return 3
-
-        return 2
-
-    # CHOCH tiene ventanas propias.
-    if protocolo == "CHOCH":
-        if subtipo == "choch_con_pa_a_favor":
-            return 4
-
-        if subtipo == "choch_tendencia_debil":
-            return 5
-
-        return 5
-
-    # Pullback puede buscar hasta +5.
-    if protocolo == "PULLBACK":
-        return 5
-
-    # Reacción de zona.
-    if protocolo == "REACCION_ZONA":
-        if subtipo == "zona_rechazo_confirmado":
-            if accion == "esperar_3":
-                return 3
-
-            return 2
-
+    if accion == "esperar_3":
         return 3
 
-    # Continuación y genérico buscan hasta +3.
-    if protocolo == "CONTINUACION":
-        return 3
-
-    return 3
+    return 2
 def evaluar_protocolo_live_sombra(
     velas,
     senal,

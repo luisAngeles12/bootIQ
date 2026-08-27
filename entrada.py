@@ -1871,7 +1871,26 @@ def procesar_senales_pendientes(abrir_operacion):
                 abiertas += 1
             
         except Exception as e:
-            print("Error procesando señal pendiente:", e)
+            print(
+                "Error procesando señal pendiente:",
+                senal.get("activo", ""),
+                e,
+            )
+        
+            # ========================================================
+            # F5.5 — NO PERDER PENDIENTES POR ERROR TRANSITORIO API
+            # ========================================================
+            #
+            # Una caída entre el check_connect() de bot.py y una
+            # consulta get_candles() no puede destruir una señal
+            # todavía pendiente.
+            #
+            # La reconexión pertenece a bot.py. Aquí solamente
+            # preservamos la señal para la próxima iteración.
+            # ========================================================
+        
+            if senal not in restantes:
+                restantes.append(senal)
 
     estado.senales_pendientes = restantes
 
