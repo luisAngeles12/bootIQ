@@ -608,7 +608,7 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         # Alias de Fase 4: no representan una segunda decisión.
         senal["fase4_evaluada"] = True
         senal["fase4_confianza"] = confianza
-        senal["fase4_decision"] = decision_legacy
+        senal["fase4_decision"] = decision_oficial
         senal["fase4_permitir_operacion"] = operar
         senal["fase4_debe_bloquear"] = not operar
         senal["fase4_modo"] = modo_ejecucion

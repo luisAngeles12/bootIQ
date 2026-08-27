@@ -50,23 +50,36 @@ def _agregar(razones, categoria, valor, motivo):
     signo = "+" if valor >= 0 else ""
     razones.append(f"{categoria} {signo}{valor}: {motivo}")
 
-
 def identificar_setup(senal):
     tipo_setup = _txt(senal.get("tipo_setup", "INDEFINIDO"))
     patron = _txt(senal.get("patron", ""))
     direccion = _txt(senal.get("direccion", ""))
     accion_precio = _txt(senal.get("accion_precio", ""))
     pa_tipo = _txt(senal.get("pa_tipo", ""))
-    pa_direccion = _txt(senal.get("pa_direccion", ""))
+    pa_direccion = _txt(senal.get("pa_direccion", "NEUTRA"))
     mercado = _txt(senal.get("tipo_mercado", ""))
     tendencia = _txt(senal.get("estado_tendencia", ""))
 
-    fortalezas = _leer_lista(senal.get("fortalezas_base", ""))
-    riesgos = _leer_lista(senal.get("riesgos_base", ""))
+    fortalezas = _leer_lista(
+        senal.get("fortalezas_base", "")
+    )
 
-    texto_total = " ".join([
+    riesgos = _leer_lista(
+        senal.get("riesgos_base", "")
+    )
+
+    # ==========================================
+    # FASE 2.4
+    # La identidad sale de estrategia/patrón.
+    # PA, zonas, mercado y riesgos son contexto.
+    # ==========================================
+
+    texto_identidad = " ".join([
         tipo_setup,
         patron,
+    ])
+
+    texto_contexto = " ".join([
         accion_precio,
         pa_tipo,
         mercado,
@@ -79,68 +92,161 @@ def identificar_setup(senal):
     subtipo_setup = "INDEFINIDO"
     protocolo_sugerido = "PROTOCOLO_GENERICO"
 
-    if _contiene(texto_total, "SWEEP", "LIQUIDITY", "LIQUIDEZ"):
+    # ==========================
+    # 1. SWEEP
+    # ==========================
+    if _contiene(
+        texto_identidad,
+        "SWEEP",
+        "LIQUIDITY",
+        "LIQUIDEZ",
+    ):
         familia_setup = "REVERSIÓN"
         protocolo_sugerido = "PROTOCOLO_SWEEP"
 
-        if _contiene(pa_tipo, "AGOTAMIENTO", "RECHAZO"):
+        if _contiene(
+            pa_tipo,
+            "AGOTAMIENTO",
+            "RECHAZO",
+        ):
             subtipo_setup = "SWEEP_CON_RECHAZO_AGOTAMIENTO"
-        elif _contiene(texto_total, "RUPTURA"):
+
+        elif _contiene(
+            texto_identidad + " " + texto_contexto,
+            "RUPTURA",
+        ):
             subtipo_setup = "SWEEP_RUPTURA_CONFIRMABLE"
+
         else:
             subtipo_setup = "SWEEP_SIMPLE"
 
-    elif _contiene(texto_total, "CHOCH", "CAMBIO_ESTRUCTURA"):
+    # ==========================
+    # 2. CHOCH
+    # ==========================
+    elif _contiene(
+        texto_identidad,
+        "CHOCH",
+        "CAMBIO_ESTRUCTURA",
+    ):
         familia_setup = "REVERSIÓN_ESTRUCTURAL"
         protocolo_sugerido = "PROTOCOLO_CHOCH"
 
         if pa_direccion == direccion:
             subtipo_setup = "CHOCH_CON_PA_A_FAVOR"
-        elif _contiene(tendencia, "DEBIL", "DÉBIL"):
+
+        elif _contiene(
+            tendencia,
+            "DEBIL",
+            "DÉBIL",
+        ):
             subtipo_setup = "CHOCH_TENDENCIA_DEBIL"
+
         else:
             subtipo_setup = "CHOCH_SIMPLE"
 
-    elif _contiene(texto_total, "PULLBACK", "EMA", "RETROCESO"):
+    # ==========================
+    # 3. PULLBACK
+    # ==========================
+    elif (
+        _contiene(
+            patron,
+            "PULLBACK",
+            "RETROCESO",
+        )
+        or _contiene(
+            tipo_setup,
+            "PULLBACK",
+        )
+    ):
         familia_setup = "CONTINUACIÓN"
         protocolo_sugerido = "PROTOCOLO_PULLBACK"
 
         if "PULLBACK_TENDENCIA_INSUFICIENTE" in riesgos:
             subtipo_setup = "PULLBACK_TENDENCIA_INSUFICIENTE"
-        elif _contiene(tendencia, "AGOTADA"):
+
+        elif _contiene(
+            tendencia,
+            "AGOTADA",
+        ):
             subtipo_setup = "PULLBACK_TENDENCIA_AGOTADA"
+
         elif "PULLBACK_CON_PA_Y_TENDENCIA" in fortalezas:
             subtipo_setup = "PULLBACK_CONTINUACION_LIMPIA"
+
         else:
             subtipo_setup = "PULLBACK_GENERICO"
 
-    elif _contiene(texto_total, "SOPORTE", "RESISTENCIA", "ZONA", "RECHAZO"):
-        familia_setup = "REACCIÓN_ZONA"
-        protocolo_sugerido = "PROTOCOLO_REACCION_ZONA"
-
-        if _contiene(pa_tipo, "RECHAZO") and pa_direccion == direccion:
-            subtipo_setup = "ZONA_RECHAZO_CONFIRMADO"
-        elif _contiene(accion_precio, "SIN_RUPTURA"):
-            subtipo_setup = "ZONA_SIN_RUPTURA"
-        else:
-            subtipo_setup = "ZONA_GENERICA"
-
-    elif _contiene(texto_total, "CONTINUACION", "CONTINUACIÓN", "TENDENCIA"):
+    # ==========================
+    # 4. CONTINUACIÓN REAL
+    # ==========================
+    elif _contiene(
+        texto_identidad,
+        "CONTINUACION",
+        "CONTINUACIÓN",
+    ):
         familia_setup = "CONTINUACIÓN"
         protocolo_sugerido = "PROTOCOLO_CONTINUACION"
 
-        if _contiene(tendencia, "FUERTE"):
+        if _contiene(
+            tendencia,
+            "FUERTE",
+        ):
             subtipo_setup = "CONTINUACION_TENDENCIA_FUERTE"
+
         else:
             subtipo_setup = "CONTINUACION_SIMPLE"
+
+    # ==========================
+    # 5. REACCIÓN EN ZONA
+    # ==========================
+    elif (
+        _contiene(
+            texto_identidad,
+            "REACCION",
+            "REACCIÓN",
+            "RECHAZO",
+            "SOPORTE",
+            "RESISTENCIA",
+            "ZONA",
+        )
+        or _contiene(
+            accion_precio,
+            "SOPORTE",
+            "RESISTENCIA",
+            "ZONA",
+            "RECHAZO",
+        )
+        or _contiene(
+            pa_tipo,
+            "RECHAZO",
+        )
+    ):
+        familia_setup = "REACCIÓN_ZONA"
+        protocolo_sugerido = "PROTOCOLO_REACCION_ZONA"
+
+        if (
+            _contiene(
+                pa_tipo,
+                "RECHAZO",
+            )
+            and pa_direccion == direccion
+        ):
+            subtipo_setup = "ZONA_RECHAZO_CONFIRMADO"
+
+        elif _contiene(
+            accion_precio,
+            "SIN_RUPTURA",
+        ):
+            subtipo_setup = "ZONA_SIN_RUPTURA"
+
+        else:
+            subtipo_setup = "ZONA_GENERICA"
 
     return {
         "familia_setup": familia_setup,
         "subtipo_setup": subtipo_setup,
         "protocolo_sugerido": protocolo_sugerido,
     }
-
-
 def calcular_confianza_setup_por_capas(senal, identidad_setup):
     direccion = _txt(senal.get("direccion", ""))
     accion_precio = _txt(senal.get("accion_precio", ""))

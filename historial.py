@@ -5,10 +5,65 @@ import estado
 from config import HISTORIAL_CSV, OPERACIONES_PENDIENTES_JSON
 
 def columnas_historial():
-    return ["fecha", "estado", "order_id", "activo", "tipo", "direccion", "puntaje", "patron", "rsi", "resultado", "razon"]
+    return [
+        "fecha",
+        "estado",
+        "order_id",
+        "activo",
+        "tipo",
+        "direccion",
+        "puntaje",
+        "patron",
+        "rsi",
+        "resultado",
+        "razon",
 
+        # PASO 5.5C — PARIDAD DE EJECUCIÓN
+        "segundo_antes",
+        "segundo_entrada",
+        "demora_envio",
+        "tiempo_envio_inicio",
+        "tiempo_respuesta_iq",
+        "tiempo_expiracion",
 
-COLUMNAS_HISTORIAL = ["fecha", "estado", "order_id", "activo", "tipo", "direccion", "puntaje", "patron", "rsi", "resultado", "razon"]
+        "vela_confirmacion_from",
+        "precio_confirmacion_open",
+        "precio_confirmacion_close",
+        "precio_confirmacion_high",
+        "precio_confirmacion_low",
+
+        "auditoria_orden_iq_json",
+    ]
+
+COLUMNAS_HISTORIAL = [
+    "fecha",
+    "estado",
+    "order_id",
+    "activo",
+    "tipo",
+    "direccion",
+    "puntaje",
+    "patron",
+    "rsi",
+    "resultado",
+    "razon",
+
+    # PASO 5.5C — PARIDAD DE EJECUCIÓN
+    "segundo_antes",
+    "segundo_entrada",
+    "demora_envio",
+    "tiempo_envio_inicio",
+    "tiempo_respuesta_iq",
+    "tiempo_expiracion",
+
+    "vela_confirmacion_from",
+    "precio_confirmacion_open",
+    "precio_confirmacion_close",
+    "precio_confirmacion_high",
+    "precio_confirmacion_low",
+
+    "auditoria_orden_iq_json",
+]
 
 def guardar_historial(data):
     asegurar_historial_csv()

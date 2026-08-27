@@ -19,6 +19,7 @@ autoridad independiente.
 import csv
 import os
 import copy
+import hashlib
 
 import estado
 import estrategia
@@ -31,7 +32,7 @@ from motor_aprendizaje_historico import (
 )
 from motor_candidatos import ordenar_candidatas_v3
 from motor_decision import evaluar_decision_post_protocolo
-
+from decision_bootiq import aplanar_decision_bootiq
 CARPETA_DATA = "data_backtest_oos"
 SALIDA = "backtest_bootiq_oos_C9_causal_resultados.csv"
 
@@ -549,51 +550,88 @@ def seleccionar_top_datasets(
     return seleccionados
 def dividir_datasets_experimento(datasets_seleccionados):
     """
-    Congela un universo de 16 datasets y lo divide
-    determinísticamente en 12 TRAIN + 4 VALIDACIÓN.
+    Divide automáticamente los datasets entre TRAIN y VALIDACIÓN.
 
-    AUDITORIA_TRAIN nunca puede usar los 4 de validación.
-    VALIDACION nunca puede usar los 12 TRAIN.
+    La pertenencia se determina por el nombre del activo,
+    no por score, ranking, mercado o posición.
+
+    De esta forma un activo no cambia de TRAIN a VALIDACIÓN
+    simplemente porque cambie su diagnóstico técnico.
+
+    Aproximadamente:
+        80% TRAIN
+        20% VALIDACIÓN
     """
 
-    if len(datasets_seleccionados) < TOTAL_DATASETS_EXPERIMENTO:
+    if not datasets_seleccionados:
         raise RuntimeError(
-            "Se requieren al menos "
-            f"{TOTAL_DATASETS_EXPERIMENTO} datasets seleccionados "
-            "para construir 12 TRAIN + 4 VALIDACIÓN, pero solo hay "
-            f"{len(datasets_seleccionados)}."
+            "No existen datasets disponibles para dividir."
         )
 
-    universo = datasets_seleccionados[:TOTAL_DATASETS_EXPERIMENTO]
+    train = []
+    validacion = []
 
-    train = universo[:TOTAL_DATASETS_TRAIN]
+    for dataset in datasets_seleccionados:
 
-    validacion = universo[
-        TOTAL_DATASETS_TRAIN:
-        TOTAL_DATASETS_TRAIN + TOTAL_DATASETS_VALIDACION
-    ]
+        activo = str(
+            dataset.get("activo", "") or ""
+        ).upper().strip()
 
-    if len(train) != TOTAL_DATASETS_TRAIN:
+        if not activo:
+            continue
+
+        # Hash estable del nombre del activo.
+        hash_activo = hashlib.sha256(
+            activo.encode("utf-8")
+        ).hexdigest()
+
+        # Convertimos una parte del hash en número 0-99.
+        bucket = int(hash_activo[:8], 16) % 100
+
+        # 80% TRAIN / 20% VALIDACIÓN.
+        if bucket < 80:
+            train.append(dataset)
+        else:
+            validacion.append(dataset)
+
+    # Protección para universos pequeños:
+    # debe existir información en ambos grupos.
+    if not train or not validacion:
         raise RuntimeError(
-            f"TRAIN debe contener {TOTAL_DATASETS_TRAIN} datasets, "
-            f"pero contiene {len(train)}."
+            "La división automática no produjo suficientes "
+            "datasets en TRAIN y VALIDACIÓN."
         )
 
-    if len(validacion) != TOTAL_DATASETS_VALIDACION:
-        raise RuntimeError(
-            "VALIDACIÓN debe contener "
-            f"{TOTAL_DATASETS_VALIDACION} datasets, "
-            f"pero contiene {len(validacion)}."
+    universo = train + validacion
+
+    print("\n===== SPLIT EXPERIMENTAL AUTOMATICO =====")
+    print(f"Universo: {len(universo)}")
+    print(f"TRAIN: {len(train)}")
+    print(f"VALIDACION: {len(validacion)}")
+    print("----------------------------------------")
+
+    print("TRAIN:")
+    for dataset in train:
+        print(
+            f"  {dataset.get('activo', 'SIN_ACTIVO')}"
         )
+
+    print("----------------------------------------")
+
+    print("VALIDACION:")
+    for dataset in validacion:
+        print(
+            f"  {dataset.get('activo', 'SIN_ACTIVO')}"
+        )
+
+    print("========================================\n")
 
     return universo, train, validacion
-
 
 def seleccionar_datasets_experimento(datasets_seleccionados):
     # ========================================================
     # PASO 6 — OUT OF SAMPLE
     # ========================================================
-
     if (
         MODO_EXPERIMENTO
         == MODO_EXPERIMENTO_OUT_OF_SAMPLE
@@ -639,51 +677,102 @@ def seleccionar_datasets_experimento(datasets_seleccionados):
             )
 
         return usados
-    universo, train, validacion = dividir_datasets_experimento(
-        datasets_seleccionados
+
+    # ========================================================
+    # TRAIN / VALIDACION AUTOMATICOS
+    # ========================================================
+    universo, train, validacion = (
+        dividir_datasets_experimento(
+            datasets_seleccionados
+        )
     )
 
-    if MODO_EXPERIMENTO == MODO_EXPERIMENTO_AUDITORIA_TRAIN:
+    if (
+        MODO_EXPERIMENTO
+        == MODO_EXPERIMENTO_AUDITORIA_TRAIN
+    ):
         usados = train
 
-    elif MODO_EXPERIMENTO == MODO_EXPERIMENTO_VALIDACION:
+    elif (
+        MODO_EXPERIMENTO
+        == MODO_EXPERIMENTO_VALIDACION
+    ):
         usados = validacion
 
     else:
         raise RuntimeError(
-            f"Modo experimental inválido: {MODO_EXPERIMENTO}"
+            f"Modo experimental inválido: "
+            f"{MODO_EXPERIMENTO}"
         )
 
-    esperado = (
-        TOTAL_DATASETS_TRAIN
-        if MODO_EXPERIMENTO == MODO_EXPERIMENTO_AUDITORIA_TRAIN
-        else TOTAL_DATASETS_VALIDACION
-    )
-
-    if len(usados) != esperado:
+    # ========================================================
+    # FASE 2.6
+    # Ya no exigimos 12 TRAIN + 4 VALIDACION.
+    #
+    # El tamaño depende de los datasets válidos que
+    # existan y de la partición determinista automática.
+    # Solo exigimos que el grupo correspondiente exista.
+    # ========================================================
+    if not usados:
         raise RuntimeError(
-            f"{MODO_EXPERIMENTO} debe usar {esperado} datasets, "
-            f"pero recibió {len(usados)}."
+            f"{MODO_EXPERIMENTO} no recibió "
+            "datasets para ejecutar."
         )
 
-    print("\n===== CONFIGURACION EXPERIMENTO =====")
-    print("Modo:", MODO_EXPERIMENTO)
-    print("Universo experimental fijo:", len(universo))
-    print("TRAIN reservados:", len(train))
-    print("VALIDACION reservados:", len(validacion))
-    print("Datasets usados ahora:", len(usados))
-    print("====================================")
+    if not train:
+        raise RuntimeError(
+            "El split automático no produjo "
+            "datasets TRAIN."
+        )
+
+    if not validacion:
+        raise RuntimeError(
+            "El split automático no produjo "
+            "datasets VALIDACION."
+        )
+
+    print(
+        "\n===== CONFIGURACION EXPERIMENTO ====="
+    )
+    print(
+        "Modo:",
+        MODO_EXPERIMENTO
+    )
+    print(
+        "Universo experimental:",
+        len(universo)
+    )
+    print(
+        "TRAIN reservados:",
+        len(train)
+    )
+    print(
+        "VALIDACION reservados:",
+        len(validacion)
+    )
+    print(
+        "Datasets usados ahora:",
+        len(usados)
+    )
+    print(
+        "===================================="
+    )
 
     print("\nTRAIN:")
     for d in train:
-        print(" -", d.get("activo", ""))
+        print(
+            " -",
+            d.get("activo", "")
+        )
 
     print("\nVALIDACION RESERVADA:")
     for d in validacion:
-        print(" -", d.get("activo", ""))
+        print(
+            " -",
+            d.get("activo", "")
+        )
 
     return usados
-
 
 def imprimir_auditoria_datasets():
     print("\n===== AUDITORIA DE DATASETS =====")
@@ -928,8 +1017,24 @@ def crear_registro_resultado(
         if isinstance(decision_bootiq, dict)
         else {}
     )
-
-    decision_bootiq_plana = {}
+    
+    # ============================================================
+    # FASE 3.4-A — AUDITORÍA DEL CONTRATO BOOTIQ
+    # ============================================================
+    # La decisión ya fue calculada en estrategia.py.
+    # Aquí únicamente aplanamos el snapshot exacto conservado allí.
+    # NO se vuelve a llamar al Cerebro Único.
+    snapshot_bootiq = senal.get(
+        "_decision_bootiq_snapshot",
+        {},
+    )
+    
+    if not isinstance(snapshot_bootiq, dict):
+        snapshot_bootiq = {}
+    
+    decision_bootiq_plana = aplanar_decision_bootiq(
+        snapshot_bootiq
+    )
 
     decision_oficial = str(
         senal.get("cerebro_unico_decision", "NO_OPERAR")
@@ -1591,7 +1696,63 @@ def crear_registro_resultado(
             "auditoria_protocolo_probabilidad",
             0,
         ),
-
+        # ==================================================
+        # F4.3-D — SOMBRA RETEST POST-RUPTURA
+        # ==================================================
+        
+        "sombra_retest_aplica": bool(
+            senal.get(
+                "sombra_retest_aplica",
+                False,
+            )
+        ),
+        
+        "sombra_retest_encontro_ruptura": bool(
+            senal.get(
+                "sombra_retest_encontro_ruptura",
+                False,
+            )
+        ),
+        
+        "sombra_retest_idx_ruptura": senal.get(
+            "sombra_retest_idx_ruptura",
+            -1,
+        ),
+        
+        "sombra_retest_nivel_roto": senal.get(
+            "sombra_retest_nivel_roto",
+            "",
+        ),
+        
+        "sombra_pullback_idx_entrada": senal.get(
+            "sombra_pullback_idx_entrada",
+            -1,
+        ),
+        
+        "sombra_pullback_espera": senal.get(
+            "sombra_pullback_espera",
+            -1,
+        ),
+        
+        "sombra_pullback_resultado": senal.get(
+            "sombra_pullback_resultado",
+            "",
+        ),
+        
+        "sombra_retest_nivel_idx_entrada": senal.get(
+            "sombra_retest_nivel_idx_entrada",
+            -1,
+        ),
+        
+        "sombra_retest_nivel_espera": senal.get(
+            "sombra_retest_nivel_espera",
+            -1,
+        ),
+        
+        "sombra_retest_nivel_resultado": senal.get(
+            "sombra_retest_nivel_resultado",
+            "",
+        ),
         # ==================================================
         # C-C2 — APRENDIZAJE POST-PROTOCOLO
         # ==================================================
@@ -2544,6 +2705,202 @@ def evaluar_c3_bypass_vetos_sombra(
 
     return salida
 
+def evaluar_sombra_retest_ruptura(
+    senal,
+    velas,
+    idx,
+):
+    """
+    F4.3-D — experimento SOMBRA.
+
+    Solo estudia señales cuyo protocolo sugerido es
+    PROTOCOLO_RUPTURA_RESISTENCIA.
+
+    NO modifica:
+    - la decisión del Cerebro;
+    - el protocolo oficial;
+    - idx_entrada oficial;
+    - estado_operacion.
+
+    Compara dos alternativas posteriores a la PRIMERA ruptura
+    real encontrada dentro de la ventana autorizada:
+
+    A) pullback_recuperado existente;
+    B) retest exacto del nivel roto + recuperación.
+
+    Ambas respetan la misma ventana ESPERAR_2 / ESPERAR_3.
+    """
+
+    salida = {
+        "aplica": False,
+        "encontro_ruptura": False,
+
+        "idx_ruptura": -1,
+        "nivel_roto": None,
+
+        "pullback_idx_entrada": -1,
+        "pullback_espera": -1,
+        "pullback_resultado": "",
+
+        "retest_idx_entrada": -1,
+        "retest_espera": -1,
+        "retest_resultado": "",
+    }
+
+    protocolo_sugerido = str(
+        senal.get("protocolo_sugerido", "")
+        or ""
+    ).lower().strip()
+
+    if (
+        protocolo_sugerido
+        != "protocolo_ruptura_resistencia"
+    ):
+        return salida
+
+    salida["aplica"] = True
+
+    direccion = str(
+        senal.get("direccion", "")
+        or ""
+    ).lower().strip()
+
+    if direccion not in ["call", "put"]:
+        return salida
+
+    inicio, _, fin = (
+        motor_protocolos_mod._ventana_confirmacion(
+            senal,
+            idx,
+            velas,
+        )
+    )
+
+    # ========================================================
+    # 1. ENCONTRAR PRIMERA RUPTURA REAL
+    # ========================================================
+
+    idx_ruptura = None
+    nivel_roto = None
+
+    for j in range(inicio, fin):
+        if not motor_protocolos_mod._ruptura_micro(
+            velas,
+            j,
+            direccion,
+        ):
+            continue
+
+        idx_ruptura = j
+
+        anteriores = velas[j - 2:j]
+
+        if direccion == "call":
+            nivel_roto = max(
+                v["max"]
+                for v in anteriores
+            )
+        else:
+            nivel_roto = min(
+                v["min"]
+                for v in anteriores
+            )
+
+        break
+
+    if idx_ruptura is None:
+        return salida
+
+    salida["encontro_ruptura"] = True
+    salida["idx_ruptura"] = idx_ruptura
+    salida["nivel_roto"] = nivel_roto
+
+    # ========================================================
+    # 2. SOMBRA A — PULLBACK_RECUPERADO EXISTENTE
+    # ========================================================
+
+    for k in range(idx_ruptura + 1, fin):
+        if not motor_protocolos_mod._pullback_recuperado(
+            velas,
+            k,
+            direccion,
+        ):
+            continue
+
+        if k + 1 >= len(velas):
+            continue
+
+        info = resultado_binario(
+            velas,
+            k,
+            direccion,
+        )
+
+        salida["pullback_idx_entrada"] = k
+        salida["pullback_espera"] = k - idx
+        salida["pullback_resultado"] = info[
+            "resultado"
+        ]
+
+        break
+
+    # ========================================================
+    # 3. SOMBRA B — RETEST EXACTO DEL NIVEL ROTO
+    # ========================================================
+
+    for k in range(idx_ruptura + 1, fin):
+        if k + 1 >= len(velas):
+            continue
+
+        vela = velas[k]
+
+        if direccion == "call":
+            toca_nivel = (
+                vela["min"]
+                <= nivel_roto
+            )
+
+            recupera_nivel = (
+                vela["close"]
+                > nivel_roto
+                and vela["close"]
+                > vela["open"]
+            )
+
+        else:
+            toca_nivel = (
+                vela["max"]
+                >= nivel_roto
+            )
+
+            recupera_nivel = (
+                vela["close"]
+                < nivel_roto
+                and vela["close"]
+                < vela["open"]
+            )
+
+        if not (
+            toca_nivel
+            and recupera_nivel
+        ):
+            continue
+
+        info = resultado_binario(
+            velas,
+            k,
+            direccion,
+        )
+
+        salida["retest_idx_entrada"] = k
+        salida["retest_espera"] = k - idx
+        salida["retest_resultado"] = info[
+            "resultado"
+        ]
+
+        break
+
+    return salida
 
 def ejecutar_backtest(datasets):
     """
@@ -2724,6 +3081,57 @@ def ejecutar_backtest(datasets):
                     )
                 )
 
+                # ========================================================
+                # F4.3-D — SOMBRA RETEST POST-RUPTURA
+                # ========================================================
+                # No altera idx_entrada ni motivo_ejecucion oficiales.
+                
+                sombra_retest = evaluar_sombra_retest_ruptura(
+                    senal,
+                    velas,
+                    idx,
+                )
+                
+                senal["sombra_retest_aplica"] = (
+                    sombra_retest["aplica"]
+                )
+                
+                senal["sombra_retest_encontro_ruptura"] = (
+                    sombra_retest["encontro_ruptura"]
+                )
+                
+                senal["sombra_retest_idx_ruptura"] = (
+                    sombra_retest["idx_ruptura"]
+                )
+                
+                senal["sombra_retest_nivel_roto"] = (
+                    sombra_retest["nivel_roto"]
+                )
+                
+                senal["sombra_pullback_idx_entrada"] = (
+                    sombra_retest["pullback_idx_entrada"]
+                )
+                
+                senal["sombra_pullback_espera"] = (
+                    sombra_retest["pullback_espera"]
+                )
+                
+                senal["sombra_pullback_resultado"] = (
+                    sombra_retest["pullback_resultado"]
+                )
+                
+                senal["sombra_retest_nivel_idx_entrada"] = (
+                    sombra_retest["retest_idx_entrada"]
+                )
+                
+                senal["sombra_retest_nivel_espera"] = (
+                    sombra_retest["retest_espera"]
+                )
+                
+                senal["sombra_retest_nivel_resultado"] = (
+                    sombra_retest["retest_resultado"]
+                )
+                
                 if idx_entrada is None:
 
                     # ========================================
@@ -3170,6 +3578,22 @@ def guardar_resultados(resultados):
         "auditoria_protocolo_tendencia",
         "auditoria_protocolo_pa_tipo",
         "auditoria_protocolo_probabilidad",
+        
+        # F4.3-D — sombra retest post-ruptura.
+        "sombra_retest_aplica",
+        "sombra_retest_encontro_ruptura",
+        "sombra_retest_idx_ruptura",
+        "sombra_retest_nivel_roto",
+        
+        "sombra_pullback_idx_entrada",
+        "sombra_pullback_espera",
+        "sombra_pullback_resultado",
+        
+        "sombra_retest_nivel_idx_entrada",
+        "sombra_retest_nivel_espera",
+        "sombra_retest_nivel_resultado",
+        
+        # C-C2 — aprendizaje post-protocolo.
         # ==================================================
         # C-C2 — APRENDIZAJE POST-PROTOCOLO
         # ==================================================
@@ -7955,7 +8379,38 @@ def main():
     # ========================================================
     # APRENDIZAJE
     # ========================================================
-
+    # ========================================================
+    # FASE 2.6 — SEGURIDAD TRAIN / VALIDACION
+    # ========================================================
+    # La memoria histórica general solo puede regenerarse
+    # utilizando el conjunto TRAIN.
+    #
+    # VALIDACION y OUT_OF_SAMPLE nunca pueden modificar
+    # el aprendizaje general.
+    # ========================================================
+    
+    if (
+        ACTUALIZAR_APRENDIZAJE
+        and MODO_EXPERIMENTO
+        != MODO_EXPERIMENTO_AUDITORIA_TRAIN
+    ):
+        raise RuntimeError(
+            "SEGURIDAD BOOTIQ: ACTUALIZAR_APRENDIZAJE=True "
+            "solo está permitido en AUDITORIA_TRAIN. "
+            "VALIDACION y OUT_OF_SAMPLE deben permanecer congelados."
+        )
+    if (
+        ACTUALIZAR_APRENDIZAJE_PROTOCOLO
+        and MODO_EXPERIMENTO
+        != MODO_EXPERIMENTO_AUDITORIA_TRAIN
+    ):
+        raise RuntimeError(
+            "SEGURIDAD BOOTIQ: "
+            "ACTUALIZAR_APRENDIZAJE_PROTOCOLO=True "
+            "solo está permitido en AUDITORIA_TRAIN. "
+            "VALIDACION y OUT_OF_SAMPLE no pueden "
+            "modificar memoria C-C2."
+        )
     if ACTUALIZAR_APRENDIZAJE:
         generar_aprendizaje_desde_resultados(
             resultados,

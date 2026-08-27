@@ -1370,6 +1370,18 @@ def evaluar_senal_candidata(activo, ctx, senal):
     
     senal = resultado_bootiq["senal"]
     
+    # ============================================================
+    # FASE 3.4-A — SNAPSHOT REAL DEL CONTRATO BOOTIQ
+    # ============================================================
+    # Solo auditoría.
+    # Conserva exactamente el contrato estructurado producido
+    # durante la evaluación de esta señal.
+    # No recalcula ni modifica ninguna decisión.
+    senal["_decision_bootiq_snapshot"] = resultado_bootiq.get(
+        "decision",
+        {},
+    )
+    
     # Auditoría completa del Cerebro Único.
     resultado_cerebro = resultado_bootiq.get("resultado", {})
     
@@ -1559,7 +1571,7 @@ def analizar_activo(
     # ========================================================
 
     for posicion, senal in enumerate(
-        senales[:4],
+        senales,
         start=1,
     ):
         if not isinstance(senal, dict):

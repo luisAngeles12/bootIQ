@@ -920,7 +920,12 @@ def convertir_decision_v3_a_oficial(
         )
         or ""
     ).upper().strip()
-
+    protocolo_sugerido = _txt(
+        evidencia.get(
+            "protocolo_sugerido",
+            "",
+        )
+    )
     clave = str(
         resultado.get(
             "clave",
@@ -1103,7 +1108,89 @@ def convertir_decision_v3_a_oficial(
     # ========================================================
     # V3 AUTORIZA SOLO CON PROTOCOLO
     # ========================================================
-
+    # ========================================================
+    # F4.3-I — RUPTURA_RESISTENCIA DIRECTA VALIDADA
+    # ========================================================
+    #
+    # Esta ruta NO autoriza una señal nueva.
+    #
+    # La señal debe haber sido previamente autorizada por
+    # la clasificación estadística V3.
+    #
+    # Solo cambia el modo de ejecución:
+    #
+    #   PROTOCOLO_RUPTURA_RESISTENCIA
+    #   PROTOCOLO -> DIRECTA
+    #
+    # Evidencia congelada F4.3:
+    #
+    # TRAIN:
+    #   17 señales
+    #   11W / 6L
+    #   64.71%
+    #
+    # VALIDACION:
+    #   10 señales
+    #   6W / 4L
+    #   60.00%
+    #
+    # El protocolo posterior degradaba la ventaja temporal.
+    # ========================================================
+    
+    if (
+        decision_estadistica
+        == "OPERAR_CON_PROTOCOLO_SOMBRA"
+        and protocolo_sugerido
+        == "protocolo_ruptura_resistencia"
+    ):
+        return {
+            "decision": "OPERAR",
+            "decision_legacy": (
+                "OPERAR_DIRECTO_O_CONFIRMADO"
+            ),
+            "operar": True,
+            "requiere_protocolo": False,
+            "modo_ejecucion": "DIRECTA",
+            "bloquear_por_riesgo": False,
+            "riesgo_extremo_diagnostico": False,
+    
+            "origen_autoridad": (
+                "PROBABILIDAD_HISTORICA_V3"
+            ),
+    
+            "decision_sombra_origen": (
+                decision_estadistica
+            ),
+    
+            "nivel_probabilidad": nivel,
+            "clave_probabilidad": clave,
+    
+            # No afirmamos que cumple la antigua regla
+            # genérica de directa. Es una ruta de ejecución
+            # específicamente validada en F4.3.
+            "directa_evidencia_solida": False,
+            "directa_muestra": muestra,
+            "directa_confiabilidad": confiabilidad,
+    
+            "directa_aptitud_tecnica": False,
+    
+            "directa_motivos_tecnicos": [
+                (
+                    "F4.3: PROTOCOLO_RUPTURA_RESISTENCIA "
+                    "validado para ejecución directa."
+                )
+            ],
+    
+            "directa_ruta_validada": True,
+    
+            "motivo": (
+                "V3 autorizó la señal estadísticamente. "
+                "F4.3 validó PROTOCOLO_RUPTURA_RESISTENCIA "
+                "como entrada directa para preservar la "
+                "ventaja temporal de la señal. "
+                + motivo_estadistico
+            ).strip(),
+        }
     if (
         decision_estadistica
         == "OPERAR_CON_PROTOCOLO_SOMBRA"
