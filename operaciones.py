@@ -5,7 +5,13 @@ import json
 from datetime import datetime
 
 import estado
-from config import MONTO_BASE, TIEMPO_EXPIRACION
+from config import (
+    MONTO_BASE,
+    TIEMPO_EXPIRACION,
+    CANDLE_TIME,
+    VENTANA_ENTRADA_INICIO,
+    VENTANA_ENTRADA_FIN,
+)
 from historial import (
     guardar_operaciones_pendientes,
     asegurar_historial_csv,
@@ -133,6 +139,108 @@ def abrir_operacion(senal):
         print(
             "OPERACIÓN NO ENVIADA: TIPO NO SOPORTADO:",
             tipo or "VACÍO"
+        )
+        return False
+        # ============================================================
+    # F5.7-A — PARIDAD TEMPORAL BACKTEST ↔ LIVE
+    # ============================================================
+    #
+    # BACKTEST entra al cierre de la vela de entrada.
+    #
+    # LIVE solo puede enviar la orden inmediatamente después
+    # de que esa misma vela haya cerrado.
+    #
+    # Este bloque NO decide estrategia.
+    # Solo impide ejecutar una autorización que ya quedó vieja.
+    # ============================================================
+
+     # Usar primero el reloj del broker.
+    # La expiración de IQ se calcula contra este reloj,
+    # no contra el reloj local de Windows.
+    try:
+        ahora_paridad = float(
+            estado.Iq.get_server_timestamp()
+        )
+
+        if ahora_paridad <= 0:
+            raise ValueError(
+                "timestamp IQ inválido"
+            )
+
+    except Exception:
+        # Fallback únicamente si IQ no expone temporalmente
+        # el reloj del servidor.
+        ahora_paridad = time.time()
+
+    segundo_paridad = int(
+        ahora_paridad % CANDLE_TIME
+    )
+
+    if not (
+        VENTANA_ENTRADA_INICIO
+        <= segundo_paridad
+        <= VENTANA_ENTRADA_FIN
+    ):
+        print(
+            "OPERACIÓN NO ENVIADA POR PARIDAD TEMPORAL:",
+            activo,
+            "| segundo:",
+            segundo_paridad,
+            "| ventana:",
+            VENTANA_ENTRADA_INICIO,
+            "-",
+            VENTANA_ENTRADA_FIN,
+        )
+        return False
+
+    # La última vela cerrada que LIVE debería estar ejecutando.
+    vela_cerrada_esperada = (
+        int(ahora_paridad // CANDLE_TIME) - 1
+    ) * CANDLE_TIME
+
+    if decision_cerebro == "OPERAR_CON_PROTOCOLO":
+        vela_referencia = senal.get(
+            "protocolo_live_vela_entrada_from"
+        )
+
+        ruta_paridad = "PROTOCOLO"
+
+    else:
+        vela_referencia = senal.get(
+            "vela_senal_from"
+        )
+
+        ruta_paridad = "DIRECTA"
+
+    try:
+        vela_referencia = int(
+            float(vela_referencia)
+        )
+    except (TypeError, ValueError):
+        vela_referencia = 0
+
+    if vela_referencia <= 0:
+        print(
+            "OPERACIÓN NO ENVIADA POR PARIDAD:",
+            activo,
+            "| ruta:",
+            ruta_paridad,
+            "| falta timestamp de vela de entrada",
+        )
+        return False
+
+    if vela_referencia != vela_cerrada_esperada:
+        print(
+            "OPERACIÓN NO ENVIADA POR VELA OBSOLETA:",
+            activo,
+            "| ruta:",
+            ruta_paridad,
+            "| vela señal/confirmación:",
+            vela_referencia,
+            "| última cerrada esperada:",
+            vela_cerrada_esperada,
+            "| segundo:",
+            segundo_paridad,
         )
         return False
     from utils import segundo_actual

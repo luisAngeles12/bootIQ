@@ -3,7 +3,31 @@ import estado
 
 
 def segundo_actual():
-    return int(time.time() % 60)
+    """
+    Segundo actual de la vela usando IQ Option como reloj oficial.
+
+    Fallback al reloj local únicamente si el timestamp
+    del broker no está disponible.
+    """
+
+    try:
+        if estado.Iq is not None:
+
+            timestamp_iq = float(
+                estado.Iq.get_server_timestamp()
+            )
+
+            if timestamp_iq > 0:
+                return int(
+                    timestamp_iq % 60
+                )
+
+    except Exception:
+        pass
+
+    return int(
+        time.time() % 60
+    )
 
 
 def esperar_inicio_vela():
