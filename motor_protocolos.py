@@ -184,31 +184,87 @@ def _ventana_confirmacion(senal, idx, velas):
 
 
 def _tipo_protocolo(senal):
-    texto = " ".join([
+    """
+    Determina la familia técnica del protocolo.
+
+    F5.7-D4.2:
+    - prioriza la identidad estructurada producida por motor_setup;
+    - no infiere familia desde textos explicativos;
+    - evita que palabras incidentales como EMA, soporte o
+      resistencia redirijan una señal a otro protocolo.
+    """
+
+    # ========================================================
+    # 1. IDENTIDAD ESTRUCTURADA
+    # ========================================================
+
+    protocolo_sugerido = _txt(
+        senal.get("protocolo_sugerido")
+    )
+
+    mapa_protocolos = {
+        "protocolo_sweep": "SWEEP",
+        "protocolo_choch": "CHOCH",
+        "protocolo_pullback": "PULLBACK",
+        "protocolo_reaccion_zona": "REACCION_ZONA",
+        "protocolo_continuacion": "CONTINUACION",
+        "protocolo_generico": "GENERICO",
+    }
+
+    if protocolo_sugerido in mapa_protocolos:
+        return mapa_protocolos[
+            protocolo_sugerido
+        ]
+
+    # ========================================================
+    # 2. FALLBACK SOLO POR IDENTIDAD
+    # ========================================================
+    # No incluir:
+    # - accion_precio
+    # - pa_tipo
+    # - razon
+    # - razones_setup
+    #
+    # Esos campos describen contexto, no la familia.
+    identidad = " ".join([
         _txt(senal.get("subtipo_setup")),
         _txt(senal.get("tipo_setup")),
         _txt(senal.get("patron")),
-        _txt(senal.get("base_estrategia")),
-        _txt(senal.get("accion_precio")),
-        _txt(senal.get("pa_tipo")),
-        _txt(senal.get("razon")),
-        _txt(senal.get("razones_setup")),
     ])
 
-    if "sweep" in texto or "liquidity" in texto or "liquidez" in texto:
+    if (
+        "sweep" in identidad
+        or "liquidity" in identidad
+        or "liquidez" in identidad
+    ):
         return "SWEEP"
 
-    if "choch" in texto or "cambio_estructura" in texto:
+    if (
+        "choch" in identidad
+        or "cambio_estructura" in identidad
+    ):
         return "CHOCH"
 
-    if "pullback" in texto or "retroceso" in texto or "ema" in texto:
+    if (
+        "pullback" in identidad
+        or "retroceso" in identidad
+    ):
         return "PULLBACK"
 
-    if "soporte" in texto or "resistencia" in texto or "zona" in texto:
-        return "REACCION_ZONA"
-
-    if "continuacion" in texto or "continuación" in texto:
+    if (
+        "continuacion" in identidad
+        or "continuación" in identidad
+    ):
         return "CONTINUACION"
+
+    if (
+        "reaccion" in identidad
+        or "reacción" in identidad
+        or "soporte" in identidad
+        or "resistencia" in identidad
+        or "zona" in identidad
+    ):
+        return "REACCION_ZONA"
 
     return "GENERICO"
 

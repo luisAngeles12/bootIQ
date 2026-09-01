@@ -858,6 +858,42 @@ def motor_estrategias_profesional(ctx):
 
     senales = [s for s in senales if s is not None]
 
+    # ========================================================
+    # F5.7-D4.1 — TELEMETRÍA DE GENERACIÓN POR FAMILIA
+    # ========================================================
+    # No filtra.
+    # No cambia puntajes.
+    # No altera decisiones.
+    #
+    # Cuenta únicamente las señales que realmente lograron
+    # satisfacer las condiciones de motor_estrategias.py.
+    try:
+        import estado
+
+        familias = estado.metricas_ronda.setdefault(
+            "familias_generadas",
+            {}
+        )
+
+        for senal_generada in senales:
+            patron_generado = str(
+                senal_generada.get(
+                    "patron",
+                    "SIN_PATRON"
+                )
+            )
+
+            familias[patron_generado] = (
+                familias.get(
+                    patron_generado,
+                    0
+                )
+                + 1
+            )
+
+    except Exception:
+        pass
+
     if not senales:
         return None
 

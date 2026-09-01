@@ -34,7 +34,6 @@ from motor_candidatos import ordenar_candidatas_v3
 from motor_decision import evaluar_decision_post_protocolo
 from decision_bootiq import aplanar_decision_bootiq
 CARPETA_DATA = "data_backtest_oos"
-SALIDA = "backtest_bootiq_oos_C9_causal_resultados.csv"
 
 MAX_ACTIVOS_ANALIZAR = 20
 MAX_SENALES_POR_RONDA = 20
@@ -59,10 +58,27 @@ MODO_EXPERIMENTO_AUDITORIA_TRAIN = "AUDITORIA_TRAIN"
 MODO_EXPERIMENTO_VALIDACION = "VALIDACION"
 MODO_EXPERIMENTO_OUT_OF_SAMPLE = "OUT_OF_SAMPLE"
 
-MODO_EXPERIMENTO = MODO_EXPERIMENTO_OUT_OF_SAMPLE
+MODO_EXPERIMENTO = MODO_EXPERIMENTO_VALIDACION
+
+# ============================================================
+# F5.7-D4.2A — SALIDA COHERENTE CON EL MODO EXPERIMENTAL
+# ============================================================
+if MODO_EXPERIMENTO == MODO_EXPERIMENTO_AUDITORIA_TRAIN:
+    SALIDA = "backtest_bootiq_F5_7_D4_2_TRAIN.csv"
+
+elif MODO_EXPERIMENTO == MODO_EXPERIMENTO_VALIDACION:
+    SALIDA = "backtest_bootiq_F5_7_D4_2_VALID.csv"
+
+elif MODO_EXPERIMENTO == MODO_EXPERIMENTO_OUT_OF_SAMPLE:
+    SALIDA = "backtest_bootiq_F5_7_D4_2_OOS.csv"
+
+else:
+    raise RuntimeError(
+        f"MODO_EXPERIMENTO inválido: {MODO_EXPERIMENTO}"
+    )
 TOTAL_DATASETS_EXPERIMENTO = 16
-TOTAL_DATASETS_TRAIN = 12
-TOTAL_DATASETS_VALIDACION = 4
+TOTAL_DATASETS_TRAIN = 11
+TOTAL_DATASETS_VALIDACION = 5
 
 BUILD_ID = "BOOTIQ_BACKTEST_V5_SOMBRA_ESTADISTICA_2026_08_01"
 ACTUALIZAR_APRENDIZAJE = False
@@ -3638,7 +3654,13 @@ def guardar_resultados(resultados):
         "cc2_fuentes_usadas",
         "cc2_claves_consultadas",
         "cc2_claves_descartadas",
-        
+        # ==================================================
+        # F5.7-C2B — VETO TÉCNICO SOMBRA
+        # ==================================================
+        "bootiq_veto_tecnico_sombra_detectado",
+        "bootiq_veto_tecnico_sombra_cantidad",
+        "bootiq_veto_tecnico_sombra_tipos",
+        "bootiq_veto_tecnico_sombra_modo",
         "bootiq_resultado_estado_operacion",
         "bootiq_resultado_motivo_ejecucion",
         "bootiq_resultado_resultado",
@@ -8341,7 +8363,7 @@ def main():
     imprimir_auditoria_datasets()
 
     # División experimental blindada:
-    # 12 TRAIN + 4 VALIDACIÓN.
+    # 11 TRAIN + 5 VALIDACIÓN.
     datasets = seleccionar_datasets_experimento(
         datasets_seleccionados
     )

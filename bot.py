@@ -336,9 +336,9 @@ def main():
         # ==========================================
         # OBTENER ACTIVOS
         # ==========================================
-        activos = obtener_activos()
-
         reiniciar_metricas_ronda()
+
+        activos = obtener_activos()
 
         estado.metricas_ronda[
             "mercados_analizados"
@@ -397,9 +397,6 @@ def main():
                         senal
                     )
 
-                    estado.metricas_ronda[
-                        "senales_aprobadas"
-                    ] += 1
 
                     tipo_m = senal.get(
                         "tipo_mercado"
@@ -512,6 +509,10 @@ def main():
             # ya elimina estas señales.
             if decision_cerebro == "NO_OPERAR":
 
+                estado.metricas_ronda[
+                    "cerebro_no_operar"
+                ] += 1
+
                 print(
                     "SEÑAL BLOQUEADA POR "
                     "CEREBRO ÚNICO:",
@@ -533,6 +534,10 @@ def main():
                 "OPERAR",
                 "OPERAR_CON_PROTOCOLO"
             ]:
+
+                estado.metricas_ronda[
+                    "cerebro_sin_autorizacion"
+                ] += 1
 
                 print(
                     "SEÑAL SIN AUTORIZACIÓN VÁLIDA:",
@@ -559,6 +564,14 @@ def main():
                 decision_cerebro
                 == "OPERAR_CON_PROTOCOLO"
             ):
+
+                estado.metricas_ronda[
+                    "senales_aprobadas"
+                ] += 1
+
+                estado.metricas_ronda[
+                    "autorizadas_protocolo"
+                ] += 1
 
                 motivo = (
                     motivo_pendiente_por_accion_precio(
@@ -615,6 +628,14 @@ def main():
             #
             # bot.py no vuelve a decidir ni
             # envía esta señal a protocolo.
+            estado.metricas_ronda[
+                "senales_aprobadas"
+            ] += 1
+
+            estado.metricas_ronda[
+                "autorizadas_directa"
+            ] += 1
+
             senal[
                 "requiere_protocolo_cerebro"
             ] = False
@@ -636,6 +657,10 @@ def main():
                 operaciones_desde_resumen_mercado += 1
 
             else:
+
+                estado.metricas_ronda[
+                    "directas_no_ejecutadas"
+                ] += 1
 
                 print(
                     "OPERACIÓN DIRECTA "

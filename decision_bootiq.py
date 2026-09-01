@@ -280,6 +280,26 @@ def crear_decision_bootiq(senal=None, ctx=None):
                 "confianza_final_cerebro", 0
             ),
         },
+        "veto_tecnico_sombra": {
+            "detectado": senal.get(
+                "veto_tecnico_sombra",
+                False,
+            ),
+            "cantidad": senal.get(
+                "cantidad_vetos_tecnicos_sombra",
+                0,
+            ),
+            "tipos": _texto_lista(
+                senal.get(
+                    "vetos_tecnicos_sombra",
+                    [],
+                )
+            ),
+            "modo": senal.get(
+                "modo_veto_tecnico",
+                "DIAGNOSTICO",
+            ),
+        },
         "estadistica_sombra": {
             "modo_probabilidad": senal.get(
                 "modo_probabilidad", "SOMBRA"
@@ -497,6 +517,43 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         senal["cerebro_unico_bloquear_por_riesgo"] = bloquear_por_riesgo
         senal["cerebro_unico_motivos"] = motivos_texto
         # =====================================================
+        # F5.7-C2A — VETO TÉCNICO SOMBRA
+        # =====================================================
+        # Solo auditoría. No modifica la decisión oficial.
+
+        senal["veto_tecnico_sombra"] = bool(
+            decision_cerebro.get(
+                "veto_tecnico_sombra",
+                False,
+            )
+        )
+
+        try:
+            senal["cantidad_vetos_tecnicos_sombra"] = int(
+                decision_cerebro.get(
+                    "cantidad_vetos_tecnicos_sombra",
+                    0,
+                )
+                or 0
+            )
+        except (TypeError, ValueError):
+            senal["cantidad_vetos_tecnicos_sombra"] = 0
+
+        senal["vetos_tecnicos_sombra"] = _lista_segura(
+            decision_cerebro.get(
+                "vetos_tecnicos_sombra",
+                [],
+            )
+        )
+
+        senal["modo_veto_tecnico"] = str(
+            decision_cerebro.get(
+                "modo_veto_tecnico",
+                "DIAGNOSTICO",
+            )
+            or "DIAGNOSTICO"
+        ).upper().strip()
+        # =====================================================
         # AUDITORÍA DE ENTRADA DIRECTA V3
         # =====================================================
         # Solo transporte de información.
@@ -605,6 +662,10 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         senal.setdefault("directa_confiabilidad", "SIN_DATOS")
         senal.setdefault("directa_nivel_probabilidad", "")
         senal.setdefault("directa_clave_probabilidad", "")
+        senal.setdefault("veto_tecnico_sombra", False)
+        senal.setdefault("cantidad_vetos_tecnicos_sombra", 0)
+        senal.setdefault("vetos_tecnicos_sombra", [])
+        senal.setdefault("modo_veto_tecnico", "DIAGNOSTICO")
         # Alias de Fase 4: no representan una segunda decisión.
         senal["fase4_evaluada"] = True
         senal["fase4_confianza"] = confianza
@@ -791,6 +852,10 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         senal["requiere_protocolo_estadistico_sombra"] = False
         senal["motivo_decision_estadistica_sombra"] = mensaje_error
 
+        senal["veto_tecnico_sombra"] = False
+        senal["cantidad_vetos_tecnicos_sombra"] = 0
+        senal["vetos_tecnicos_sombra"] = []
+        senal["modo_veto_tecnico"] = "ERROR"
         return {
             "permitida": False,
             "requiere_protocolo": False,

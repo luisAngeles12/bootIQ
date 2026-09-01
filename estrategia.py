@@ -819,8 +819,31 @@ def validar_contexto_base(activo, ctx):
     ctx["contexto_base_valido"] = not bool(riesgos_contexto)
     ctx["mercado_evidencias"] = mercado_evidencias
 
-    # Siempre continúa.
-    # El Cerebro Único decidirá.
+    # ==========================================================
+    # F5.7 — INVARIANTE DE ELEGIBILIDAD DE MERCADO
+    # ==========================================================
+    # LIMPIO y NORMAL pertenecen al universo operativo.
+    #
+    # SUCIO, CAOTICO, SIN_DATOS y cualquier otra calidad
+    # no operable quedan fuera aunque el activo hubiera sido
+    # LIMPIO/NORMAL durante el escaneo inicial.
+    #
+    # Esto NO es una decisión de trading.
+    # Solo protege la elegibilidad del universo.
+    #
+    # El resto de riesgos (score, tendencia, SR, PA, etc.)
+    # continúa como evidencia para el Cerebro Único.
+    if calidad not in ["LIMPIO", "NORMAL"]:
+        print(
+            "ACTIVO DESCARTADO POR CAMBIO DE CALIDAD:",
+            activo,
+            "| calidad:",
+            calidad,
+            "| score:",
+            score,
+        )
+        return False
+
     return True
 def evaluar_senal_candidata(activo, ctx, senal):
     if senal is None:
@@ -1500,6 +1523,21 @@ def evaluar_senal_candidata(activo, ctx, senal):
         senal.get("decision_unificada_accion") == "NO_OPERAR"
         and not modo_diagnostico
     ):
+        # F5.7-D2 — Telemetría solamente.
+        # Registrar el rechazo real antes de que estrategia.py
+        # elimine la señal y bot.py deje de verla.
+        try:
+            import estado
+
+            estado.metricas_ronda[
+                "cerebro_no_operar"
+            ] += 1
+
+        except Exception:
+            # La telemetría nunca debe alterar
+            # el comportamiento operativo.
+            pass
+
         return None
     
     return senal
@@ -1556,6 +1594,29 @@ def analizar_activo(
     if isinstance(senales, dict):
         senales = [senales]
 
+    # F5.7-D2 — Embudo real de oportunidades.
+    # Telemetría solamente: no modifica ninguna decisión.
+    try:
+        import estado
+
+        candidatas_validas_generadas = sum(
+            1
+            for candidata in senales
+            if isinstance(candidata, dict)
+        )
+
+        if candidatas_validas_generadas > 0:
+            estado.metricas_ronda[
+                "activos_con_candidatas"
+            ] += 1
+
+        estado.metricas_ronda[
+            "candidatas_generadas"
+        ] += candidatas_validas_generadas
+
+    except Exception:
+        pass
+
     candidatas_evaluadas = []
 
     # ========================================================
@@ -1581,6 +1642,16 @@ def analizar_activo(
             "_ranking_estrategia_inicial"
         ] = posicion
 
+        try:
+            import estado
+
+            estado.metricas_ronda[
+                "candidatas_evaluadas_cerebro"
+            ] += 1
+
+        except Exception:
+            pass
+
         senal_final = evaluar_senal_candidata(
             activo,
             ctx,
@@ -1589,6 +1660,16 @@ def analizar_activo(
 
         if senal_final is None:
             continue
+
+        try:
+            import estado
+
+            estado.metricas_ronda[
+                "candidatas_que_continuan"
+            ] += 1
+
+        except Exception:
+            pass
 
         candidatas_evaluadas.append(
             senal_final

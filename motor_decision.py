@@ -75,7 +75,67 @@ def _num(v, default=0.0):
     except (TypeError, ValueError):
         return float(default)
 
+# ============================================================
+# F5.7-C2A — CANDIDATOS A VETO TÉCNICO EN SOMBRA
+# ============================================================
+#
+# IMPORTANTE:
+# - solo audita;
+# - NO modifica operar;
+# - NO modifica decision;
+# - NO modifica protocolo;
+# - NO bloquea operaciones.
+#
+# Los candidatos serán evaluados posteriormente con TRAIN/OOS.
+# ============================================================
 
+CANDIDATOS_VETO_TECNICO_SOMBRA = {
+    "MERCADO_NO_VALIDADO",
+    "ZONA_SR_NO_VALIDADA",
+    "VELA_CONTRARIA_RECIENTE",
+    "ACCION_PRECIO_NO_VALIDADA",
+    "UBICACION_FATIGA_NO_VALIDADA",
+    "ZONA_OPERADA_RECIENTE",
+}
+
+
+def evaluar_veto_tecnico_sombra(evidencia):
+    """
+    Detecta condiciones técnicas candidatas a veto.
+
+    Esta función es exclusivamente diagnóstica.
+    Nunca autoriza ni bloquea operaciones.
+    """
+
+    evidencia = (
+        evidencia
+        if isinstance(evidencia, dict)
+        else {}
+    )
+
+    riesgos_raw = str(
+        evidencia.get("riesgos_base", "")
+        or ""
+    )
+
+    riesgos = {
+        item.strip().upper()
+        for item in riesgos_raw.split("|")
+        if item.strip()
+    }
+
+    detectados = sorted(
+        riesgos.intersection(
+            CANDIDATOS_VETO_TECNICO_SOMBRA
+        )
+    )
+
+    return {
+        "veto_tecnico_sombra": bool(detectados),
+        "cantidad_vetos_tecnicos_sombra": len(detectados),
+        "vetos_tecnicos_sombra": detectados,
+        "modo_veto_tecnico": "DIAGNOSTICO",
+    }
 # ============================================================
 # ESPECIALISTAS INTERNOS DEL CEREBRO ÚNICO
 # ============================================================
@@ -1838,8 +1898,14 @@ def evaluar_decision_cerebro_unico(evidencia):
     # RUTA OFICIAL V3
     # ========================================================
     riesgo_compuesto = evaluar_riesgo_compuesto(evidencia)
-    aprendizaje = evaluar_aprendizaje_historico(evidencia)
 
+    resultado_veto_tecnico_sombra = (
+        evaluar_veto_tecnico_sombra(
+            evidencia
+        )
+    )
+
+    aprendizaje = evaluar_aprendizaje_historico(evidencia)
     # Diagnósticos internos. No deciden ni bloquean V3.
     resultado_pa = evaluar_price_action_decision(evidencia)
     resultado_mercado = evaluar_mercado_decision(evidencia)
@@ -2163,6 +2229,35 @@ def evaluar_decision_cerebro_unico(evidencia):
         "resultado_decision_legacy": resultado_decision_legacy,
         "riesgo_nivel": riesgo_nivel,
         "riesgo_puntos": riesgo_puntos,
+        "veto_tecnico_sombra": bool(
+            resultado_veto_tecnico_sombra.get(
+                "veto_tecnico_sombra",
+                False,
+            )
+        ),
+
+        "cantidad_vetos_tecnicos_sombra": int(
+            resultado_veto_tecnico_sombra.get(
+                "cantidad_vetos_tecnicos_sombra",
+                0,
+            )
+            or 0
+        ),
+
+        "vetos_tecnicos_sombra": list(
+            resultado_veto_tecnico_sombra.get(
+                "vetos_tecnicos_sombra",
+                [],
+            )
+            or []
+        ),
+
+        "modo_veto_tecnico": (
+            resultado_veto_tecnico_sombra.get(
+                "modo_veto_tecnico",
+                "DIAGNOSTICO",
+            )
+        ),
         "motivos": motivos,
         "detalle_inferencia": resultado_inferencia_legacy,
         "detalle_inferencia_legacy": resultado_inferencia_legacy,

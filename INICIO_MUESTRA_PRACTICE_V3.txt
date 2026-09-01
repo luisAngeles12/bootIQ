@@ -1,0 +1,4 @@
+INICIO OFICIAL MUESTRA PRACTICE BOOTIQ V3
+Fecha/hora local: 2026-08-29T14:22:22.459341-04:00
+Branch: bootiq-v3-auditoria
+Historial anterior: LEGACY / NO CONTAR EN WR NUEVO

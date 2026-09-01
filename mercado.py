@@ -165,11 +165,17 @@ def evaluar_estabilidad_activo(asset, tipo):
                     "IQ_DESCONECTADO_DURANTE_SCAN"
                 )
 
-            # Timeout/dato no disponible, pero websocket vivo:
-            # simplemente este activo no participa en esta ronda.
+            # Timeout/dato no disponible, pero websocket vivo.
+            estado.metricas_ronda[
+                "scan_candles_none"
+            ] += 1
+
             return None
 
         if len(candles) < 80:
+            estado.metricas_ronda[
+                "scan_velas_insuficientes"
+            ] += 1
             return None
 
         candles = sorted(
@@ -234,10 +240,16 @@ def evaluar_estabilidad_activo(asset, tipo):
 
         # Evitar activos tipo -op por ahora.
         if "-op" in asset:
+            estado.metricas_ronda[
+                "scan_formato_op"
+            ] += 1
             return None
 
         # Evitar activos combinados.
         if "/" in asset:
+            estado.metricas_ronda[
+                "scan_formato_combinado"
+            ] += 1
             return None
 
         # Solo trabajar mercados limpios o normales.
@@ -245,14 +257,23 @@ def evaluar_estabilidad_activo(asset, tipo):
             "LIMPIO",
             "NORMAL"
         ]:
+            estado.metricas_ronda[
+                "scan_calidad"
+            ] += 1
             return None
 
         # Score mínimo real del diagnóstico.
         if score < 52:
+            estado.metricas_ronda[
+                "scan_score"
+            ] += 1
             return None
 
         # Evitar mercados sin dirección clara.
         if estado_tendencia == "INDEFINIDA":
+            estado.metricas_ronda[
+                "scan_tendencia_indefinida"
+            ] += 1
             return None
 
         # Evitar tendencias débiles solo cuando
@@ -261,6 +282,9 @@ def evaluar_estabilidad_activo(asset, tipo):
             "DEBIL" in estado_tendencia
             and score < 62
         ):
+            estado.metricas_ronda[
+                "scan_tendencia_debil"
+            ] += 1
             return None
 
         # Evitar rangos sin tendencia fuerte/normal.
@@ -269,6 +293,9 @@ def evaluar_estabilidad_activo(asset, tipo):
             and "FUERTE" not in estado_tendencia
             and "NORMAL" not in estado_tendencia
         ):
+            estado.metricas_ronda[
+                "scan_rango_debil"
+            ] += 1
             return None
 
         # =========================
@@ -339,7 +366,16 @@ def evaluar_estabilidad_activo(asset, tipo):
             estado.activos_invalidos.add(
                 asset
             )
+
+            estado.metricas_ronda[
+                "scan_invalido_api"
+            ] += 1
+
             return None
+
+        estado.metricas_ronda[
+            "scan_excepcion"
+        ] += 1
 
         return None
 
@@ -381,9 +417,13 @@ def obtener_activos():
     if (
         time.time()
         - estado.ultima_actualizacion_activos
-        < 300
+        < 120
         and estado.activos_cache
     ):
+        estado.metricas_ronda[
+            "uso_cache_activos"
+        ] = 1
+
         activos_cache_filtrados = [
             item
             for item in estado.activos_cache
@@ -404,6 +444,10 @@ def obtener_activos():
             ),
             reverse=True
         )
+
+        estado.metricas_ronda[
+            "compatibles_antes_top"
+        ] = len(activos_cache_filtrados)
 
         return activos_cache_filtrados[
             :MAX_ACTIVOS_ANALIZAR
@@ -444,6 +488,18 @@ def obtener_activos():
 
         # Si la conexión sigue viva pero la consulta
         # puntual falló, conservar la caché conocida.
+        estado.metricas_ronda[
+            "uso_cache_activos"
+        ] = 1
+
+        estado.metricas_ronda[
+            "fallback_cache_api"
+        ] = 1
+
+        estado.metricas_ronda[
+            "compatibles_antes_top"
+        ] = len(estado.activos_cache)
+
         return estado.activos_cache[
             :MAX_ACTIVOS_ANALIZAR
         ]
@@ -468,6 +524,18 @@ def obtener_activos():
         return []
 
     if not abiertos:
+        estado.metricas_ronda[
+            "uso_cache_activos"
+        ] = 1
+
+        estado.metricas_ronda[
+            "fallback_cache_api"
+        ] = 1
+
+        estado.metricas_ronda[
+            "compatibles_antes_top"
+        ] = len(estado.activos_cache)
+
         return estado.activos_cache[
             :MAX_ACTIVOS_ANALIZAR
         ]
@@ -509,19 +577,36 @@ def obtener_activos():
             ):
                 continue
 
+            estado.metricas_ronda[
+                "mercados_abiertos_recorridos"
+            ] += 1
+
             if asset in vistos:
+                estado.metricas_ronda[
+                    "duplicados_omitidos"
+                ] += 1
                 continue
 
             if (
                 asset
                 in estado.activos_invalidos
             ):
+                estado.metricas_ronda[
+                    "descartados_invalidos"
+                ] += 1
                 continue
 
             if activo_en_cooldown(
                 asset
             ):
+                estado.metricas_ronda[
+                    "descartados_cooldown"
+                ] += 1
                 continue
+
+            estado.metricas_ronda[
+                "activos_evaluados_filtro"
+            ] += 1
 
             try:
                 evaluado = (
@@ -540,6 +625,9 @@ def obtener_activos():
                 return []
 
             if evaluado is None:
+                estado.metricas_ronda[
+                    "descartados_sin_datos"
+                ] += 1
                 continue
 
             if (
@@ -549,6 +637,9 @@ def obtener_activos():
                 )
                 < MIN_SCORE_ACTIVO
             ):
+                estado.metricas_ronda[
+                    "descartados_score"
+                ] += 1
                 continue
 
             activos.append(
@@ -570,6 +661,10 @@ def obtener_activos():
         ),
         reverse=True
     )
+
+    estado.metricas_ronda[
+        "compatibles_antes_top"
+    ] = len(activos)
 
     activos = activos[
         :MAX_ACTIVOS_ANALIZAR

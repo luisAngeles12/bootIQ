@@ -1,0 +1,33 @@
+
+================================================================================
+F5.7-C2C — VALIDACION DE HIPOTESIS CONGELADAS
+================================================================================
+Filas CSV: 235
+Evaluables: 235
+Autorizadas V3: 26
+
+----- BASELINE VALIDACION -----
+BASELINE AUTORIZADAS                                    N= 26 | W= 13 | L= 13 | WR= 50.00%
+
+----- H1 CONGELADA EN TRAIN -----
+CHOCH bajista + MERCADO_NO_VALIDADO
+H1 AFECTADAS                                            N=  3 | W=  1 | L=  2 | WR= 33.33%
+H1 SI SE BLOQUEARAN                                     N= 23 | W= 12 | L= 11 | WR= 52.17%
+DELTA hipotetico H1: +2.17 pp
+
+----- H2 CONGELADA EN TRAIN -----
+CHOCH bajista + ACCION_PRECIO_NO_VALIDADA
+H2 AFECTADAS                                            N=  3 | W=  1 | L=  2 | WR= 33.33%
+H2 SI SE BLOQUEARAN                                     N= 23 | W= 12 | L= 11 | WR= 52.17%
+DELTA hipotetico H2: +2.17 pp
+
+----- H1 + H2 COMO POLITICA UNICA -----
+AFECTADAS H1 O H2                                       N=  4 | W=  1 | L=  3 | WR= 25.00%
+RESTANTES BLOQUEANDO H1 O H2                            N= 22 | W= 12 | L= 10 | WR= 54.55%
+DELTA combinado: +4.55 pp
+
+----- CRITERIO PREDEFINIDO -----
+Una hipotesis solo muestra generalizacion si mantiene direccion negativa en VALIDACION.
+No se activara ningun veto productivo solo por esta prueba.
+
+F5.7-C2C VALIDACION: OK
