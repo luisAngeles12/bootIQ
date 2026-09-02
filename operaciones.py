@@ -620,34 +620,35 @@ def revisar_operaciones_abiertas():
             bloqueo_activo_aplicado = False
 
             if resultado < 0:
-            
-                if perdidas_consecutivas_activo(op["activo"], 3):
-            
-                    estado.cooldown_activos[op["activo"]] = (
-                        time.time() + 1800
-                    )
-            
-                    bloqueo_activo_aplicado = True
-            
+
+                # ================================================
+                # D7.6B — RACHA HISTORICA SOLO TELEMETRIA
+                # ================================================
+                #
+                # operaciones.py ejecuta y registra.
+                # Las rachas históricas no tienen autoridad
+                # para bloquear activos ni estrategias.
+                #
+                if perdidas_consecutivas_activo(
+                    op["activo"],
+                    3,
+                ):
                     print(
-                        "ACTIVO BLOQUEADO 30 MIN POR 3 PÉRDIDAS:",
-                        op["activo"]
+                        "D7.6B RACHA ACTIVO >=3 LOSS "
+                        "DETECTADA — SIN BLOQUEO:",
+                        op["activo"],
                     )
-            
-                if not hasattr(estado, "cooldown_estrategias"):
-                    estado.cooldown_estrategias = {}
-            
-                if perdidas_consecutivas_patron(op["patron"], 3):
-            
-                    estado.cooldown_estrategias[op["patron"]] = (
-                        time.time() + 1800
-                    )
-            
+
+                if perdidas_consecutivas_patron(
+                    op["patron"],
+                    3,
+                ):
                     print(
-                        "ESTRATEGIA BLOQUEADA 30 MIN POR 3 PÉRDIDAS:",
-                        op["patron"]
+                        "D7.6B RACHA ESTRATEGIA >=3 LOSS "
+                        "DETECTADA — SIN BLOQUEO:",
+                        op["patron"],
                     )
-            
+
             print(
                 "OPERACIÓN CERRADA:",
                 op["activo"],

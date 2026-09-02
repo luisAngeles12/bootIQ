@@ -10,16 +10,233 @@ MAX_ACTIVOS_ANALIZAR = 20
 MIN_SCORE_ACTIVO = 55
 
 
+def _timestamp_servidor_iq():
+    """
+    Timestamp de referencia para decidir qué velas
+    están realmente cerradas.
+    """
+    try:
+        ts = estado.Iq.get_server_timestamp()
+        ts = float(ts)
+
+        # Protección por si alguna versión devuelve ms.
+        if ts > 10_000_000_000:
+            ts /= 1000.0
+
+        return ts
+
+    except Exception:
+        return time.time()
+
+
+def _solo_velas_cerradas(candles):
+    """
+    Conserva únicamente periodos realmente cerrados.
+
+    D7.6C:
+    no dependemos de borrar ciegamente candles[-1].
+    La vela cuyo 'from' coincide con el periodo actual
+    todavía está abierta y se excluye.
+    """
+    if not candles:
+        return []
+
+    ahora = _timestamp_servidor_iq()
+
+    inicio_vela_actual = (
+        int(ahora // CANDLE_TIME)
+        * CANDLE_TIME
+    )
+
+    cerradas = []
+
+    for c in candles:
+        try:
+            desde = int(float(c["from"]))
+
+            if desde >= inicio_vela_actual:
+                continue
+
+            cerradas.append(c)
+
+        except Exception:
+            continue
+
+    cerradas = sorted(
+        cerradas,
+        key=lambda x: int(float(x["from"]))
+    )
+
+    return cerradas
+
+
+def _datos_desde_velas(candles):
+    if not candles or len(candles) < 130:
+        return None
+
+    return {
+        "from": [
+            int(float(c["from"]))
+            for c in candles
+        ],
+        "open": [
+            float(c["open"])
+            for c in candles
+        ],
+        "close": [
+            float(c["close"])
+            for c in candles
+        ],
+        "high": [
+            float(c["max"])
+            for c in candles
+        ],
+        "low": [
+            float(c["min"])
+            for c in candles
+        ],
+    }
+
+
+def precargar_velas_activos(activos):
+    """
+    D7.6C — carga pesada FUERA de 0-10.
+
+    Cada activo nuevo recibe la misma profundidad que
+    usaba LIVE originalmente:
+
+        CANDLE_NUMBER = 3000 solicitadas
+        -> aproximadamente 2999 cerradas.
+
+    Los activos ya precargados no vuelven a descargar
+    las 3000 velas.
+    """
+    if not hasattr(estado, "velas_cache"):
+        estado.velas_cache = {}
+
+    if not activos:
+        return {
+            "nuevos": 0,
+            "reutilizados": 0,
+            "errores": 0,
+        }
+
+    inicio_precarga = time.perf_counter()
+
+    nombres_actuales = set()
+
+    for item in activos:
+        try:
+            if isinstance(item, dict):
+                activo = item.get("activo")
+            else:
+                activo = str(item)
+
+            if activo:
+                nombres_actuales.add(activo)
+
+        except Exception:
+            pass
+
+    # Evitar crecimiento indefinido del buffer.
+    estado.velas_cache = {
+        activo: velas
+        for activo, velas
+        in estado.velas_cache.items()
+        if activo in nombres_actuales
+    }
+
+    nuevos = 0
+    reutilizados = 0
+    errores = 0
+
+    objetivo_cerradas = max(
+        130,
+        CANDLE_NUMBER - 1,
+    )
+
+    for activo in sorted(nombres_actuales):
+        existentes = estado.velas_cache.get(
+            activo,
+            [],
+        )
+
+        if len(existentes) >= 130:
+            reutilizados += 1
+            continue
+
+        try:
+            conectado = (
+                estado.Iq is not None
+                and estado.Iq.check_connect()
+            )
+
+            if not conectado:
+                errores += 1
+                continue
+
+            candles = estado.Iq.get_candles(
+                activo,
+                CANDLE_TIME,
+                CANDLE_NUMBER,
+                time.time(),
+            )
+
+            cerradas = _solo_velas_cerradas(
+                candles
+            )
+
+            if len(cerradas) < 130:
+                errores += 1
+                continue
+
+            estado.velas_cache[activo] = (
+                cerradas[-objetivo_cerradas:]
+            )
+
+            nuevos += 1
+
+        except Exception:
+            errores += 1
+
+    demora = (
+        time.perf_counter()
+        - inicio_precarga
+    )
+
+    print(
+        "D7.6C BUFFER VELAS PRECALENTADO |",
+        "nuevos:", nuevos,
+        "| reutilizados:", reutilizados,
+        "| errores:", errores,
+        "| activos buffer:",
+        len(estado.velas_cache),
+        "| segundos:",
+        round(demora, 3),
+    )
+
+    return {
+        "nuevos": nuevos,
+        "reutilizados": reutilizados,
+        "errores": errores,
+    }
+
+
 def obtener_velas(activo):
     """
-    Obtiene las velas usadas por estrategia.py.
+    D7.6C — LIVE incremental.
 
-    Regla de conexión:
-    - mercado.py NO reconecta;
-    - si el websocket está caído, devuelve None;
-    - bot.py será quien detecte la caída y llame reconectar_iq().
+    Dentro de la ventana operativa no descarga 3000
+    velas nuevamente.
+
+    Usa:
+        buffer histórico de ~2999 cerradas
+        +
+        4 velas recientes de IQ.
+
+    Después fusiona por timestamp y vuelve a conservar
+    exactamente la misma profundidad histórica.
     """
-
     try:
         try:
             conectado = (
@@ -32,60 +249,105 @@ def obtener_velas(activo):
         if not conectado:
             return None
 
-        candles = estado.Iq.get_candles(
+        if not hasattr(estado, "velas_cache"):
+            estado.velas_cache = {}
+
+        buffer_actual = estado.velas_cache.get(
+            activo,
+            [],
+        )
+
+        # Regla D7.6C:
+        # la descarga pesada debe haber ocurrido antes
+        # mediante precargar_velas_activos().
+        if len(buffer_actual) < 130:
+            return None
+
+        recientes = estado.Iq.get_candles(
             activo,
             CANDLE_TIME,
-            CANDLE_NUMBER,
-            time.time()
+            4,
+            time.time(),
         )
 
-        # Si get_candles devolvió None porque la conexión
-        # se perdió, no intentar ninguna reconexión aquí.
-        if candles is None:
+        if recientes is None:
             return None
 
-        if len(candles) < 130:
-            return None
-
-        candles = sorted(
-            candles,
-            key=lambda x: x["from"]
+        recientes_cerradas = (
+            _solo_velas_cerradas(recientes)
         )
 
-        # Eliminar la vela todavía abierta.
-        candles = candles[:-1]
+        # Fusionar sin duplicar timestamps.
+        por_timestamp = {}
 
-        return {
-            # PASO 5.5A — conservar el timestamp exacto
-            # de cada vela cerrada analizada por estrategia.py.
-            "from": [
-                int(float(c["from"]))
-                for c in candles
-            ],
-        
-            "open": [
-                float(c["open"])
-                for c in candles
-            ],
-            "close": [
-                float(c["close"])
-                for c in candles
-            ],
-            "high": [
-                float(c["max"])
-                for c in candles
-            ],
-            "low": [
-                float(c["min"])
-                for c in candles
-            ],
-        }
+        for c in buffer_actual:
+            try:
+                por_timestamp[
+                    int(float(c["from"]))
+                ] = c
+            except Exception:
+                continue
+
+        for c in recientes_cerradas:
+            try:
+                por_timestamp[
+                    int(float(c["from"]))
+                ] = c
+            except Exception:
+                continue
+
+        fusionadas = [
+            por_timestamp[k]
+            for k in sorted(por_timestamp)
+        ]
+
+        objetivo_cerradas = max(
+            130,
+            CANDLE_NUMBER - 1,
+        )
+
+        fusionadas = fusionadas[
+            -objetivo_cerradas:
+        ]
+
+        if len(fusionadas) < 130:
+            return None
+
+        # ------------------------------------------------
+        # PARIDAD TEMPORAL
+        # ------------------------------------------------
+        ahora = _timestamp_servidor_iq()
+
+        inicio_actual = (
+            int(ahora // CANDLE_TIME)
+            * CANDLE_TIME
+        )
+
+        ultima_esperada = (
+            inicio_actual
+            - CANDLE_TIME
+        )
+
+        ultima_buffer = int(
+            float(
+                fusionadas[-1]["from"]
+            )
+        )
+
+        # Nunca analizar una vela vieja como si fuese
+        # la última cerrada.
+        if ultima_buffer != ultima_esperada:
+            return None
+
+        estado.velas_cache[activo] = fusionadas
+
+        return _datos_desde_velas(
+            fusionadas
+        )
 
     except Exception as e:
         texto = str(e).lower()
 
-        # Una caída de conexión no convierte el activo
-        # en inválido y tampoco se reconecta desde aquí.
         if (
             "need reconnect" in texto
             or "connection is already closed" in texto
@@ -101,7 +363,6 @@ def obtener_velas(activo):
             estado.activos_invalidos.add(
                 activo
             )
-            return None
 
         return None
 

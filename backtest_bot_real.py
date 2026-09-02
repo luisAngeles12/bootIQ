@@ -35,10 +35,10 @@ import motor_aprendizaje_historico as mah
 from motor_candidatos import ordenar_candidatas_v3
 from motor_decision import evaluar_decision_post_protocolo
 from decision_bootiq import aplanar_decision_bootiq
-CARPETA_DATA = "data_backtest_oos_d55"
+CARPETA_DATA = "data_backtest_oos4_d75"
 
 MAX_ACTIVOS_ANALIZAR = 20
-MAX_SENALES_POR_RONDA = 20
+MAX_SENALES_POR_RONDA = 5
 LIMITE_DATASETS = 160
 PASO_RONDA = 1
 
@@ -71,7 +71,7 @@ elif MODO_EXPERIMENTO == MODO_EXPERIMENTO_VALIDACION:
     SALIDA = "backtest_bootiq_F5_7_D4_2_VALID.csv"
 
 elif MODO_EXPERIMENTO == MODO_EXPERIMENTO_OUT_OF_SAMPLE:
-    SALIDA = "backtest_bootiq_F5_7_D6_6_OOS_REPLAY.csv"
+    SALIDA = "backtest_bootiq_D7_5_OOS4_PRELIMINAR.csv"
 
 else:
     raise RuntimeError(
@@ -81,7 +81,7 @@ TOTAL_DATASETS_EXPERIMENTO = 16
 TOTAL_DATASETS_TRAIN = 11
 TOTAL_DATASETS_VALIDACION = 5
 
-BUILD_ID = "BOOTIQ_F5_7_D6_6_CHOCH_CORE4_REPLAY_2026_09_01"
+BUILD_ID = "BOOTIQ_D7_5_OOS4_PRELIMINAR_2026_09_02"
 ACTUALIZAR_APRENDIZAJE = False
 # ============================================================
 # C-C2 — ACTUALIZACIÓN EXCLUSIVA POST-PROTOCOLO

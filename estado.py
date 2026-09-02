@@ -9,6 +9,12 @@ cooldown_activos = {}
 activos_cache = []
 ultima_actualizacion_activos = 0
 
+# D7.6C — buffer LIVE de velas cerradas por activo.
+# Conserva la misma profundidad histórica usada por
+# obtener_velas(), evitando descargar 3000 velas por
+# activo dentro de la ventana operativa.
+velas_cache = {}
+
 # Memoria de zonas operadas
 zonas_operadas = {}
 senales_pendientes = []

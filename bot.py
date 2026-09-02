@@ -8,11 +8,12 @@ from config import (
     MAX_OPERACIONES_ABIERTAS,
     VENTANA_ENTRADA_INICIO,
     VENTANA_ENTRADA_FIN,
+    CANDLE_TIME
 )
 from utils import segundo_actual, registrar_bloqueo, imprimir_resumen_ronda, reiniciar_metricas_ronda
 from conexion import conectar, reconectar_iq
 from historial import asegurar_historial_csv, cargar_operaciones_pendientes
-from mercado import obtener_activos
+from mercado import obtener_activos, precargar_velas_activos
 from estrategia import analizar_activo
 from entrada import (
     guardar_senal_pendiente,
@@ -31,6 +32,14 @@ def main():
 
     ronda_estadisticas = 0
     operaciones_desde_resumen_mercado = 0
+
+    # D7.6A — precarga del universo fuera de la ventana
+    # operativa. Evita consumir los segundos 0-10 haciendo
+    # el scanner completo.
+    ultima_precarga_activos = 0.0
+
+    # D7.6C — una sola ronda LIVE por vela.
+    ultima_ronda_live_d76c = None
     ultima_impresion_estado = 0
     ultima_impresion_resumen = 0
 
@@ -269,6 +278,113 @@ def main():
             <= VENTANA_ENTRADA_FIN
         ):
 
+            # ==========================================
+            # D7.6A — PRECALENTAR CACHE DE ACTIVOS
+            # ==========================================
+            #
+            # El scanner completo se ejecuta FUERA de
+            # la ventana operativa. Así 0-10 queda para:
+            # estrategia -> Cerebro -> ranking -> orden.
+            #
+            if (
+                12 <= segundo <= 18
+                and time.time()
+                - ultima_precarga_activos
+                >= 45
+            ):
+                edad_cache = (
+                    time.time()
+                    - float(
+                        getattr(
+                            estado,
+                            "ultima_actualizacion_activos",
+                            0,
+                        )
+                        or 0
+                    )
+                )
+
+                if (
+                    not getattr(
+                        estado,
+                        "activos_cache",
+                        [],
+                    )
+                    or edad_cache >= 60
+                ):
+                    print(
+                        "D7.6A PRECALENTANDO CACHE "
+                        "FUERA DE VENTANA | edad:",
+                        round(edad_cache, 2),
+                    )
+
+                    # ==========================================
+                    # D7.6C.1 — preservar edad real de la cache
+                    # si el scanner falla y obtener_activos()
+                    # necesita utilizar su fallback.
+                    # ==========================================
+
+                    timestamp_cache_previo = float(
+                        getattr(
+                            estado,
+                            "ultima_actualizacion_activos",
+                            0,
+                        )
+                        or 0
+                    )
+
+                    # Fuerza intento de scanner completo.
+                    # La lista cacheada se conserva para fallback.
+                    estado.ultima_actualizacion_activos = 0
+
+                    activos_precarga = obtener_activos()
+
+                    timestamp_cache_despues = float(
+                        getattr(
+                            estado,
+                            "ultima_actualizacion_activos",
+                            0,
+                        )
+                        or 0
+                    )
+
+                    # Si obtener_activos() devolvió activos pero
+                    # no registró un timestamp nuevo, significa
+                    # que utilizó el fallback de cache.
+                    #
+                    # Restauramos EL TIMESTAMP ORIGINAL.
+                    # No usamos time.time(), porque eso haría
+                    # parecer nueva una cache que realmente
+                    # puede llevar 70, 100 o más segundos.
+                    if (
+                        activos_precarga
+                        and timestamp_cache_despues <= 0
+                        and timestamp_cache_previo > 0
+                    ):
+                        estado.ultima_actualizacion_activos = (
+                            timestamp_cache_previo
+                        )
+
+                        print(
+                            "D7.6C.1 SCANNER FALLBACK — "
+                            "TIMESTAMP CACHE RESTAURADO | edad:",
+                            round(
+                                time.time()
+                                - timestamp_cache_previo,
+                                2,
+                            ),
+                        )
+
+                    if activos_precarga:
+                        precargar_velas_activos(
+                            activos_precarga
+                        )
+
+                    ultima_precarga_activos = time.time()
+
+                    time.sleep(0.25)
+                    continue
+
             if (
                 time.time()
                 - ultima_impresion_resumen
@@ -336,8 +452,82 @@ def main():
         # ==========================================
         # OBTENER ACTIVOS
         # ==========================================
+        #
+        # D7.6A:
+        # dentro de 0-10 nunca iniciamos un scanner
+        # completo. La ronda solo trabaja con una cache
+        # previamente preparada.
+        # ==========================================
+
+        edad_cache = (
+            time.time()
+            - float(
+                getattr(
+                    estado,
+                    "ultima_actualizacion_activos",
+                    0,
+                )
+                or 0
+            )
+        )
+
+        if (
+            not getattr(
+                estado,
+                "activos_cache",
+                [],
+            )
+            or edad_cache >= 120
+        ):
+            print(
+                "D7.6A VENTANA OMITIDA — "
+                "CACHE NO PREPARADA | edad:",
+                round(edad_cache, 2),
+            )
+
+            time.sleep(0.25)
+            continue
+
+        # ==========================================
+        # D7.6C — UNA RONDA POR VELA
+        # ==========================================
+        try:
+            ts_ronda = float(
+                estado.Iq.get_server_timestamp()
+            )
+
+            if ts_ronda > 10_000_000_000:
+                ts_ronda /= 1000.0
+
+        except Exception:
+            ts_ronda = time.time()
+
+        clave_ronda_d76c = int(
+            ts_ronda // CANDLE_TIME
+        )
+
+        if (
+            ultima_ronda_live_d76c
+            == clave_ronda_d76c
+        ):
+            time.sleep(0.25)
+            continue
+
+        ultima_ronda_live_d76c = (
+            clave_ronda_d76c
+        )
+
+        print(
+            "D7.6C RONDA UNICA | vela:",
+            clave_ronda_d76c,
+            "| segundo:",
+            segundo,
+        )
+
         reiniciar_metricas_ronda()
 
+        # Con cache <120 s, obtener_activos() usa
+        # directamente su rama CACHE.
         activos = obtener_activos()
 
         estado.metricas_ronda[
@@ -368,6 +558,8 @@ def main():
         # ==========================================
         # ANALIZAR ACTIVOS
         # ==========================================
+        inicio_analisis_d76c = time.perf_counter()
+
         for item in activos:
             try:
 
@@ -424,6 +616,18 @@ def main():
                     + ": "
                     + str(e)
                 )
+
+        demora_analisis_d76c = (
+            time.perf_counter()
+            - inicio_analisis_d76c
+        )
+
+        print(
+            "D7.6C TIEMPO ANALISIS TOP:",
+            round(demora_analisis_d76c, 3),
+            "segundos | activos:",
+            len(activos),
+        )
 
         # ==========================================
         # MOSTRAR SEÑALES
