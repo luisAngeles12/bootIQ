@@ -1013,34 +1013,28 @@ def convertir_decision_v3_a_oficial(
     ).upper().strip()
 
     # ========================================================
-    # D6.4 — DISCRIMINACION OFICIAL CHOCH POR CALIDAD
+    # D7.1 — BLOQUEO OFICIAL PROTOCOLO_CHOCH
     # ========================================================
     #
-    # Evidencia combinada en dos OOS independientes:
+    # D6.4 habia promovido CHOCH PREMIUM a entrada DIRECTA
+    # para evitar la degradacion temporal del protocolo.
     #
-    # CHOCH PREMIUM al origen:
-    #   40 señales | 27W / 13L | 67.50%
+    # Validacion independiente posterior:
     #
-    # CHOCH NO PREMIUM al origen:
-    #   115 señales | 46W / 69L | 40.00%
+    # PROTOCOLO_CHOCH promovido por D6.4:
+    #   7 operaciones | 2W / 5L | 28.57%
     #
-    # CHOCH PREMIUM ejecutado tras protocolo:
-    #   22 señales | 9W / 13L | 40.91%
+    # La ventaja observada durante el descubrimiento de D6.4
+    # no generalizo fuera de muestra.
     #
-    # Contrato:
-    # - Solo actúa sobre CHOCH ya autorizado estadísticamente.
-    # - PREMIUM preserva la ventaja mediante entrada DIRECTA.
-    # - NO PREMIUM queda bloqueado.
-    # - No modifica REACCION_ZONA ni otros protocolos.
+    # Contrato D7.1:
+    # - Solo actua sobre CHOCH ya autorizado estadisticamente
+    #   cuyo protocolo real es PROTOCOLO_CHOCH.
+    # - PREMIUM y NO PREMIUM quedan bloqueados.
+    # - No afecta CHOCH asociados a otros protocolos.
+    # - No modifica RUPTURA_RESISTENCIA / F4.3.
+    # - No modifica D6.6 CORE4.
     # ========================================================
-
-    calidad_setup = str(
-        evidencia.get(
-            "calidad_setup",
-            "MEDIA",
-        )
-        or "MEDIA"
-    ).upper().strip()
 
     es_choch_autorizado = (
         decision_estadistica
@@ -1053,55 +1047,6 @@ def convertir_decision_v3_a_oficial(
     )
 
     if es_choch_autorizado:
-
-        if calidad_setup == "PREMIUM":
-            return {
-                "decision": "OPERAR",
-                "decision_legacy": (
-                    "OPERAR_DIRECTO_O_CONFIRMADO"
-                ),
-                "operar": True,
-                "requiere_protocolo": False,
-                "modo_ejecucion": "DIRECTA",
-                "bloquear_por_riesgo": False,
-                "riesgo_extremo_diagnostico": False,
-
-                "origen_autoridad": (
-                    "PROBABILIDAD_HISTORICA_V3"
-                ),
-
-                "decision_sombra_origen": (
-                    decision_estadistica
-                ),
-
-                "nivel_probabilidad": nivel,
-                "clave_probabilidad": clave,
-
-                "directa_evidencia_solida": False,
-                "directa_muestra": muestra,
-                "directa_confiabilidad": confiabilidad,
-
-                "directa_aptitud_tecnica": True,
-
-                "directa_motivos_tecnicos": [
-                    (
-                        "D6.4: CHOCH PREMIUM validado "
-                        "para preservar la ventaja temporal "
-                        "de la señal."
-                    )
-                ],
-
-                "directa_ruta_validada": True,
-
-                "motivo": (
-                    "D6.4: CHOCH PREMIUM autorizado "
-                    "para entrada directa. El protocolo "
-                    "degradó esta familia entre el origen "
-                    "y la ejecución. "
-                    + motivo_estadistico
-                ).strip(),
-            }
-
         return {
             "decision": "NO_OPERAR",
             "decision_legacy": "NO_OPERAR",
@@ -1130,15 +1075,162 @@ def convertir_decision_v3_a_oficial(
 
             "directa_motivos_tecnicos": [
                 (
-                    "D6.4: CHOCH no PREMIUM bloqueado. "
-                    "No mostró ventaja estable en dos OOS."
+                    "D7.1: PROTOCOLO_CHOCH bloqueado "
+                    "tras fallar generalizacion independiente."
                 )
             ],
 
             "motivo": (
-                "D6.4: autorización estadística anulada "
-                "para CHOCH no PREMIUM por falta de ventaja "
-                "generalizable. "
+                "D7.1: autorizacion estadistica anulada "
+                "para PROTOCOLO_CHOCH. La promocion directa "
+                "de D6.4 no generalizo fuera de muestra. "
+                + motivo_estadistico
+            ).strip(),
+        }
+
+    # ========================================================
+    # D7.5 — REACCION_ZONA EN TENDENCIA ALCISTA → DIRECTA
+    # ========================================================
+    #
+    # Evidencia temporal acumulada:
+    #
+    # OOS anterior:
+    #   62 señales | 39W / 23L | 62.90%
+    #
+    # Histórico limpio:
+    #   8 señales | 7W / 1L | 87.50%
+    #
+    # OOS D55:
+    #   36 señales | 24W / 12L | 66.67%
+    #
+    # OOS3:
+    #   5 señales | 3W / 2L | 60.00%
+    #
+    # Combinado:
+    #   111 señales | 73W / 38L | 65.77%
+    #
+    # Por ruta previa:
+    #   DIRECTA:    5  | 3W / 2L   | 60.00%
+    #   PROTOCOLO: 19  | 13W / 6L  | 68.42%
+    #   RECHAZADA: 87  | 57W / 30L | 65.52%
+    #
+    # Fuera de TENDENCIA_ALCISTA:
+    #   29 señales | 12W / 17L | 41.38%
+    #
+    # Contrato D7.5:
+    # - Solo REACCION_ZONA.
+    # - Solo TENDENCIA_ALCISTA.
+    # - Solo mercado LIMPIO o NORMAL.
+    # - Solo setups cuyo modo técnico ya es DIRECTA.
+    # - Puede rescatar NO_OPERAR_SOMBRA o evitar protocolo.
+    # - Nunca habilita SUCIO / CAOTICO.
+    # - No modifica D7.1, D6.6 ni F4.3.
+    # ========================================================
+
+    estrategia_d75 = _txt(
+        evidencia.get(
+            "estrategia",
+            "",
+        )
+        or evidencia.get(
+            "patron",
+            "",
+        )
+    )
+
+    familia_d75 = _txt(
+        evidencia.get(
+            "familia_setup",
+            "",
+        )
+    )
+
+    mercado_d75 = _txt(
+        evidencia.get(
+            "mercado",
+            "",
+        )
+        or evidencia.get(
+            "tipo_mercado",
+            "",
+        )
+    )
+
+    calidad_mercado_d75 = _txt(
+        evidencia.get(
+            "calidad_mercado",
+            "",
+        )
+    )
+
+    modo_entrada_d75 = _txt(
+        evidencia.get(
+            "modo_entrada_setup",
+            "",
+        )
+    )
+
+    es_reaccion_zona_d75 = (
+        familia_d75 == "reaccion_zona"
+        or protocolo_sugerido == "protocolo_reaccion_zona"
+        or "reaccion compradora" in estrategia_d75
+        or "reaccion vendedora" in estrategia_d75
+    )
+
+    cumple_d75 = (
+        es_reaccion_zona_d75
+        and mercado_d75 == "tendencia_alcista"
+        and calidad_mercado_d75
+        in {
+            "limpio",
+            "normal",
+        }
+        and modo_entrada_d75 == "directa"
+    )
+
+    if cumple_d75:
+        return {
+            "decision": "OPERAR",
+            "decision_legacy": (
+                "OPERAR_DIRECTO_O_CONFIRMADO"
+            ),
+            "operar": True,
+            "requiere_protocolo": False,
+            "modo_ejecucion": "DIRECTA",
+            "bloquear_por_riesgo": False,
+            "riesgo_extremo_diagnostico": False,
+
+            "origen_autoridad": (
+                "D7_5_REACCION_ZONA_ALCISTA"
+            ),
+
+            "decision_sombra_origen": (
+                decision_estadistica
+            ),
+
+            "nivel_probabilidad": nivel,
+            "clave_probabilidad": clave,
+
+            "directa_evidencia_solida": True,
+            "directa_muestra": muestra,
+            "directa_confiabilidad": confiabilidad,
+
+            "directa_aptitud_tecnica": True,
+
+            "directa_motivos_tecnicos": [
+                (
+                    "D7.5: REACCION_ZONA en "
+                    "TENDENCIA_ALCISTA con mercado "
+                    "LIMPIO/NORMAL y modo técnico DIRECTA."
+                )
+            ],
+
+            "directa_ruta_validada": True,
+
+            "motivo": (
+                "D7.5: REACCION_ZONA autorizada para "
+                "entrada directa por ventaja consistente "
+                "en cuatro periodos temporales. "
                 + motivo_estadistico
             ).strip(),
         }
