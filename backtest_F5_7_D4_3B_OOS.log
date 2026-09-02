@@ -1,4 +1,4 @@
-BUILD: BOOTIQ_BACKTEST_V5_SOMBRA_ESTADISTICA_2026_08_01
+BUILD: BOOTIQ_F5_7_D4_3B_TIMING_MINIMO_SOMBRA_2026_09_01
 
 ===== AUDITORIA DE DATASETS =====
 Modo ejecutado: FILTRADO
@@ -4995,6 +4995,37 @@ CHOCH | evento: IMPULSO | accion: ESPERAR_3 | espera_real: 2 | total: 2 | win: 0
 ==============================================
 
 
+===== F5.7-D4.3B TIMING MINIMO SOMBRA — OUT_OF_SAMPLE =====
+
+--- PROTOCOLO OFICIAL VS SOMBRA ---
+OFICIAL | total: 31 | win: 14 | loss: 17 | WR: 45.16%
+TIMING MINIMO SOMBRA | total: 13 | win: 7 | loss: 6 | WR: 53.85%
+
+--- IMPACTO GLOBAL SOMBRA ---
+BASELINE ACTUAL | total: 66 | win: 34 | loss: 32 | WR: 51.52%
+DIRECTAS + D43 SOMBRA | total: 48 | win: 27 | loss: 21 | WR: 56.25%
+
+--- RELACION CON ENTRADA OFICIAL ---
+AMBAS_SIN_ENTRADA | total: 61
+PIERDE_ENTRADA | total: 18
+MISMA_ENTRADA | total: 12
+ENTRADA_POSTERIOR | total: 1
+
+--- TRANSICIONES RESULTADO ---
+WIN -> WIN | total: 7
+LOSS -> LOSS | total: 5
+WIN -> LOSS | total: 1
+
+--- POR ACCION CONFIRMACION ---
+ESPERAR_2 | OFICIAL: 22 45.45% | SOMBRA: 11 45.45%
+ESPERAR_3 | OFICIAL: 9 44.44% | SOMBRA: 2 100.0%
+
+--- POR PROTOCOLO SOMBRA ---
+CHOCH | total: 12 | win: 6 | loss: 6 | WR: 50.0%
+REACCION_ZONA | total: 1 | win: 1 | loss: 0 | WR: 100.0%
+==============================================
+
+
 ===== C-C2 PROBABILIDAD POST-PROTOCOLO — VALIDACION =====
 Operaciones protocolo: 31
 Con aprendizaje post-protocolo: 30
@@ -5059,4 +5090,4 @@ PROTOCOLO_EVENTO_RIESGO | PROTOCOLO_EVENTO_RIESGO|CHOCH|PROTOCOLO_CHOCH_PA_FAVOR
 PROTOCOLO_EVENTO_ESPERA | PROTOCOLO_EVENTO_ESPERA|CHOCH|PROTOCOLO_CHOCH_PA_FAVOR_RUPTURA_IMPULSO_ESPERA_2|2 | train total: 9 | train WR: 44.44% | prob train: 47.76% | valid total: 11 | valid WIN: 4 | valid LOSS: 7 | valid WR: 36.36% | activos: 9
 ========================================
 
-Archivo generado: backtest_bootiq_F5_7_D4_2_OOS.csv
+Archivo generado: backtest_bootiq_F5_7_D4_3B_OOS.csv

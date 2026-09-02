@@ -20,7 +20,6 @@ import csv
 import os
 import copy
 import hashlib
-import statistics
 
 import estado
 import estrategia
@@ -31,11 +30,10 @@ from motor_aprendizaje_historico import (
     generar_aprendizaje_desde_resultados,
     actualizar_aprendizaje_post_protocolo,
 )
-import motor_aprendizaje_historico as mah
 from motor_candidatos import ordenar_candidatas_v3
 from motor_decision import evaluar_decision_post_protocolo
 from decision_bootiq import aplanar_decision_bootiq
-CARPETA_DATA = "data_backtest_oos_d55"
+CARPETA_DATA = "data_backtest_oos"
 
 MAX_ACTIVOS_ANALIZAR = 20
 MAX_SENALES_POR_RONDA = 20
@@ -71,7 +69,7 @@ elif MODO_EXPERIMENTO == MODO_EXPERIMENTO_VALIDACION:
     SALIDA = "backtest_bootiq_F5_7_D4_2_VALID.csv"
 
 elif MODO_EXPERIMENTO == MODO_EXPERIMENTO_OUT_OF_SAMPLE:
-    SALIDA = "backtest_bootiq_F5_7_D6_6_OOS_REPLAY.csv"
+    SALIDA = "backtest_bootiq_F5_7_D4_3B_OOS.csv"
 
 else:
     raise RuntimeError(
@@ -81,35 +79,13 @@ TOTAL_DATASETS_EXPERIMENTO = 16
 TOTAL_DATASETS_TRAIN = 11
 TOTAL_DATASETS_VALIDACION = 5
 
-BUILD_ID = "BOOTIQ_F5_7_D6_6_CHOCH_CORE4_REPLAY_2026_09_01"
+BUILD_ID = "BOOTIQ_F5_7_D4_3B_TIMING_MINIMO_SOMBRA_2026_09_01"
 ACTUALIZAR_APRENDIZAJE = False
 # ============================================================
 # C-C2 — ACTUALIZACIÓN EXCLUSIVA POST-PROTOCOLO
 # ============================================================
 
 ACTUALIZAR_APRENDIZAJE_PROTOCOLO = False
-
-# ============================================================
-# F5.7-D5.5 — CONSENSO INTERMEDIO SOMBRA
-# ============================================================
-# HIPÓTESIS CONGELADAS:
-#
-# A_PA_RESCATE:
-#   decisión oficial NO_OPERAR
-#   + principal PA_DIRECCION
-#   + mediana de TODAS las INTERMEDIAS utilizables >= 50
-#
-# B_SETUP_VETO:
-#   decisión oficial autorizada
-#   + principal CONTEXTO_SETUP
-#   + mediana de TODAS las INTERMEDIAS utilizables < 50
-#
-# Solo telemetría. Nunca modifica la decisión oficial.
-# ============================================================
-
-D55_UMBRAL_CONSENSO = 50.0
-D55_MEMORIA_RUTA = mah.RUTA_APRENDIZAJE
-_D55_MEMORIA_CACHE = None
 
 if MODO_EXPERIMENTO == MODO_EXPERIMENTO_OUT_OF_SAMPLE:
     ACTUALIZAR_APRENDIZAJE = False
@@ -1563,50 +1539,6 @@ def crear_registro_resultado(
                 "motivo_decision_estadistica_sombra",
                 "",
             )
-        ),
-
-        # F5.7-D5.5 — consenso intermedio sombra.
-        "d55_evaluada": bool(
-            senal.get("d55_evaluada", False)
-        ),
-        "d55_reconstruccion_valida": bool(
-            senal.get("d55_reconstruccion_valida", False)
-        ),
-        "d55_error_probabilidad": senal.get(
-            "d55_error_probabilidad", 0.0
-        ),
-        "d55_consenso_disponible": bool(
-            senal.get("d55_consenso_disponible", False)
-        ),
-        "d55_consenso_intermedio": senal.get(
-            "d55_consenso_intermedio", 0.0
-        ),
-        "d55_fuentes_intermedias": senal.get(
-            "d55_fuentes_intermedias", 0
-        ),
-        "d55_intermedias_positivas": senal.get(
-            "d55_intermedias_positivas", 0
-        ),
-        "d55_intermedias_negativas": senal.get(
-            "d55_intermedias_negativas", 0
-        ),
-        "d55_principal_nivel_reconstruido": senal.get(
-            "d55_principal_nivel_reconstruido", ""
-        ),
-        "d55_principal_clave_reconstruida": senal.get(
-            "d55_principal_clave_reconstruida", ""
-        ),
-        "d55_probabilidad_reconstruida": senal.get(
-            "d55_probabilidad_reconstruida", 0.0
-        ),
-        "d55_pa_rescate_sombra": bool(
-            senal.get("d55_pa_rescate_sombra", False)
-        ),
-        "d55_setup_veto_sombra": bool(
-            senal.get("d55_setup_veto_sombra", False)
-        ),
-        "d55_accion": senal.get(
-            "d55_accion", "SIN_CAMBIO"
         ),
 
         # ==================================================
@@ -3305,183 +3237,6 @@ def evaluar_d43_timing_minimo_sombra(
 
     return salida
 
-# ============================================================
-# F5.7-D5.5 — MOTOR DE TELEMETRÍA SOMBRA
-# ============================================================
-
-def evaluar_d55_consenso_sombra(senal, decision_oficial):
-    global _D55_MEMORIA_CACHE
-
-    salida = {
-        "d55_evaluada": True,
-        "d55_reconstruccion_valida": False,
-        "d55_error_probabilidad": 0.0,
-        "d55_consenso_disponible": False,
-        "d55_consenso_intermedio": 0.0,
-        "d55_fuentes_intermedias": 0,
-        "d55_intermedias_positivas": 0,
-        "d55_intermedias_negativas": 0,
-        "d55_principal_nivel_reconstruido": "",
-        "d55_principal_clave_reconstruida": "",
-        "d55_probabilidad_reconstruida": 0.0,
-        "d55_pa_rescate_sombra": False,
-        "d55_setup_veto_sombra": False,
-        "d55_accion": "SIN_CAMBIO",
-    }
-
-    try:
-        if _D55_MEMORIA_CACHE is None:
-            _D55_MEMORIA_CACHE = mah.cargar_aprendizaje(
-                D55_MEMORIA_RUTA
-            )
-
-        fuentes, _ = mah._buscar_fuentes_aprendizaje(
-            senal,
-            _D55_MEMORIA_CACHE,
-        )
-
-        principal = (
-            mah._seleccionar_fuente_principal(fuentes)
-            or {}
-        )
-
-        combinado = mah._combinar_fuentes(fuentes)
-
-        nivel_oficial = str(
-            senal.get("nivel_probabilidad_principal", "")
-            or ""
-        ).upper().strip()
-
-        clave_oficial = str(
-            senal.get("clave_probabilidad_principal", "")
-            or ""
-        ).strip()
-
-        prob_oficial = mah._numero(
-            senal.get("probabilidad_estimada"),
-            mah.PRIOR_WINRATE,
-        )
-
-        nivel_rec = str(
-            principal.get("nivel", "")
-            or ""
-        ).upper().strip()
-
-        clave_rec = str(
-            principal.get("clave", "")
-            or ""
-        ).strip()
-
-        prob_rec = mah._numero(
-            combinado.get("probabilidad_estimada"),
-            mah.PRIOR_WINRATE,
-        )
-
-        error_prob = abs(
-            prob_rec - prob_oficial
-        )
-
-        salida["d55_principal_nivel_reconstruido"] = nivel_rec
-        salida["d55_principal_clave_reconstruida"] = clave_rec
-        salida["d55_probabilidad_reconstruida"] = round(
-            prob_rec,
-            2,
-        )
-        salida["d55_error_probabilidad"] = round(
-            error_prob,
-            4,
-        )
-
-        valida = bool(
-            nivel_oficial
-            and clave_oficial
-            and nivel_rec == nivel_oficial
-            and clave_rec == clave_oficial
-            and error_prob <= 0.02
-        )
-
-        salida["d55_reconstruccion_valida"] = valida
-
-        if not valida:
-            salida["d55_accion"] = "RECONSTRUCCION_NO_VALIDA"
-            return salida
-
-        intermedias = [
-            fuente
-            for fuente in fuentes
-            if (
-                mah._grupo_nivel(
-                    fuente.get("nivel")
-                ) == "INTERMEDIO"
-                and mah._entero(
-                    fuente.get("total"),
-                    0,
-                ) >= mah.MIN_MUESTRA_APORTE
-            )
-        ]
-
-        probs = [
-            mah._numero(
-                fuente.get("probabilidad_ajustada"),
-                mah.PRIOR_WINRATE,
-            )
-            for fuente in intermedias
-        ]
-
-        salida["d55_fuentes_intermedias"] = len(probs)
-
-        salida["d55_intermedias_positivas"] = sum(
-            1 for p in probs
-            if p >= D55_UMBRAL_CONSENSO
-        )
-
-        salida["d55_intermedias_negativas"] = sum(
-            1 for p in probs
-            if p < D55_UMBRAL_CONSENSO
-        )
-
-        if not probs:
-            salida["d55_accion"] = "SIN_FUENTES_INTERMEDIAS"
-            return salida
-
-        consenso = round(
-            statistics.median(probs),
-            2,
-        )
-
-        salida["d55_consenso_disponible"] = True
-        salida["d55_consenso_intermedio"] = consenso
-
-        # A — definición congelada.
-        if (
-            decision_oficial == "NO_OPERAR"
-            and nivel_oficial == "PA_DIRECCION"
-            and consenso >= D55_UMBRAL_CONSENSO
-        ):
-            salida["d55_pa_rescate_sombra"] = True
-            salida["d55_accion"] = "A_PA_RESCATE"
-
-        # B — definición congelada.
-        elif (
-            decision_oficial
-            in {"OPERAR", "OPERAR_CON_PROTOCOLO"}
-            and nivel_oficial == "CONTEXTO_SETUP"
-            and consenso < D55_UMBRAL_CONSENSO
-        ):
-            salida["d55_setup_veto_sombra"] = True
-            salida["d55_accion"] = "B_SETUP_VETO"
-
-        return salida
-
-    except Exception as exc:
-        salida["d55_accion"] = (
-            "ERROR_D55_"
-            + type(exc).__name__.upper()
-        )
-        return salida
-
-
-
 def ejecutar_backtest(datasets):
     """
     Orquestador oficial del backtest BootIQ.
@@ -3624,20 +3379,6 @@ def ejecutar_backtest(datasets):
             senal["cerebro_unico_operar"] = operar
             senal["cerebro_unico_requiere_protocolo"] = requiere_protocolo
             senal["cerebro_unico_modo_ejecucion"] = modo_ejecucion
-
-            # ========================================================
-            # F5.7-D5.5 — TELEMETRÍA SOMBRA
-            # ========================================================
-            # Observa la decisión ya tomada.
-            # No modifica operar, protocolo ni entrada.
-            # ========================================================
-
-            d55 = evaluar_d55_consenso_sombra(
-                senal,
-                decision_oficial,
-            )
-
-            senal.update(d55)
 
             # Cierre seguro ante cualquier inconsistencia.
             if (
@@ -4132,22 +3873,6 @@ def guardar_resultados(resultados):
         "operar_estadistico_sombra",
         "requiere_protocolo_estadistico_sombra",
         "motivo_decision_estadistica_sombra",
-
-        # F5.7-D5.5 — consenso intermedio sombra.
-        "d55_evaluada",
-        "d55_reconstruccion_valida",
-        "d55_error_probabilidad",
-        "d55_consenso_disponible",
-        "d55_consenso_intermedio",
-        "d55_fuentes_intermedias",
-        "d55_intermedias_positivas",
-        "d55_intermedias_negativas",
-        "d55_principal_nivel_reconstruido",
-        "d55_principal_clave_reconstruida",
-        "d55_probabilidad_reconstruida",
-        "d55_pa_rescate_sombra",
-        "d55_setup_veto_sombra",
-        "d55_accion",
 
         # Auditoría de entrada directa V3.
         "directa_evidencia_solida",
