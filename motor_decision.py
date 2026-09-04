@@ -1338,6 +1338,25 @@ def convertir_decision_v3_a_oficial(
         )
     )
 
+    # ========================================================
+    # D7.8 — R4 NO RESCATA PULLBACK CON FILTRO REFORZADO
+    # ========================================================
+    #
+    # Evidencia prospectiva D7.7:
+    # este subtipo de R4 degradó claramente el resultado.
+    #
+    # Importante:
+    # - NO bloquea todos los pullback bajistas.
+    # - NO elimina R4 completo.
+    # - NO crea un veto fuera del Cerebro.
+    # - Solo retira esta ruta del rescate R4.
+    razon_validacion_mercado_core4 = _txt(
+        evidencia.get(
+            "razon_validacion_mercado",
+            "",
+        )
+    )
+
     core4_r1 = (
         tipo_setup_core4 == "indefinido"
         and calidad_setup_core4 == "premium"
@@ -1353,6 +1372,11 @@ def convertir_decision_v3_a_oficial(
         == "pullback bajista a ema"
         and calidad_setup_core4
         == "premium"
+
+        # D7.8:
+        # esta variante pierde permiso de rescate R4.
+        and razon_validacion_mercado_core4
+        != "pullback bajista permitido con filtro reforzado"
     )
 
     core4_r6 = (
