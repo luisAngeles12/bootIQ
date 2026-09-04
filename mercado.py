@@ -247,6 +247,7 @@ def obtener_velas(activo):
             conectado = False
 
         if not conectado:
+            estado.fallo_velas_ronda_d76d = True
             return None
 
         if not hasattr(estado, "velas_cache"):
@@ -261,6 +262,7 @@ def obtener_velas(activo):
         # la descarga pesada debe haber ocurrido antes
         # mediante precargar_velas_activos().
         if len(buffer_actual) < 130:
+            estado.fallo_velas_ronda_d76d = True
             return None
 
         recientes = estado.Iq.get_candles(
@@ -268,9 +270,11 @@ def obtener_velas(activo):
             CANDLE_TIME,
             4,
             time.time(),
+            timeout=1.5,
         )
 
         if recientes is None:
+            estado.fallo_velas_ronda_d76d = True
             return None
 
         recientes_cerradas = (
@@ -337,6 +341,7 @@ def obtener_velas(activo):
         # Nunca analizar una vela vieja como si fuese
         # la última cerrada.
         if ultima_buffer != ultima_esperada:
+            estado.fallo_velas_ronda_d76d = True
             return None
 
         estado.velas_cache[activo] = fusionadas

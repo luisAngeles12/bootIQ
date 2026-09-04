@@ -516,6 +516,59 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         senal["cerebro_unico_riesgo_puntos"] = riesgo_puntos
         senal["cerebro_unico_bloquear_por_riesgo"] = bloquear_por_riesgo
         senal["cerebro_unico_motivos"] = motivos_texto
+
+        # =====================================================
+        # D7.7C — TRAZABILIDAD DE AUTORIDAD
+        # =====================================================
+        # Solo auditoría.
+        # No altera operar, decision ni modo_ejecucion.
+
+        resultado_oficial_detalle = decision_cerebro.get(
+            "resultado_decision_oficial",
+            {},
+        )
+
+        if not isinstance(resultado_oficial_detalle, dict):
+            resultado_oficial_detalle = {}
+
+        senal["origen_autoridad"] = str(
+            resultado_oficial_detalle.get(
+                "origen_autoridad",
+                "SIN_DATOS",
+            )
+            or "SIN_DATOS"
+        ).strip()
+
+        senal["decision_sombra_origen"] = str(
+            resultado_oficial_detalle.get(
+                "decision_sombra_origen",
+                "",
+            )
+            or ""
+        ).strip()
+
+        senal["core4_rescate"] = bool(
+            resultado_oficial_detalle.get(
+                "core4_rescate",
+                False,
+            )
+        )
+
+        senal["core4_reglas"] = str(
+            resultado_oficial_detalle.get(
+                "core4_reglas",
+                "",
+            )
+            or ""
+        ).strip()
+
+        senal["directa_ruta_validada"] = bool(
+            resultado_oficial_detalle.get(
+                "directa_ruta_validada",
+                False,
+            )
+        )
+
         # =====================================================
         # F5.7-C2A — VETO TÉCNICO SOMBRA
         # =====================================================

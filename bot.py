@@ -113,8 +113,18 @@ def main():
         # No consultar get_balance() en cada vuelta del loop.
         # Una consulta cada 10 segundos es suficiente para
         # STOP_WIN / STOP_LOSS y reduce carga del websocket.
+        # ==========================================
+        # D7.6D — BALANCE FUERA DE VENTANA CRITICA
+        # ==========================================
+        #
+        # get_balance() puede bloquear hasta 10 s.
+        # Solo se permite entre segundos 20-45,
+        # lejos de la próxima entrada 0-10.
+        segundo_mantenimiento_d76d = segundo_actual()
+
         if (
-            ahora
+            20 <= segundo_mantenimiento_d76d <= 45
+            and ahora
             - ultima_consulta_balance
             >= 10
         ):
@@ -560,7 +570,26 @@ def main():
         # ==========================================
         inicio_analisis_d76c = time.perf_counter()
 
+        # D7.6D:
+        # ninguna operación puede salir de un universo
+        # parcialmente analizado.
+        estado.fallo_velas_ronda_d76d = False
+        ronda_incompleta_d76d = False
+
         for item in activos:
+
+            # Reservamos aproximadamente 2 segundos para:
+            # ranking -> validación temporal -> envío IQ.
+            if segundo_actual() >= 9:
+                ronda_incompleta_d76d = True
+
+                print(
+                    "D7.6D RONDA INTERRUMPIDA POR TIEMPO | "
+                    "antes de activo:",
+                    item,
+                )
+
+                break
             try:
 
                 activo = item["activo"]
@@ -576,6 +605,23 @@ def main():
                 senal = analizar_activo(
                     activo
                 )
+
+                # D7.6D — abortar inmediatamente si falla
+                # la actualización de velas de cualquier activo.
+                if getattr(
+                    estado,
+                    "fallo_velas_ronda_d76d",
+                    False,
+                ):
+                    ronda_incompleta_d76d = True
+
+                    print(
+                        "D7.6D RONDA INCOMPLETA — "
+                        "FALLO VELAS | activo:",
+                        activo,
+                    )
+
+                    break
 
                 if senal is not None:
 
@@ -617,6 +663,20 @@ def main():
                     + str(e)
                 )
 
+                # D7.6D — cualquier excepción durante el
+                # análisis invalida el universo completo.
+                ronda_incompleta_d76d = True
+
+                print(
+                    "D7.6D RONDA INCOMPLETA — "
+                    "ERROR ANALIZANDO | activo:",
+                    item,
+                    "| error:",
+                    e,
+                )
+
+                break
+
         demora_analisis_d76c = (
             time.perf_counter()
             - inicio_analisis_d76c
@@ -628,6 +688,30 @@ def main():
             "segundos | activos:",
             len(activos),
         )
+
+        # ==========================================
+        # D7.6D — VALIDACION FINAL DE RONDA
+        # ==========================================
+
+        if segundo_actual() >= 9:
+            ronda_incompleta_d76d = True
+
+        if (
+            ronda_incompleta_d76d
+            or getattr(
+                estado,
+                "fallo_velas_ronda_d76d",
+                False,
+            )
+        ):
+            print(
+                "D7.6D RONDA DESCARTADA — "
+                "NO SE ORDENA TOP PARCIAL | segundo:",
+                segundo_actual(),
+            )
+
+            time.sleep(0.25)
+            continue
 
         # ==========================================
         # MOSTRAR SEÑALES

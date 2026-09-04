@@ -462,6 +462,46 @@ def abrir_operacion(senal):
             "razon": razon,
         
             "resultado": "",
+
+            # ==========================================
+            # D7.7C — TRAZABILIDAD DEL CEREBRO
+            # ==========================================
+            # Solo auditoria. No cambia ejecucion.
+
+            "origen_autoridad": senal.get(
+                "origen_autoridad",
+                "SIN_DATOS",
+            ),
+
+            "decision_sombra_origen": senal.get(
+                "decision_sombra_origen",
+                "",
+            ),
+
+            "core4_rescate": senal.get(
+                "core4_rescate",
+                False,
+            ),
+
+            "core4_reglas": senal.get(
+                "core4_reglas",
+                "",
+            ),
+
+            "directa_ruta_validada": senal.get(
+                "directa_ruta_validada",
+                False,
+            ),
+
+            "validacion_mercado_ok": senal.get(
+                "validacion_mercado_ok",
+                "",
+            ),
+
+            "razon_validacion_mercado": senal.get(
+                "razon_validacion_mercado",
+                "",
+            ),
         
             # ==========================================
             # PASO 5.5C — PARIDAD DE EJECUCIÓN

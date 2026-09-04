@@ -1170,6 +1170,25 @@ def convertir_decision_v3_a_oficial(
         )
     )
 
+    # ========================================================
+    # D7.7B — D7.5 NO PUEDE RESCATAR MERCADO INVALIDADO
+    # ========================================================
+    #
+    # LIVE prospectivo mostró degradación clara cuando
+    # validar_estrategia_por_mercado() marcaba explícitamente
+    # la señal como no válida.
+    #
+    # Importante:
+    # - Esto NO crea un veto global.
+    # - Solo impide que la excepción D7.5 rescate una señal
+    #   que el mercado declaró explícitamente inválida.
+    # - Si el campo no existe (replay histórico antiguo),
+    #   D7.5 mantiene comportamiento compatible.
+    validacion_mercado_d77 = evidencia.get(
+        "validacion_mercado_ok",
+        None,
+    )
+
     es_reaccion_zona_d75 = (
         familia_d75 == "reaccion_zona"
         or protocolo_sugerido == "protocolo_reaccion_zona"
@@ -1186,6 +1205,11 @@ def convertir_decision_v3_a_oficial(
             "normal",
         }
         and modo_entrada_d75 == "directa"
+
+        # D7.7B:
+        # una invalidacion tecnica explicita impide SOLO
+        # el rescate extraordinario de D7.5.
+        and validacion_mercado_d77 is not False
     )
 
     if cumple_d75:

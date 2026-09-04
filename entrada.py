@@ -472,7 +472,8 @@ def esperar_mejor_entrada(senal):
                 activo,
                 CANDLE_TIME,
                 8,
-                time.time()
+                time.time(),
+                timeout=1.5,
             )
 
             if not candles or len(candles) < 4:

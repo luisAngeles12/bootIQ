@@ -195,6 +195,37 @@ def construir_evidencia_operacion(senal, ctx=None):
             ctx.get("score_mercado", 0)
         ),
 
+        # ====================================================
+        # D7.7 — VALIDACIONES TECNICAS ESTRUCTURADAS
+        # ====================================================
+        #
+        # constructor_evidencia NO decide.
+        # Solo transporta al Cerebro el resultado exacto
+        # producido previamente por estrategia.py.
+        "validacion_mercado_ok": senal.get(
+            "validacion_mercado_ok",
+            ctx.get("validacion_mercado_ok")
+        ),
+
+        "razon_validacion_mercado": normalizar(
+            senal.get(
+                "razon_validacion_mercado",
+                ctx.get("razon_validacion_mercado")
+            )
+        ),
+
+        "validacion_accion_precio_ok": senal.get(
+            "validacion_accion_precio_ok",
+            ctx.get("validacion_accion_precio_ok")
+        ),
+
+        "razon_validacion_accion_precio": normalizar(
+            senal.get(
+                "razon_validacion_accion_precio",
+                ctx.get("razon_validacion_accion_precio")
+            )
+        ),
+
         "estado_tendencia": normalizar(
             senal.get("estado_tendencia", ctx.get("estado_tendencia"))
         ),

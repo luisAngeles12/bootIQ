@@ -681,7 +681,7 @@ class IQ_Option:
     # _______________________        CANDLE      _____________________________
     # ________________________self.api.getcandles() wss________________________
 
-    def get_candles(self, ACTIVES, interval, count, endtime):
+    def get_candles(self, ACTIVES, interval, count, endtime, timeout=12):
         """
         Versión compatible con el comportamiento original de
         iqoptionapi.
@@ -731,6 +731,11 @@ class IQ_Option:
             )
             return None
 
+        try:
+            timeout = max(0.2, float(timeout))
+        except (TypeError, ValueError):
+            timeout = 12.0
+
         inicio = time.time()
 
         while self.api.candles.candles_data is None:
@@ -746,10 +751,11 @@ class IQ_Option:
             except Exception:
                 return None
 
-            if time.time() - inicio >= 12:
+            if time.time() - inicio >= timeout:
                 logging.warning(
-                    "**warning** get_candles sin respuesta 12 sec "
+                    "**warning** get_candles sin respuesta %s sec "
                     "| activo: %s",
+                    round(timeout, 2),
                     ACTIVES
                 )
                 return None

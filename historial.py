@@ -48,6 +48,15 @@ COLUMNAS_HISTORIAL = [
     "resultado",
     "razon",
 
+    # D7.7C — TRAZABILIDAD DE AUTORIDAD
+    "origen_autoridad",
+    "decision_sombra_origen",
+    "core4_rescate",
+    "core4_reglas",
+    "directa_ruta_validada",
+    "validacion_mercado_ok",
+    "razon_validacion_mercado",
+
     # PASO 5.5C — PARIDAD DE EJECUCIÓN
     "segundo_antes",
     "segundo_entrada",
