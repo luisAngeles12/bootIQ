@@ -157,6 +157,17 @@ def construir_evidencia_operacion(senal, ctx=None):
         "indice_confirmacion_ia": senal.get("indice_confirmacion_ia", 0),
         "motivo_ejecucion": normalizar(senal.get("motivo_ejecucion")),
         "puntaje": senal.get("puntaje", 0),
+
+        # ====================================================
+        # D7.9 — RSI ESTRUCTURADO PARA CEREBRO
+        # ====================================================
+        # Solo transporta el RSI ya calculado aguas arriba.
+        # No decide ni modifica la señal.
+        "rsi": senal.get(
+            "rsi",
+            ctx.get("rsi", 0)
+        ),
+
         "prioridad": senal.get("prioridad", 0),
         "score_final": senal.get("score_final", 0),
         "estado_operativo_setup": normalizar(

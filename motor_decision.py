@@ -1088,6 +1088,114 @@ def convertir_decision_v3_a_oficial(
             ).strip(),
         }
 
+
+    # ========================================================
+    # D7.9 — CHOCH ALCISTA_NORMAL RSI >= 60
+    # ========================================================
+    #
+    # Evidencia prospectiva acumulada D7.7 + D7.8:
+    #
+    # CHOCH + ALCISTA_NORMAL + RSI >= 60:
+    #   5 operaciones | 0W / 5L | 0.00% | -125.00
+    #
+    # Distribución:
+    #   D7.7: 1 operación  | 0W / 1L
+    #   D7.8: 4 operaciones | 0W / 4L
+    #
+    # Contrato D7.9:
+    # - Solo actúa sobre autorización estadística V3.
+    # - Solo CHOCH alcista.
+    # - Solo estado_tendencia ALCISTA_NORMAL.
+    # - Solo RSI >= 60.
+    # - No bloquea ALCISTA_FUERTE.
+    # - No bloquea ALCISTA_DEBIL.
+    # - No bloquea ALCISTA_NORMAL con RSI < 60.
+    # - No modifica CORE4, D7.5 ni otras estrategias.
+    # - No abre SUCIO / CAOTICO.
+    #
+    # Regla descubierta sobre muestra previa; requiere
+    # validación prospectiva independiente.
+    # ========================================================
+
+    patron_d79 = _txt(
+        evidencia.get(
+            "patron",
+            "",
+        )
+    )
+
+    estado_tendencia_d79 = _txt(
+        evidencia.get(
+            "estado_tendencia",
+            "",
+        )
+    )
+
+    rsi_d79 = _num(
+        evidencia.get(
+            "rsi",
+            0,
+        ),
+        0.0,
+    )
+
+    es_d79_choch_normal_rsi60 = (
+        decision_estadistica
+        in {
+            "OPERAR_SOMBRA",
+            "OPERAR_CON_PROTOCOLO_SOMBRA",
+        }
+        and patron_d79
+        == "choch alcista"
+        and estado_tendencia_d79
+        == "alcista_normal"
+        and rsi_d79 >= 60.0
+    )
+
+    if es_d79_choch_normal_rsi60:
+        return {
+            "decision": "NO_OPERAR",
+            "decision_legacy": "NO_OPERAR",
+            "operar": False,
+            "requiere_protocolo": False,
+            "modo_ejecucion": "BLOQUEADA",
+            "bloquear_por_riesgo": False,
+            "riesgo_extremo_diagnostico": False,
+
+            "origen_autoridad": (
+                "PROBABILIDAD_HISTORICA_V3"
+            ),
+
+            "decision_sombra_origen": (
+                decision_estadistica
+            ),
+
+            "nivel_probabilidad": nivel,
+            "clave_probabilidad": clave,
+
+            "directa_evidencia_solida": False,
+            "directa_muestra": muestra,
+            "directa_confiabilidad": confiabilidad,
+
+            "directa_aptitud_tecnica": False,
+
+            "directa_motivos_tecnicos": [
+                (
+                    "D7.9: CHOCH alcista bloqueado "
+                    "con tendencia ALCISTA_NORMAL "
+                    "y RSI >= 60."
+                )
+            ],
+
+            "motivo": (
+                "D7.9: autorizacion estadistica anulada "
+                "para CHOCH alcista con "
+                "ALCISTA_NORMAL y RSI >= 60. "
+                + motivo_estadistico
+            ).strip(),
+        }
+
+
     # ========================================================
     # D7.5 — REACCION_ZONA EN TENDENCIA ALCISTA → DIRECTA
     # ========================================================
