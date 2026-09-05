@@ -980,12 +980,14 @@ def convertir_decision_v3_a_oficial(
         )
         or ""
     ).upper().strip()
+
     protocolo_sugerido = _txt(
         evidencia.get(
             "protocolo_sugerido",
             "",
         )
     )
+
     clave = str(
         resultado.get(
             "clave",
@@ -1087,7 +1089,6 @@ def convertir_decision_v3_a_oficial(
                 + motivo_estadistico
             ).strip(),
         }
-
 
     # ========================================================
     # D7.9 — CHOCH ALCISTA_NORMAL RSI >= 60
@@ -1195,7 +1196,6 @@ def convertir_decision_v3_a_oficial(
             ).strip(),
         }
 
-
     # ========================================================
     # D7.5 — REACCION_ZONA EN TENDENCIA ALCISTA → DIRECTA
     # ========================================================
@@ -1292,6 +1292,7 @@ def convertir_decision_v3_a_oficial(
     #   que el mercado declaró explícitamente inválida.
     # - Si el campo no existe (replay histórico antiguo),
     #   D7.5 mantiene comportamiento compatible.
+
     validacion_mercado_d77 = evidencia.get(
         "validacion_mercado_ok",
         None,
@@ -1458,6 +1459,7 @@ def convertir_decision_v3_a_oficial(
     # - NO elimina R4 completo.
     # - NO crea un veto fuera del Cerebro.
     # - Solo retira esta ruta del rescate R4.
+
     razon_validacion_mercado_core4 = _txt(
         evidencia.get(
             "razon_validacion_mercado",
@@ -1600,6 +1602,103 @@ def convertir_decision_v3_a_oficial(
         }
 
     # ========================================================
+    # D7.10 — V3 NO AUTORIZA REACCION COMPRADORA EN SOPORTE
+    # ========================================================
+    #
+    # Evidencia prospectiva independiente:
+    #
+    # D7.7:
+    #   1 operación | 0W / 1L | -25.00
+    #
+    # D7.8:
+    #   1 operación | 0W / 1L | -25.00
+    #
+    # D7.9:
+    #   1 operación | 0W / 1L | -25.00
+    #
+    # Combinado:
+    #   3 operaciones | 0W / 3L | 0.00% | -75.00
+    #
+    # Contrato D7.10:
+    # - Solo actúa sobre autorización estadística V3.
+    # - Solo reacción compradora en soporte.
+    # - No bloquea reacción vendedora.
+    # - D7.5 ya tuvo prioridad antes de este punto.
+    # - CORE4 ya tuvo oportunidad de rescatar antes de este punto.
+    # - No modifica R1/R2/R4/R6.
+    # - No abre SUCIO / CAOTICO.
+    #
+    # Regla descubierta sobre muestra prospectiva acumulada;
+    # requiere nueva validación prospectiva independiente.
+    # ========================================================
+
+    estrategia_d710 = _txt(
+        evidencia.get(
+            "estrategia",
+            "",
+        )
+        or evidencia.get(
+            "patron",
+            "",
+        )
+    )
+
+    es_d710_v3_reaccion_compradora = (
+        decision_estadistica
+        in {
+            "OPERAR_SOMBRA",
+            "OPERAR_CON_PROTOCOLO_SOMBRA",
+        }
+        and estrategia_d710
+        in {
+            "reaccion compradora en soporte",
+            "reacción compradora en soporte",
+        }
+    )
+
+    if es_d710_v3_reaccion_compradora:
+        return {
+            "decision": "NO_OPERAR",
+            "decision_legacy": "NO_OPERAR",
+            "operar": False,
+            "requiere_protocolo": False,
+            "modo_ejecucion": "BLOQUEADA",
+            "bloquear_por_riesgo": False,
+            "riesgo_extremo_diagnostico": False,
+
+            "origen_autoridad": (
+                "PROBABILIDAD_HISTORICA_V3"
+            ),
+
+            "decision_sombra_origen": (
+                decision_estadistica
+            ),
+
+            "nivel_probabilidad": nivel,
+            "clave_probabilidad": clave,
+
+            "directa_evidencia_solida": False,
+            "directa_muestra": muestra,
+            "directa_confiabilidad": confiabilidad,
+
+            "directa_aptitud_tecnica": False,
+
+            "directa_motivos_tecnicos": [
+                (
+                    "D7.10: reaccion compradora en soporte "
+                    "no autorizada directamente por V3."
+                )
+            ],
+
+            "motivo": (
+                "D7.10: autorizacion estadistica V3 anulada "
+                "para reaccion compradora en soporte tras "
+                "0W/3L en D7.7, D7.8 y D7.9. "
+                + motivo_estadistico
+            ).strip(),
+        }
+
+    # ========================================================
     # V3 AUTORIZA OPERACIÓN
     # ========================================================
 
@@ -1686,23 +1785,24 @@ def convertir_decision_v3_a_oficial(
         # ====================================================
 
         razones = []
-        
+
         if not PERMITIR_ENTRADA_DIRECTA:
             razones.append(
                 "entrada directa desactivada; "
                 "se exige confirmación técnica"
             )
-        
+
         if not evidencia_directa_solida:
             razones.append(
                 "evidencia estadística insuficiente "
                 "para entrada directa"
             )
-        
+
         if not aptitud_tecnica_directa:
             razones.append(
                 "estructura técnica requiere protocolo"
             )
+
         razon_texto = "; ".join(
             razones
         )
@@ -1783,7 +1883,7 @@ def convertir_decision_v3_a_oficial(
     #
     # El protocolo posterior degradaba la ventaja temporal.
     # ========================================================
-    
+
     if (
         decision_estadistica
         == "OPERAR_CON_PROTOCOLO_SOMBRA"
@@ -1800,36 +1900,36 @@ def convertir_decision_v3_a_oficial(
             "modo_ejecucion": "DIRECTA",
             "bloquear_por_riesgo": False,
             "riesgo_extremo_diagnostico": False,
-    
+
             "origen_autoridad": (
                 "PROBABILIDAD_HISTORICA_V3"
             ),
-    
+
             "decision_sombra_origen": (
                 decision_estadistica
             ),
-    
+
             "nivel_probabilidad": nivel,
             "clave_probabilidad": clave,
-    
+
             # No afirmamos que cumple la antigua regla
             # genérica de directa. Es una ruta de ejecución
             # específicamente validada en F4.3.
             "directa_evidencia_solida": False,
             "directa_muestra": muestra,
             "directa_confiabilidad": confiabilidad,
-    
+
             "directa_aptitud_tecnica": False,
-    
+
             "directa_motivos_tecnicos": [
                 (
                     "F4.3: PROTOCOLO_RUPTURA_RESISTENCIA "
                     "validado para ejecución directa."
                 )
             ],
-    
+
             "directa_ruta_validada": True,
-    
+
             "motivo": (
                 "V3 autorizó la señal estadísticamente. "
                 "F4.3 validó PROTOCOLO_RUPTURA_RESISTENCIA "
@@ -1838,6 +1938,7 @@ def convertir_decision_v3_a_oficial(
                 + motivo_estadistico
             ).strip(),
         }
+
     if (
         decision_estadistica
         == "OPERAR_CON_PROTOCOLO_SOMBRA"
@@ -1870,7 +1971,10 @@ def convertir_decision_v3_a_oficial(
 
             "directa_aptitud_tecnica": False,
             "directa_motivos_tecnicos": [
-                "La clasificación estadística ya exige protocolo."
+                (
+                    "La clasificación estadística "
+                    "ya exige protocolo."
+                )
             ],
 
             "motivo": (
