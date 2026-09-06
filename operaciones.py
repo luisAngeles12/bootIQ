@@ -514,7 +514,32 @@ def abrir_operacion(senal):
             "tiempo_envio_inicio": tiempo_antes,
             "tiempo_respuesta_iq": tiempo_despues,
             "tiempo_expiracion": TIEMPO_EXPIRACION,
-        
+
+            # ==========================================
+            # D8-E5 — VELA EXACTA QUE ORIGINO LA SENAL
+            # Solo telemetria. No modifica la decision.
+            # ==========================================
+
+            "vela_senal_from": senal.get(
+                "vela_senal_from"
+            ),
+
+            "precio_senal_open": senal.get(
+                "vela_senal_open"
+            ),
+
+            "precio_senal_close": senal.get(
+                "vela_senal_close"
+            ),
+
+            "precio_senal_high": senal.get(
+                "vela_senal_high"
+            ),
+
+            "precio_senal_low": senal.get(
+                "vela_senal_low"
+            ),
+
             "vela_confirmacion_from": senal.get(
                 "protocolo_live_vela_entrada_from"
             ),

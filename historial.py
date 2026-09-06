@@ -26,6 +26,13 @@ def columnas_historial():
         "tiempo_respuesta_iq",
         "tiempo_expiracion",
 
+        # D8-E5 — VELA EXACTA QUE ORIGINO LA SENAL
+        "vela_senal_from",
+        "precio_senal_open",
+        "precio_senal_close",
+        "precio_senal_high",
+        "precio_senal_low",
+
         "vela_confirmacion_from",
         "precio_confirmacion_open",
         "precio_confirmacion_close",
@@ -64,7 +71,12 @@ COLUMNAS_HISTORIAL = [
     "tiempo_envio_inicio",
     "tiempo_respuesta_iq",
     "tiempo_expiracion",
-
+    # D8-E5 — VELA EXACTA QUE ORIGINO LA SENAL
+    "vela_senal_from",
+    "precio_senal_open",
+    "precio_senal_close",
+    "precio_senal_high",
+    "precio_senal_low",
     "vela_confirmacion_from",
     "precio_confirmacion_open",
     "precio_confirmacion_close",
