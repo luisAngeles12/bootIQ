@@ -75,6 +75,16 @@ COLUMNAS_HISTORIAL = [
     "fuente_probabilidad_principal_json",
     "fuente_probabilidad_respaldo_json",
 
+    # D8-R8B — SALUD PROSPECTIVA SOMBRA
+    "salud_fuente_n",
+    "salud_fuente_wins",
+    "salud_fuente_losses",
+    "salud_fuente_wr",
+    "salud_fuente_prob_historica",
+    "salud_fuente_delta_pp",
+    "salud_fuente_ultimas5_wr",
+    "salud_fuente_ultimas10_wr",
+
     # PASO 5.5C — PARIDAD DE EJECUCIÓN
     "segundo_antes",
     "segundo_entrada",

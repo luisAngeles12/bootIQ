@@ -3610,6 +3610,228 @@ def actualizar_aprendizaje_post_protocolo(
     )
 
     return filas_protocolo
+
+def evaluar_salud_prospectiva_fuente(
+    clave,
+    probabilidad_historica=None,
+    origen_autoridad=None,
+    ruta_historial="historial_bot.csv",
+):
+    """
+    D8-R8B — SALUD PROSPECTIVA SOMBRA.
+
+    Compara la probabilidad historica de la fuente principal
+    contra resultados REALES posteriores que ya fueron operados
+    usando esa misma clave.
+
+    IMPORTANTE:
+    - NO modifica aprendizaje historico.
+    - NO modifica probabilidad V3.
+    - NO bloquea operaciones.
+    - NO cambia ranking.
+    - Solo genera telemetria.
+    """
+
+    clave = str(
+        clave or ""
+    ).strip()
+
+    origen_autoridad = _txt(
+        origen_autoridad
+    )
+
+    resultado_base = {
+        "salud_fuente_n": 0,
+        "salud_fuente_wins": 0,
+        "salud_fuente_losses": 0,
+        "salud_fuente_wr": "",
+        "salud_fuente_prob_historica": "",
+        "salud_fuente_delta_pp": "",
+        "salud_fuente_ultimas5_wr": "",
+        "salud_fuente_ultimas10_wr": "",
+    }
+
+    try:
+        prob_hist = float(
+            probabilidad_historica
+        )
+
+        resultado_base[
+            "salud_fuente_prob_historica"
+        ] = round(
+            prob_hist,
+            2,
+        )
+
+    except (TypeError, ValueError):
+        prob_hist = None
+
+    if not clave:
+        return resultado_base
+
+    if not ruta_historial:
+        return resultado_base
+
+    if not os.path.exists(
+        ruta_historial
+    ):
+        return resultado_base
+
+    observaciones = []
+
+    try:
+        with open(
+            ruta_historial,
+            "r",
+            encoding="utf-8-sig",
+            newline="",
+        ) as archivo:
+
+            reader = csv.DictReader(
+                archivo
+            )
+
+            for row in reader:
+
+                clave_row = str(
+                    row.get(
+                        "clave_probabilidad_principal",
+                        "",
+                    )
+                    or ""
+                ).strip()
+
+                if clave_row != clave:
+                    continue
+
+                origen_row = _txt(
+                    row.get(
+                        "origen_autoridad",
+                        "",
+                    )
+                )
+
+                # D8-R8B.1:
+                # una misma fuente historica puede aparecer
+                # bajo rutas de autoridad diferentes.
+                # No mezclamos V3, CORE4 y D7.5.
+                if (
+                    origen_autoridad
+                    and origen_row
+                    != origen_autoridad
+                ):
+                    continue
+
+                estado_row = _txt(
+                    row.get(
+                        "estado",
+                        "",
+                    )
+                )
+
+                # Solo operaciones REALMENTE cerradas.
+                if estado_row != "CERRADA":
+                    continue
+
+                try:
+                    valor = float(
+                        row.get(
+                            "resultado",
+                            "",
+                        )
+                    )
+                except (
+                    TypeError,
+                    ValueError,
+                ):
+                    continue
+
+                # Empates/reembolsos no son WIN ni LOSS.
+                if valor > 0:
+                    observaciones.append(1)
+
+                elif valor < 0:
+                    observaciones.append(0)
+
+    except (
+        OSError,
+        csv.Error,
+    ):
+        return resultado_base
+
+    total = len(
+        observaciones
+    )
+
+    if total <= 0:
+        return resultado_base
+
+    wins = sum(
+        observaciones
+    )
+
+    losses = (
+        total - wins
+    )
+
+    wr = (
+        wins
+        / total
+    ) * 100.0
+
+    resultado_base.update({
+        "salud_fuente_n": total,
+        "salud_fuente_wins": wins,
+        "salud_fuente_losses": losses,
+        "salud_fuente_wr": round(
+            wr,
+            2,
+        ),
+    })
+
+    if prob_hist is not None:
+        resultado_base[
+            "salud_fuente_delta_pp"
+        ] = round(
+            wr - prob_hist,
+            2,
+        )
+
+    if total >= 5:
+        ultimas5 = (
+            observaciones[-5:]
+        )
+
+        resultado_base[
+            "salud_fuente_ultimas5_wr"
+        ] = round(
+            (
+                sum(ultimas5)
+                / len(ultimas5)
+            )
+            * 100.0,
+            2,
+        )
+
+    if total >= 10:
+        ultimas10 = (
+            observaciones[-10:]
+        )
+
+        resultado_base[
+            "salud_fuente_ultimas10_wr"
+        ] = round(
+            (
+                sum(ultimas10)
+                / len(ultimas10)
+            )
+            * 100.0,
+            2,
+        )
+
+    return resultado_base
+
+
 def probar_motor_aprendizaje():
     """Prueba memoria anterior y nuevas combinaciones de evidencias."""
 

@@ -11,6 +11,7 @@ from config import (
     CANDLE_TIME,
     VENTANA_ENTRADA_INICIO,
     VENTANA_ENTRADA_FIN,
+    HISTORIAL_CSV,
 )
 from historial import (
     guardar_operaciones_pendientes,
@@ -21,6 +22,7 @@ from historial import (
     perdidas_consecutivas_patron
 )
 from validaciones_estrategia import registrar_zona_operada
+from motor_aprendizaje_historico import evaluar_salud_prospectiva_fuente
 
 
 def normalizar_resultado(resultado):
@@ -472,6 +474,46 @@ def abrir_operacion(senal):
         ):
             fuente_respaldo_v3 = {}
 
+        # ==================================================
+        # D8-R8B — SALUD PROSPECTIVA SOMBRA
+        # Se calcula DESPUES de enviar/aceptar la orden.
+        # No altera decision, ranking ni ejecucion.
+        # ==================================================
+
+        clave_salud_v3 = senal.get(
+            "clave_probabilidad_principal",
+            senal.get(
+                "directa_clave_probabilidad",
+                fuente_principal_v3.get(
+                    "clave",
+                    "",
+                ),
+            ),
+        )
+
+        prob_salud_v3 = senal.get(
+            "probabilidad_v3",
+            senal.get(
+                "probabilidad_estimada",
+                fuente_principal_v3.get(
+                    "probabilidad_ajustada",
+                    "",
+                ),
+            ),
+        )
+
+        salud_fuente_v3 = (
+            evaluar_salud_prospectiva_fuente(
+                clave=clave_salud_v3,
+                probabilidad_historica=prob_salud_v3,
+                origen_autoridad=senal.get(
+                    "origen_autoridad",
+                    "",
+                ),
+                ruta_historial=HISTORIAL_CSV,
+            )
+        )
+
         guardar_historial({
             "fecha": datetime.now().strftime(
                 "%Y-%m-%d %H:%M:%S"
@@ -609,6 +651,50 @@ def abrir_operacion(senal):
                 fuente_respaldo_v3,
                 ensure_ascii=False,
                 default=str,
+            ),
+
+            # ==========================================
+            # D8-R8B — SALUD PROSPECTIVA SOMBRA
+            # ==========================================
+
+            "salud_fuente_n": salud_fuente_v3.get(
+                "salud_fuente_n",
+                0,
+            ),
+
+            "salud_fuente_wins": salud_fuente_v3.get(
+                "salud_fuente_wins",
+                0,
+            ),
+
+            "salud_fuente_losses": salud_fuente_v3.get(
+                "salud_fuente_losses",
+                0,
+            ),
+
+            "salud_fuente_wr": salud_fuente_v3.get(
+                "salud_fuente_wr",
+                "",
+            ),
+
+            "salud_fuente_prob_historica": salud_fuente_v3.get(
+                "salud_fuente_prob_historica",
+                "",
+            ),
+
+            "salud_fuente_delta_pp": salud_fuente_v3.get(
+                "salud_fuente_delta_pp",
+                "",
+            ),
+
+            "salud_fuente_ultimas5_wr": salud_fuente_v3.get(
+                "salud_fuente_ultimas5_wr",
+                "",
+            ),
+
+            "salud_fuente_ultimas10_wr": salud_fuente_v3.get(
+                "salud_fuente_ultimas10_wr",
+                "",
             ),
 
             # ==========================================
