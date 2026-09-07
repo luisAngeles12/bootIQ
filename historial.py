@@ -64,6 +64,17 @@ COLUMNAS_HISTORIAL = [
     "validacion_mercado_ok",
     "razon_validacion_mercado",
 
+    # D8-R6C — TRAZABILIDAD V3
+    "probabilidad_v3",
+    "muestra_probabilidad",
+    "wins_probabilidad",
+    "losses_probabilidad",
+    "confiabilidad_probabilidad",
+    "nivel_probabilidad_principal",
+    "clave_probabilidad_principal",
+    "fuente_probabilidad_principal_json",
+    "fuente_probabilidad_respaldo_json",
+
     # PASO 5.5C — PARIDAD DE EJECUCIÓN
     "segundo_antes",
     "segundo_entrada",

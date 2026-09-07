@@ -446,6 +446,32 @@ def abrir_operacion(senal):
 
         asegurar_historial_csv()
 
+        # ==================================================
+        # D8-R6C — FUENTES V3 SOLO PARA TELEMETRIA
+        # ==================================================
+
+        fuente_principal_v3 = senal.get(
+            "fuente_probabilidad_principal",
+            {},
+        )
+
+        if not isinstance(
+            fuente_principal_v3,
+            dict,
+        ):
+            fuente_principal_v3 = {}
+
+        fuente_respaldo_v3 = senal.get(
+            "fuente_probabilidad_respaldo",
+            {},
+        )
+
+        if not isinstance(
+            fuente_respaldo_v3,
+            dict,
+        ):
+            fuente_respaldo_v3 = {}
+
         guardar_historial({
             "fecha": datetime.now().strftime(
                 "%Y-%m-%d %H:%M:%S"
@@ -502,7 +528,89 @@ def abrir_operacion(senal):
                 "razon_validacion_mercado",
                 "",
             ),
-        
+
+            # ==========================================
+            # D8-R6C — TRAZABILIDAD V3
+            # Solo auditoria. No cambia ejecucion.
+            # ==========================================
+
+            "probabilidad_v3": senal.get(
+                "probabilidad_v3",
+                senal.get(
+                    "probabilidad_estimada",
+                    fuente_principal_v3.get(
+                        "probabilidad_ajustada",
+                        "",
+                    ),
+                ),
+            ),
+
+            "muestra_probabilidad": senal.get(
+                "muestra_probabilidad",
+                fuente_principal_v3.get(
+                    "total",
+                    "",
+                ),
+            ),
+
+            "wins_probabilidad": senal.get(
+                "wins_probabilidad",
+                fuente_principal_v3.get(
+                    "wins",
+                    "",
+                ),
+            ),
+
+            "losses_probabilidad": senal.get(
+                "losses_probabilidad",
+                fuente_principal_v3.get(
+                    "losses",
+                    "",
+                ),
+            ),
+
+            "confiabilidad_probabilidad": senal.get(
+                "confiabilidad_probabilidad",
+                fuente_principal_v3.get(
+                    "confiabilidad",
+                    "",
+                ),
+            ),
+
+            "nivel_probabilidad_principal": senal.get(
+                "nivel_probabilidad_principal",
+                senal.get(
+                    "directa_nivel_probabilidad",
+                    fuente_principal_v3.get(
+                        "nivel",
+                        "",
+                    ),
+                ),
+            ),
+
+            "clave_probabilidad_principal": senal.get(
+                "clave_probabilidad_principal",
+                senal.get(
+                    "directa_clave_probabilidad",
+                    fuente_principal_v3.get(
+                        "clave",
+                        "",
+                    ),
+                ),
+            ),
+
+            "fuente_probabilidad_principal_json": json.dumps(
+                fuente_principal_v3,
+                ensure_ascii=False,
+                default=str,
+            ),
+
+            "fuente_probabilidad_respaldo_json": json.dumps(
+                fuente_respaldo_v3,
+                ensure_ascii=False,
+                default=str,
+            ),
+
             # ==========================================
             # PASO 5.5C — PARIDAD DE EJECUCIÓN
             # ==========================================
