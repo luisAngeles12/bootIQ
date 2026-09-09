@@ -813,6 +813,150 @@ def check_win_v3_con_timeout(order_id, timeout=35):
     except queue.Empty:
         print("check_win_v3 timeout final:", order_id)
         return None
+def obtener_resultado_historial_turbo_con_timeout(
+    order_id,
+    timeout=15,
+    limit=50,
+):
+    q = queue.Queue()
+
+    def worker():
+        try:
+            respuesta = estado.Iq.get_position_history_v2(
+                "turbo-option",
+                limit,
+                0,
+                0,
+                0,
+            )
+
+            q.put(respuesta)
+
+        except Exception as e:
+            print(
+                "get_position_history_v2 falló:",
+                order_id,
+                e,
+            )
+            q.put(None)
+
+    hilo = threading.Thread(
+        target=worker,
+        daemon=True,
+    )
+    hilo.start()
+
+    try:
+        respuesta = q.get(
+            timeout=timeout
+        )
+    except queue.Empty:
+        print(
+            "get_position_history_v2 timeout:",
+            order_id,
+        )
+        return None
+
+    if not respuesta:
+        return None
+
+    if not isinstance(
+        respuesta,
+        tuple,
+    ):
+        return None
+
+    if len(respuesta) < 2:
+        return None
+
+    check, data = respuesta
+
+    if not check:
+        return None
+
+    if not isinstance(
+        data,
+        dict,
+    ):
+        return None
+
+    posiciones = data.get(
+        "positions",
+        [],
+    )
+
+    for posicion in posiciones:
+
+        if not isinstance(
+            posicion,
+            dict,
+        ):
+            continue
+
+        external_id = posicion.get(
+            "external_id"
+        )
+
+        try:
+            coincide = (
+                int(external_id)
+                == int(order_id)
+            )
+        except Exception:
+            coincide = (
+                str(external_id)
+                == str(order_id)
+            )
+
+        if not coincide:
+            continue
+
+        if (
+            str(
+                posicion.get(
+                    "status",
+                    "",
+                )
+            ).lower()
+            != "closed"
+        ):
+            continue
+
+        for campo in (
+            "pnl_realized",
+            "pnl_net",
+            "pnl",
+        ):
+            valor = posicion.get(
+                campo
+            )
+
+            if valor is None:
+                continue
+
+            try:
+                resultado = float(
+                    valor
+                )
+
+                print(
+                    "RESULTADO RECUPERADO "
+                    "POR HISTORIAL IQ:",
+                    order_id,
+                    "|",
+                    campo,
+                    "=",
+                    resultado,
+                )
+
+                return normalizar_resultado(
+                    resultado
+                )
+
+            except Exception:
+                continue
+
+    return None
 def obtener_resultado_operacion(op):
     try:
         order_id = op["order_id"]
@@ -825,18 +969,49 @@ def obtener_resultado_operacion(op):
             return None
 
         if tipo in ["turbo", "binary"]:
-            resultado = check_win_v3_con_timeout(order_id, timeout=35)
+            resultado = check_win_v3_con_timeout(
+                order_id,
+                timeout=35,
+            )
+
+            # ================================================
+            # R8 TECH — RECUPERACION POST-RECONEXION
+            # ================================================
+            #
+            # Si se perdió el evento websocket option-closed,
+            # recuperar el resultado REAL desde el historial
+            # persistente de IQ.
+            #
+            # Validado para turbo-option.
+            #
+            if (
+                resultado is None
+                and tipo == "turbo"
+            ):
+                resultado = (
+                    obtener_resultado_historial_turbo_con_timeout(
+                        order_id,
+                        timeout=15,
+                        limit=50,
+                    )
+                )
 
             if resultado is None:
                 return None
 
-            # Si check_win_v3 devuelve tupla: ("win", 17.4)
-            if isinstance(resultado, tuple):
+            # Si check_win_v3 devuelve tupla
+            if isinstance(
+                resultado,
+                tuple,
+            ):
                 if len(resultado) >= 2:
-                    return normalizar_resultado(resultado[1])
+                    return normalizar_resultado(
+                        resultado[1]
+                    )
 
-            # Si devuelve directo: 17.4
-            return normalizar_resultado(resultado)
+            return normalizar_resultado(
+                resultado
+            )
 
         if tipo == "digital":
             for intento in range(1, 11):
