@@ -991,6 +991,7 @@ def procesar_senales_pendientes(abrir_operacion):
                 CANDLE_TIME,
                 8,
                 ahora_protocolo,
+                timeout=1.5,
             )
             
             if not candles or len(candles) < 4:

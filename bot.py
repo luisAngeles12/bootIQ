@@ -13,7 +13,11 @@ from config import (
 from utils import segundo_actual, registrar_bloqueo, imprimir_resumen_ronda, reiniciar_metricas_ronda
 from conexion import conectar, reconectar_iq
 from historial import asegurar_historial_csv, cargar_operaciones_pendientes
-from mercado import obtener_activos, precargar_velas_activos
+from mercado import (
+    obtener_activos,
+    precargar_velas_activos,
+    refrescar_activos_incremental,
+)
 from estrategia import analizar_activo
 from entrada import (
     guardar_senal_pendiente,
@@ -98,12 +102,64 @@ def main():
         # ==========================================
         # API CONFIRMADA COMO DISPONIBLE
         # ==========================================
-        # Solo después de validar conexión revisamos
-        # operaciones abiertas y señales pendientes.
-        revisar_operaciones_abiertas()
+
+        segundo_loop_d76d = segundo_actual()
+
+        # ==========================================
+        # D7.6D — RESULTADOS FUERA DE VENTANA CRITICA
+        # ==========================================
+        #
+        # La consulta del resultado puede bloquear
+        # esperando respuestas de IQ.
+        #
+        # Se ejecuta en ventana de mantenimiento,
+        # lejos de los segundos 0-10 reservados para:
+        #
+        # estrategia -> Cerebro -> ranking -> orden.
+        #
+        if (
+            20
+            <= segundo_loop_d76d
+            <= 24
+        ):
+            revisar_operaciones_abiertas()
+
+        # Las señales pendientes/protocolo sí deben
+        # conservar su evaluación temporal normal.
+        inicio_protocolos_d76d = (
+            time.perf_counter()
+        )
+
+        segundo_protocolos_antes = (
+            segundo_actual()
+        )
+
         procesar_senales_pendientes(
             abrir_operacion
         )
+
+        demora_protocolos_d76d = (
+            time.perf_counter()
+            - inicio_protocolos_d76d
+        )
+
+        segundo_protocolos_despues = (
+            segundo_actual()
+        )
+
+        if demora_protocolos_d76d >= 0.25:
+            print(
+                "D7.6D TIMING PROTOCOLOS |",
+                "antes:",
+                segundo_protocolos_antes,
+                "| despues:",
+                segundo_protocolos_despues,
+                "| demora:",
+                round(
+                    demora_protocolos_d76d,
+                    3
+                ),
+            )
 
         ahora = time.time()
 
@@ -129,7 +185,39 @@ def main():
             >= 10
         ):
             try:
-                nuevo_balance = estado.Iq.get_balance()
+                inicio_balance_d76d = (
+                    time.perf_counter()
+                )
+
+                segundo_balance_antes = (
+                    segundo_actual()
+                )
+
+                nuevo_balance = (
+                    estado.Iq.get_balance()
+                )
+
+                demora_balance_d76d = (
+                    time.perf_counter()
+                    - inicio_balance_d76d
+                )
+
+                segundo_balance_despues = (
+                    segundo_actual()
+                )
+
+                print(
+                    "D7.6D TIMING BALANCE |",
+                    "antes:",
+                    segundo_balance_antes,
+                    "| despues:",
+                    segundo_balance_despues,
+                    "| demora:",
+                    round(
+                        demora_balance_d76d,
+                        3
+                    ),
+                )
 
                 if nuevo_balance is not None:
                     balance_actual = float(
@@ -185,6 +273,14 @@ def main():
         ):
             if estado.snapshot_mercados:
 
+                inicio_reporte_mercados_d76d = (
+                    time.perf_counter()
+                )
+
+                segundo_reporte_antes = (
+                    segundo_actual()
+                )
+
                 print("\n" + "=" * 80)
                 print("REPORTE GENERAL DE MERCADOS")
                 print("=" * 80)
@@ -226,6 +322,28 @@ def main():
 
                 print("=" * 80 + "\n")
 
+                demora_reporte_mercados_d76d = (
+                    time.perf_counter()
+                    - inicio_reporte_mercados_d76d
+                )
+
+                segundo_reporte_despues = (
+                    segundo_actual()
+                )
+
+                print(
+                    "D7.6D TIMING REPORTE MERCADOS |",
+                    "antes:",
+                    segundo_reporte_antes,
+                    "| despues:",
+                    segundo_reporte_despues,
+                    "| demora:",
+                    round(
+                        demora_reporte_mercados_d76d,
+                        3
+                    ),
+                )
+
             estado.ultimo_reporte_mercados = ahora
 
         # Imprime balance solo cada 20 segundos
@@ -256,13 +374,61 @@ def main():
 
         ronda_estadisticas += 1
 
+        # ==========================================
+        # D7.6D — ESTADISTICAS FUERA DE VENTANA
+        # ==========================================
+        #
+        # imprimir_estadisticas() genera una salida
+        # extensa y puede consumir varios segundos,
+        # especialmente usando tee.
+        #
+        # Nunca permitimos que esa tarea de reporte
+        # robe tiempo a la ventana operativa 0-10.
+        #
+        segundo_estadisticas_d76d = (
+            segundo_actual()
+        )
+
         if (
             ronda_estadisticas
             >= MOSTRAR_ESTADISTICAS_CADA_RONDAS
+            and 30
+            <= segundo_estadisticas_d76d
+            <= 35
         ):
-            imprimir_estadisticas()
-            ronda_estadisticas = 0
+            inicio_estadisticas_d76d = (
+                time.perf_counter()
+            )
 
+            segundo_estadisticas_antes = (
+                segundo_actual()
+            )
+
+            imprimir_estadisticas()
+
+            demora_estadisticas_d76d = (
+                time.perf_counter()
+                - inicio_estadisticas_d76d
+            )
+
+            segundo_estadisticas_despues = (
+                segundo_actual()
+            )
+
+            print(
+                "D7.6D TIMING ESTADISTICAS |",
+                "antes:",
+                segundo_estadisticas_antes,
+                "| despues:",
+                segundo_estadisticas_despues,
+                "| demora:",
+                round(
+                    demora_estadisticas_d76d,
+                    3
+                ),
+            )
+
+            ronda_estadisticas = 0
         if ganancia_neta <= STOP_LOSS:
             print(
                 "Stop loss alcanzado. "
@@ -322,6 +488,15 @@ def main():
                     )
                     or edad_cache >= 60
                 ):
+
+                    inicio_precarga_total_d76d = (
+                        time.perf_counter()
+                    )
+
+                    segundo_precarga_total_antes = (
+                        segundo_actual()
+                    )
+
                     print(
                         "D7.6A PRECALENTANDO CACHE "
                         "FUERA DE VENTANA | edad:",
@@ -329,68 +504,88 @@ def main():
                     )
 
                     # ==========================================
-                    # D7.6C.1 — preservar edad real de la cache
-                    # si el scanner falla y obtener_activos()
-                    # necesita utilizar su fallback.
+                    # D7.6D — BOOTSTRAP / REFRESH INCREMENTAL
                     # ==========================================
 
-                    timestamp_cache_previo = float(
-                        getattr(
-                            estado,
-                            "ultima_actualizacion_activos",
-                            0,
-                        )
-                        or 0
+                    inicio_obtener_activos_d76d = (
+                        time.perf_counter()
                     )
 
-                    # Fuerza intento de scanner completo.
-                    # La lista cacheada se conserva para fallback.
-                    estado.ultima_actualizacion_activos = 0
-
-                    activos_precarga = obtener_activos()
-
-                    timestamp_cache_despues = float(
-                        getattr(
-                            estado,
-                            "ultima_actualizacion_activos",
-                            0,
-                        )
-                        or 0
+                    segundo_obtener_activos_antes = (
+                        segundo_actual()
                     )
 
-                    # Si obtener_activos() devolvió activos pero
-                    # no registró un timestamp nuevo, significa
-                    # que utilizó el fallback de cache.
-                    #
-                    # Restauramos EL TIMESTAMP ORIGINAL.
-                    # No usamos time.time(), porque eso haría
-                    # parecer nueva una cache que realmente
-                    # puede llevar 70, 100 o más segundos.
-                    if (
-                        activos_precarga
-                        and timestamp_cache_despues <= 0
-                        and timestamp_cache_previo > 0
+                    if not getattr(
+                        estado,
+                        "activos_cache",
+                        [],
                     ):
-                        estado.ultima_actualizacion_activos = (
-                            timestamp_cache_previo
+                        # Primer arranque:
+                        # construir universo completo.
+                        activos_precarga = (
+                            obtener_activos()
                         )
 
-                        print(
-                            "D7.6C.1 SCANNER FALLBACK — "
-                            "TIMESTAMP CACHE RESTAURADO | edad:",
-                            round(
-                                time.time()
-                                - timestamp_cache_previo,
-                                2,
-                            ),
+                    else:
+                        # Cache existente:
+                        # continuar refresh incremental
+                        # sin publicar TOP parcial.
+                        activos_precarga = (
+                            refrescar_activos_incremental()
                         )
+
+                    demora_obtener_activos_d76d = (
+                        time.perf_counter()
+                        - inicio_obtener_activos_d76d
+                    )
+
+                    segundo_obtener_activos_despues = (
+                        segundo_actual()
+                    )
+
+                    print(
+                        "D7.6D TIMING OBTENER ACTIVOS |",
+                        "antes:",
+                        segundo_obtener_activos_antes,
+                        "| despues:",
+                        segundo_obtener_activos_despues,
+                        "| demora:",
+                        round(
+                            demora_obtener_activos_d76d,
+                            3,
+                        ),
+                    )
 
                     if activos_precarga:
                         precargar_velas_activos(
                             activos_precarga
                         )
 
-                    ultima_precarga_activos = time.time()
+                    demora_precarga_total_d76d = (
+                        time.perf_counter()
+                        - inicio_precarga_total_d76d
+                    )
+
+                    segundo_precarga_total_despues = (
+                        segundo_actual()
+                    )
+
+                    print(
+                        "D7.6D TIMING PRECARGA TOTAL |",
+                        "antes:",
+                        segundo_precarga_total_antes,
+                        "| despues:",
+                        segundo_precarga_total_despues,
+                        "| demora:",
+                        round(
+                            demora_precarga_total_d76d,
+                            3,
+                        ),
+                    )
+
+                    ultima_precarga_activos = (
+                        time.time()
+                    )
 
                     time.sleep(0.25)
                     continue
@@ -481,13 +676,10 @@ def main():
             )
         )
 
-        if (
-            not getattr(
-                estado,
-                "activos_cache",
-                [],
-            )
-            or edad_cache >= 120
+        if not getattr(
+            estado,
+            "activos_cache",
+            [],
         ):
             print(
                 "D7.6A VENTANA OMITIDA — "
@@ -536,9 +728,17 @@ def main():
 
         reiniciar_metricas_ronda()
 
-        # Con cache <120 s, obtener_activos() usa
-        # directamente su rama CACHE.
-        activos = obtener_activos()
+        # ==========================================
+        # D7.6D — SOLO CACHE EN VENTANA CRITICA
+        # ==========================================
+        #
+        # Dentro de 0-10 está prohibido iniciar
+        # el scanner completo, independientemente
+        # de la edad real de la cache.
+        #
+        activos = obtener_activos(
+            solo_cache=True
+        )
 
         estado.metricas_ronda[
             "mercados_analizados"

@@ -793,41 +793,77 @@ def abrir_operacion(senal):
         return False
 
 
-def check_win_v3_con_timeout(order_id, timeout=35):
+def check_win_v3_con_timeout(
+    order_id,
+    timeout=2,
+):
     q = queue.Queue()
 
     def worker():
         try:
-            resultado = estado.Iq.check_win_v3(int(order_id), timeout=30)
+            # El timeout interno termina ligeramente
+            # antes que el timeout exterior del hilo.
+            timeout_interno = max(
+                0.5,
+                float(timeout) - 0.25,
+            )
+
+            resultado = estado.Iq.check_win_v3(
+                int(order_id),
+                timeout=timeout_interno,
+            )
+
             q.put(resultado)
+
         except Exception as e:
-            print("check_win_v3 falló:", order_id, e)
+            print(
+                "check_win_v3 falló:",
+                order_id,
+                e,
+            )
             q.put(None)
 
-    hilo = threading.Thread(target=worker)
-    hilo.daemon = True
+    hilo = threading.Thread(
+        target=worker,
+        daemon=True,
+    )
     hilo.start()
 
     try:
-        return q.get(timeout=timeout)
+        return q.get(
+            timeout=timeout
+        )
+
     except queue.Empty:
-        print("check_win_v3 timeout final:", order_id)
+        print(
+            "check_win_v3 timeout final:",
+            order_id,
+        )
         return None
+
 def obtener_resultado_historial_turbo_con_timeout(
     order_id,
-    timeout=15,
+    timeout=4,
     limit=50,
 ):
     q = queue.Queue()
 
     def worker():
         try:
-            respuesta = estado.Iq.get_position_history_v2(
-                "turbo-option",
-                limit,
-                0,
-                0,
-                0,
+            timeout_interno = max(
+                0.5,
+                float(timeout) - 0.25,
+            )
+
+            respuesta = (
+                estado.Iq.get_position_history_v2(
+                    "turbo-option",
+                    limit,
+                    0,
+                    0,
+                    0,
+                    timeout=timeout_interno,
+                )
             )
 
             q.put(respuesta)
@@ -850,6 +886,7 @@ def obtener_resultado_historial_turbo_con_timeout(
         respuesta = q.get(
             timeout=timeout
         )
+
     except queue.Empty:
         print(
             "get_position_history_v2 timeout:",
@@ -902,6 +939,7 @@ def obtener_resultado_historial_turbo_con_timeout(
                 int(external_id)
                 == int(order_id)
             )
+
         except Exception:
             coincide = (
                 str(external_id)
@@ -949,9 +987,10 @@ def obtener_resultado_historial_turbo_con_timeout(
                     resultado,
                 )
 
-                return normalizar_resultado(
-                    resultado
-                )
+                # Devuelve resultado REAL bruto.
+                # La normalización se hace una sola
+                # vez en obtener_resultado_operacion().
+                return resultado
 
             except Exception:
                 continue
@@ -962,27 +1001,45 @@ def obtener_resultado_operacion(op):
         order_id = op["order_id"]
         tipo = op["tipo"]
 
-        tiempo_abierta = time.time() - float(op["hora_apertura"])
-        tiempo_minimo = (TIEMPO_EXPIRACION * 60) + 15
+        tiempo_abierta = (
+            time.time()
+            - float(
+                op["hora_apertura"]
+            )
+        )
+
+        tiempo_minimo = (
+            TIEMPO_EXPIRACION * 60
+        ) + 15
 
         if tiempo_abierta < tiempo_minimo:
             return None
 
-        if tipo in ["turbo", "binary"]:
-            resultado = check_win_v3_con_timeout(
-                order_id,
-                timeout=35,
+        # ================================================
+        # BINARY / TURBO
+        # ================================================
+        if tipo in [
+            "turbo",
+            "binary",
+        ]:
+            # Primera fuente:
+            # resultado normal de IQ / websocket.
+            resultado = (
+                check_win_v3_con_timeout(
+                    order_id,
+                    timeout=2,
+                )
             )
 
             # ================================================
             # R8 TECH — RECUPERACION POST-RECONEXION
             # ================================================
             #
-            # Si se perdió el evento websocket option-closed,
-            # recuperar el resultado REAL desde el historial
-            # persistente de IQ.
+            # Solo validado empíricamente para TURBO.
             #
-            # Validado para turbo-option.
+            # Si se perdió option-closed después de una
+            # desconexión, consultar el historial persistente
+            # del servidor mediante external_id/order_id.
             #
             if (
                 resultado is None
@@ -991,7 +1048,7 @@ def obtener_resultado_operacion(op):
                 resultado = (
                     obtener_resultado_historial_turbo_con_timeout(
                         order_id,
-                        timeout=15,
+                        timeout=4,
                         limit=50,
                     )
                 )
@@ -999,33 +1056,51 @@ def obtener_resultado_operacion(op):
             if resultado is None:
                 return None
 
-            # Si check_win_v3 devuelve tupla
+            # Compatibilidad por si alguna versión
+            # de check_win_v3 devuelve tupla.
             if isinstance(
                 resultado,
                 tuple,
             ):
                 if len(resultado) >= 2:
-                    return normalizar_resultado(
-                        resultado[1]
-                    )
+                    resultado = resultado[1]
+                else:
+                    return None
 
             return normalizar_resultado(
                 resultado
             )
 
+        # ================================================
+        # DIGITAL
+        # ================================================
         if tipo == "digital":
-            for intento in range(1, 11):
-                check, win = estado.Iq.check_win_digital_v2(order_id)
+            for intento in range(
+                1,
+                11,
+            ):
+                check, win = (
+                    estado.Iq.check_win_digital_v2(
+                        order_id
+                    )
+                )
 
                 if check:
-                    return normalizar_resultado(win)
+                    return normalizar_resultado(
+                        win
+                    )
 
                 time.sleep(0.5)
 
             return None
 
     except Exception as e:
-        print("Error obteniendo resultado:", op["activo"], op["tipo"], e)
+        print(
+            "Error obteniendo resultado:",
+            op["activo"],
+            op["tipo"],
+            e,
+        )
 
     return None
 def revisar_operaciones_abiertas():

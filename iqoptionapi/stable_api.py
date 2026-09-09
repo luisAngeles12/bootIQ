@@ -302,20 +302,25 @@ class IQ_Option:
             except:
                 pass
 
-    def get_all_init_v2(self):
+    def get_all_init_v2(
+        self,
+        timeout=2.0,
+    ):
         """
-        Obtiene binary/turbo open-time sin iniciar una
-        reconexión interna.
+        Obtiene binary/turbo open-time sin iniciar
+        reconexiones internas.
 
-        La autoridad de reconexión pertenece a
-        BootIQ/conexion.py.
+        BootIQ/conexion.py conserva la autoridad
+        exclusiva de reconexión.
         """
+
         self.api.api_option_init_all_result_v2 = None
 
         try:
             if not self.check_connect():
                 logging.error(
-                    "**error** get_all_init_v2 websocket disconnected"
+                    "**error** get_all_init_v2 "
+                    "websocket disconnected"
                 )
                 return None
 
@@ -327,35 +332,46 @@ class IQ_Option:
 
         except Exception as e:
             logging.error(
-                "**error** get_all_init_v2 request failed: %s",
-                e
+                "**error** get_all_init_v2 "
+                "request failed: %s",
+                e,
             )
             return None
 
         inicio = time.time()
 
-        while self.api.api_option_init_all_result_v2 is None:
-
+        while (
+            self.api.api_option_init_all_result_v2
+            is None
+        ):
             try:
                 if not self.check_connect():
                     logging.error(
-                        "**error** get_all_init_v2 connection lost"
+                        "**error** get_all_init_v2 "
+                        "connection lost"
                     )
                     return None
 
             except Exception:
                 return None
 
-            if time.time() - inicio >= 15:
-                logging.error(
-                    "**warning** get_all_init_v2 timeout 15 sec"
+            if (
+                time.time()
+                - inicio
+                >= timeout
+            ):
+                logging.warning(
+                    "**warning** get_all_init_v2 "
+                    "timeout %.1f sec",
+                    timeout,
                 )
                 return None
 
             time.sleep(0.01)
 
-        return self.api.api_option_init_all_result_v2
-
+        return (
+            self.api.api_option_init_all_result_v2
+        )
     def __get_binary_open(self):
         # for turbo and binary pairs
         binary_data = self.get_all_init_v2()
@@ -1056,66 +1072,188 @@ class IQ_Option:
         x = self.api.socket_option_closed[id_number]
         return x['msg']['win'], (0 if x['msg']['win'] == 'equal' else float(x['msg']['sum']) * -1 if x['msg']['win'] == 'loose' else float(x['msg']['win_amount']) - float(x['msg']['sum']))
 
-    def check_win_v3(self, id_number, timeout=45):
+    def check_win_v3(
+        self,
+        id_number,
+        timeout=45,
+    ):
         inicio = time.time()
-        id_number = int(id_number)
 
-        while time.time() - inicio < timeout:
+        id_number = int(
+            id_number
+        )
+
+        while (
+            time.time()
+            - inicio
+            < timeout
+        ):
             try:
-                # Método 1: socket de operaciones cerradas
+                # =====================================
+                # METODO 1
+                # SOCKET OPTION CLOSED
+                # =====================================
                 try:
-                    data = self.api.socket_option_closed.get(id_number)
+                    data = (
+                        self.api.socket_option_closed.get(
+                            id_number
+                        )
+                    )
 
                     if data:
-                        msg = data.get("msg", {})
-                        win = msg.get("win")
+                        msg = data.get(
+                            "msg",
+                            {}
+                        )
+
+                        win = msg.get(
+                            "win"
+                        )
 
                         if win == "equal":
                             return 0
 
-                        amount = float(msg.get("sum", 0))
-                        win_amount = float(msg.get("win_amount", 0))
+                        amount = float(
+                            msg.get(
+                                "sum",
+                                0,
+                            )
+                        )
+
+                        win_amount = float(
+                            msg.get(
+                                "win_amount",
+                                0,
+                            )
+                        )
 
                         if win == "loose":
                             return -amount
 
-                        return round(win_amount - amount, 2)
+                        return round(
+                            win_amount - amount,
+                            2,
+                        )
+
                 except Exception:
                     pass
 
-                # Método 2: historial de opciones cerradas
-                result = self.get_optioninfo_v2(50, timeout=10)
+                # =====================================
+                # METODO 2
+                # OPTIONINFO V2
+                # =====================================
+
+                restante = (
+                    float(timeout)
+                    - (
+                        time.time()
+                        - inicio
+                    )
+                )
+
+                if restante <= 0:
+                    return None
+
+                # Nunca permitir que get_optioninfo_v2()
+                # consuma más tiempo que el disponible
+                # para check_win_v3().
+                timeout_optioninfo = min(
+                    0.75,
+                    restante,
+                )
+
+                if timeout_optioninfo <= 0:
+                    return None
+
+                result = (
+                    self.get_optioninfo_v2(
+                        50,
+                        timeout=timeout_optioninfo,
+                    )
+                )
 
                 if result:
-                    msg = result.get("msg", {})
-                    closed_options = msg.get("closed_options", [])
+                    msg = result.get(
+                        "msg",
+                        {}
+                    )
+
+                    closed_options = msg.get(
+                        "closed_options",
+                        [],
+                    )
 
                     for op in closed_options:
                         try:
-                            op_id = op.get("id")
+                            op_id = op.get(
+                                "id"
+                            )
 
-                            if isinstance(op_id, list):
+                            if isinstance(
+                                op_id,
+                                list,
+                            ):
                                 op_id = op_id[0]
 
-                            op_id = int(op_id)
+                            op_id = int(
+                                op_id
+                            )
 
-                            if op_id == id_number:
-                                win = op.get("win")
-                                amount = float(op.get("amount", 0))
-                                win_amount = float(op.get("win_amount", 0))
+                            if op_id != id_number:
+                                continue
 
-                                if win == "equal":
-                                    return 0
+                            win = op.get(
+                                "win"
+                            )
 
-                                return round(win_amount - amount, 2)
+                            amount = float(
+                                op.get(
+                                    "amount",
+                                    0,
+                                )
+                            )
+
+                            win_amount = float(
+                                op.get(
+                                    "win_amount",
+                                    0,
+                                )
+                            )
+
+                            if win == "equal":
+                                return 0
+
+                            return round(
+                                win_amount - amount,
+                                2,
+                            )
 
                         except Exception:
                             continue
 
             except Exception as e:
-                print("Error check_win_v3 interno:", e)
+                print(
+                    "Error check_win_v3 interno:",
+                    e,
+                )
 
-            time.sleep(1)
+            restante = (
+                float(timeout)
+                - (
+                    time.time()
+                    - inicio
+                )
+            )
+
+            if restante <= 0:
+                break
+
+            time.sleep(
+                min(
+                    0.1,
+                    restante,
+                )
+            )
 
         return None
     def get_betinfo(self, id_number):
@@ -1706,19 +1844,63 @@ class IQ_Option:
         else:
             return False, None
 
-    def get_position_history_v2(self, instrument_type, limit, offset, start, end):
-        # instrument_type=crypto forex fx-option multi-option cfd digital-option turbo-option
+    def get_position_history_v2(
+        self,
+        instrument_type,
+        limit,
+        offset,
+        start,
+        end,
+        timeout=10,
+    ):
+        # instrument_type:
+        # crypto
+        # forex
+        # fx-option
+        # multi-option
+        # cfd
+        # digital-option
+        # turbo-option
+
         self.api.position_history_v2 = None
+
         self.api.get_position_history_v2(
-            instrument_type, limit, offset, start, end)
-        while self.api.position_history_v2 == None:
-            pass
+            instrument_type,
+            limit,
+            offset,
+            start,
+            end,
+        )
 
-        if self.api.position_history_v2["status"] == 2000:
-            return True, self.api.position_history_v2["msg"]
-        else:
-            return False, None
+        inicio = time.time()
 
+        while (
+            self.api.position_history_v2
+            is None
+        ):
+            if (
+                time.time()
+                - inicio
+                >= timeout
+            ):
+                return False, None
+
+            time.sleep(0.05)
+
+        if (
+            self.api.position_history_v2[
+                "status"
+            ]
+            == 2000
+        ):
+            return (
+                True,
+                self.api.position_history_v2[
+                    "msg"
+                ],
+            )
+
+        return False, None
     def get_available_leverages(self, instrument_type, actives=""):
         self.api.available_leverages = None
         if actives == "":

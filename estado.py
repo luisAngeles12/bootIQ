@@ -8,6 +8,21 @@ activos_invalidos = set()
 cooldown_activos = {}
 activos_cache = []
 ultima_actualizacion_activos = 0
+# ============================================================
+# D7.6D — REFRESH INCREMENTAL DE ACTIVOS
+# ============================================================
+# El staging nunca es operable directamente.
+# Solo reemplaza activos_cache cuando el universo completo
+# termina de evaluarse.
+refresh_activos_en_progreso = False
+refresh_activos_universo = []
+refresh_activos_indice = 0
+refresh_activos_candidatos = []
+refresh_activos_vistos = set()
+refresh_activos_inicio = 0.0
+# TOP nuevo ya calculado, pero todavía NO operable
+# hasta completar sus buffers históricos.
+refresh_activos_top_pendiente = []
 
 # D7.6C — buffer LIVE de velas cerradas por activo.
 # Conserva la misma profundidad histórica usada por
