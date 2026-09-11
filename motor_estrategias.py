@@ -98,13 +98,24 @@ def crear_senal_profesional(activo, direccion, estrategia, puntaje, rsi, razones
         "fuerza_tendencia": ctx.get("fuerza_tendencia", 0) if ctx else 0,
     }
 
-def motor_estrategias_profesional(ctx):
+def motor_estrategias_profesional(
+    ctx,
+    activos_malos=None,
+):
     senales = []
     candidatos = []
     activo = ctx["activo"]
     rsi = ctx["rsi"]
 
-    activos_malos = activos_bloqueables()
+    # Si bot.py ya calculó la lista para esta ronda,
+    # reutilizar exactamente ese resultado.
+    #
+    # Backtest, tests y otras llamadas que no suministren
+    # la lista conservan el comportamiento histórico.
+    if activos_malos is None:
+        activos_malos = (
+            activos_bloqueables()
+        )
 
     activo_bloqueable_historico = (
         activo in activos_malos

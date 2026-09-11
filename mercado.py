@@ -297,13 +297,34 @@ def obtener_velas(activo):
             estado.fallo_velas_ronda_d76d = True
             return None
 
-        recientes = estado.Iq.get_candles(
-            activo,
-            CANDLE_TIME,
-            4,
-            time.time(),
-            timeout=1.5,
+        inicio_get_candles_d76d = (
+            time.perf_counter()
         )
+
+        try:
+            recientes = estado.Iq.get_candles(
+                activo,
+                CANDLE_TIME,
+                4,
+                time.time(),
+                timeout=1.5,
+            )
+
+        finally:
+            demora_get_candles_d76d = (
+                time.perf_counter()
+                - inicio_get_candles_d76d
+            )
+
+            if not hasattr(
+                estado,
+                "telemetria_get_candles_d76d",
+            ):
+                estado.telemetria_get_candles_d76d = {}
+
+            estado.telemetria_get_candles_d76d[
+                activo
+            ] = demora_get_candles_d76d
 
         if recientes is None:
             estado.fallo_velas_ronda_d76d = True
@@ -887,7 +908,9 @@ def refrescar_activos_incremental():
     ):
         try:
             abiertos = (
-                estado.Iq.get_all_open_time()
+                estado.Iq.get_all_open_time(
+                    timeout=5.0
+                )
             )
 
         except Exception as e:
@@ -1299,7 +1322,101 @@ def obtener_activos(
         )
         or []
     )
+    # ==========================================
+    # D7.6D — BOOTSTRAP TOP PENDIENTE DE BUFFER
+    # ==========================================
+    #
+    # Si el scanner inicial ya calculó un TOP pero
+    # todavía no existe cache oficial, NO repetimos
+    # el scanner completo.
+    #
+    # Continuamos preparando exactamente ese TOP
+    # hasta que todos sus activos tengan >=130 velas.
+    top_pendiente_bootstrap_d76d = list(
+        getattr(
+            estado,
+            "refresh_activos_top_pendiente",
+            [],
+        )
+        or []
+    )
 
+    if (
+        not cache_previa_d76d
+        and top_pendiente_bootstrap_d76d
+    ):
+        nombres_pendientes_d76d = {
+            item["activo"]
+            for item in top_pendiente_bootstrap_d76d
+            if (
+                isinstance(item, dict)
+                and item.get("activo")
+            )
+        }
+
+        faltantes_buffer_d76d = [
+            activo
+            for activo in nombres_pendientes_d76d
+            if len(
+                getattr(
+                    estado,
+                    "velas_cache",
+                    {},
+                ).get(
+                    activo,
+                    [],
+                )
+            ) < 130
+        ]
+
+        # Solo cuando TODOS tienen buffer se publica.
+        if not faltantes_buffer_d76d:
+            estado.activos_cache = list(
+                top_pendiente_bootstrap_d76d
+            )
+
+            estado.ultima_actualizacion_activos = (
+                time.time()
+            )
+
+            estado.refresh_activos_top_pendiente = []
+
+            print(
+                "D7.6D BOOTSTRAP TOP PUBLICADO "
+                "CON BUFFER |",
+                "top:",
+                len(estado.activos_cache),
+                "| buffers:",
+                len(nombres_pendientes_d76d),
+            )
+
+            return list(
+                estado.activos_cache
+            )
+
+        # En ventana crítica nunca devolver un TOP
+        # todavía incompleto.
+        if solo_cache:
+            return []
+
+        print(
+            "D7.6D BOOTSTRAP TOP PENDIENTE BUFFER |",
+            "listos:",
+            (
+                len(nombres_pendientes_d76d)
+                - len(faltantes_buffer_d76d)
+            ),
+            "/",
+            len(nombres_pendientes_d76d),
+            "| faltantes:",
+            len(faltantes_buffer_d76d),
+        )
+
+        # Fuera de 0-10 bot.py puede seguir llamando
+        # precargar_velas_activos() sobre este mismo TOP.
+        return list(
+            top_pendiente_bootstrap_d76d
+        )
     # ==========================================
     # D7.6D — BOOTSTRAP VS REFRESH
     # ==========================================
@@ -1464,8 +1581,55 @@ def obtener_activos(
     # ==========================================
     try:
         abiertos = (
-            estado.Iq.get_all_open_time()
+            estado.Iq.get_all_open_time(
+                timeout=5.0
+            )
         )
+
+        # D7.6D — recuperación acotada solamente
+        # durante cold-start.
+        #
+        # Si ya existe cache oficial, no hacemos
+        # un segundo bloqueo de hasta 5 segundos:
+        # se conserva la cache y el refresh podrá
+        # intentarse posteriormente.
+        binary_open_d76d = (
+            abiertos.get("binary", {})
+            if abiertos
+            else {}
+        )
+
+        turbo_open_d76d = (
+            abiertos.get("turbo", {})
+            if abiertos
+            else {}
+        )
+
+        open_time_util_d76d = bool(
+            binary_open_d76d
+            or turbo_open_d76d
+        )
+
+        if (
+            not open_time_util_d76d
+            and not getattr(
+                estado,
+                "activos_cache",
+                [],
+            )
+        ):
+            print(
+                "D7.6D BOOTSTRAP OPEN_TIME "
+                "REINTENTO | timeout: 5.0s"
+            )
+
+            time.sleep(0.20)
+
+            abiertos = (
+                estado.Iq.get_all_open_time(
+                    timeout=5.0
+                )
+            )
 
     except Exception as e:
         print(
@@ -1729,11 +1893,30 @@ def obtener_activos(
     ]
 
     if activos:
-        estado.activos_cache = activos
-        estado.ultima_actualizacion_activos = (
-            time.time()
-        )
+        if not cache_previa_d76d:
+            # Bootstrap:
+            # el TOP ya está calculado, pero todavía
+            # NO es operable hasta completar buffers.
+            estado.refresh_activos_top_pendiente = (
+                list(activos)
+            )
 
+            print(
+                "D7.6D BOOTSTRAP TOP CALCULADO |",
+                "top:",
+                len(activos),
+                "| estado: PENDIENTE_BUFFER",
+            )
+
+        else:
+            # Mantener comportamiento existente aquí.
+            estado.activos_cache = list(
+                activos
+            )
+
+            estado.ultima_actualizacion_activos = (
+                time.time()
+            )
     print(
         "Activos compatibles filtrados:",
         len(activos)

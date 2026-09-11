@@ -25,7 +25,10 @@ from entrada import (
     motivo_pendiente_por_accion_precio
 )
 from operaciones import revisar_operaciones_abiertas, abrir_operacion
-from estadisticas import imprimir_estadisticas
+from estadisticas import (
+    imprimir_estadisticas,
+    activos_bloqueables,
+)
 
 
 def main():
@@ -776,6 +779,23 @@ def main():
         estado.fallo_velas_ronda_d76d = False
         ronda_incompleta_d76d = False
 
+        # ==================================================
+        # D7.6D — BLOQUEABLES CALCULADOS UNA VEZ POR RONDA
+        # ==================================================
+        #
+        # Antes motor_estrategias_profesional() recalculaba
+        # esta misma lista para cada activo.
+        #
+        # La lista no puede cambiar durante esta ronda:
+        # el proceso es secuencial y la reconciliación de
+        # resultados ocurre fuera de este análisis crítico.
+        #
+        # No cambia criterios ni decisiones.
+        activos_malos_ronda = activos_bloqueables()
+
+        # D7.6D — telemetría temporal solamente.
+        timings_activos_d76d = []
+
         for item in activos:
 
             # Reservamos aproximadamente 2 segundos para:
@@ -802,9 +822,148 @@ def main():
                 ):
                     continue
 
-                senal = analizar_activo(
-                    activo
+                # Evitar reutilizar telemetría de velas
+                # perteneciente a una ronda anterior.
+                getattr(
+                    estado,
+                    "telemetria_get_candles_d76d",
+                    {},
+                ).pop(
+                    activo,
+                    None,
                 )
+
+                inicio_activo_d76d = (
+                    time.perf_counter()
+                )
+
+                try:
+                    senal = analizar_activo(
+                        activo,
+                        activos_bloqueables_ronda=(
+                            activos_malos_ronda
+                        ),
+                    )
+
+                finally:
+                    demora_activo_d76d = (
+                        time.perf_counter()
+                        - inicio_activo_d76d
+                    )
+
+                    demora_velas_d76d = (
+                        getattr(
+                            estado,
+                            "telemetria_get_candles_d76d",
+                            {},
+                        ).get(
+                            activo,
+                            0.0,
+                        )
+                    )
+
+                    subfases_d76d = (
+                        getattr(
+                            estado,
+                            "telemetria_subfases_d76d",
+                            {},
+                        ).get(
+                            activo,
+                            {},
+                        )
+                    )
+
+                    grafico_total_d76d = float(
+                        subfases_d76d.get(
+                            "grafico_total",
+                            0.0,
+                        )
+                        or 0.0
+                    )
+
+                    grafico_local_d76d = max(
+                        0.0,
+                        grafico_total_d76d
+                        - demora_velas_d76d,
+                    )
+
+                    mercado_d76d = float(
+                        subfases_d76d.get(
+                            "mercado",
+                            0.0,
+                        )
+                        or 0.0
+                    )
+
+                    base_d76d = float(
+                        subfases_d76d.get(
+                            "base",
+                            0.0,
+                        )
+                        or 0.0
+                    )
+
+                    estrategias_d76d = float(
+                        subfases_d76d.get(
+                            "estrategias",
+                            0.0,
+                        )
+                        or 0.0
+                    )
+
+                    cerebro_d76d = float(
+                        subfases_d76d.get(
+                            "cerebro",
+                            0.0,
+                        )
+                        or 0.0
+                    )
+
+                    ranking_d76d = float(
+                        subfases_d76d.get(
+                            "ranking",
+                            0.0,
+                        )
+                        or 0.0
+                    )
+
+                    candidatas_cerebro_d76d = int(
+                        subfases_d76d.get(
+                            "candidatas_cerebro",
+                            0,
+                        )
+                        or 0
+                    )
+
+                    contabilizado_d76d = (
+                        demora_velas_d76d
+                        + grafico_local_d76d
+                        + mercado_d76d
+                        + base_d76d
+                        + estrategias_d76d
+                        + cerebro_d76d
+                        + ranking_d76d
+                    )
+
+                    otros_d76d = max(
+                        0.0,
+                        demora_activo_d76d
+                        - contabilizado_d76d,
+                    )
+
+                    timings_activos_d76d.append({
+                        "activo": activo,
+                        "total": demora_activo_d76d,
+                        "velas": demora_velas_d76d,
+                        "grafico": grafico_local_d76d,
+                        "mercado": mercado_d76d,
+                        "base": base_d76d,
+                        "estrategias": estrategias_d76d,
+                        "cerebro": cerebro_d76d,
+                        "ranking": ranking_d76d,
+                        "otros": otros_d76d,
+                        "n_cerebro": candidatas_cerebro_d76d,
+                    })
 
                 # D7.6D — abortar inmediatamente si falla
                 # la actualización de velas de cualquier activo.
@@ -904,6 +1063,31 @@ def main():
                 False,
             )
         ):
+            if timings_activos_d76d:
+                print(
+                    "D7.6D PERF DESCARTE |",
+                    "procesados:",
+                    len(timings_activos_d76d),
+                    "/",
+                    len(activos),
+                    "| detalle:",
+                    " ; ".join(
+                        (
+                            f"{x['activo']} "
+                            f"tot={x['total']:.3f}s "
+                            f"vel={x['velas']:.3f}s "
+                            f"graf={x['grafico']:.3f}s "
+                            f"merc={x['mercado']:.3f}s "
+                            f"base={x['base']:.3f}s "
+                            f"estr={x['estrategias']:.3f}s "
+                            f"cer={x['cerebro']:.3f}s "
+                            f"rank={x['ranking']:.3f}s "
+                            f"otros={x['otros']:.3f}s "
+                            f"ncer={x['n_cerebro']}"
+                        )
+                        for x in timings_activos_d76d
+                    ),
+                )
             print(
                 "D7.6D RONDA DESCARTADA — "
                 "NO SE ORDENA TOP PARCIAL | segundo:",

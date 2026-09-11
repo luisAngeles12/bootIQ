@@ -1035,7 +1035,12 @@ def obtener_resultado_operacion(op):
             # R8 TECH — RECUPERACION POST-RECONEXION
             # ================================================
             #
-            # Solo validado empíricamente para TURBO.
+            # BootIQ puede etiquetar la señal como TURBO o BINARY,
+            # pero con expiración de 1 minuto IQ puede persistir
+            # ambas como instrument_type="turbo-option".
+            #
+            # Validado empíricamente con una orden BINARY de BootIQ
+            # recuperada en IQ como turbo-option.
             #
             # Si se perdió option-closed después de una
             # desconexión, consultar el historial persistente
@@ -1043,7 +1048,10 @@ def obtener_resultado_operacion(op):
             #
             if (
                 resultado is None
-                and tipo == "turbo"
+                and tipo in {
+                    "turbo",
+                    "binary",
+                }
             ):
                 resultado = (
                     obtener_resultado_historial_turbo_con_timeout(

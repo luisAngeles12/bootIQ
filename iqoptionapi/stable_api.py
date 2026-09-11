@@ -372,9 +372,14 @@ class IQ_Option:
         return (
             self.api.api_option_init_all_result_v2
         )
-    def __get_binary_open(self):
+    def __get_binary_open(
+        self,
+        timeout=2.0,
+    ):
         # for turbo and binary pairs
-        binary_data = self.get_all_init_v2()
+        binary_data = self.get_all_init_v2(
+            timeout=timeout
+        )
         binary_list = ["binary", "turbo"]
         if binary_data:
             for option in binary_list:
@@ -388,7 +393,7 @@ class IQ_Option:
                             else:
                                 self.OPEN_TIME[option][name]["open"] = True
                         else:
-                            self.OPEN_TIME[option][name]["open"] = active["enabled"]    
+                            self.OPEN_TIME[option][name]["open"] = active["enabled"]
 
     def __get_digital_open(self):
         # for digital options
@@ -441,28 +446,33 @@ class IQ_Option:
                     if start < time.time() < end:
                         self.OPEN_TIME[instruments_type][name]["open"] = True
 
-    def get_all_open_time(self):
+    def get_all_open_time(
+        self,
+        timeout=2.0,
+    ):
         """
         BootIQ opera actualmente solo TURBO/BINARY.
-    
+
         No consultamos DIGITAL porque:
         - BootIQ no lo utiliza;
         - puede tardar demasiado;
         - puede dejar un hilo trabajando sobre un websocket
           que ya se está reconectando.
         """
-    
+
         self.OPEN_TIME = nested_dict(3, dict)
-    
+
         try:
-            self.__get_binary_open()
-    
+            self.__get_binary_open(
+                timeout=timeout
+            )
+
         except Exception as e:
             logging.error(
                 "**error** binary/turbo open_time: %s",
                 e
             )
-    
+
         return self.OPEN_TIME
     # --------for binary option detail
 
@@ -781,9 +791,9 @@ class IQ_Option:
         # ============================================================
         # PASO 5.5 — VALIDAR RESPUESTA DE VELAS
         # ============================================================
-        
+
         datos_candles = self.api.candles.candles_data
-        
+
         if not isinstance(datos_candles, list):
             logging.warning(
                 "**warning** get_candles respuesta invalida "
@@ -792,14 +802,14 @@ class IQ_Option:
                 type(datos_candles).__name__,
             )
             return None
-        
-        
+
+
         try:
             count_esperado = int(count)
         except (TypeError, ValueError):
             count_esperado = 0
-        
-        
+
+
         # IQ nunca debería devolver MÁS velas
         # que las solicitadas.
         #
@@ -819,10 +829,10 @@ class IQ_Option:
                 count_esperado,
                 len(datos_candles),
             )
-        
+
             return None
-        
-        
+
+
         return datos_candles
 
     def start_candles_stream(self, ACTIVE, size, maxdict):

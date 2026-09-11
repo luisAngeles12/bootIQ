@@ -52,10 +52,10 @@ def leer_contexto_grafico(activo):
     highs = data["high"]
     lows = data["low"]
     froms = data.get("from", [])
-    
+
     if len(froms) != len(closes):
         return None
-    
+
     vela_senal_from = int(froms[-1])
     if len(closes) < 130:
         return None
@@ -245,7 +245,7 @@ def leer_contexto_grafico(activo):
         resistencia,
         vol
     )
-    
+
     diagnostico_pa_put = diagnostico_accion_precio_zona(
         "put",
         opens,
@@ -256,19 +256,19 @@ def leer_contexto_grafico(activo):
         resistencia,
         vol
     )
-    
+
     accion_precio_call = diagnostico_pa_call.get("accion", "SIN_DATOS")
     razon_accion_precio_call = diagnostico_pa_call.get("razon", "")
-    
+
     accion_precio_put = diagnostico_pa_put.get("accion", "SIN_DATOS")
     razon_accion_precio_put = diagnostico_pa_put.get("razon", "")
     return {
         "activo": activo,
-        
+
         # PASO 5.5A
         "froms": froms,
         "vela_senal_from": vela_senal_from,
-        
+
         "opens": opens,
         "closes": closes,
         "highs": highs,
@@ -368,10 +368,10 @@ def leer_contexto_grafico(activo):
 
         "accion_precio_call": accion_precio_call,
         "razon_accion_precio_call": razon_accion_precio_call,
-        
+
         "accion_precio_put": accion_precio_put,
         "razon_accion_precio_put": razon_accion_precio_put,
-        
+
         # Compatibilidad vieja: se mantiene para no romper otros módulos.
         "accion_precio": accion_precio_call,
         "razon_accion_precio": razon_accion_precio_call,
@@ -852,9 +852,9 @@ def evaluar_senal_candidata(activo, ctx, senal):
     en_cooldown = estrategia_en_cooldown(
         senal.get("patron", "")
     )
-    
+
     senal["estrategia_en_cooldown"] = bool(en_cooldown)
-    
+
     if en_cooldown:
         print(
             senal["direccion"].upper(),
@@ -862,11 +862,11 @@ def evaluar_senal_candidata(activo, ctx, senal):
             activo,
             senal.get("patron", "")
         )
-    
+
         riesgos_actuales = str(
             senal.get("riesgos_base", "")
         ).strip("|")
-    
+
         senal["riesgos_base"] = "|".join(
             x for x in [
                 riesgos_actuales,
@@ -874,7 +874,7 @@ def evaluar_senal_candidata(activo, ctx, senal):
             ]
             if x
         )
-    
+
         senal["razon"] = (
             str(senal.get("razon", ""))
             + ", estrategia actualmente en cooldown; "
@@ -897,17 +897,17 @@ def evaluar_senal_candidata(activo, ctx, senal):
         "estado_operativo_setup",
         "LISTO"
     )
-    
+
     senal["requiere_ruptura_setup"] = setup.get(
         "requiere_ruptura_setup",
         False
     )
-    
+
     senal["requiere_confirmacion_setup"] = setup.get(
         "requiere_confirmacion_setup",
         False
     )
-    
+
     senal["riesgo_estructural_critico_setup"] = setup.get(
         "riesgo_estructural_critico_setup",
         False
@@ -935,13 +935,13 @@ def evaluar_senal_candidata(activo, ctx, senal):
 
     senal["validacion_mercado_ok"] = ok_mercado
     senal["razon_validacion_mercado"] = razon_validacion_mercado
-    
+
     if not ok_mercado:
         senal["riesgos_base"] = (
-            str(senal.get("riesgos_base", "")) 
+            str(senal.get("riesgos_base", ""))
             + "|MERCADO_NO_VALIDADO"
         ).strip("|")
-    
+
         senal["razon"] += (
             ", advertencia mercado: "
             + razon_validacion_mercado
@@ -982,18 +982,18 @@ def evaluar_senal_candidata(activo, ctx, senal):
     if not ok_zona_sr:
         senal["validacion_zona_sr_ok"] = False
         senal["razon_zona_sr"] = razon_zona_sr
-    
+
         senal["riesgos_base"] = (
             str(senal.get("riesgos_base", ""))
             + "|ZONA_SR_NO_VALIDADA"
         ).strip("|")
-    
+
         senal["razon"] += (
             ", advertencia zona SR: "
             + razon_zona_sr
             + ", enviada al cerebro único como evidencia"
         )
-    
+
     else:
         senal["validacion_zona_sr_ok"] = True
         senal["razon_zona_sr"] = razon_zona_sr
@@ -1013,19 +1013,19 @@ def evaluar_senal_candidata(activo, ctx, senal):
 
     riesgos_previos = str(senal.get("riesgos_base", "")).strip("|")
     fortalezas_previas = str(senal.get("fortalezas_base", "")).strip("|")
-    
+
     diagnostico_base = diagnosticar_base_estrategia(senal, ctx)
-    
+
     riesgos_nuevos = "|".join(diagnostico_base.get("riesgos_base", []))
     fortalezas_nuevas = "|".join(diagnostico_base.get("fortalezas_base", []))
-    
+
     senal["base_estrategia"] = diagnostico_base.get("base_estrategia", "MEDIA")
-    
+
     senal["riesgos_base"] = "|".join(
         x for x in [riesgos_previos, riesgos_nuevos]
         if x
     )
-    
+
     senal["fortalezas_base"] = "|".join(
         x for x in [fortalezas_previas, fortalezas_nuevas]
         if x
@@ -1070,10 +1070,10 @@ def evaluar_senal_candidata(activo, ctx, senal):
     # BOOTIQ V3 — EVIDENCIAS CHOCH SIN ALTERAR PUNTAJE
     # ==========================================================
     evidencias_estrategia = senal.get("estrategia_evidencias", [])
-    
+
     if not isinstance(evidencias_estrategia, list):
         evidencias_estrategia = []
-    
+
     if "choch" in patron_lower:
         if accion_precio in ["CALL_ZONA_NEUTRA", "PUT_ZONA_NEUTRA"]:
             evidencias_estrategia.append({
@@ -1091,7 +1091,7 @@ def evaluar_senal_candidata(activo, ctx, senal):
                     "ajuste_anterior": 2,
                 },
             })
-    
+
         if (
             accion_precio == "RECHAZO_COMPRADOR_SOPORTE"
             and senal["direccion"] == "call"
@@ -1111,7 +1111,7 @@ def evaluar_senal_candidata(activo, ctx, senal):
                     "ajuste_anterior": 4,
                 },
             })
-    
+
         if (
             accion_precio == "RECHAZO_VENDEDOR_RESISTENCIA"
             and senal["direccion"] == "put"
@@ -1131,7 +1131,7 @@ def evaluar_senal_candidata(activo, ctx, senal):
                     "ajuste_anterior": 4,
                 },
             })
-    
+
         if (
             accion_precio == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA"
             and senal["direccion"] == "call"
@@ -1151,7 +1151,7 @@ def evaluar_senal_candidata(activo, ctx, senal):
                     "ajuste_anterior": -3,
                 },
             })
-    
+
         if (
             accion_precio == "PUT_SOPORTE_CERCA_SIN_RUPTURA"
             and senal["direccion"] == "put"
@@ -1171,37 +1171,37 @@ def evaluar_senal_candidata(activo, ctx, senal):
                     "ajuste_anterior": -3,
                 },
             })
-    
+
     senal["estrategia_evidencias"] = evidencias_estrategia
     if diagnostico_pa.get("permite") is False:
         razon_pa = diagnostico_pa.get("razon", "").lower()
-    
+
         senal["validacion_accion_precio_ok"] = False
         senal["razon_validacion_accion_precio"] = diagnostico_pa.get("razon", "")
-    
+
         senal["riesgos_base"] = (
             str(senal.get("riesgos_base", ""))
             + "|ACCION_PRECIO_NO_VALIDADA"
         ).strip("|")
-    
+
         if "resistencia cerca" in razon_pa:
             senal["riesgos_base"] = (
                 str(senal.get("riesgos_base", ""))
                 + "|ESPERANDO_RUPTURA_RESISTENCIA"
             ).strip("|")
-    
+
         elif "soporte cerca" in razon_pa:
             senal["riesgos_base"] = (
                 str(senal.get("riesgos_base", ""))
                 + "|ESPERANDO_RUPTURA_SOPORTE"
             ).strip("|")
-    
+
         senal["razon"] += (
             ", advertencia acción precio: "
             + diagnostico_pa.get("razon", "")
             + ", enviada al cerebro único como evidencia"
         )
-    
+
     else:
         senal["validacion_accion_precio_ok"] = True
         senal["razon_validacion_accion_precio"] = diagnostico_pa.get("razon", "")
@@ -1209,16 +1209,16 @@ def evaluar_senal_candidata(activo, ctx, senal):
         ctx,
         senal["direccion"]
     )
-    
+
     senal["vela_contraria_reciente"] = bloqueada_contraria
     senal["razon_vela_contraria"] = razon_contraria
-    
+
     if bloqueada_contraria:
         senal["riesgos_base"] = (
             str(senal.get("riesgos_base", ""))
             + "|VELA_CONTRARIA_RECIENTE"
         ).strip("|")
-    
+
         senal["razon"] += (
             ", advertencia vela contraria reciente: "
             + razon_contraria
@@ -1235,17 +1235,17 @@ def evaluar_senal_candidata(activo, ctx, senal):
         precio_zona,
         ctx["vol"]
     )
-    
+
     senal["zona_operada"] = bloqueada
     senal["razon_zona_operada"] = razon_zona
-    
+
     if bloqueada:
-    
+
         senal["riesgos_base"] = (
             str(senal.get("riesgos_base", ""))
             + "|ZONA_OPERADA_RECIENTE"
         ).strip("|")
-    
+
         senal["razon"] += (
             ", advertencia zona operada: "
             + razon_zona
@@ -1262,22 +1262,22 @@ def evaluar_senal_candidata(activo, ctx, senal):
         ctx["resistencia"],
         ctx["vol"]
     )
-    
+
     senal["validacion_ubicacion_ok"] = ok_ubicacion
     senal["razon_ubicacion"] = razon_ubicacion
-    
+
     if not ok_ubicacion:
         senal["riesgos_base"] = (
             str(senal.get("riesgos_base", ""))
             + "|UBICACION_FATIGA_NO_VALIDADA"
         ).strip("|")
-    
+
         senal["razon"] += (
             ", advertencia ubicación/fatiga: "
             + razon_ubicacion
             + ", enviada al cerebro único como evidencia"
         )
-    
+
     senal["razon"] = (
         senal["razon"]
         + ", "
@@ -1303,17 +1303,17 @@ def evaluar_senal_candidata(activo, ctx, senal):
         + ", RUPTURA: "
         + senal.get("razon_ruptura", "")
     )
-    
+
     senal["precio_zona"] = precio_zona
     senal["vol"] = ctx["vol"]
     # ============================================================
     # PASO 5.5A — IDENTIDAD EXACTA DE LA VELA DE SEÑAL
     # ============================================================
-    
+
     senal["vela_senal_from"] = int(
         ctx.get("vela_senal_from", 0) or 0
     )
-    
+
     # OHLC exacto de la vela que originó la señal.
     # Solo diagnóstico de paridad; no modifica ninguna decisión.
     senal["vela_senal_open"] = float(
@@ -1343,20 +1343,20 @@ def evaluar_senal_candidata(activo, ctx, senal):
     # ========================================================
     # EVIDENCIAS ESTRUCTURADAS
     # ========================================================
-    
+
     pa_evidencias = ctx.get("pa_evidencias", [])
-    
+
     if not isinstance(pa_evidencias, list):
         pa_evidencias = []
-    
+
     mercado_evidencias = ctx.get(
         "mercado_evidencias",
         [],
     )
-    
+
     if not isinstance(mercado_evidencias, list):
         mercado_evidencias = []
-    
+
     senal["pa_evidencias"] = list(pa_evidencias)
     senal["mercado_evidencias"] = list(
         mercado_evidencias
@@ -1390,9 +1390,9 @@ def evaluar_senal_candidata(activo, ctx, senal):
         senal,
         ctx
     )
-    
+
     senal = resultado_bootiq["senal"]
-    
+
     # ============================================================
     # FASE 3.4-A — SNAPSHOT REAL DEL CONTRATO BOOTIQ
     # ============================================================
@@ -1404,50 +1404,50 @@ def evaluar_senal_candidata(activo, ctx, senal):
         "decision",
         {},
     )
-    
+
     # Auditoría completa del Cerebro Único.
     resultado_cerebro = resultado_bootiq.get("resultado", {})
-    
+
     if not isinstance(resultado_cerebro, dict):
         resultado_cerebro = {}
-    
+
     resultado_confianza = resultado_cerebro.get(
         "resultado_confianza",
         {},
     )
-    
+
     if not isinstance(resultado_confianza, dict):
         resultado_confianza = {}
-    
+
     resultado_pa = resultado_cerebro.get(
         "resultado_price_action",
         {},
     )
-    
+
     if not isinstance(resultado_pa, dict):
         resultado_pa = {}
-    
+
     resultado_mercado = resultado_cerebro.get(
         "resultado_mercado",
         {},
     )
-    
+
     if not isinstance(resultado_mercado, dict):
         resultado_mercado = {}
-    
+
     resultado_estrategia = resultado_cerebro.get(
         "resultado_estrategia",
         {},
     )
-    
+
     if not isinstance(resultado_estrategia, dict):
         resultado_estrategia = {}
-    
+
     senal["auditoria_confianza_base"] = resultado_confianza.get(
         "confianza_base",
         resultado_cerebro.get("confianza_base", 50),
     )
-    
+
     senal["auditoria_ajuste_aprendizaje"] = resultado_confianza.get(
         "ajuste_aprendizaje",
         resultado_cerebro.get(
@@ -1455,53 +1455,53 @@ def evaluar_senal_candidata(activo, ctx, senal):
             0,
         ),
     )
-    
+
     senal["auditoria_ajuste_price_action"] = resultado_pa.get(
         "ajuste",
         0,
     )
-    
+
     senal["auditoria_ajuste_mercado"] = resultado_mercado.get(
         "ajuste",
         0,
     )
-    
+
     senal["auditoria_ajuste_estrategia"] = (
         resultado_estrategia.get("ajuste", 0)
     )
-    
+
     senal["auditoria_ajuste_evidencias"] = resultado_confianza.get(
         "ajuste_evidencias",
         resultado_cerebro.get("ajuste_evidencias", 0),
     )
-    
+
     senal["auditoria_ajuste_ponderacion"] = resultado_confianza.get(
         "ajuste_ponderacion",
         resultado_cerebro.get("ajuste_ponderacion", 0),
     )
-    
+
     senal["auditoria_confianza_antes_ponderacion"] = (
         resultado_confianza.get(
             "confianza_antes_ponderacion",
             0,
         )
     )
-    
+
     senal["auditoria_confianza_final"] = resultado_confianza.get(
         "confianza",
         resultado_cerebro.get("confianza", 0),
     )
-    
+
     senal["auditoria_motivos_price_action"] = " | ".join(
         str(x)
         for x in resultado_pa.get("motivos", [])
     )
-    
+
     senal["auditoria_motivos_mercado"] = " | ".join(
         str(x)
         for x in resultado_mercado.get("motivos", [])
     )
-    
+
     senal["auditoria_motivos_estrategia"] = " | ".join(
         str(x)
         for x in resultado_estrategia.get("motivos", [])
@@ -1518,7 +1518,7 @@ def evaluar_senal_candidata(activo, ctx, senal):
     modo_diagnostico = bool(
         ctx.get("_modo_backtest_diagnostico", False)
     )
-    
+
     if (
         senal.get("decision_unificada_accion") == "NO_OPERAR"
         and not modo_diagnostico
@@ -1539,12 +1539,13 @@ def evaluar_senal_candidata(activo, ctx, senal):
             pass
 
         return None
-    
+
     return senal
 
 def analizar_activo(
     activo,
     modo_backtest_diagnostico=False,
+    activos_bloqueables_ronda=None,
 ):
     """
     Orquestador principal del análisis por activo.
@@ -1563,30 +1564,118 @@ def analizar_activo(
     Después motor_candidatos.py selecciona cuál de las candidatas
     ya evaluadas tiene mayor prioridad estadística V3.
     """
+    # D7.6D — telemetría temporal por subfase.
+    # No modifica decisiones.
+    import time as _time_d76d
 
-    ctx = leer_contexto_grafico(activo)
+    telemetria_subfases_d76d = None
+
+    try:
+        import estado as _estado_d76d
+
+        if not hasattr(
+            _estado_d76d,
+            "telemetria_subfases_d76d",
+        ):
+            _estado_d76d.telemetria_subfases_d76d = {}
+
+        telemetria_subfases_d76d = {}
+
+        _estado_d76d.telemetria_subfases_d76d[
+            activo
+        ] = telemetria_subfases_d76d
+
+    except Exception:
+        pass
+
+    inicio_grafico_d76d = (
+        _time_d76d.perf_counter()
+    )
+
+    ctx = leer_contexto_grafico(
+        activo
+    )
+
+    demora_grafico_d76d = (
+        _time_d76d.perf_counter()
+        - inicio_grafico_d76d
+    )
+
+    if telemetria_subfases_d76d is not None:
+        telemetria_subfases_d76d[
+            "grafico_total"
+        ] = demora_grafico_d76d
 
     if ctx is None:
         return None
+
+    inicio_mercado_d76d = (
+        _time_d76d.perf_counter()
+    )
 
     ctx = preparar_contexto_mercado(
         activo,
         ctx,
     )
 
+    demora_mercado_d76d = (
+        _time_d76d.perf_counter()
+        - inicio_mercado_d76d
+    )
+
+    if telemetria_subfases_d76d is not None:
+        telemetria_subfases_d76d[
+            "mercado"
+        ] = demora_mercado_d76d
+
     ctx["_modo_backtest_diagnostico"] = bool(
         modo_backtest_diagnostico
     )
 
-    if not validar_contexto_base(
-        activo,
-        ctx,
-    ):
+    inicio_base_d76d = (
+        _time_d76d.perf_counter()
+    )
+
+    contexto_base_ok_d76d = (
+        validar_contexto_base(
+            activo,
+            ctx,
+        )
+    )
+
+    demora_base_d76d = (
+        _time_d76d.perf_counter()
+        - inicio_base_d76d
+    )
+
+    if telemetria_subfases_d76d is not None:
+        telemetria_subfases_d76d[
+            "base"
+        ] = demora_base_d76d
+
+    if not contexto_base_ok_d76d:
         return None
 
-    senales = motor_estrategias_profesional(
-        ctx
+    inicio_estrategias_d76d = (
+        _time_d76d.perf_counter()
     )
+
+    senales = motor_estrategias_profesional(
+        ctx,
+        activos_malos=(
+            activos_bloqueables_ronda
+        ),
+    )
+
+    demora_estrategias_d76d = (
+        _time_d76d.perf_counter()
+        - inicio_estrategias_d76d
+    )
+
+    if telemetria_subfases_d76d is not None:
+        telemetria_subfases_d76d[
+            "estrategias"
+        ] = demora_estrategias_d76d
 
     if not senales:
         return None
@@ -1630,6 +1719,8 @@ def analizar_activo(
     # Cerebro Único evalúa cada candidato.
     # motor_candidatos selecciona posteriormente.
     # ========================================================
+    tiempo_cerebro_d76d = 0.0
+    cantidad_cerebro_d76d = 0
 
     for posicion, senal in enumerate(
         senales,
@@ -1652,11 +1743,22 @@ def analizar_activo(
         except Exception:
             pass
 
+        inicio_cerebro_d76d = (
+            _time_d76d.perf_counter()
+        )
+
         senal_final = evaluar_senal_candidata(
             activo,
             ctx,
             senal,
         )
+
+        tiempo_cerebro_d76d += (
+            _time_d76d.perf_counter()
+            - inicio_cerebro_d76d
+        )
+
+        cantidad_cerebro_d76d += 1
 
         if senal_final is None:
             continue
@@ -1674,6 +1776,14 @@ def analizar_activo(
         candidatas_evaluadas.append(
             senal_final
         )
+        if telemetria_subfases_d76d is not None:
+            telemetria_subfases_d76d[
+                "cerebro"
+            ] = tiempo_cerebro_d76d
+
+            telemetria_subfases_d76d[
+                "candidatas_cerebro"
+            ] = cantidad_cerebro_d76d
 
     if not candidatas_evaluadas:
         return None
@@ -1712,11 +1822,25 @@ def analizar_activo(
     # No se crea otro Cerebro.
     # ========================================================
 
+    inicio_ranking_d76d = (
+        _time_d76d.perf_counter()
+    )
+
     mejor_senal = (
         seleccionar_mejor_candidata_v3(
             candidatas_evaluadas
         )
     )
+
+    demora_ranking_d76d = (
+        _time_d76d.perf_counter()
+        - inicio_ranking_d76d
+    )
+
+    if telemetria_subfases_d76d is not None:
+        telemetria_subfases_d76d[
+            "ranking"
+        ] = demora_ranking_d76d
 
     if mejor_senal is None:
         return None

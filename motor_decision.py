@@ -1466,7 +1466,52 @@ def convertir_decision_v3_a_oficial(
             "",
         )
     )
+    razon_zona_sr_core4 = _txt(
+        evidencia.get(
+            "razon_zona_sr",
+            "",
+        )
+    )
 
+    activo_debil_core4 = bool(
+        evidencia.get(
+            "activo_bloqueable_historico",
+            False,
+        )
+    )
+
+    memoria_permite_core4 = evidencia.get(
+        "memoria_permite",
+        True,
+    )
+
+    # ========================================================
+    # CORE4 — INVALIDACIONES DURAS
+    # ========================================================
+    #
+    # Evidencia prospectiva R8:
+    # los rescates CORE4 que sobreescribieron estas
+    # invalidaciones concentraron el deterioro observado.
+    #
+    # No se bloquea CORE4 completo.
+    # No se bloquea validacion_mercado_ok=False de forma global.
+    # No se bloquea cualquier fallo SR.
+    #
+    # Solo se impide que CORE4 rescate estos casos concretos.
+    core4_invalidacion_dura = (
+        activo_debil_core4
+
+        or memoria_permite_core4 is False
+
+        or razon_validacion_mercado_core4
+        == "rango sucio: señal bloqueada"
+
+        or razon_zona_sr_core4
+        == (
+            "zona bloqueada: mercado delicado "
+            "requiere mejor confirmación"
+        )
+    )
     core4_r1 = (
         tipo_setup_core4 == "indefinido"
         and calidad_setup_core4 == "premium"
@@ -1499,6 +1544,36 @@ def convertir_decision_v3_a_oficial(
         == "impulso_bajista_fuerte"
     )
 
+    # ========================================================
+    # CORE4 — INVALIDACIÓN SELECTIVA R6
+    # ========================================================
+    #
+    # No se elimina R6 completo.
+    # Solo pierde permiso de rescate cuando coinciden:
+    # - probabilidad V3 < 50
+    # - soporte cerca
+    # - sin ruptura confirmada
+    # ========================================================
+
+    probabilidad_core4 = _num(
+        resultado.get(
+            "probabilidad",
+            0.0,
+        ),
+        0.0,
+    )
+
+    core4_invalidacion_r6_sr = (
+        core4_r6
+        and probabilidad_core4 < 50.0
+        and razon_zona_sr_core4
+        == "put bloqueado: soporte cerca sin ruptura confirmada"
+    )
+
+    core4_invalidacion_selectiva = (
+        core4_invalidacion_r6_sr
+    )
+
     core4_match = (
         core4_r1
         or core4_r2
@@ -1519,6 +1594,8 @@ def convertir_decision_v3_a_oficial(
         == "NO_OPERAR_SOMBRA"
         and core4_match
         and core4_mercado_valido
+        and not core4_invalidacion_dura
+        and not core4_invalidacion_selectiva
         and modo_entrada_core4
         == "directa"
     )
