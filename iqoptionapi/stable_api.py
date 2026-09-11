@@ -34,6 +34,14 @@ class IQ_Option:
         self.suspend = 0.5
         self.thread = None
 
+        # Las respuestas históricas de get-candles usan
+        # un único candles_data compartido y IQ no devuelve
+        # request_id/active_id utilizable en la respuesta.
+        #
+        # Por tanto, nunca deben existir dos solicitudes
+        # históricas de velas simultáneas.
+        self._candles_lock = threading.Lock()
+
         self.subscribe_candle = []
         self.subscribe_candle_all_size = []
         self.subscribe_mood = []
@@ -770,133 +778,270 @@ class IQ_Option:
     # _______________________        CANDLE      _____________________________
     # ________________________self.api.getcandles() wss________________________
 
-    def get_candles(self, ACTIVES, interval, count, endtime, timeout=12):
+    def get_candles(
+        self,
+        ACTIVES,
+        interval,
+        count,
+        endtime,
+        timeout=12,
+    ):
         """
-        Versión compatible con el comportamiento original de
-        iqoptionapi.
+        Obtiene velas históricas de forma secuencial y segura.
 
-        - Hace una sola solicitud de velas.
-        - Espera la respuesta del websocket.
-        - No ejecuta self.connect() internamente.
-        - Si el websocket cae, devuelve None.
-        - Tiene un límite de seguridad de 30 segundos para
-          evitar una espera infinita.
+        IQ Option responde get-candles mediante un único
+        candles_data compartido y no devuelve un request_id
+        ni active_id utilizable para correlacionar respuestas.
 
-        La reconexión sigue perteneciendo a conexion.py.
+        Regla de seguridad BootIQ:
+        - una sola petición histórica de candles a la vez;
+        - si una petición vence su timeout, el websocket se
+          cierra inmediatamente;
+        - ninguna petición posterior puede consumir una
+          respuesta tardía de otro activo;
+        - la reconexión sigue perteneciendo a conexion.py.
         """
 
-        if ACTIVES not in OP_code.ACTIVES:
-            print(
-                "Asset {} not found on consts".format(
-                    ACTIVES
-                )
-            )
-            return None
+        with self._candles_lock:
 
-        try:
-            if not self.check_connect():
-                logging.error(
-                    "**error** get_candles websocket disconnected"
+            if ACTIVES not in OP_code.ACTIVES:
+                print(
+                    "Asset {} not found on consts".format(
+                        ACTIVES
+                    )
                 )
                 return None
-        except Exception:
-            return None
-
-        self.api.candles.candles_data = None
-
-        try:
-            self.api.getcandles(
-                OP_code.ACTIVES[ACTIVES],
-                interval,
-                count,
-                endtime
-            )
-        except Exception as e:
-            logging.error(
-                "**error** get_candles request failed | "
-                "activo: %s | error: %s",
-                ACTIVES,
-                e
-            )
-            return None
-
-        try:
-            timeout = max(0.2, float(timeout))
-        except (TypeError, ValueError):
-            timeout = 12.0
-
-        inicio = time.time()
-
-        while self.api.candles.candles_data is None:
 
             try:
                 if not self.check_connect():
                     logging.error(
-                        "**error** get_candles connection lost | "
-                        "activo: %s",
-                        ACTIVES
+                        "**error** get_candles "
+                        "websocket disconnected"
                     )
                     return None
             except Exception:
                 return None
 
-            if time.time() - inicio >= timeout:
-                logging.warning(
-                    "**warning** get_candles sin respuesta %s sec "
-                    "| activo: %s",
-                    round(timeout, 2),
-                    ACTIVES
+            # Limpiar únicamente antes de enviar ESTA
+            # petición. Como las llamadas están serializadas,
+            # no puede existir otra petición legítima activa.
+            self.api.candles.candles_data = None
+
+            try:
+                self.api.getcandles(
+                    OP_code.ACTIVES[ACTIVES],
+                    interval,
+                    count,
+                    endtime,
+                )
+
+            except Exception as e:
+                logging.error(
+                    "**error** get_candles request failed | "
+                    "activo: %s | error: %s",
+                    ACTIVES,
+                    e,
                 )
                 return None
 
-            time.sleep(0.01)
+            try:
+                timeout = max(
+                    0.2,
+                    float(timeout),
+                )
+            except (TypeError, ValueError):
+                timeout = 12.0
 
-        # ============================================================
-        # PASO 5.5 — VALIDAR RESPUESTA DE VELAS
-        # ============================================================
+            inicio = time.time()
 
-        datos_candles = self.api.candles.candles_data
+            while (
+                self.api.candles.candles_data
+                is None
+            ):
 
-        if not isinstance(datos_candles, list):
-            logging.warning(
-                "**warning** get_candles respuesta invalida "
-                "| activo: %s | tipo: %s",
-                ACTIVES,
-                type(datos_candles).__name__,
+                try:
+                    if not self.check_connect():
+                        logging.error(
+                            "**error** get_candles "
+                            "connection lost | activo: %s",
+                            ACTIVES,
+                        )
+                        return None
+                except Exception:
+                    return None
+
+                if (
+                    time.time() - inicio
+                    >= timeout
+                ):
+                    logging.warning(
+                        "**warning** get_candles "
+                        "sin respuesta %s sec "
+                        "| activo: %s",
+                        round(timeout, 2),
+                        ACTIVES,
+                    )
+
+                    # ====================================================
+                    # DRENAJE DE RESPUESTA TARDÍA
+                    # ====================================================
+                    #
+                    # IQ no devuelve active_id/request_id utilizable
+                    # en la respuesta histórica de candles.
+                    #
+                    # Si esta respuesta llega después del timeout y
+                    # enviamos inmediatamente otra solicitud, podría
+                    # ser consumida como si perteneciera al siguiente
+                    # activo.
+                    #
+                    # Mantenemos _candles_lock durante todo el drenaje:
+                    # ninguna otra solicitud histórica puede comenzar.
+                    #
+                    # Medición PRACTICE:
+                    # respuestas tardías observadas entre 0.050 y
+                    # 0.133 s después del timeout.
+                    #
+                    # Damos 0.25 s para recibir y DESCARTAR únicamente
+                    # la respuesta pendiente.
+                    limite_drenaje = 0.25
+                    inicio_drenaje = time.time()
+
+                    while (
+                        self.api.candles.candles_data
+                        is None
+                        and
+                        time.time() - inicio_drenaje
+                        < limite_drenaje
+                    ):
+                        try:
+                            if not self.check_connect():
+                                break
+                        except Exception:
+                            break
+
+                        time.sleep(0.005)
+
+                    if (
+                        self.api.candles.candles_data
+                        is not None
+                    ):
+                        demora_drenaje = (
+                            time.time()
+                            - inicio_drenaje
+                        )
+
+                        logging.warning(
+                            "**warning** get_candles "
+                            "respuesta tardia descartada "
+                            "| activo: %s "
+                            "| drenaje: %.3f sec",
+                            ACTIVES,
+                            demora_drenaje,
+                        )
+
+                        # Esta respuesta pertenece a la petición
+                        # que ya venció. Nunca debe devolverse.
+                        self.api.candles.candles_data = None
+
+                        return None
+
+                    # No llegó ninguna respuesta dentro del drenaje.
+                    # A partir de aquí no podemos garantizar que una
+                    # respuesta vieja no aparezca durante la siguiente
+                    # solicitud.
+                    #
+                    # Invalidamos la sesión completa. bot.py detectará
+                    # check_connect() == False y conexion.py conserva
+                    # la autoridad exclusiva para reconectar.
+                    logging.warning(
+                        "**warning** get_candles "
+                        "respuesta tardia no drenada "
+                        "| activo: %s "
+                        "| websocket invalidado",
+                        ACTIVES,
+                    )
+
+                    try:
+                        # Cerrar únicamente el websocket.
+                        # No usar self.api.close() aquí:
+                        # ese método ejecuta thread.join()
+                        # y puede bloquear varios segundos.
+                        #
+                        # websocket.close() dispara on_close(),
+                        # deja check_connect() en False y
+                        # permite que bot.py / conexion.py
+                        # ejecuten la reconexión oficial.
+                        self.api.websocket.close()
+                    except Exception as e:
+                        logging.warning(
+                            "**warning** get_candles "
+                            "error cerrando websocket "
+                            "tras timeout | activo: %s "
+                            "| error: %s",
+                            ACTIVES,
+                            e,
+                        )
+
+                    return None
+
+                time.sleep(0.01)
+
+            datos_candles = (
+                self.api.candles.candles_data
             )
-            return None
 
+            if not isinstance(
+                datos_candles,
+                list,
+            ):
+                logging.warning(
+                    "**warning** get_candles "
+                    "respuesta invalida "
+                    "| activo: %s | tipo: %s",
+                    ACTIVES,
+                    type(
+                        datos_candles
+                    ).__name__,
+                )
+                return None
 
-        try:
-            count_esperado = int(count)
-        except (TypeError, ValueError):
-            count_esperado = 0
+            try:
+                count_esperado = int(count)
+            except (TypeError, ValueError):
+                count_esperado = 0
 
+            # IQ nunca debería devolver MÁS velas
+            # que las solicitadas.
+            if (
+                count_esperado > 0
+                and len(datos_candles)
+                > count_esperado
+            ):
+                logging.warning(
+                    "**warning** get_candles "
+                    "respuesta contaminada "
+                    "| activo: %s "
+                    "| solicitado: %s "
+                    "| recibido: %s",
+                    ACTIVES,
+                    count_esperado,
+                    len(datos_candles),
+                )
 
-        # IQ nunca debería devolver MÁS velas
-        # que las solicitadas.
-        #
-        # Si pedimos 8 y aparecen 1000,
-        # descartamos la respuesta en lugar de
-        # permitir que contamine estrategia/protocolo.
-        if (
-            count_esperado > 0
-            and len(datos_candles) > count_esperado
-        ):
-            logging.warning(
-                "**warning** get_candles respuesta contaminada "
-                "| activo: %s "
-                "| solicitado: %s "
-                "| recibido: %s",
-                ACTIVES,
-                count_esperado,
-                len(datos_candles),
-            )
+                # Una respuesta incoherente también deja
+                # la sesión de candles sin garantías.
+                #
+                # Cerrar solo el websocket evita el
+                # thread.join() bloqueante de api.close().
+                # bot.py / conexion.py harán la reconexión.
+                try:
+                    self.api.websocket.close()
+                except Exception:
+                    pass
 
-            return None
+                return None
 
-
-        return datos_candles
+            return datos_candles
 
     def start_candles_stream(self, ACTIVE, size, maxdict):
 
