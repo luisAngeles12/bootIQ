@@ -45,8 +45,16 @@ def conectar():
     except Exception as e:
         print("No se pudo cambiar el balance:", e, flush=True)
 
-    # IMPORTANTE:
-    # No actualizar OPCODE aquí porque puede congelar la conexión.
+    # IQ necesita un breve margen después del login/cambio
+    # de cuenta antes de responder api_option_init_all_v2.
+    #
+    # Evidencia de cold start:
+    # - solicitud inmediata: timeout a 5 s
+    # - tras 2 s de warm-up: respuesta V2 correcta
+    #
+    # La espera ocurre solo en la conexión inicial.
+    time.sleep(2)
+
     actualizar_activos_opcode()
 
     # IMPORTANTE:

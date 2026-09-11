@@ -266,12 +266,73 @@ class IQ_Option:
         self.instruments_input_to_ACTIVES("forex")
         self.instruments_input_to_ACTIVES("cfd")
 
-    def get_ALL_Binary_ACTIVES_OPCODE(self):
-        init_info = self.get_all_init()
-        for dirr in (["binary", "turbo"]):
-            for i in init_info["result"][dirr]["actives"]:
-                OP_code.ACTIVES[(init_info["result"][dirr]
-                                 ["actives"][i]["name"]).split(".")[1]] = int(i)
+    def get_ALL_Binary_ACTIVES_OPCODE(
+        self,
+        timeout=5.0,
+    ):
+        """
+        Actualiza OPCODE para binary/turbo usando la ruta
+        acotada de BootIQ.
+
+        No utiliza get_all_init(), ya que esa ruta puede
+        bloquear hasta 30 segundos.
+        """
+        init_info = None
+        intentos = 3
+
+        for intento in range(
+            1,
+            intentos + 1,
+        ):
+            init_info = self.get_all_init_v2(
+                timeout=timeout,
+                avisar_timeout=(
+                    intento == intentos
+                ),
+            )
+
+            if init_info:
+                break
+
+            if intento < intentos:
+                time.sleep(1)
+
+        if not init_info:
+            raise RuntimeError(
+                "OPCODE binary/turbo no disponible "
+                "tras 3 intentos acotados"
+            )
+
+        for dirr in ("binary", "turbo"):
+            datos_tipo = init_info.get(
+                dirr,
+                {},
+            )
+
+            actives = datos_tipo.get(
+                "actives",
+                {},
+            )
+
+            for active_id, active in actives.items():
+                nombre = str(
+                    active.get(
+                        "name",
+                        "",
+                    )
+                )
+
+                if "." not in nombre:
+                    continue
+
+                nombre = nombre.split(
+                    ".",
+                    1,
+                )[1]
+
+                OP_code.ACTIVES[nombre] = int(
+                    active_id
+                )
 
     # _________________________self.api.get_api_option_init_all() wss______________________
     def get_all_init(self):
@@ -305,6 +366,7 @@ class IQ_Option:
     def get_all_init_v2(
         self,
         timeout=2.0,
+        avisar_timeout=True,
     ):
         """
         Obtiene binary/turbo open-time sin iniciar
@@ -360,11 +422,12 @@ class IQ_Option:
                 - inicio
                 >= timeout
             ):
-                logging.warning(
-                    "**warning** get_all_init_v2 "
-                    "timeout %.1f sec",
-                    timeout,
-                )
+                if avisar_timeout:
+                    logging.warning(
+                        "**warning** get_all_init_v2 "
+                        "timeout %.1f sec",
+                        timeout,
+                    )
                 return None
 
             time.sleep(0.01)
