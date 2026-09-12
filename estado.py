@@ -2,7 +2,7 @@
 # ESTADO COMPARTIDO DEL BOT
 # ============================================================
 Iq = None
-balance_inicial = 0
+balance_inicial = None
 operaciones_abiertas = []
 activos_invalidos = set()
 cooldown_activos = {}

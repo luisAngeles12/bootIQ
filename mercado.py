@@ -212,6 +212,7 @@ def precargar_velas_activos(
                 CANDLE_NUMBER,
                 time.time(),
                 timeout=1.5,
+                drain_timeout=2.5,
             )
 
             cerradas = _solo_velas_cerradas(
@@ -279,6 +280,12 @@ def obtener_velas(activo):
             conectado = False
 
         if not conectado:
+            print(
+                "D7.6D FALLO VELAS DETALLE | activo:",
+                activo,
+                "| causa: SIN_CONEXION",
+                flush=True,
+            )
             estado.fallo_velas_ronda_d76d = True
             return None
 
@@ -294,6 +301,14 @@ def obtener_velas(activo):
         # la descarga pesada debe haber ocurrido antes
         # mediante precargar_velas_activos().
         if len(buffer_actual) < 130:
+            print(
+                "D7.6D FALLO VELAS DETALLE | activo:",
+                activo,
+                "| causa: BUFFER_INSUFICIENTE",
+                "| buffer:",
+                len(buffer_actual),
+                flush=True,
+            )
             estado.fallo_velas_ronda_d76d = True
             return None
 
@@ -308,6 +323,7 @@ def obtener_velas(activo):
                 4,
                 time.time(),
                 timeout=1.5,
+                drain_timeout=2.5,
             )
 
         finally:
@@ -327,6 +343,12 @@ def obtener_velas(activo):
             ] = demora_get_candles_d76d
 
         if recientes is None:
+            print(
+                "D7.6D FALLO VELAS DETALLE | activo:",
+                activo,
+                "| causa: GET_CANDLES_NONE",
+                flush=True,
+            )
             estado.fallo_velas_ronda_d76d = True
             return None
 
@@ -394,6 +416,26 @@ def obtener_velas(activo):
         # Nunca analizar una vela vieja como si fuese
         # la última cerrada.
         if ultima_buffer != ultima_esperada:
+            print(
+                "D7.6D FALLO VELAS DETALLE | activo:",
+                activo,
+                "| causa: DESFASE_ULTIMA_CERRADA",
+                "| ultima_buffer:",
+                ultima_buffer,
+                "| esperada:",
+                ultima_esperada,
+                "| delta:",
+                ultima_buffer - ultima_esperada,
+                "| ahora_iq:",
+                round(ahora, 3),
+                "| recientes:",
+                [
+                    int(float(c["from"]))
+                    for c in recientes_cerradas[-4:]
+                    if "from" in c
+                ],
+                flush=True,
+            )
             estado.fallo_velas_ronda_d76d = True
             return None
 
@@ -429,6 +471,7 @@ def evaluar_estabilidad_activo(
     asset,
     tipo,
     timeout_candles=0.75,
+    drain_timeout_candles=0.25,
 ):
     """
     Evalúa un activo para el filtro inicial.
@@ -469,6 +512,7 @@ def evaluar_estabilidad_activo(
             120,
             time.time(),
             timeout=timeout_candles,
+            drain_timeout=drain_timeout_candles,
         )
 
         # get_candles puede devolver None tanto por un
@@ -729,11 +773,9 @@ def refrescar_activos_incremental():
         or []
     )
 
-    # Sin cache oficial no existe refresh.
-    # El bootstrap sigue siendo responsabilidad
-    # de obtener_activos().
-    if not cache_previa:
-        return []
+    # Sin cache oficial estamos en BOOTSTRAP.
+    # El mismo scanner incremental construye el
+    # primer universo sin publicar resultados parciales.
 
     def devolver_cache_oficial():
         cache_filtrada = [
@@ -1037,7 +1079,7 @@ def refrescar_activos_incremental():
 
         # Dejamos margen para devolver el control
         # antes de consumir la vela siguiente.
-        if restante <= 0.25:
+        if restante <= 0.55:
             print(
                 "D7.6D REFRESH INCREMENTAL PAUSADO |",
                 "indice:",
@@ -1136,11 +1178,28 @@ def refrescar_activos_incremental():
             "activos_evaluados_filtro"
         ] += 1
 
+        reserva_drenaje_d76d = 0.25
+
+        presupuesto_candles_d76d = max(
+            0.0,
+            restante - 0.05,
+        )
+
         timeout_activo_d76d = min(
             0.75,
             max(
                 0.25,
-                restante - 0.05,
+                presupuesto_candles_d76d
+                - reserva_drenaje_d76d,
+            ),
+        )
+
+        drenaje_activo_d76d = min(
+            2.5,
+            max(
+                reserva_drenaje_d76d,
+                presupuesto_candles_d76d
+                - timeout_activo_d76d,
             ),
         )
 
@@ -1151,6 +1210,9 @@ def refrescar_activos_incremental():
                     tipo,
                     timeout_candles=(
                         timeout_activo_d76d
+                    ),
+                    drain_timeout_candles=(
+                        drenaje_activo_d76d
                     ),
                 )
             )
@@ -1745,7 +1807,7 @@ def obtener_activos(
                 - demora_scan_d76d
             )
 
-            if restante_scan_d76d <= 0.25:
+            if restante_scan_d76d <= 0.55:
                 return fallback_cache_scan_d76d(
                     "PRESUPUESTO TOTAL AGOTADO"
                 )
@@ -1807,12 +1869,28 @@ def obtener_activos(
             ] += 1
 
             try:
+                reserva_drenaje_d76d = 0.25
+
+                presupuesto_candles_d76d = max(
+                    0.0,
+                    restante_scan_d76d - 0.05,
+                )
+
                 timeout_activo_d76d = min(
                     0.75,
                     max(
                         0.25,
-                        restante_scan_d76d
-                        - 0.05,
+                        presupuesto_candles_d76d
+                        - reserva_drenaje_d76d,
+                    ),
+                )
+
+                drenaje_activo_d76d = min(
+                    2.5,
+                    max(
+                        reserva_drenaje_d76d,
+                        presupuesto_candles_d76d
+                        - timeout_activo_d76d,
                     ),
                 )
 
@@ -1822,6 +1900,9 @@ def obtener_activos(
                         tipo,
                         timeout_candles=(
                             timeout_activo_d76d
+                        ),
+                        drain_timeout_candles=(
+                            drenaje_activo_d76d
                         ),
                     )
                 )

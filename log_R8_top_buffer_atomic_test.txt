@@ -1,0 +1,2602 @@
+Conectando a IQ Option...
+Conectado correctamente
+Cuenta seleccionada: PRACTICE
+Actualizando OPCODE ligero binary/turbo...
+Total de activos en OPCODE: 631
+OPCODE ligero actualizado correctamente
+Obteniendo balance inicial...
+Balance inicial: 9589.61
+Operaciones pendientes recuperadas: 0
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989880.4
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989880.65
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989880.92
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989881.17
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989881.44
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989881.7
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989881.96
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989882.23
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989882.49
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989882.75
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989883.0
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989883.27
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989883.54
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989883.8
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989884.07
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989884.33
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989884.58
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989884.85
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989885.12
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989885.37
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989885.62
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989885.87
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989886.13
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989886.4
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989886.67
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989886.93
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989887.19
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989887.45
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989887.71
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989887.98
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989888.25
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989888.5
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989888.77
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989889.04
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989889.29
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989889.56
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989889.81
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989890.07
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989890.33
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989890.58
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989890.84
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788989891.09
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 1788989892.4
+Activos compatibles filtrados: 20
+Activos reales analizados:
+SP35-OTC | turbo | filtro: 147 | mercado: TENDENCIA_ALCISTA | calidad: LIMPIO | score mercado: 77 | tendencia: ALCISTA_FUERTE | fuerza: 75.47
+LUNA-OTC | turbo | filtro: 137 | mercado: TENDENCIA_ALCISTA | calidad: LIMPIO | score mercado: 77 | tendencia: ALCISTA_NORMAL | fuerza: 53.94
+USDZAR-OTC | turbo | filtro: 123 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 73 | tendencia: BAJISTA_NORMAL | fuerza: 65.98
+KLARNA-OTC | turbo | filtro: 120 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 70 | tendencia: ALCISTA_NORMAL | fuerza: 69.83
+USDDOP-OTC | turbo | filtro: 115 | mercado: RANGO | calidad: LIMPIO | score mercado: 75 | tendencia: ALCISTA_NORMAL | fuerza: 50.05
+XPTUSD-OTC | turbo | filtro: 115 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 55 | tendencia: ALCISTA_FUERTE | fuerza: 75.58
+EURCHF-OTC | turbo | filtro: 114 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 64 | tendencia: BAJISTA_NORMAL | fuerza: 62.47
+SpaceX-OTC | turbo | filtro: 114 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 64 | tendencia: BAJISTA_NORMAL | fuerza: 56.38
+EURAUD-OTC | turbo | filtro: 114 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 64 | tendencia: BAJISTA_NORMAL | fuerza: 59.78
+WLDUSD-OTC | turbo | filtro: 113 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 63 | tendencia: ALCISTA_NORMAL | fuerza: 53.94
+COKE-OTC | turbo | filtro: 112 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 62 | tendencia: ALCISTA_NORMAL | fuerza: 56.57
+ETHUSD-OTC | turbo | filtro: 111 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 61 | tendencia: ALCISTA_NORMAL | fuerza: 55.03
+GBPCHF-OTC | turbo | filtro: 110 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 60 | tendencia: BAJISTA_NORMAL | fuerza: 53.35
+SATSUSD-OTC | turbo | filtro: 107 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 57 | tendencia: ALCISTA_NORMAL | fuerza: 64.01
+EURJPY-OTC | turbo | filtro: 106 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 56 | tendencia: BAJISTA_NORMAL | fuerza: 63.74
+ATOMUSD-OTC | turbo | filtro: 106 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 56 | tendencia: BAJISTA_NORMAL | fuerza: 58.28
+USDHKD-OTC | turbo | filtro: 106 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 56 | tendencia: ALCISTA_NORMAL | fuerza: 60.57
+USDMXN-OTC | turbo | filtro: 105 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 55 | tendencia: ALCISTA_NORMAL | fuerza: 55.93
+AUDCAD-OTC | turbo | filtro: 99 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 64 | tendencia: BAJISTA_DEBIL | fuerza: 49.24
+EURGBP-OTC | turbo | filtro: 98 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 63 | tendencia: ALCISTA_DEBIL | fuerza: 48.66
+Activos ignorados/no soportados: 0
+D7.6D TIMING OBTENER ACTIVOS | antes: 12 | despues: 56 | demora: 44.742
+D7.6C BUFFER VELAS PRECALENTADO | nuevos: 20 | reutilizados: 0 | errores: 0 | activos buffer: 20 | segundos: 6.646
+D7.6D TIMING PRECARGA TOTAL | antes: 12 | despues: 3 | demora: 51.388
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6C RONDA UNICA | vela: 29816499 | segundo: 4
+RANKING DE SEÑALES:
+USDZAR-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 97
+CONTEXTO FINAL: USDZAR-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 73 | TENDENCIA: BAJISTA_NORMAL 63.33 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: XPTUSD-OTC | calidad: SUCIO | score: 50.0
+RANKING DE SEÑALES:
+COKE-OTC | call | pullback alcista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 124
+CONTEXTO FINAL: COKE-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 62 | TENDENCIA: ALCISTA_NORMAL 60.07 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+D7.6D RONDA INTERRUMPIDA POR TIEMPO | antes de activo: {'activo': 'ATOMUSD-OTC', 'tipo': 'turbo', 'score_filtro': 106, 'tipo_mercado': 'TENDENCIA_BAJISTA', 'calidad_mercado': 'NORMAL', 'score_mercado': 56, 'estado_tendencia': 'BAJISTA_NORMAL', 'fuerza_tendencia': 58.28}
+D7.6C TIEMPO ANALISIS TOP: 5.36 segundos | activos: 20
+D7.6D RONDA DESCARTADA — NO SE ORDENA TOP PARCIAL | segundo: 9
+
+===== RESUMEN DE RONDA =====
+Origen universo: CACHE
+Fallback caché por API: 0
+Compatibles disponibles en caché: 20
+Mercados seleccionados: 20
+Activos con candidatas: 2
+Candidatas generadas: 2
+Familias generadas:
+   pullback alcista a EMA : 1
+   pullback bajista a EMA : 1
+Candidatas evaluadas por Cerebro: 2
+Candidatas que continúan: 0
+Sin señal final devuelta a bot: 20
+Señales finales a bot: 0
+Cerebro NO_OPERAR: 2
+Cerebro sin autorización: 0
+Señales aprobadas REALES: 0
+Autorizadas DIRECTA: 0
+Autorizadas PROTOCOLO: 0
+DIRECTAS no ejecutadas: 0
+Entradas DIRECTAS abiertas: 0
+============================
+
+D7.6D TIMING BALANCE | antes: 20 | despues: 20 | demora: 0.17
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6D TIMING BALANCE | antes: 30 | despues: 30 | demora: 0.164
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 46 | ganadas: 27 | perdidas: 19 | winrate: 58.7% | neto: 98.75
+liquidity sweep alcista | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 64.0
+continuación bajista con tendencia | total: 27 | ganadas: 16 | perdidas: 11 | winrate: 59.26% | neto: 62.5
+CHOCH alcista | total: 65 | ganadas: 36 | perdidas: 29 | winrate: 55.38% | neto: 34.75
+continuación alcista con tendencia | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+pullback bajista a EMA | total: 91 | ganadas: 48 | perdidas: 43 | winrate: 52.75% | neto: -55.5
+pullback alcista a EMA | total: 6 | ganadas: 1 | perdidas: 5 | winrate: 16.67% | neto: -103.25
+reacción vendedora en resistencia | total: 45 | ganadas: 20 | perdidas: 25 | winrate: 44.44% | neto: -207.75
+
+===== ESTADÍSTICAS POR ACTIVO =====
+TRUMPUSD-OTC | total: 5 | ganadas: 5 | perdidas: 0 | winrate: 100.0% | neto: 104.75
+SP35-OTC | total: 7 | ganadas: 6 | perdidas: 1 | winrate: 85.71% | neto: 98.75
+CANNABIS-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 65.25
+DASHUSD-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.5
+USDDOP-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.0
+FB-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 62.75
+USDCLP-OTC | total: 5 | ganadas: 4 | perdidas: 1 | winrate: 80.0% | neto: 60.75
+GDX | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GEV-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GS-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.0
+CHFJPY-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+COCOA-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+SHIBUSD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+GBPNZD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+SNAP-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+USDINR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+HYPE-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+USDZAR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+XRPUSD-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 39.25
+USDTHB-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 37.25
+APPLE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+AUS200:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+EURCAD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+FARTCOINUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+IMXUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+MU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NIKE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDJPY-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+PENGUUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SMH | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SUIUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+WDC-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+UK100:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.5
+BIDU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+DOTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MANAUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MATICUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MORSTAN-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+PYTHUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+UKOUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+SpaceX-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.0
+ALIBABA-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+OpenAI-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDPHP-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDSAR-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+XPTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+TAOUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+US2000-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+USDBRL-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+NVDA-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.75
+SEIUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+UK100-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDIDR-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDNGN-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDSGD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.75
+CADCHF-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.0
+COFFEE-OTC | total: 7 | ganadas: 4 | perdidas: 3 | winrate: 57.14% | neto: 8.25
+AUDJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+CASINOS-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+ICPUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+KLARNA-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+RAYDIUMUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+SOLUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+USDAED-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+US30:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.5
+AUDNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURAUD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+ORDIUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+SATSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+US2000:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+AUDUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EOSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+ETHUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EURTHB-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+TRON-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDMXN-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -6.5
+Anthropic-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -9.0
+AIG-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+AUDCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+BCHUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CHFNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+COKE-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+FR40-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+GBPCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+HBARUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+INTEL-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JAPAN225:N | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JP225-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LINKUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LTCUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LUNA-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MAGNIFICENT7-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MSFT-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NOKJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NZDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+RONINUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+SANDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+US30-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDTRY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+WLDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XLK | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CARDANO-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+DYDXUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+EURGBP-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+SUGAR-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+ATOMUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+SP500-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+AIRLINES-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+PENUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+ARBUSD-OTC | total: 5 | ganadas: 2 | perdidas: 3 | winrate: 40.0% | neto: -34.0
+EU50-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+FETUSD-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+TESLA-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDPLN-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDVND-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+RENDERUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.25
+JPM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.75
+URANIUM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+XPDUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+AUS200-OTC | total: 8 | ganadas: 3 | perdidas: 5 | winrate: 37.5% | neto: -62.75
+LABUBUUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+MCDON-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+USDARS-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+XNGUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+GOOGLE-OTC | total: 4 | ganadas: 0 | perdidas: 4 | winrate: 0.0% | neto: -100.0
+D7.6D TIMING ESTADISTICAS | antes: 30 | despues: 30 | demora: 0.225
+D7.6D TIMING BALANCE | antes: 40 | despues: 40 | demora: 0.144
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6C RONDA UNICA | vela: 29816500 | segundo: 0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: XPTUSD-OTC | calidad: SUCIO | score: 43.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: SATSUSD-OTC | calidad: SUCIO | score: 53.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: USDHKD-OTC | calidad: SUCIO | score: 44.0
+D7.6C TIEMPO ANALISIS TOP: 9.033 segundos | activos: 20
+D7.6D RONDA DESCARTADA — NO SE ORDENA TOP PARCIAL | segundo: 9
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+
+===== RESUMEN DE RONDA =====
+Origen universo: CACHE
+Fallback caché por API: 0
+Compatibles disponibles en caché: 20
+Mercados seleccionados: 20
+Activos con candidatas: 0
+Candidatas generadas: 0
+Familias generadas: ninguna
+Candidatas evaluadas por Cerebro: 0
+Candidatas que continúan: 0
+Sin señal final devuelta a bot: 20
+Señales finales a bot: 0
+Cerebro NO_OPERAR: 0
+Cerebro sin autorización: 0
+Señales aprobadas REALES: 0
+Autorizadas DIRECTA: 0
+Autorizadas PROTOCOLO: 0
+DIRECTAS no ejecutadas: 0
+Entradas DIRECTAS abiertas: 0
+============================
+
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 75.66
+D7.6D REFRESH INCREMENTAL INICIADO | universo: 230
+D7.6D REFRESH INCREMENTAL PAUSADO | indice: 53 / 230 | candidatos: 11 | demora: 11.872
+D7.6D TIMING OBTENER ACTIVOS | antes: 12 | despues: 24 | demora: 11.872
+D7.6C BUFFER VELAS PRECALENTADO | nuevos: 0 | reutilizados: 20 | errores: 0 | activos buffer: 20 | segundos: 0.0
+D7.6D TIMING PRECARGA TOTAL | antes: 12 | despues: 24 | demora: 11.873
+D7.6D TIMING BALANCE | antes: 24 | despues: 25 | demora: 0.145
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 46 | ganadas: 27 | perdidas: 19 | winrate: 58.7% | neto: 98.75
+liquidity sweep alcista | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 64.0
+continuación bajista con tendencia | total: 27 | ganadas: 16 | perdidas: 11 | winrate: 59.26% | neto: 62.5
+CHOCH alcista | total: 65 | ganadas: 36 | perdidas: 29 | winrate: 55.38% | neto: 34.75
+continuación alcista con tendencia | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+pullback bajista a EMA | total: 91 | ganadas: 48 | perdidas: 43 | winrate: 52.75% | neto: -55.5
+pullback alcista a EMA | total: 6 | ganadas: 1 | perdidas: 5 | winrate: 16.67% | neto: -103.25
+reacción vendedora en resistencia | total: 45 | ganadas: 20 | perdidas: 25 | winrate: 44.44% | neto: -207.75
+
+===== ESTADÍSTICAS POR ACTIVO =====
+TRUMPUSD-OTC | total: 5 | ganadas: 5 | perdidas: 0 | winrate: 100.0% | neto: 104.75
+SP35-OTC | total: 7 | ganadas: 6 | perdidas: 1 | winrate: 85.71% | neto: 98.75
+CANNABIS-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 65.25
+DASHUSD-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.5
+USDDOP-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.0
+FB-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 62.75
+USDCLP-OTC | total: 5 | ganadas: 4 | perdidas: 1 | winrate: 80.0% | neto: 60.75
+GDX | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GEV-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GS-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.0
+CHFJPY-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+COCOA-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+SHIBUSD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+GBPNZD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+SNAP-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+USDINR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+HYPE-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+USDZAR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+XRPUSD-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 39.25
+USDTHB-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 37.25
+APPLE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+AUS200:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+EURCAD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+FARTCOINUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+IMXUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+MU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NIKE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDJPY-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+PENGUUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SMH | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SUIUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+WDC-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+UK100:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.5
+BIDU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+DOTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MANAUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MATICUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MORSTAN-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+PYTHUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+UKOUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+SpaceX-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.0
+ALIBABA-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+OpenAI-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDPHP-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDSAR-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+XPTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+TAOUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+US2000-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+USDBRL-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+NVDA-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.75
+SEIUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+UK100-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDIDR-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDNGN-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDSGD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.75
+CADCHF-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.0
+COFFEE-OTC | total: 7 | ganadas: 4 | perdidas: 3 | winrate: 57.14% | neto: 8.25
+AUDJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+CASINOS-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+ICPUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+KLARNA-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+RAYDIUMUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+SOLUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+USDAED-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+US30:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.5
+AUDNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURAUD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+ORDIUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+SATSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+US2000:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+AUDUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EOSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+ETHUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EURTHB-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+TRON-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDMXN-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -6.5
+Anthropic-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -9.0
+AIG-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+AUDCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+BCHUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CHFNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+COKE-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+FR40-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+GBPCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+HBARUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+INTEL-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JAPAN225:N | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JP225-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LINKUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LTCUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LUNA-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MAGNIFICENT7-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MSFT-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NOKJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NZDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+RONINUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+SANDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+US30-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDTRY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+WLDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XLK | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CARDANO-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+DYDXUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+EURGBP-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+SUGAR-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+ATOMUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+SP500-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+AIRLINES-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+PENUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+ARBUSD-OTC | total: 5 | ganadas: 2 | perdidas: 3 | winrate: 40.0% | neto: -34.0
+EU50-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+FETUSD-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+TESLA-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDPLN-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDVND-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+RENDERUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.25
+JPM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.75
+URANIUM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+XPDUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+AUS200-OTC | total: 8 | ganadas: 3 | perdidas: 5 | winrate: 37.5% | neto: -62.75
+LABUBUUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+MCDON-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+USDARS-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+XNGUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+GOOGLE-OTC | total: 4 | ganadas: 0 | perdidas: 4 | winrate: 0.0% | neto: -100.0
+D7.6D TIMING ESTADISTICAS | antes: 30 | despues: 30 | demora: 0.214
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6D TIMING BALANCE | antes: 34 | despues: 35 | demora: 0.198
+D7.6D TIMING BALANCE | antes: 44 | despues: 45 | demora: 0.147
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6C RONDA UNICA | vela: 29816501 | segundo: 0
+RANKING DE SEÑALES:
+USDDOP-OTC | call | pullback alcista a EMA | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 136
+CONTEXTO FINAL: USDDOP-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 64 | TENDENCIA: ALCISTA_NORMAL 63.49 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: XPTUSD-OTC | calidad: SUCIO | score: 41.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: COKE-OTC | calidad: SUCIO | score: 53.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: EURJPY-OTC | calidad: SUCIO | score: 54.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: USDHKD-OTC | calidad: SUCIO | score: 37.0
+D7.6C TIEMPO ANALISIS TOP: 8.881 segundos | activos: 20
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+
+===== RESUMEN DE RONDA =====
+Origen universo: CACHE
+Fallback caché por API: 0
+Compatibles disponibles en caché: 20
+Mercados seleccionados: 20
+Activos con candidatas: 1
+Candidatas generadas: 1
+Familias generadas:
+   pullback alcista a EMA : 1
+Candidatas evaluadas por Cerebro: 1
+Candidatas que continúan: 0
+Sin señal final devuelta a bot: 20
+Señales finales a bot: 0
+Cerebro NO_OPERAR: 1
+Cerebro sin autorización: 0
+Señales aprobadas REALES: 0
+Autorizadas DIRECTA: 0
+Autorizadas PROTOCOLO: 0
+DIRECTAS no ejecutadas: 0
+Entradas DIRECTAS abiertas: 0
+============================
+
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 135.49
+D7.6D REFRESH INCREMENTAL PAUSADO | indice: 113 / 230 | candidatos: 23 | demora: 11.944
+D7.6D TIMING OBTENER ACTIVOS | antes: 12 | despues: 23 | demora: 11.945
+D7.6C BUFFER VELAS PRECALENTADO | nuevos: 0 | reutilizados: 20 | errores: 0 | activos buffer: 20 | segundos: 0.0
+D7.6D TIMING PRECARGA TOTAL | antes: 12 | despues: 23 | demora: 11.945
+D7.6D TIMING BALANCE | antes: 24 | despues: 24 | demora: 0.167
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 46 | ganadas: 27 | perdidas: 19 | winrate: 58.7% | neto: 98.75
+liquidity sweep alcista | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 64.0
+continuación bajista con tendencia | total: 27 | ganadas: 16 | perdidas: 11 | winrate: 59.26% | neto: 62.5
+CHOCH alcista | total: 65 | ganadas: 36 | perdidas: 29 | winrate: 55.38% | neto: 34.75
+continuación alcista con tendencia | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+pullback bajista a EMA | total: 91 | ganadas: 48 | perdidas: 43 | winrate: 52.75% | neto: -55.5
+pullback alcista a EMA | total: 6 | ganadas: 1 | perdidas: 5 | winrate: 16.67% | neto: -103.25
+reacción vendedora en resistencia | total: 45 | ganadas: 20 | perdidas: 25 | winrate: 44.44% | neto: -207.75
+
+===== ESTADÍSTICAS POR ACTIVO =====
+TRUMPUSD-OTC | total: 5 | ganadas: 5 | perdidas: 0 | winrate: 100.0% | neto: 104.75
+SP35-OTC | total: 7 | ganadas: 6 | perdidas: 1 | winrate: 85.71% | neto: 98.75
+CANNABIS-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 65.25
+DASHUSD-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.5
+USDDOP-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.0
+FB-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 62.75
+USDCLP-OTC | total: 5 | ganadas: 4 | perdidas: 1 | winrate: 80.0% | neto: 60.75
+GDX | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GEV-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GS-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.0
+CHFJPY-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+COCOA-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+SHIBUSD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+GBPNZD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+SNAP-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+USDINR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+HYPE-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+USDZAR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+XRPUSD-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 39.25
+USDTHB-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 37.25
+APPLE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+AUS200:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+EURCAD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+FARTCOINUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+IMXUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+MU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NIKE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDJPY-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+PENGUUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SMH | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SUIUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+WDC-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+UK100:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.5
+BIDU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+DOTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MANAUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MATICUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MORSTAN-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+PYTHUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+UKOUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+SpaceX-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.0
+ALIBABA-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+OpenAI-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDPHP-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDSAR-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+XPTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+TAOUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+US2000-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+USDBRL-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+NVDA-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.75
+SEIUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+UK100-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDIDR-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDNGN-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDSGD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.75
+CADCHF-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.0
+COFFEE-OTC | total: 7 | ganadas: 4 | perdidas: 3 | winrate: 57.14% | neto: 8.25
+AUDJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+CASINOS-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+ICPUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+KLARNA-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+RAYDIUMUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+SOLUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+USDAED-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+US30:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.5
+AUDNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURAUD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+ORDIUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+SATSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+US2000:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+AUDUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EOSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+ETHUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EURTHB-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+TRON-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDMXN-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -6.5
+Anthropic-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -9.0
+AIG-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+AUDCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+BCHUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CHFNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+COKE-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+FR40-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+GBPCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+HBARUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+INTEL-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JAPAN225:N | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JP225-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LINKUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LTCUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LUNA-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MAGNIFICENT7-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MSFT-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NOKJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NZDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+RONINUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+SANDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+US30-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDTRY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+WLDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XLK | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CARDANO-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+DYDXUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+EURGBP-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+SUGAR-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+ATOMUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+SP500-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+AIRLINES-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+PENUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+ARBUSD-OTC | total: 5 | ganadas: 2 | perdidas: 3 | winrate: 40.0% | neto: -34.0
+EU50-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+FETUSD-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+TESLA-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDPLN-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDVND-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+RENDERUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.25
+JPM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.75
+URANIUM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+XPDUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+AUS200-OTC | total: 8 | ganadas: 3 | perdidas: 5 | winrate: 37.5% | neto: -62.75
+LABUBUUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+MCDON-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+USDARS-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+XNGUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+GOOGLE-OTC | total: 4 | ganadas: 0 | perdidas: 4 | winrate: 0.0% | neto: -100.0
+D7.6D TIMING ESTADISTICAS | antes: 30 | despues: 30 | demora: 0.437
+D7.6D TIMING BALANCE | antes: 34 | despues: 34 | demora: 0.142
+D7.6D TIMING BALANCE | antes: 45 | despues: 45 | demora: 0.178
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6C RONDA UNICA | vela: 29816502 | segundo: 0
+RANKING DE SEÑALES:
+USDZAR-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 107
+CONTEXTO FINAL: USDZAR-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: LIMPIO 76 | TENDENCIA: BAJISTA_NORMAL 58.08 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: KLARNA-OTC | calidad: SUCIO | score: 50.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: XPTUSD-OTC | calidad: SUCIO | score: 39.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: WLDUSD-OTC | calidad: SUCIO | score: 54.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: EURJPY-OTC | calidad: SUCIO | score: 52.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: USDHKD-OTC | calidad: SUCIO | score: 35.0
+D7.6C TIEMPO ANALISIS TOP: 9.026 segundos | activos: 20
+D7.6D RONDA DESCARTADA — NO SE ORDENA TOP PARCIAL | segundo: 9
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+
+===== RESUMEN DE RONDA =====
+Origen universo: CACHE
+Fallback caché por API: 0
+Compatibles disponibles en caché: 20
+Mercados seleccionados: 20
+Activos con candidatas: 1
+Candidatas generadas: 1
+Familias generadas:
+   pullback bajista a EMA : 1
+Candidatas evaluadas por Cerebro: 1
+Candidatas que continúan: 0
+Sin señal final devuelta a bot: 20
+Señales finales a bot: 0
+Cerebro NO_OPERAR: 1
+Cerebro sin autorización: 0
+Señales aprobadas REALES: 0
+Autorizadas DIRECTA: 0
+Autorizadas PROTOCOLO: 0
+DIRECTAS no ejecutadas: 0
+Entradas DIRECTAS abiertas: 0
+============================
+
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 195.33
+D7.6D REFRESH INCREMENTAL PAUSADO | indice: 181 / 230 | candidatos: 26 | demora: 11.769
+D7.6D TIMING OBTENER ACTIVOS | antes: 12 | despues: 23 | demora: 11.769
+D7.6C BUFFER VELAS PRECALENTADO | nuevos: 0 | reutilizados: 20 | errores: 0 | activos buffer: 20 | segundos: 0.0
+D7.6D TIMING PRECARGA TOTAL | antes: 12 | despues: 23 | demora: 11.769
+D7.6D TIMING BALANCE | antes: 24 | despues: 24 | demora: 0.145
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 46 | ganadas: 27 | perdidas: 19 | winrate: 58.7% | neto: 98.75
+liquidity sweep alcista | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 64.0
+continuación bajista con tendencia | total: 27 | ganadas: 16 | perdidas: 11 | winrate: 59.26% | neto: 62.5
+CHOCH alcista | total: 65 | ganadas: 36 | perdidas: 29 | winrate: 55.38% | neto: 34.75
+continuación alcista con tendencia | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+pullback bajista a EMA | total: 91 | ganadas: 48 | perdidas: 43 | winrate: 52.75% | neto: -55.5
+pullback alcista a EMA | total: 6 | ganadas: 1 | perdidas: 5 | winrate: 16.67% | neto: -103.25
+reacción vendedora en resistencia | total: 45 | ganadas: 20 | perdidas: 25 | winrate: 44.44% | neto: -207.75
+
+===== ESTADÍSTICAS POR ACTIVO =====
+TRUMPUSD-OTC | total: 5 | ganadas: 5 | perdidas: 0 | winrate: 100.0% | neto: 104.75
+SP35-OTC | total: 7 | ganadas: 6 | perdidas: 1 | winrate: 85.71% | neto: 98.75
+CANNABIS-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 65.25
+DASHUSD-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.5
+USDDOP-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.0
+FB-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 62.75
+USDCLP-OTC | total: 5 | ganadas: 4 | perdidas: 1 | winrate: 80.0% | neto: 60.75
+GDX | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GEV-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GS-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.0
+CHFJPY-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+COCOA-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+SHIBUSD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+GBPNZD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+SNAP-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+USDINR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+HYPE-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+USDZAR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+XRPUSD-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 39.25
+USDTHB-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 37.25
+APPLE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+AUS200:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+EURCAD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+FARTCOINUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+IMXUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+MU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NIKE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDJPY-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+PENGUUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SMH | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SUIUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+WDC-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+UK100:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.5
+BIDU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+DOTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MANAUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MATICUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MORSTAN-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+PYTHUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+UKOUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+SpaceX-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.0
+ALIBABA-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+OpenAI-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDPHP-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDSAR-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+XPTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+TAOUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+US2000-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+USDBRL-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+NVDA-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.75
+SEIUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+UK100-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDIDR-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDNGN-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDSGD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.75
+CADCHF-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.0
+COFFEE-OTC | total: 7 | ganadas: 4 | perdidas: 3 | winrate: 57.14% | neto: 8.25
+AUDJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+CASINOS-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+ICPUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+KLARNA-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+RAYDIUMUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+SOLUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+USDAED-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+US30:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.5
+AUDNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURAUD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+ORDIUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+SATSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+US2000:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+AUDUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EOSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+ETHUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EURTHB-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+TRON-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDMXN-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -6.5
+Anthropic-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -9.0
+AIG-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+AUDCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+BCHUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CHFNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+COKE-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+FR40-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+GBPCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+HBARUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+INTEL-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JAPAN225:N | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JP225-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LINKUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LTCUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LUNA-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MAGNIFICENT7-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MSFT-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NOKJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NZDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+RONINUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+SANDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+US30-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDTRY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+WLDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XLK | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CARDANO-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+DYDXUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+EURGBP-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+SUGAR-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+ATOMUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+SP500-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+AIRLINES-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+PENUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+ARBUSD-OTC | total: 5 | ganadas: 2 | perdidas: 3 | winrate: 40.0% | neto: -34.0
+EU50-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+FETUSD-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+TESLA-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDPLN-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDVND-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+RENDERUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.25
+JPM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.75
+URANIUM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+XPDUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+AUS200-OTC | total: 8 | ganadas: 3 | perdidas: 5 | winrate: 37.5% | neto: -62.75
+LABUBUUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+MCDON-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+USDARS-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+XNGUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+GOOGLE-OTC | total: 4 | ganadas: 0 | perdidas: 4 | winrate: 0.0% | neto: -100.0
+D7.6D TIMING ESTADISTICAS | antes: 30 | despues: 30 | demora: 0.39
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6D TIMING BALANCE | antes: 33 | despues: 34 | demora: 0.156
+D7.6D TIMING BALANCE | antes: 43 | despues: 44 | demora: 0.212
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+
+================================================================================
+REPORTE GENERAL DE MERCADOS
+================================================================================
+ATOMUSD-OTC | RANGO | NORMAL | score: 68 | INDEFINIDA | fuerza: 30.18
+AUDCAD-OTC | TENDENCIA_BAJISTA | NORMAL | score: 64 | BAJISTA_DEBIL | fuerza: 47.49
+COKE-OTC | TENDENCIA_ALCISTA | NORMAL | score: 55 | ALCISTA_NORMAL | fuerza: 54.63
+ETHUSD-OTC | TENDENCIA_ALCISTA | NORMAL | score: 63 | ALCISTA_NORMAL | fuerza: 62.39
+EURAUD-OTC | TENDENCIA_BAJISTA | NORMAL | score: 64 | BAJISTA_FUERTE | fuerza: 83.49
+EURCHF-OTC | RANGO | NORMAL | score: 68 | BAJISTA_DEBIL | fuerza: 46.33
+EURGBP-OTC | TENDENCIA_ALCISTA | NORMAL | score: 66 | ALCISTA_FUERTE | fuerza: 73.9
+EURJPY-OTC | TENDENCIA_BAJISTA | SUCIO | score: 52 | BAJISTA_NORMAL | fuerza: 53.95
+GBPCHF-OTC | RANGO | NORMAL | score: 71 | BAJISTA_DEBIL | fuerza: 45.96
+KLARNA-OTC | RANGO | SUCIO | score: 50 | INDEFINIDA | fuerza: 27.73
+LUNA-OTC | RANGO | NORMAL | score: 71 | ALCISTA_DEBIL | fuerza: 42.45
+SATSUSD-OTC | TENDENCIA_ALCISTA | NORMAL | score: 60 | ALCISTA_NORMAL | fuerza: 60.1
+SP35-OTC | TENDENCIA_ALCISTA | LIMPIO | score: 77 | ALCISTA_FUERTE | fuerza: 72.81
+SpaceX-OTC | TENDENCIA_BAJISTA | NORMAL | score: 67 | BAJISTA_NORMAL | fuerza: 55.22
+USDDOP-OTC | TENDENCIA_ALCISTA | NORMAL | score: 64 | ALCISTA_NORMAL | fuerza: 50.03
+USDHKD-OTC | RANGO | SUCIO | score: 35 | INDEFINIDA | fuerza: 19.8
+USDMXN-OTC | TENDENCIA_ALCISTA | NORMAL | score: 63 | ALCISTA_NORMAL | fuerza: 67.51
+USDZAR-OTC | TENDENCIA_BAJISTA | LIMPIO | score: 76 | BAJISTA_NORMAL | fuerza: 58.08
+WLDUSD-OTC | TENDENCIA_ALCISTA | SUCIO | score: 54 | ALCISTA_NORMAL | fuerza: 52.63
+XPTUSD-OTC | TENDENCIA_ALCISTA | SUCIO | score: 39 | ALCISTA_NORMAL | fuerza: 55.67
+================================================================================
+
+D7.6D TIMING REPORTE MERCADOS | antes: 52 | despues: 52 | demora: 0.001
+D7.6C RONDA UNICA | vela: 29816503 | segundo: 1
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: KLARNA-OTC | calidad: SUCIO | score: 50.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: XPTUSD-OTC | calidad: SUCIO | score: 39.0
+RANKING DE SEÑALES:
+SpaceX-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 107
+CONTEXTO FINAL: SpaceX-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 74 | TENDENCIA: BAJISTA_NORMAL 50.37 | ACCION: ABSORCION_COMPRADORA
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: WLDUSD-OTC | calidad: SUCIO | score: 51.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: COKE-OTC | calidad: SUCIO | score: 53.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: EURJPY-OTC | calidad: SUCIO | score: 52.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: USDHKD-OTC | calidad: SUCIO | score: 35.0
+D7.6D RONDA INTERRUMPIDA POR TIEMPO | antes de activo: {'activo': 'AUDCAD-OTC', 'tipo': 'turbo', 'score_filtro': 99, 'tipo_mercado': 'TENDENCIA_BAJISTA', 'calidad_mercado': 'NORMAL', 'score_mercado': 64, 'estado_tendencia': 'BAJISTA_DEBIL', 'fuerza_tendencia': 49.24}
+D7.6C TIEMPO ANALISIS TOP: 8.004 segundos | activos: 20
+D7.6D RONDA DESCARTADA — NO SE ORDENA TOP PARCIAL | segundo: 9
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 255.04
+D7.6D REFRESH INCREMENTAL COMPLETO | universo: 230 | compatibles: 30 | top: 20 | ciclo: 187.48 s | estado: PENDIENTE_BUFFER
+D7.6D TIMING OBTENER ACTIVOS | antes: 12 | despues: 21 | demora: 9.75
+D7.6D TIMING PRECARGA TOTAL | antes: 12 | despues: 21 | demora: 9.75
+D7.6D TIMING BALANCE | antes: 22 | despues: 22 | demora: 0.228
+
+===== RESUMEN DE RONDA =====
+Origen universo: CACHE
+Fallback caché por API: 0
+Compatibles disponibles en caché: 30
+Mercados seleccionados: 20
+Activos con candidatas: 1
+Candidatas generadas: 1
+Familias generadas:
+   pullback bajista a EMA : 1
+Candidatas evaluadas por Cerebro: 1
+Candidatas que continúan: 0
+Sin señal final devuelta a bot: 20
+Señales finales a bot: 0
+Cerebro NO_OPERAR: 1
+Cerebro sin autorización: 0
+Señales aprobadas REALES: 0
+Autorizadas DIRECTA: 0
+Autorizadas PROTOCOLO: 0
+DIRECTAS no ejecutadas: 0
+Entradas DIRECTAS abiertas: 0
+============================
+
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 46 | ganadas: 27 | perdidas: 19 | winrate: 58.7% | neto: 98.75
+liquidity sweep alcista | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 64.0
+continuación bajista con tendencia | total: 27 | ganadas: 16 | perdidas: 11 | winrate: 59.26% | neto: 62.5
+CHOCH alcista | total: 65 | ganadas: 36 | perdidas: 29 | winrate: 55.38% | neto: 34.75
+continuación alcista con tendencia | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+pullback bajista a EMA | total: 91 | ganadas: 48 | perdidas: 43 | winrate: 52.75% | neto: -55.5
+pullback alcista a EMA | total: 6 | ganadas: 1 | perdidas: 5 | winrate: 16.67% | neto: -103.25
+reacción vendedora en resistencia | total: 45 | ganadas: 20 | perdidas: 25 | winrate: 44.44% | neto: -207.75
+
+===== ESTADÍSTICAS POR ACTIVO =====
+TRUMPUSD-OTC | total: 5 | ganadas: 5 | perdidas: 0 | winrate: 100.0% | neto: 104.75
+SP35-OTC | total: 7 | ganadas: 6 | perdidas: 1 | winrate: 85.71% | neto: 98.75
+CANNABIS-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 65.25
+DASHUSD-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.5
+USDDOP-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.0
+FB-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 62.75
+USDCLP-OTC | total: 5 | ganadas: 4 | perdidas: 1 | winrate: 80.0% | neto: 60.75
+GDX | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GEV-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GS-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.0
+CHFJPY-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+COCOA-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+SHIBUSD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+GBPNZD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+SNAP-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+USDINR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+HYPE-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+USDZAR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+XRPUSD-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 39.25
+USDTHB-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 37.25
+APPLE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+AUS200:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+EURCAD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+FARTCOINUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+IMXUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+MU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NIKE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDJPY-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+PENGUUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SMH | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SUIUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+WDC-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+UK100:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.5
+BIDU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+DOTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MANAUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MATICUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MORSTAN-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+PYTHUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+UKOUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+SpaceX-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.0
+ALIBABA-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+OpenAI-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDPHP-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDSAR-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+XPTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+TAOUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+US2000-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+USDBRL-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+NVDA-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.75
+SEIUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+UK100-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDIDR-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDNGN-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDSGD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.75
+CADCHF-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.0
+COFFEE-OTC | total: 7 | ganadas: 4 | perdidas: 3 | winrate: 57.14% | neto: 8.25
+AUDJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+CASINOS-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+ICPUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+KLARNA-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+RAYDIUMUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+SOLUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+USDAED-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+US30:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.5
+AUDNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURAUD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+ORDIUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+SATSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+US2000:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+AUDUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EOSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+ETHUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EURTHB-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+TRON-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDMXN-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -6.5
+Anthropic-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -9.0
+AIG-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+AUDCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+BCHUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CHFNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+COKE-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+FR40-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+GBPCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+HBARUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+INTEL-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JAPAN225:N | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JP225-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LINKUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LTCUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LUNA-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MAGNIFICENT7-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MSFT-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NOKJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NZDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+RONINUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+SANDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+US30-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDTRY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+WLDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XLK | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CARDANO-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+DYDXUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+EURGBP-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+SUGAR-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+ATOMUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+SP500-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+AIRLINES-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+PENUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+ARBUSD-OTC | total: 5 | ganadas: 2 | perdidas: 3 | winrate: 40.0% | neto: -34.0
+EU50-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+FETUSD-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+TESLA-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDPLN-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDVND-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+RENDERUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.25
+JPM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.75
+URANIUM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+XPDUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+AUS200-OTC | total: 8 | ganadas: 3 | perdidas: 5 | winrate: 37.5% | neto: -62.75
+LABUBUUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+MCDON-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+USDARS-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+XNGUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+GOOGLE-OTC | total: 4 | ganadas: 0 | perdidas: 4 | winrate: 0.0% | neto: -100.0
+D7.6D TIMING ESTADISTICAS | antes: 30 | despues: 30 | demora: 0.389
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6D TIMING BALANCE | antes: 32 | despues: 32 | demora: 0.267
+D7.6D TIMING BALANCE | antes: 42 | despues: 42 | demora: 0.334
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6C RONDA UNICA | vela: 29816504 | segundo: 0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: KLARNA-OTC | calidad: SUCIO | score: 48.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: XPTUSD-OTC | calidad: SUCIO | score: 39.0
+RANKING DE SEÑALES:
+EURCHF-OTC | call | liquidity sweep alcista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 200
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: EURCHF-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 66 | TENDENCIA: BAJISTA_NORMAL 66.98 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: WLDUSD-OTC | calidad: SUCIO | score: 53.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: EURJPY-OTC | calidad: SUCIO | score: 54.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: USDHKD-OTC | calidad: CAOTICO | score: 31.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: USDMXN-OTC | calidad: SUCIO | score: 54.0
+D7.6C TIEMPO ANALISIS TOP: 8.867 segundos | activos: 20
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 315.76
+D7.6C BUFFER VELAS PRECALENTADO | nuevos: 8 | reutilizados: 12 | errores: 0 | activos buffer: 28 | segundos: 3.639
+D7.6D TOP NUEVO PUBLICADO CON BUFFER | top: 20 | buffers: 20
+D7.6D TIMING OBTENER ACTIVOS | antes: 12 | despues: 15 | demora: 3.639
+D7.6C BUFFER VELAS PRECALENTADO | nuevos: 0 | reutilizados: 20 | errores: 0 | activos buffer: 20 | segundos: 0.003
+D7.6D TIMING PRECARGA TOTAL | antes: 12 | despues: 15 | demora: 3.642
+D7.6D TIMING BALANCE | antes: 20 | despues: 20 | demora: 0.144
+
+===== RESUMEN DE RONDA =====
+Origen universo: CACHE
+Fallback caché por API: 0
+Compatibles disponibles en caché: 20
+Mercados seleccionados: 20
+Activos con candidatas: 1
+Candidatas generadas: 1
+Familias generadas:
+   liquidity sweep alcista : 1
+Candidatas evaluadas por Cerebro: 1
+Candidatas que continúan: 0
+Sin señal final devuelta a bot: 20
+Señales finales a bot: 0
+Cerebro NO_OPERAR: 1
+Cerebro sin autorización: 0
+Señales aprobadas REALES: 0
+Autorizadas DIRECTA: 0
+Autorizadas PROTOCOLO: 0
+DIRECTAS no ejecutadas: 0
+Entradas DIRECTAS abiertas: 0
+============================
+
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 46 | ganadas: 27 | perdidas: 19 | winrate: 58.7% | neto: 98.75
+liquidity sweep alcista | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 64.0
+continuación bajista con tendencia | total: 27 | ganadas: 16 | perdidas: 11 | winrate: 59.26% | neto: 62.5
+CHOCH alcista | total: 65 | ganadas: 36 | perdidas: 29 | winrate: 55.38% | neto: 34.75
+continuación alcista con tendencia | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+pullback bajista a EMA | total: 91 | ganadas: 48 | perdidas: 43 | winrate: 52.75% | neto: -55.5
+pullback alcista a EMA | total: 6 | ganadas: 1 | perdidas: 5 | winrate: 16.67% | neto: -103.25
+reacción vendedora en resistencia | total: 45 | ganadas: 20 | perdidas: 25 | winrate: 44.44% | neto: -207.75
+
+===== ESTADÍSTICAS POR ACTIVO =====
+TRUMPUSD-OTC | total: 5 | ganadas: 5 | perdidas: 0 | winrate: 100.0% | neto: 104.75
+SP35-OTC | total: 7 | ganadas: 6 | perdidas: 1 | winrate: 85.71% | neto: 98.75
+CANNABIS-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 65.25
+DASHUSD-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.5
+USDDOP-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.0
+FB-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 62.75
+USDCLP-OTC | total: 5 | ganadas: 4 | perdidas: 1 | winrate: 80.0% | neto: 60.75
+GDX | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GEV-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GS-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.0
+CHFJPY-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+COCOA-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+SHIBUSD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+GBPNZD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+SNAP-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+USDINR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+HYPE-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+USDZAR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+XRPUSD-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 39.25
+USDTHB-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 37.25
+APPLE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+AUS200:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+EURCAD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+FARTCOINUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+IMXUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+MU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NIKE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDJPY-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+PENGUUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SMH | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SUIUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+WDC-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+UK100:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.5
+BIDU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+DOTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MANAUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MATICUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MORSTAN-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+PYTHUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+UKOUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+SpaceX-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.0
+ALIBABA-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+OpenAI-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDPHP-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDSAR-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+XPTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+TAOUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+US2000-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+USDBRL-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+NVDA-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.75
+SEIUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+UK100-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDIDR-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDNGN-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDSGD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.75
+CADCHF-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.0
+COFFEE-OTC | total: 7 | ganadas: 4 | perdidas: 3 | winrate: 57.14% | neto: 8.25
+AUDJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+CASINOS-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+ICPUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+KLARNA-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+RAYDIUMUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+SOLUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+USDAED-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+US30:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.5
+AUDNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURAUD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+ORDIUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+SATSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+US2000:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+AUDUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EOSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+ETHUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EURTHB-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+TRON-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDMXN-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -6.5
+Anthropic-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -9.0
+AIG-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+AUDCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+BCHUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CHFNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+COKE-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+FR40-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+GBPCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+HBARUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+INTEL-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JAPAN225:N | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JP225-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LINKUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LTCUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LUNA-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MAGNIFICENT7-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MSFT-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NOKJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NZDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+RONINUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+SANDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+US30-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDTRY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+WLDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XLK | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CARDANO-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+DYDXUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+EURGBP-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+SUGAR-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+ATOMUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+SP500-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+AIRLINES-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+PENUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+ARBUSD-OTC | total: 5 | ganadas: 2 | perdidas: 3 | winrate: 40.0% | neto: -34.0
+EU50-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+FETUSD-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+TESLA-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDPLN-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDVND-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+RENDERUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.25
+JPM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.75
+URANIUM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+XPDUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+AUS200-OTC | total: 8 | ganadas: 3 | perdidas: 5 | winrate: 37.5% | neto: -62.75
+LABUBUUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+MCDON-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+USDARS-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+XNGUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+GOOGLE-OTC | total: 4 | ganadas: 0 | perdidas: 4 | winrate: 0.0% | neto: -100.0
+D7.6D TIMING ESTADISTICAS | antes: 30 | despues: 30 | demora: 0.212
+D7.6D TIMING BALANCE | antes: 31 | despues: 31 | demora: 0.154
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6D TIMING BALANCE | antes: 41 | despues: 41 | demora: 0.25
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6C RONDA UNICA | vela: 29816505 | segundo: 0
+RANKING DE SEÑALES:
+AUDCAD-OTC | put | liquidity sweep bajista | puntaje: 24 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 226
+CONTEXTO FINAL: AUDCAD-OTC put liquidity sweep bajista | MERCADO: RANGO | CALIDAD: NORMAL 64 | TENDENCIA: BAJISTA_DEBIL 39.34 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: ETHUSD-OTC | calidad: SUCIO | score: 54.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: USDMXN-OTC | calidad: SUCIO | score: 52.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: WLDUSD-OTC | calidad: SUCIO | score: 51.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: KLARNA-OTC | calidad: SUCIO | score: 48.0
+D7.6D RONDA INTERRUMPIDA POR TIEMPO | antes de activo: {'activo': 'USDAED-OTC', 'tipo': 'turbo', 'score_filtro': 111, 'tipo_mercado': 'TENDENCIA_BAJISTA', 'calidad_mercado': 'NORMAL', 'score_mercado': 61, 'estado_tendencia': 'BAJISTA_NORMAL', 'fuerza_tendencia': 58.57}
+D7.6C TIEMPO ANALISIS TOP: 9.349 segundos | activos: 20
+D7.6D RONDA DESCARTADA — NO SE ORDENA TOP PARCIAL | segundo: 9
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 60.1
+D7.6D REFRESH INCREMENTAL SIN OPEN_TIME | SE CONSERVA CACHE OFICIAL
+D7.6D TIMING OBTENER ACTIVOS | antes: 16 | despues: 16 | demora: 2.062
+D7.6C BUFFER VELAS PRECALENTADO | nuevos: 0 | reutilizados: 20 | errores: 0 | activos buffer: 20 | segundos: 0.0
+D7.6D TIMING PRECARGA TOTAL | antes: 16 | despues: 16 | demora: 2.062
+D7.6D TIMING BALANCE | antes: 20 | despues: 20 | demora: 0.205
+
+===== RESUMEN DE RONDA =====
+Origen universo: CACHE
+Fallback caché por API: 0
+Compatibles disponibles en caché: 20
+Mercados seleccionados: 20
+Activos con candidatas: 1
+Candidatas generadas: 1
+Familias generadas:
+   liquidity sweep bajista : 1
+Candidatas evaluadas por Cerebro: 1
+Candidatas que continúan: 0
+Sin señal final devuelta a bot: 20
+Señales finales a bot: 0
+Cerebro NO_OPERAR: 1
+Cerebro sin autorización: 0
+Señales aprobadas REALES: 0
+Autorizadas DIRECTA: 0
+Autorizadas PROTOCOLO: 0
+DIRECTAS no ejecutadas: 0
+Entradas DIRECTAS abiertas: 0
+============================
+
+D7.6D TIMING BALANCE | antes: 30 | despues: 30 | demora: 0.154
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 46 | ganadas: 27 | perdidas: 19 | winrate: 58.7% | neto: 98.75
+liquidity sweep alcista | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 64.0
+continuación bajista con tendencia | total: 27 | ganadas: 16 | perdidas: 11 | winrate: 59.26% | neto: 62.5
+CHOCH alcista | total: 65 | ganadas: 36 | perdidas: 29 | winrate: 55.38% | neto: 34.75
+continuación alcista con tendencia | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+pullback bajista a EMA | total: 91 | ganadas: 48 | perdidas: 43 | winrate: 52.75% | neto: -55.5
+pullback alcista a EMA | total: 6 | ganadas: 1 | perdidas: 5 | winrate: 16.67% | neto: -103.25
+reacción vendedora en resistencia | total: 45 | ganadas: 20 | perdidas: 25 | winrate: 44.44% | neto: -207.75
+
+===== ESTADÍSTICAS POR ACTIVO =====
+TRUMPUSD-OTC | total: 5 | ganadas: 5 | perdidas: 0 | winrate: 100.0% | neto: 104.75
+SP35-OTC | total: 7 | ganadas: 6 | perdidas: 1 | winrate: 85.71% | neto: 98.75
+CANNABIS-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 65.25
+DASHUSD-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.5
+USDDOP-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.0
+FB-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 62.75
+USDCLP-OTC | total: 5 | ganadas: 4 | perdidas: 1 | winrate: 80.0% | neto: 60.75
+GDX | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GEV-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GS-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.0
+CHFJPY-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+COCOA-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+SHIBUSD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+GBPNZD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+SNAP-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+USDINR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+HYPE-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+USDZAR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+XRPUSD-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 39.25
+USDTHB-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 37.25
+APPLE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+AUS200:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+EURCAD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+FARTCOINUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+IMXUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+MU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NIKE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDJPY-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+PENGUUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SMH | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SUIUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+WDC-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+UK100:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.5
+BIDU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+DOTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MANAUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MATICUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MORSTAN-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+PYTHUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+UKOUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+SpaceX-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.0
+ALIBABA-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+OpenAI-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDPHP-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDSAR-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+XPTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+TAOUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+US2000-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+USDBRL-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+NVDA-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.75
+SEIUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+UK100-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDIDR-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDNGN-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDSGD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.75
+CADCHF-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.0
+COFFEE-OTC | total: 7 | ganadas: 4 | perdidas: 3 | winrate: 57.14% | neto: 8.25
+AUDJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+CASINOS-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+ICPUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+KLARNA-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+RAYDIUMUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+SOLUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+USDAED-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+US30:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.5
+AUDNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURAUD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+ORDIUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+SATSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+US2000:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+AUDUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EOSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+ETHUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EURTHB-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+TRON-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDMXN-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -6.5
+Anthropic-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -9.0
+AIG-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+AUDCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+BCHUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CHFNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+COKE-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+FR40-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+GBPCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+HBARUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+INTEL-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JAPAN225:N | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JP225-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LINKUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LTCUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LUNA-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MAGNIFICENT7-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MSFT-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NOKJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NZDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+RONINUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+SANDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+US30-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDTRY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+WLDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XLK | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CARDANO-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+DYDXUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+EURGBP-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+SUGAR-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+ATOMUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+SP500-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+AIRLINES-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+PENUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+ARBUSD-OTC | total: 5 | ganadas: 2 | perdidas: 3 | winrate: 40.0% | neto: -34.0
+EU50-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+FETUSD-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+TESLA-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDPLN-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDVND-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+RENDERUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.25
+JPM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.75
+URANIUM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+XPDUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+AUS200-OTC | total: 8 | ganadas: 3 | perdidas: 5 | winrate: 37.5% | neto: -62.75
+LABUBUUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+MCDON-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+USDARS-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+XNGUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+GOOGLE-OTC | total: 4 | ganadas: 0 | perdidas: 4 | winrate: 0.0% | neto: -100.0
+D7.6D TIMING ESTADISTICAS | antes: 30 | despues: 30 | demora: 0.474
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6D TIMING BALANCE | antes: 40 | despues: 40 | demora: 0.151
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6C RONDA UNICA | vela: 29816506 | segundo: 0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: ETHUSD-OTC | calidad: SUCIO | score: 49.0
+RANKING DE SEÑALES:
+USOUSD-OTC | put | pullback bajista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 126
+USOUSD-OTC | put | continuación bajista con tendencia | puntaje: 14 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 73
+CONTEXTO FINAL: USOUSD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 61 | TENDENCIA: BAJISTA_DEBIL 45.83 | ACCION: ABSORCION_COMPRADORA
+CONTEXTO FINAL: USOUSD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 61 | TENDENCIA: BAJISTA_DEBIL 45.83 | ACCION: ABSORCION_COMPRADORA
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: WLDUSD-OTC | calidad: SUCIO | score: 51.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: KLARNA-OTC | calidad: SUCIO | score: 41.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: GBPUSD-OTC | calidad: SUCIO | score: 48.0
+RANKING DE SEÑALES:
+USDIDR-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 62
+CONTEXTO FINAL: USDIDR-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 65 | TENDENCIA: ALCISTA_NORMAL 52.52 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+D7.6D RONDA INTERRUMPIDA POR TIEMPO | antes de activo: {'activo': 'GBPCHF-OTC', 'tipo': 'turbo', 'score_filtro': 112, 'tipo_mercado': 'TENDENCIA_BAJISTA', 'calidad_mercado': 'NORMAL', 'score_mercado': 62, 'estado_tendencia': 'BAJISTA_NORMAL', 'fuerza_tendencia': 64.58}
+D7.6C TIEMPO ANALISIS TOP: 9.017 segundos | activos: 20
+D7.6D RONDA DESCARTADA — NO SE ORDENA TOP PARCIAL | segundo: 9
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 116.01
+D7.6D REFRESH INCREMENTAL SIN OPEN_TIME | SE CONSERVA CACHE OFICIAL
+D7.6D TIMING OBTENER ACTIVOS | antes: 12 | despues: 12 | demora: 2.02
+D7.6C BUFFER VELAS PRECALENTADO | nuevos: 0 | reutilizados: 20 | errores: 0 | activos buffer: 20 | segundos: 0.0
+D7.6D TIMING PRECARGA TOTAL | antes: 12 | despues: 12 | demora: 2.021
+D7.6D TIMING BALANCE | antes: 20 | despues: 20 | demora: 0.208
+
+===== RESUMEN DE RONDA =====
+Origen universo: CACHE
+Fallback caché por API: 0
+Compatibles disponibles en caché: 20
+Mercados seleccionados: 20
+Activos con candidatas: 2
+Candidatas generadas: 3
+Familias generadas:
+   continuación alcista con tendencia : 1
+   continuación bajista con tendencia : 1
+   pullback bajista a EMA : 1
+Candidatas evaluadas por Cerebro: 3
+Candidatas que continúan: 0
+Sin señal final devuelta a bot: 20
+Señales finales a bot: 0
+Cerebro NO_OPERAR: 3
+Cerebro sin autorización: 0
+Señales aprobadas REALES: 0
+Autorizadas DIRECTA: 0
+Autorizadas PROTOCOLO: 0
+DIRECTAS no ejecutadas: 0
+Entradas DIRECTAS abiertas: 0
+============================
+
+D7.6D TIMING BALANCE | antes: 29 | despues: 30 | demora: 0.163
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 46 | ganadas: 27 | perdidas: 19 | winrate: 58.7% | neto: 98.75
+liquidity sweep alcista | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 64.0
+continuación bajista con tendencia | total: 27 | ganadas: 16 | perdidas: 11 | winrate: 59.26% | neto: 62.5
+CHOCH alcista | total: 65 | ganadas: 36 | perdidas: 29 | winrate: 55.38% | neto: 34.75
+continuación alcista con tendencia | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+pullback bajista a EMA | total: 91 | ganadas: 48 | perdidas: 43 | winrate: 52.75% | neto: -55.5
+pullback alcista a EMA | total: 6 | ganadas: 1 | perdidas: 5 | winrate: 16.67% | neto: -103.25
+reacción vendedora en resistencia | total: 45 | ganadas: 20 | perdidas: 25 | winrate: 44.44% | neto: -207.75
+
+===== ESTADÍSTICAS POR ACTIVO =====
+TRUMPUSD-OTC | total: 5 | ganadas: 5 | perdidas: 0 | winrate: 100.0% | neto: 104.75
+SP35-OTC | total: 7 | ganadas: 6 | perdidas: 1 | winrate: 85.71% | neto: 98.75
+CANNABIS-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 65.25
+DASHUSD-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.5
+USDDOP-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.0
+FB-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 62.75
+USDCLP-OTC | total: 5 | ganadas: 4 | perdidas: 1 | winrate: 80.0% | neto: 60.75
+GDX | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GEV-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GS-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.0
+CHFJPY-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+COCOA-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+SHIBUSD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+GBPNZD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+SNAP-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+USDINR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+HYPE-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+USDZAR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+XRPUSD-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 39.25
+USDTHB-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 37.25
+APPLE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+AUS200:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+EURCAD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+FARTCOINUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+IMXUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+MU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NIKE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDJPY-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+PENGUUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SMH | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SUIUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+WDC-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+UK100:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.5
+BIDU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+DOTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MANAUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MATICUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MORSTAN-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+PYTHUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+UKOUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+SpaceX-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.0
+ALIBABA-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+OpenAI-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDPHP-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDSAR-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+XPTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+TAOUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+US2000-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+USDBRL-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+NVDA-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.75
+SEIUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+UK100-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDIDR-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDNGN-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDSGD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.75
+CADCHF-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.0
+COFFEE-OTC | total: 7 | ganadas: 4 | perdidas: 3 | winrate: 57.14% | neto: 8.25
+AUDJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+CASINOS-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+ICPUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+KLARNA-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+RAYDIUMUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+SOLUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+USDAED-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+US30:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.5
+AUDNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURAUD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+ORDIUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+SATSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+US2000:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+AUDUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EOSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+ETHUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EURTHB-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+TRON-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDMXN-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -6.5
+Anthropic-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -9.0
+AIG-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+AUDCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+BCHUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CHFNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+COKE-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+FR40-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+GBPCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+HBARUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+INTEL-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JAPAN225:N | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JP225-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LINKUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LTCUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LUNA-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MAGNIFICENT7-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MSFT-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NOKJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NZDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+RONINUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+SANDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+US30-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDTRY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+WLDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XLK | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CARDANO-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+DYDXUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+EURGBP-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+SUGAR-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+ATOMUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+SP500-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+AIRLINES-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+PENUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+ARBUSD-OTC | total: 5 | ganadas: 2 | perdidas: 3 | winrate: 40.0% | neto: -34.0
+EU50-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+FETUSD-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+TESLA-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDPLN-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDVND-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+RENDERUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.25
+JPM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.75
+URANIUM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+XPDUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+AUS200-OTC | total: 8 | ganadas: 3 | perdidas: 5 | winrate: 37.5% | neto: -62.75
+LABUBUUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+MCDON-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+USDARS-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+XNGUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+GOOGLE-OTC | total: 4 | ganadas: 0 | perdidas: 4 | winrate: 0.0% | neto: -100.0
+D7.6D TIMING ESTADISTICAS | antes: 30 | despues: 30 | demora: 0.22
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6D TIMING BALANCE | antes: 40 | despues: 40 | demora: 0.166
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6C RONDA UNICA | vela: 29816507 | segundo: 0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: ETHUSD-OTC | calidad: SUCIO | score: 42.0
+RANKING DE SEÑALES:
+COCOA-OTC | call | pullback alcista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 134
+CONTEXTO FINAL: COCOA-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 64 | TENDENCIA: ALCISTA_DEBIL 47.68 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USOUSD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 62
+CONTEXTO FINAL: USOUSD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 61 | TENDENCIA: BAJISTA_FUERTE 71.24 | ACCION: ABSORCION_COMPRADORA
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: USDMXN-OTC | calidad: SUCIO | score: 51.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: WLDUSD-OTC | calidad: SUCIO | score: 51.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: KLARNA-OTC | calidad: CAOTICO | score: 34.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: GBPUSD-OTC | calidad: SUCIO | score: 39.0
+RANKING DE SEÑALES:
+USDIDR-OTC | put | liquidity sweep bajista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 200
+CONTEXTO FINAL: USDIDR-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 63 | TENDENCIA: ALCISTA_DEBIL 41.98 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+D7.6C TIEMPO ANALISIS TOP: 7.434 segundos | activos: 20
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 175.58
+D7.6D REFRESH INCREMENTAL INICIADO | universo: 241
+D7.6D REFRESH INCREMENTAL PAUSADO | indice: 35 / 241 | candidatos: 4 | demora: 11.941
+D7.6D TIMING OBTENER ACTIVOS | antes: 12 | despues: 20 | demora: 11.941
+D7.6C BUFFER VELAS PRECALENTADO | nuevos: 0 | reutilizados: 20 | errores: 0 | activos buffer: 20 | segundos: 0.0
+D7.6D TIMING PRECARGA TOTAL | antes: 12 | despues: 20 | demora: 11.941
+D7.6D TIMING BALANCE | antes: 20 | despues: 25 | demora: 1.437
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+
+===== RESUMEN DE RONDA =====
+Origen universo: CACHE
+Fallback caché por API: 0
+Compatibles disponibles en caché: 20
+Mercados seleccionados: 20
+Activos con candidatas: 3
+Candidatas generadas: 3
+Familias generadas:
+   continuación bajista con tendencia : 1
+   liquidity sweep bajista : 1
+   pullback alcista a EMA : 1
+Candidatas evaluadas por Cerebro: 3
+Candidatas que continúan: 0
+Sin señal final devuelta a bot: 20
+Señales finales a bot: 0
+Cerebro NO_OPERAR: 3
+Cerebro sin autorización: 0
+Señales aprobadas REALES: 0
+Autorizadas DIRECTA: 0
+Autorizadas PROTOCOLO: 0
+DIRECTAS no ejecutadas: 0
+Entradas DIRECTAS abiertas: 0
+============================
+
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 46 | ganadas: 27 | perdidas: 19 | winrate: 58.7% | neto: 98.75
+liquidity sweep alcista | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 64.0
+continuación bajista con tendencia | total: 27 | ganadas: 16 | perdidas: 11 | winrate: 59.26% | neto: 62.5
+CHOCH alcista | total: 65 | ganadas: 36 | perdidas: 29 | winrate: 55.38% | neto: 34.75
+continuación alcista con tendencia | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+pullback bajista a EMA | total: 91 | ganadas: 48 | perdidas: 43 | winrate: 52.75% | neto: -55.5
+pullback alcista a EMA | total: 6 | ganadas: 1 | perdidas: 5 | winrate: 16.67% | neto: -103.25
+reacción vendedora en resistencia | total: 45 | ganadas: 20 | perdidas: 25 | winrate: 44.44% | neto: -207.75
+
+===== ESTADÍSTICAS POR ACTIVO =====
+TRUMPUSD-OTC | total: 5 | ganadas: 5 | perdidas: 0 | winrate: 100.0% | neto: 104.75
+SP35-OTC | total: 7 | ganadas: 6 | perdidas: 1 | winrate: 85.71% | neto: 98.75
+CANNABIS-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 65.25
+DASHUSD-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.5
+USDDOP-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.0
+FB-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 62.75
+USDCLP-OTC | total: 5 | ganadas: 4 | perdidas: 1 | winrate: 80.0% | neto: 60.75
+GDX | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GEV-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GS-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.0
+CHFJPY-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+COCOA-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+SHIBUSD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+GBPNZD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+SNAP-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+USDINR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+HYPE-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+USDZAR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+XRPUSD-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 39.25
+USDTHB-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 37.25
+APPLE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+AUS200:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+EURCAD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+FARTCOINUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+IMXUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+MU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NIKE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDJPY-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+PENGUUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SMH | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SUIUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+WDC-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+UK100:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.5
+BIDU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+DOTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MANAUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MATICUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MORSTAN-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+PYTHUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+UKOUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+SpaceX-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.0
+ALIBABA-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+OpenAI-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDPHP-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDSAR-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+XPTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+TAOUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+US2000-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+USDBRL-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+NVDA-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.75
+SEIUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+UK100-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDIDR-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDNGN-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDSGD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.75
+CADCHF-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.0
+COFFEE-OTC | total: 7 | ganadas: 4 | perdidas: 3 | winrate: 57.14% | neto: 8.25
+AUDJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+CASINOS-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+ICPUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+KLARNA-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+RAYDIUMUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+SOLUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+USDAED-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+US30:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.5
+AUDNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURAUD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+ORDIUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+SATSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+US2000:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+AUDUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EOSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+ETHUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EURTHB-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+TRON-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDMXN-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -6.5
+Anthropic-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -9.0
+AIG-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+AUDCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+BCHUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CHFNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+COKE-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+FR40-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+GBPCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+HBARUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+INTEL-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JAPAN225:N | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JP225-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LINKUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LTCUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LUNA-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MAGNIFICENT7-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MSFT-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NOKJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NZDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+RONINUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+SANDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+US30-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDTRY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+WLDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XLK | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CARDANO-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+DYDXUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+EURGBP-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+SUGAR-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+ATOMUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+SP500-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+AIRLINES-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+PENUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+ARBUSD-OTC | total: 5 | ganadas: 2 | perdidas: 3 | winrate: 40.0% | neto: -34.0
+EU50-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+FETUSD-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+TESLA-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDPLN-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDVND-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+RENDERUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.25
+JPM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.75
+URANIUM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+XPDUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+AUS200-OTC | total: 8 | ganadas: 3 | perdidas: 5 | winrate: 37.5% | neto: -62.75
+LABUBUUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+MCDON-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+USDARS-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+XNGUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+GOOGLE-OTC | total: 4 | ganadas: 0 | perdidas: 4 | winrate: 0.0% | neto: -100.0
+D7.6D TIMING ESTADISTICAS | antes: 30 | despues: 30 | demora: 0.208
+D7.6D TIMING BALANCE | antes: 34 | despues: 34 | demora: 0.205
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6D TIMING BALANCE | antes: 44 | despues: 44 | demora: 0.281
+
+================================================================================
+REPORTE GENERAL DE MERCADOS
+================================================================================
+AUDCAD-OTC | TENDENCIA_BAJISTA | NORMAL | score: 64 | BAJISTA_FUERTE | fuerza: 72.8
+COCOA-OTC | TENDENCIA_ALCISTA | NORMAL | score: 64 | ALCISTA_DEBIL | fuerza: 47.68
+ETHUSD-OTC | TENDENCIA_ALCISTA | SUCIO | score: 42 | ALCISTA_AGOTADA | fuerza: 61.21
+EURAUD-OTC | TENDENCIA_BAJISTA | NORMAL | score: 68 | BAJISTA_FUERTE | fuerza: 80.21
+EURCAD-OTC | TENDENCIA_ALCISTA | NORMAL | score: 66 | ALCISTA_NORMAL | fuerza: 50.68
+GBPCHF-OTC | RANGO | NORMAL | score: 66 | BAJISTA_DEBIL | fuerza: 42.81
+GBPUSD-OTC | RANGO | SUCIO | score: 39 | INDEFINIDA | fuerza: 31.02
+KLARNA-OTC | RANGO | CAOTICO | score: 34 | INDEFINIDA | fuerza: 28.68
+RENDERUSD-OTC | TENDENCIA_ALCISTA | NORMAL | score: 64 | ALCISTA_NORMAL | fuerza: 56.9
+SATSUSD-OTC | TENDENCIA_BAJISTA | NORMAL | score: 64 | BAJISTA_NORMAL | fuerza: 52.73
+SP35-OTC | RANGO | LIMPIO | score: 79 | ALCISTA_NORMAL | fuerza: 53.56
+SpaceX-OTC | TENDENCIA_ALCISTA | LIMPIO | score: 86 | ALCISTA_NORMAL | fuerza: 58.43
+USDAED-OTC | RANGO | NORMAL | score: 66 | INDEFINIDA | fuerza: 28.77
+USDCHF-OTC | TENDENCIA_ALCISTA | NORMAL | score: 60 | ALCISTA_NORMAL | fuerza: 56.17
+USDDOP-OTC | TENDENCIA_ALCISTA | NORMAL | score: 66 | ALCISTA_NORMAL | fuerza: 50.26
+USDIDR-OTC | TENDENCIA_ALCISTA | NORMAL | score: 63 | ALCISTA_DEBIL | fuerza: 41.98
+USDMXN-OTC | TENDENCIA_ALCISTA | SUCIO | score: 51 | ALCISTA_FUERTE | fuerza: 73.26
+USDZAR-OTC | RANGO | NORMAL | score: 67 | BAJISTA_DEBIL | fuerza: 44.91
+USOUSD-OTC | TENDENCIA_BAJISTA | NORMAL | score: 61 | BAJISTA_FUERTE | fuerza: 71.24
+WLDUSD-OTC | RANGO | SUCIO | score: 51 | INDEFINIDA | fuerza: 16.95
+================================================================================
+
+D7.6D TIMING REPORTE MERCADOS | antes: 52 | despues: 52 | demora: 0.002
+D7.6C RONDA UNICA | vela: 29816508 | segundo: 0
+RANKING DE SEÑALES:
+USDZAR-OTC | call | liquidity sweep alcista | puntaje: 26 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 230
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: USDZAR-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 62 | TENDENCIA: BAJISTA_DEBIL 45.74 | ACCION: RECHAZO_COMPRADOR_SOPORTE
+RANKING DE SEÑALES:
+USDDOP-OTC | call | pullback alcista a EMA | puntaje: 17 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 117
+CONTEXTO FINAL: USDDOP-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 68 | TENDENCIA: ALCISTA_FUERTE 77.4 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+AUDCAD-OTC | put | pullback bajista a EMA | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 140
+CONTEXTO FINAL: AUDCAD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 59 | TENDENCIA: BAJISTA_NORMAL 54.25 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: ETHUSD-OTC | calidad: SUCIO | score: 45.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: USDMXN-OTC | calidad: SUCIO | score: 44.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: WLDUSD-OTC | calidad: SUCIO | score: 44.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: KLARNA-OTC | calidad: CAOTICO | score: 34.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: GBPUSD-OTC | calidad: SUCIO | score: 37.0
+RANKING DE SEÑALES:
+USDIDR-OTC | put | reacción vendedora en resistencia | puntaje: 18 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 146
+CONTEXTO FINAL: USDIDR-OTC put reacción vendedora en resistencia | MERCADO: RANGO | CALIDAD: NORMAL 63 | TENDENCIA: INDEFINIDA 25.33 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+D7.6C TIEMPO ANALISIS TOP: 7.883 segundos | activos: 20
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 236.27
+D7.6D REFRESH INCREMENTAL PAUSADO | indice: 92 / 241 | candidatos: 16 | demora: 11.849
+D7.6D TIMING OBTENER ACTIVOS | antes: 12 | despues: 23 | demora: 11.849
+D7.6C BUFFER VELAS PRECALENTADO | nuevos: 0 | reutilizados: 20 | errores: 0 | activos buffer: 20 | segundos: 0.0
+D7.6D TIMING PRECARGA TOTAL | antes: 12 | despues: 23 | demora: 11.85
+D7.6D TIMING BALANCE | antes: 23 | despues: 24 | demora: 0.282
+
+===== RESUMEN DE RONDA =====
+Origen universo: CACHE
+Fallback caché por API: 0
+Compatibles disponibles en caché: 20
+Mercados seleccionados: 20
+Activos con candidatas: 4
+Candidatas generadas: 4
+Familias generadas:
+   liquidity sweep alcista : 1
+   pullback alcista a EMA : 1
+   pullback bajista a EMA : 1
+   reacción vendedora en resistencia : 1
+Candidatas evaluadas por Cerebro: 4
+Candidatas que continúan: 0
+Sin señal final devuelta a bot: 20
+Señales finales a bot: 0
+Cerebro NO_OPERAR: 4
+Cerebro sin autorización: 0
+Señales aprobadas REALES: 0
+Autorizadas DIRECTA: 0
+Autorizadas PROTOCOLO: 0
+DIRECTAS no ejecutadas: 0
+Entradas DIRECTAS abiertas: 0
+============================
+
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 46 | ganadas: 27 | perdidas: 19 | winrate: 58.7% | neto: 98.75
+liquidity sweep alcista | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 64.0
+continuación bajista con tendencia | total: 27 | ganadas: 16 | perdidas: 11 | winrate: 59.26% | neto: 62.5
+CHOCH alcista | total: 65 | ganadas: 36 | perdidas: 29 | winrate: 55.38% | neto: 34.75
+continuación alcista con tendencia | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+pullback bajista a EMA | total: 91 | ganadas: 48 | perdidas: 43 | winrate: 52.75% | neto: -55.5
+pullback alcista a EMA | total: 6 | ganadas: 1 | perdidas: 5 | winrate: 16.67% | neto: -103.25
+reacción vendedora en resistencia | total: 45 | ganadas: 20 | perdidas: 25 | winrate: 44.44% | neto: -207.75
+
+===== ESTADÍSTICAS POR ACTIVO =====
+TRUMPUSD-OTC | total: 5 | ganadas: 5 | perdidas: 0 | winrate: 100.0% | neto: 104.75
+SP35-OTC | total: 7 | ganadas: 6 | perdidas: 1 | winrate: 85.71% | neto: 98.75
+CANNABIS-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 65.25
+DASHUSD-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.5
+USDDOP-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.0
+FB-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 62.75
+USDCLP-OTC | total: 5 | ganadas: 4 | perdidas: 1 | winrate: 80.0% | neto: 60.75
+GDX | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GEV-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GS-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.0
+CHFJPY-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+COCOA-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+SHIBUSD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+GBPNZD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+SNAP-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+USDINR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+HYPE-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+USDZAR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+XRPUSD-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 39.25
+USDTHB-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 37.25
+APPLE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+AUS200:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+EURCAD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+FARTCOINUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+IMXUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+MU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NIKE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDJPY-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+PENGUUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SMH | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SUIUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+WDC-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+UK100:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.5
+BIDU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+DOTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MANAUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MATICUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MORSTAN-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+PYTHUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+UKOUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+SpaceX-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.0
+ALIBABA-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+OpenAI-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDPHP-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDSAR-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+XPTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+TAOUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+US2000-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+USDBRL-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+NVDA-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.75
+SEIUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+UK100-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDIDR-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDNGN-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDSGD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.75
+CADCHF-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.0
+COFFEE-OTC | total: 7 | ganadas: 4 | perdidas: 3 | winrate: 57.14% | neto: 8.25
+AUDJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+CASINOS-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+ICPUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+KLARNA-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+RAYDIUMUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+SOLUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+USDAED-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+US30:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.5
+AUDNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURAUD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+ORDIUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+SATSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+US2000:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+AUDUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EOSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+ETHUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EURTHB-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+TRON-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDMXN-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -6.5
+Anthropic-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -9.0
+AIG-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+AUDCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+BCHUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CHFNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+COKE-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+FR40-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+GBPCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+HBARUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+INTEL-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JAPAN225:N | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JP225-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LINKUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LTCUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LUNA-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MAGNIFICENT7-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MSFT-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NOKJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NZDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+RONINUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+SANDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+US30-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDTRY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+WLDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XLK | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CARDANO-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+DYDXUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+EURGBP-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+SUGAR-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+ATOMUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+SP500-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+AIRLINES-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+PENUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+ARBUSD-OTC | total: 5 | ganadas: 2 | perdidas: 3 | winrate: 40.0% | neto: -34.0
+EU50-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+FETUSD-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+TESLA-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDPLN-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDVND-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+RENDERUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.25
+JPM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.75
+URANIUM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+XPDUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+AUS200-OTC | total: 8 | ganadas: 3 | perdidas: 5 | winrate: 37.5% | neto: -62.75
+LABUBUUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+MCDON-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+USDARS-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+XNGUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+GOOGLE-OTC | total: 4 | ganadas: 0 | perdidas: 4 | winrate: 0.0% | neto: -100.0
+D7.6D TIMING ESTADISTICAS | antes: 30 | despues: 30 | demora: 0.207
+D7.6D TIMING BALANCE | antes: 35 | despues: 35 | demora: 0.141
+D7.6D TIMING BALANCE | antes: 44 | despues: 45 | demora: 0.143
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6C RONDA UNICA | vela: 29816509 | segundo: 0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: ETHUSD-OTC | calidad: SUCIO | score: 36.0
+RANKING DE SEÑALES:
+SpaceX-OTC | put | liquidity sweep bajista | puntaje: 23 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 212
+CONTEXTO FINAL: SpaceX-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: LIMPIO 77 | TENDENCIA: ALCISTA_FUERTE 70.04 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: USDMXN-OTC | calidad: SUCIO | score: 53.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: WLDUSD-OTC | calidad: SUCIO | score: 51.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: KLARNA-OTC | calidad: CAOTICO | score: 34.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: GBPUSD-OTC | calidad: SUCIO | score: 37.0
+RANKING DE SEÑALES:
+GBPCHF-OTC | put | liquidity sweep bajista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 200
+CONTEXTO FINAL: GBPCHF-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 69 | TENDENCIA: ALCISTA_NORMAL 63.18 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+D7.6C TIEMPO ANALISIS TOP: 7.02 segundos | activos: 20
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 296.02
+D7.6D REFRESH INCREMENTAL PAUSADO | indice: 162 / 241 | candidatos: 25 | demora: 11.809
+D7.6D TIMING OBTENER ACTIVOS | antes: 12 | despues: 23 | demora: 11.809
+D7.6C BUFFER VELAS PRECALENTADO | nuevos: 0 | reutilizados: 20 | errores: 0 | activos buffer: 20 | segundos: 0.0
+D7.6D TIMING PRECARGA TOTAL | antes: 12 | despues: 23 | demora: 11.81
+D7.6D TIMING BALANCE | antes: 24 | despues: 24 | demora: 0.2
+
+===== RESUMEN DE RONDA =====
+Origen universo: CACHE
+Fallback caché por API: 0
+Compatibles disponibles en caché: 20
+Mercados seleccionados: 20
+Activos con candidatas: 2
+Candidatas generadas: 2
+Familias generadas:
+   liquidity sweep bajista : 2
+Candidatas evaluadas por Cerebro: 2
+Candidatas que continúan: 0
+Sin señal final devuelta a bot: 20
+Señales finales a bot: 0
+Cerebro NO_OPERAR: 2
+Cerebro sin autorización: 0
+Señales aprobadas REALES: 0
+Autorizadas DIRECTA: 0
+Autorizadas PROTOCOLO: 0
+DIRECTAS no ejecutadas: 0
+Entradas DIRECTAS abiertas: 0
+============================
+
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 46 | ganadas: 27 | perdidas: 19 | winrate: 58.7% | neto: 98.75
+liquidity sweep alcista | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 64.0
+continuación bajista con tendencia | total: 27 | ganadas: 16 | perdidas: 11 | winrate: 59.26% | neto: 62.5
+CHOCH alcista | total: 65 | ganadas: 36 | perdidas: 29 | winrate: 55.38% | neto: 34.75
+continuación alcista con tendencia | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+pullback bajista a EMA | total: 91 | ganadas: 48 | perdidas: 43 | winrate: 52.75% | neto: -55.5
+pullback alcista a EMA | total: 6 | ganadas: 1 | perdidas: 5 | winrate: 16.67% | neto: -103.25
+reacción vendedora en resistencia | total: 45 | ganadas: 20 | perdidas: 25 | winrate: 44.44% | neto: -207.75
+
+===== ESTADÍSTICAS POR ACTIVO =====
+TRUMPUSD-OTC | total: 5 | ganadas: 5 | perdidas: 0 | winrate: 100.0% | neto: 104.75
+SP35-OTC | total: 7 | ganadas: 6 | perdidas: 1 | winrate: 85.71% | neto: 98.75
+CANNABIS-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 65.25
+DASHUSD-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.5
+USDDOP-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.0
+FB-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 62.75
+USDCLP-OTC | total: 5 | ganadas: 4 | perdidas: 1 | winrate: 80.0% | neto: 60.75
+GDX | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GEV-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GS-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.0
+CHFJPY-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+COCOA-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+SHIBUSD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+GBPNZD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+SNAP-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+USDINR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+HYPE-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+USDZAR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+XRPUSD-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 39.25
+USDTHB-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 37.25
+APPLE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+AUS200:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+EURCAD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+FARTCOINUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+IMXUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+MU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NIKE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDJPY-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+PENGUUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SMH | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SUIUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+WDC-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+UK100:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.5
+BIDU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+DOTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MANAUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MATICUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MORSTAN-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+PYTHUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+UKOUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+SpaceX-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.0
+ALIBABA-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+OpenAI-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDPHP-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDSAR-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+XPTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+TAOUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+US2000-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+USDBRL-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+NVDA-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.75
+SEIUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+UK100-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDIDR-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDNGN-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDSGD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.75
+CADCHF-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.0
+COFFEE-OTC | total: 7 | ganadas: 4 | perdidas: 3 | winrate: 57.14% | neto: 8.25
+AUDJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+CASINOS-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+ICPUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+KLARNA-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+RAYDIUMUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+SOLUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+USDAED-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+US30:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.5
+AUDNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURAUD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+ORDIUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+SATSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+US2000:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+AUDUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EOSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+ETHUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EURTHB-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+TRON-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDMXN-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -6.5
+Anthropic-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -9.0
+AIG-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+AUDCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+BCHUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CHFNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+COKE-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+FR40-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+GBPCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+HBARUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+INTEL-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JAPAN225:N | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JP225-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LINKUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LTCUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LUNA-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MAGNIFICENT7-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MSFT-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NOKJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NZDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+RONINUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+SANDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+US30-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDTRY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+WLDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XLK | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CARDANO-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+DYDXUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+EURGBP-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+SUGAR-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+ATOMUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+SP500-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+AIRLINES-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+PENUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+ARBUSD-OTC | total: 5 | ganadas: 2 | perdidas: 3 | winrate: 40.0% | neto: -34.0
+EU50-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+FETUSD-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+TESLA-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDPLN-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDVND-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+RENDERUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.25
+JPM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.75
+URANIUM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+XPDUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+AUS200-OTC | total: 8 | ganadas: 3 | perdidas: 5 | winrate: 37.5% | neto: -62.75
+LABUBUUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+MCDON-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+USDARS-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+XNGUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+GOOGLE-OTC | total: 4 | ganadas: 0 | perdidas: 4 | winrate: 0.0% | neto: -100.0
+D7.6D TIMING ESTADISTICAS | antes: 30 | despues: 30 | demora: 0.214
+D7.6D TIMING BALANCE | antes: 33 | despues: 34 | demora: 0.151
+D7.6D TIMING BALANCE | antes: 43 | despues: 44 | demora: 0.162
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6C RONDA UNICA | vela: 29816510 | segundo: 0
+RANKING DE SEÑALES:
+USDDOP-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDDOP-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 66 | TENDENCIA: ALCISTA_NORMAL 68.67 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: ETHUSD-OTC | calidad: CAOTICO | score: 29.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: RENDERUSD-OTC | calidad: SUCIO | score: 50.0
+RANKING DE SEÑALES:
+COCOA-OTC | call | pullback alcista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 134
+CONTEXTO FINAL: COCOA-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 55 | TENDENCIA: ALCISTA_DEBIL 43.75 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: USDMXN-OTC | calidad: SUCIO | score: 44.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: WLDUSD-OTC | calidad: SUCIO | score: 51.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: KLARNA-OTC | calidad: CAOTICO | score: 29.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: GBPUSD-OTC | calidad: SUCIO | score: 37.0
+D7.6C TIEMPO ANALISIS TOP: 9.129 segundos | activos: 20
+D7.6D RONDA DESCARTADA — NO SE ORDENA TOP PARCIAL | segundo: 9
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 355.6
+D7.6D REFRESH INCREMENTAL PAUSADO | indice: 226 / 241 | candidatos: 31 | demora: 11.792
+D7.6D TIMING OBTENER ACTIVOS | antes: 12 | despues: 23 | demora: 11.792
+D7.6C BUFFER VELAS PRECALENTADO | nuevos: 0 | reutilizados: 20 | errores: 0 | activos buffer: 20 | segundos: 0.0
+D7.6D TIMING PRECARGA TOTAL | antes: 12 | despues: 23 | demora: 11.792
+D7.6D TIMING BALANCE | antes: 23 | despues: 24 | demora: 0.159
+
+===== RESUMEN DE RONDA =====
+Origen universo: CACHE
+Fallback caché por API: 0
+Compatibles disponibles en caché: 20
+Mercados seleccionados: 20
+Activos con candidatas: 2
+Candidatas generadas: 2
+Familias generadas:
+   continuación alcista con tendencia : 1
+   pullback alcista a EMA : 1
+Candidatas evaluadas por Cerebro: 2
+Candidatas que continúan: 0
+Sin señal final devuelta a bot: 20
+Señales finales a bot: 0
+Cerebro NO_OPERAR: 2
+Cerebro sin autorización: 0
+Señales aprobadas REALES: 0
+Autorizadas DIRECTA: 0
+Autorizadas PROTOCOLO: 0
+DIRECTAS no ejecutadas: 0
+Entradas DIRECTAS abiertas: 0
+============================
+
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 46 | ganadas: 27 | perdidas: 19 | winrate: 58.7% | neto: 98.75
+liquidity sweep alcista | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 64.0
+continuación bajista con tendencia | total: 27 | ganadas: 16 | perdidas: 11 | winrate: 59.26% | neto: 62.5
+CHOCH alcista | total: 65 | ganadas: 36 | perdidas: 29 | winrate: 55.38% | neto: 34.75
+continuación alcista con tendencia | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+pullback bajista a EMA | total: 91 | ganadas: 48 | perdidas: 43 | winrate: 52.75% | neto: -55.5
+pullback alcista a EMA | total: 6 | ganadas: 1 | perdidas: 5 | winrate: 16.67% | neto: -103.25
+reacción vendedora en resistencia | total: 45 | ganadas: 20 | perdidas: 25 | winrate: 44.44% | neto: -207.75
+
+===== ESTADÍSTICAS POR ACTIVO =====
+TRUMPUSD-OTC | total: 5 | ganadas: 5 | perdidas: 0 | winrate: 100.0% | neto: 104.75
+SP35-OTC | total: 7 | ganadas: 6 | perdidas: 1 | winrate: 85.71% | neto: 98.75
+CANNABIS-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 65.25
+DASHUSD-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.5
+USDDOP-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.0
+FB-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 62.75
+USDCLP-OTC | total: 5 | ganadas: 4 | perdidas: 1 | winrate: 80.0% | neto: 60.75
+GDX | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GEV-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GS-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.0
+CHFJPY-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+COCOA-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+SHIBUSD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+GBPNZD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+SNAP-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+USDINR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+HYPE-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+USDZAR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+XRPUSD-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 39.25
+USDTHB-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 37.25
+APPLE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+AUS200:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+EURCAD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+FARTCOINUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+IMXUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+MU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NIKE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDJPY-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+PENGUUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SMH | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SUIUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+WDC-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+UK100:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.5
+BIDU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+DOTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MANAUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MATICUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MORSTAN-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+PYTHUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+UKOUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+SpaceX-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.0
+ALIBABA-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+OpenAI-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDPHP-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDSAR-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+XPTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+TAOUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+US2000-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+USDBRL-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+NVDA-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.75
+SEIUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+UK100-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDIDR-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDNGN-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 17.25
+USDSGD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.75
+CADCHF-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 16.0
+COFFEE-OTC | total: 7 | ganadas: 4 | perdidas: 3 | winrate: 57.14% | neto: 8.25
+AUDJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+CASINOS-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+ICPUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+KLARNA-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+RAYDIUMUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+SOLUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+USDAED-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.25
+US30:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.5
+AUDNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURAUD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+EURNZD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+GBPJPY-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+ORDIUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+SATSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+US2000:N | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -3.75
+AUDUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EOSUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+ETHUSD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+EURTHB-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+TRON-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDCAD-OTC | total: 2 | ganadas: 1 | perdidas: 1 | winrate: 50.0% | neto: -4.5
+USDMXN-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -6.5
+Anthropic-OTC | total: 4 | ganadas: 2 | perdidas: 2 | winrate: 50.0% | neto: -9.0
+AIG-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+AUDCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+BCHUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CHFNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+COKE-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+FR40-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+GBPCHF-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+HBARUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+INTEL-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JAPAN225:N | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+JP225-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LINKUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LTCUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+LUNA-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MAGNIFICENT7-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+MSFT-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NOKJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+NZDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+RONINUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+SANDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+US30-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDNOK-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+USDTRY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+WLDUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XLK | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+CARDANO-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+DYDXUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+EURGBP-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+SUGAR-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.25
+ATOMUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+SP500-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -28.75
+AIRLINES-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+PENUSD-OTC | total: 3 | ganadas: 1 | perdidas: 2 | winrate: 33.33% | neto: -29.5
+ARBUSD-OTC | total: 5 | ganadas: 2 | perdidas: 3 | winrate: 40.0% | neto: -34.0
+EU50-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+FETUSD-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+TESLA-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDPLN-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+USDVND-OTC | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+RENDERUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.25
+JPM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -53.75
+URANIUM-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+XPDUSD-OTC | total: 4 | ganadas: 1 | perdidas: 3 | winrate: 25.0% | neto: -54.5
+AUS200-OTC | total: 8 | ganadas: 3 | perdidas: 5 | winrate: 37.5% | neto: -62.75
+LABUBUUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+MCDON-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+USDARS-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+XNGUSD-OTC | total: 3 | ganadas: 0 | perdidas: 3 | winrate: 0.0% | neto: -75.0
+GOOGLE-OTC | total: 4 | ganadas: 0 | perdidas: 4 | winrate: 0.0% | neto: -100.0
+D7.6D TIMING ESTADISTICAS | antes: 30 | despues: 30 | demora: 0.422
+D7.6D TIMING BALANCE | antes: 33 | despues: 34 | demora: 0.146
+D7.6D TIMING BALANCE | antes: 43 | despues: 44 | demora: 0.167
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6C RONDA UNICA | vela: 29816511 | segundo: 0
+RANKING DE SEÑALES:
+USDZAR-OTC | put | pullback bajista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 126
+CONTEXTO FINAL: USDZAR-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 59 | TENDENCIA: BAJISTA_NORMAL 59.26 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: ETHUSD-OTC | calidad: CAOTICO | score: 27.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: RENDERUSD-OTC | calidad: SUCIO | score: 43.0
+RANKING DE SEÑALES:
+USOUSD-OTC | call | liquidity sweep alcista | puntaje: 23 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 212
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: USOUSD-OTC call liquidity sweep alcista | MERCADO: RANGO | CALIDAD: NORMAL 64 | TENDENCIA: BAJISTA_DEBIL 41.02 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: USDMXN-OTC | calidad: SUCIO | score: 37.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: WLDUSD-OTC | calidad: SUCIO | score: 42.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: USDCHF-OTC | calidad: SUCIO | score: 53.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: KLARNA-OTC | calidad: CAOTICO | score: 29.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: GBPUSD-OTC | calidad: SUCIO | score: 37.0
+D7.6C TIEMPO ANALISIS TOP: 8.944 segundos | activos: 20
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 416.47
+D7.6D REFRESH INCREMENTAL COMPLETO | universo: 241 | compatibles: 32 | top: 20 | ciclo: 242.06 s | estado: PENDIENTE_BUFFER
+D7.6D TIMING OBTENER ACTIVOS | antes: 13 | despues: 16 | demora: 2.982
+D7.6D TIMING PRECARGA TOTAL | antes: 13 | despues: 16 | demora: 2.982
+D7.6D TIMING BALANCE | antes: 20 | despues: 20 | demora: 0.145
+
+===== RESUMEN DE RONDA =====
+Origen universo: CACHE
+Fallback caché por API: 0
+Compatibles disponibles en caché: 32
+Mercados seleccionados: 20
+Activos con candidatas: 2
+Candidatas generadas: 2
+Familias generadas:
+   liquidity sweep alcista : 1
+   pullback bajista a EMA : 1
+Candidatas evaluadas por Cerebro: 2
+Candidatas que continúan: 0
+Sin señal final devuelta a bot: 20
+Señales finales a bot: 0
+Cerebro NO_OPERAR: 2
+Cerebro sin autorización: 0
+Señales aprobadas REALES: 0
+Autorizadas DIRECTA: 0
+Autorizadas PROTOCOLO: 0
+DIRECTAS no ejecutadas: 0
+Entradas DIRECTAS abiertas: 0
+============================
+
+D7.6D TIMING BALANCE | antes: 30 | despues: 30 | demora: 0.162
+
+Balance: 9589.61 | Neto: 0.0 | Abiertas: 0
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 46 | ganadas: 27 | perdidas: 19 | winrate: 58.7% | neto: 98.75
+liquidity sweep alcista | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 64.0
+continuación bajista con tendencia | total: 27 | ganadas: 16 | perdidas: 11 | winrate: 59.26% | neto: 62.5
+CHOCH alcista | total: 65 | ganadas: 36 | perdidas: 29 | winrate: 55.38% | neto: 34.75
+continuación alcista con tendencia | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+pullback bajista a EMA | total: 91 | ganadas: 48 | perdidas: 43 | winrate: 52.75% | neto: -55.5
+pullback alcista a EMA | total: 6 | ganadas: 1 | perdidas: 5 | winrate: 16.67% | neto: -103.25
+reacción vendedora en resistencia | total: 45 | ganadas: 20 | perdidas: 25 | winrate: 44.44% | neto: -207.75
+
+===== ESTADÍSTICAS POR ACTIVO =====
+TRUMPUSD-OTC | total: 5 | ganadas: 5 | perdidas: 0 | winrate: 100.0% | neto: 104.75
+SP35-OTC | total: 7 | ganadas: 6 | perdidas: 1 | winrate: 85.71% | neto: 98.75
+CANNABIS-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 65.25
+DASHUSD-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.5
+USDDOP-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.0
+FB-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 62.75
+USDCLP-OTC | total: 5 | ganadas: 4 | perdidas: 1 | winrate: 80.0% | neto: 60.75
+GDX | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GEV-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GS-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.0
+CHFJPY-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+COCOA-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+SHIBUSD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+GBPNZD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+SNAP-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+USDINR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+HYPE-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+USDZAR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+XRPUSD-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 39.25
+USDTHB-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 37.25
+APPLE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+AUS200:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+EURCAD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+FARTCOINUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+IMXUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+MU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NIKE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDJPY-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+PENGUUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 

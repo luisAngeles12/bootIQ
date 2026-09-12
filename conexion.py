@@ -65,7 +65,7 @@ def conectar():
         estado.balance_inicial = float(estado.Iq.get_balance())
     except Exception as e:
         print("No se pudo obtener balance inicial:", e, flush=True)
-        estado.balance_inicial = 0
+        estado.balance_inicial = None
 
     print("Balance inicial:", estado.balance_inicial, flush=True)
     return True

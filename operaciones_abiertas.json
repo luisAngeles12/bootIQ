@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "order_id": "14255921006",
+    "activo": "GEV-OTC",
+    "tipo": "turbo",
+    "direccion": "call",
+    "puntaje": 17,
+    "patron": "pullback alcista a EMA",
+    "rsi": 43.95,
+    "razon": "ESTRATEGIA: pullback alcista a EMA, pullback alcista válido, EMA favorece compra, presión: presión neutral, RSI: 43.95, morning star alcista, calidad A, patrón bloqueado por bajo winrate, advertencia acción precio: acción precio: lectura avanzada contradice CALL, enviada al cerebro único como evidencia, ubicación válida, MERCADO: TENDENCIA_ALCISTA - tendencia alcista moderada por avance predominante, CALIDAD MERCADO: NORMAL score 57, TENDENCIA AVANZADA: ALCISTA_NORMAL fuerza 61.6, VALIDACIÓN MERCADO: pullback alcista permitido con filtro reforzado, ZONA SR: zona válida, ACCION PRECIO: acción precio: lectura avanzada contradice CALL, RUPTURA: sin ruptura confirmada de resistencia",
+    "hora_apertura": 1789232407.497174,
+    "balance_antes": 9397.86,
+    "segundo_entrada": 4,
+    "demora_envio": 0.468,
+    "tiempo_envio_inicio": 1789232407.0295982,
+    "tiempo_respuesta_iq": 1789232407.497174,
+    "segundo_antes": 4,
+    "vela_confirmacion_from": null,
+    "precio_confirmacion_close": null,
+    "precio_confirmacion_open": null,
+    "precio_confirmacion_high": null,
+    "precio_confirmacion_low": null,
+    "tiempo_expiracion": 1,
+    "auditoria_orden_iq_json": "{\"option-opened\": {\"name\": \"option-opened\", \"microserviceName\": \"binary-options\", \"msg\": {\"index\": 10369516251, \"option_id\": 14255921006, \"user_id\": 100593322, \"user_group_id\": 191, \"open_time\": 1789232405, \"open_time_millisecond\": 1789232405397, \"expiration_time\": 1789232460, \"amount\": 25, \"enrolled_amount\": 25, \"currency\": \"USD\", \"profit_amount\": 0, \"profit_percent\": 184, \"option_type\": \"turbo\", \"option_type_id\": 3, \"direction\": \"call\", \"value\": 1002.515415, \"active\": \"GEV-OTC\", \"params\": null, \"platform_id\": 82, \"is_demo\": false, \"aff_id\": 0, \"balance_type_id\": 4, \"robot_id\": null, \"tournament_id\": null, \"bonus_rate\": 1, \"inout_diff\": 0, \"aff_track\": \"\", \"country_id\": 59, \"balance\": 0, \"client_platform_id\": 82, \"is_can_trade\": true, \"currency_mask\": \"$%s\", \"active_id\": 2404, \"balance_id\": 497753323, \"requested_at\": 1789232405396, \"created_at\": 1789232405397, \"updated_at\": 1789232405471}}}"
+  }
+]

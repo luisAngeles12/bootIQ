@@ -34,14 +34,6 @@ class IQ_Option:
         self.suspend = 0.5
         self.thread = None
 
-        # Las respuestas históricas de get-candles usan
-        # un único candles_data compartido y IQ no devuelve
-        # request_id/active_id utilizable en la respuesta.
-        #
-        # Por tanto, nunca deben existir dos solicitudes
-        # históricas de velas simultáneas.
-        self._candles_lock = threading.Lock()
-
         self.subscribe_candle = []
         self.subscribe_candle_all_size = []
         self.subscribe_mood = []
@@ -274,73 +266,12 @@ class IQ_Option:
         self.instruments_input_to_ACTIVES("forex")
         self.instruments_input_to_ACTIVES("cfd")
 
-    def get_ALL_Binary_ACTIVES_OPCODE(
-        self,
-        timeout=5.0,
-    ):
-        """
-        Actualiza OPCODE para binary/turbo usando la ruta
-        acotada de BootIQ.
-
-        No utiliza get_all_init(), ya que esa ruta puede
-        bloquear hasta 30 segundos.
-        """
-        init_info = None
-        intentos = 3
-
-        for intento in range(
-            1,
-            intentos + 1,
-        ):
-            init_info = self.get_all_init_v2(
-                timeout=timeout,
-                avisar_timeout=(
-                    intento == intentos
-                ),
-            )
-
-            if init_info:
-                break
-
-            if intento < intentos:
-                time.sleep(1)
-
-        if not init_info:
-            raise RuntimeError(
-                "OPCODE binary/turbo no disponible "
-                "tras 3 intentos acotados"
-            )
-
-        for dirr in ("binary", "turbo"):
-            datos_tipo = init_info.get(
-                dirr,
-                {},
-            )
-
-            actives = datos_tipo.get(
-                "actives",
-                {},
-            )
-
-            for active_id, active in actives.items():
-                nombre = str(
-                    active.get(
-                        "name",
-                        "",
-                    )
-                )
-
-                if "." not in nombre:
-                    continue
-
-                nombre = nombre.split(
-                    ".",
-                    1,
-                )[1]
-
-                OP_code.ACTIVES[nombre] = int(
-                    active_id
-                )
+    def get_ALL_Binary_ACTIVES_OPCODE(self):
+        init_info = self.get_all_init()
+        for dirr in (["binary", "turbo"]):
+            for i in init_info["result"][dirr]["actives"]:
+                OP_code.ACTIVES[(init_info["result"][dirr]
+                                 ["actives"][i]["name"]).split(".")[1]] = int(i)
 
     # _________________________self.api.get_api_option_init_all() wss______________________
     def get_all_init(self):
@@ -371,26 +302,20 @@ class IQ_Option:
             except:
                 pass
 
-    def get_all_init_v2(
-        self,
-        timeout=2.0,
-        avisar_timeout=True,
-    ):
+    def get_all_init_v2(self):
         """
-        Obtiene binary/turbo open-time sin iniciar
-        reconexiones internas.
+        Obtiene binary/turbo open-time sin iniciar una
+        reconexión interna.
 
-        BootIQ/conexion.py conserva la autoridad
-        exclusiva de reconexión.
+        La autoridad de reconexión pertenece a
+        BootIQ/conexion.py.
         """
-
         self.api.api_option_init_all_result_v2 = None
 
         try:
             if not self.check_connect():
                 logging.error(
-                    "**error** get_all_init_v2 "
-                    "websocket disconnected"
+                    "**error** get_all_init_v2 websocket disconnected"
                 )
                 return None
 
@@ -402,55 +327,38 @@ class IQ_Option:
 
         except Exception as e:
             logging.error(
-                "**error** get_all_init_v2 "
-                "request failed: %s",
-                e,
+                "**error** get_all_init_v2 request failed: %s",
+                e
             )
             return None
 
         inicio = time.time()
 
-        while (
-            self.api.api_option_init_all_result_v2
-            is None
-        ):
+        while self.api.api_option_init_all_result_v2 is None:
+
             try:
                 if not self.check_connect():
                     logging.error(
-                        "**error** get_all_init_v2 "
-                        "connection lost"
+                        "**error** get_all_init_v2 connection lost"
                     )
                     return None
 
             except Exception:
                 return None
 
-            if (
-                time.time()
-                - inicio
-                >= timeout
-            ):
-                if avisar_timeout:
-                    logging.warning(
-                        "**warning** get_all_init_v2 "
-                        "timeout %.1f sec",
-                        timeout,
-                    )
+            if time.time() - inicio >= 15:
+                logging.error(
+                    "**warning** get_all_init_v2 timeout 15 sec"
+                )
                 return None
 
             time.sleep(0.01)
 
-        return (
-            self.api.api_option_init_all_result_v2
-        )
-    def __get_binary_open(
-        self,
-        timeout=2.0,
-    ):
+        return self.api.api_option_init_all_result_v2
+
+    def __get_binary_open(self):
         # for turbo and binary pairs
-        binary_data = self.get_all_init_v2(
-            timeout=timeout
-        )
+        binary_data = self.get_all_init_v2()
         binary_list = ["binary", "turbo"]
         if binary_data:
             for option in binary_list:
@@ -464,7 +372,7 @@ class IQ_Option:
                             else:
                                 self.OPEN_TIME[option][name]["open"] = True
                         else:
-                            self.OPEN_TIME[option][name]["open"] = active["enabled"]
+                            self.OPEN_TIME[option][name]["open"] = active["enabled"]    
 
     def __get_digital_open(self):
         # for digital options
@@ -517,33 +425,28 @@ class IQ_Option:
                     if start < time.time() < end:
                         self.OPEN_TIME[instruments_type][name]["open"] = True
 
-    def get_all_open_time(
-        self,
-        timeout=2.0,
-    ):
+    def get_all_open_time(self):
         """
         BootIQ opera actualmente solo TURBO/BINARY.
-
+    
         No consultamos DIGITAL porque:
         - BootIQ no lo utiliza;
         - puede tardar demasiado;
         - puede dejar un hilo trabajando sobre un websocket
           que ya se está reconectando.
         """
-
+    
         self.OPEN_TIME = nested_dict(3, dict)
-
+    
         try:
-            self.__get_binary_open(
-                timeout=timeout
-            )
-
+            self.__get_binary_open()
+    
         except Exception as e:
             logging.error(
                 "**error** binary/turbo open_time: %s",
                 e
             )
-
+    
         return self.OPEN_TIME
     # --------for binary option detail
 
@@ -778,285 +681,127 @@ class IQ_Option:
     # _______________________        CANDLE      _____________________________
     # ________________________self.api.getcandles() wss________________________
 
-    def get_candles(
-        self,
-        ACTIVES,
-        interval,
-        count,
-        endtime,
-        timeout=12,
-        drain_timeout=0.25,
-    ):
+    def get_candles(self, ACTIVES, interval, count, endtime):
         """
-        Obtiene velas históricas de forma secuencial y segura.
+        Versión compatible con el comportamiento original de
+        iqoptionapi.
 
-        IQ Option responde get-candles mediante un único
-        candles_data compartido y no devuelve un request_id
-        ni active_id utilizable para correlacionar respuestas.
+        - Hace una sola solicitud de velas.
+        - Espera la respuesta del websocket.
+        - No ejecuta self.connect() internamente.
+        - Si el websocket cae, devuelve None.
+        - Tiene un límite de seguridad de 30 segundos para
+          evitar una espera infinita.
 
-        Regla de seguridad BootIQ:
-        - una sola petición histórica de candles a la vez;
-        - si una petición vence su timeout, el websocket se
-          cierra inmediatamente;
-        - ninguna petición posterior puede consumir una
-          respuesta tardía de otro activo;
-        - la reconexión sigue perteneciendo a conexion.py.
+        La reconexión sigue perteneciendo a conexion.py.
         """
 
-        with self._candles_lock:
+        if ACTIVES not in OP_code.ACTIVES:
+            print(
+                "Asset {} not found on consts".format(
+                    ACTIVES
+                )
+            )
+            return None
 
-            if ACTIVES not in OP_code.ACTIVES:
-                print(
-                    "Asset {} not found on consts".format(
-                        ACTIVES
-                    )
+        try:
+            if not self.check_connect():
+                logging.error(
+                    "**error** get_candles websocket disconnected"
                 )
                 return None
+        except Exception:
+            return None
+
+        self.api.candles.candles_data = None
+
+        try:
+            self.api.getcandles(
+                OP_code.ACTIVES[ACTIVES],
+                interval,
+                count,
+                endtime
+            )
+        except Exception as e:
+            logging.error(
+                "**error** get_candles request failed | "
+                "activo: %s | error: %s",
+                ACTIVES,
+                e
+            )
+            return None
+
+        inicio = time.time()
+
+        while self.api.candles.candles_data is None:
 
             try:
                 if not self.check_connect():
                     logging.error(
-                        "**error** get_candles "
-                        "websocket disconnected"
+                        "**error** get_candles connection lost | "
+                        "activo: %s",
+                        ACTIVES
                     )
                     return None
             except Exception:
                 return None
 
-            # Limpiar únicamente antes de enviar ESTA
-            # petición. Como las llamadas están serializadas,
-            # no puede existir otra petición legítima activa.
-            self.api.candles.candles_data = None
-
-            try:
-                self.api.getcandles(
-                    OP_code.ACTIVES[ACTIVES],
-                    interval,
-                    count,
-                    endtime,
-                )
-
-            except Exception as e:
-                logging.error(
-                    "**error** get_candles request failed | "
-                    "activo: %s | error: %s",
-                    ACTIVES,
-                    e,
+            if time.time() - inicio >= 12:
+                logging.warning(
+                    "**warning** get_candles sin respuesta 12 sec "
+                    "| activo: %s",
+                    ACTIVES
                 )
                 return None
 
-            try:
-                timeout = max(
-                    0.2,
-                    float(timeout),
-                )
-            except (TypeError, ValueError):
-                timeout = 12.0
+            time.sleep(0.01)
 
-            try:
-                drain_timeout = max(
-                    0.0,
-                    float(drain_timeout),
-                )
-            except (TypeError, ValueError):
-                drain_timeout = 0.25
-
-            inicio = time.time()
-
-            while (
-                self.api.candles.candles_data
-                is None
-            ):
-
-                try:
-                    if not self.check_connect():
-                        logging.error(
-                            "**error** get_candles "
-                            "connection lost | activo: %s",
-                            ACTIVES,
-                        )
-                        return None
-                except Exception:
-                    return None
-
-                if (
-                    time.time() - inicio
-                    >= timeout
-                ):
-                    logging.warning(
-                        "**warning** get_candles "
-                        "sin respuesta %s sec "
-                        "| activo: %s",
-                        round(timeout, 2),
-                        ACTIVES,
-                    )
-
-                    # ====================================================
-                    # DRENAJE DE RESPUESTA TARDÍA
-                    # ====================================================
-                    #
-                    # IQ no devuelve active_id/request_id utilizable
-                    # en la respuesta histórica de candles.
-                    #
-                    # Si esta respuesta llega después del timeout y
-                    # enviamos inmediatamente otra solicitud, podría
-                    # ser consumida como si perteneciera al siguiente
-                    # activo.
-                    #
-                    # Mantenemos _candles_lock durante todo el drenaje:
-                    # ninguna otra solicitud histórica puede comenzar.
-                    #
-                    # Medición PRACTICE:
-                    # respuestas tardías observadas entre 0.050 y
-                    # 0.133 s después del timeout.
-                    #
-                    # Damos 0.25 s para recibir y DESCARTAR únicamente
-                    # la respuesta pendiente.
-                    limite_drenaje = drain_timeout
-                    inicio_drenaje = time.time()
-
-                    while (
-                        self.api.candles.candles_data
-                        is None
-                        and
-                        time.time() - inicio_drenaje
-                        < limite_drenaje
-                    ):
-                        try:
-                            if not self.check_connect():
-                                break
-                        except Exception:
-                            break
-
-                        time.sleep(0.005)
-
-                    if (
-                        self.api.candles.candles_data
-                        is not None
-                    ):
-                        demora_drenaje = (
-                            time.time()
-                            - inicio_drenaje
-                        )
-
-                        logging.warning(
-                            "**warning** get_candles "
-                            "respuesta tardia descartada "
-                            "| activo: %s "
-                            "| drenaje: %.3f sec",
-                            ACTIVES,
-                            demora_drenaje,
-                        )
-
-                        # Esta respuesta pertenece a la petición
-                        # que ya venció. Nunca debe devolverse.
-                        self.api.candles.candles_data = None
-
-                        return None
-
-                    # No llegó ninguna respuesta dentro del drenaje.
-                    # A partir de aquí no podemos garantizar que una
-                    # respuesta vieja no aparezca durante la siguiente
-                    # solicitud.
-                    #
-                    # Invalidamos la sesión completa. bot.py detectará
-                    # check_connect() == False y conexion.py conserva
-                    # la autoridad exclusiva para reconectar.
-                    logging.warning(
-                        "**warning** get_candles "
-                        "respuesta tardia no drenada "
-                        "| activo: %s "
-                        "| websocket invalidado",
-                        ACTIVES,
-                    )
-
-                    try:
-                        # Marcar la sesión como desconectada
-                        # antes de cerrar el websocket.
-                        #
-                        # on_close() también actualiza este flag,
-                        # pero puede ejecutarse unas milésimas
-                        # después de websocket.close(). Sin esta
-                        # marca síncrona, otro get_candles() puede
-                        # alcanzar a usar el socket ya cerrado.
-                        global_value.check_websocket_if_connect = 0
-
-                        # Cerrar únicamente el websocket.
-                        # No usar self.api.close() aquí:
-                        # ese método ejecuta thread.join()
-                        # y puede bloquear varios segundos.
-                        self.api.websocket.close()
-                    except Exception as e:
-                        logging.warning(
-                            "**warning** get_candles "
-                            "error cerrando websocket "
-                            "tras timeout | activo: %s "
-                            "| error: %s",
-                            ACTIVES,
-                            e,
-                        )
-
-                    return None
-
-                time.sleep(0.01)
-
-            datos_candles = (
-                self.api.candles.candles_data
+        # ============================================================
+        # PASO 5.5 — VALIDAR RESPUESTA DE VELAS
+        # ============================================================
+        
+        datos_candles = self.api.candles.candles_data
+        
+        if not isinstance(datos_candles, list):
+            logging.warning(
+                "**warning** get_candles respuesta invalida "
+                "| activo: %s | tipo: %s",
+                ACTIVES,
+                type(datos_candles).__name__,
             )
-
-            if not isinstance(
-                datos_candles,
-                list,
-            ):
-                logging.warning(
-                    "**warning** get_candles "
-                    "respuesta invalida "
-                    "| activo: %s | tipo: %s",
-                    ACTIVES,
-                    type(
-                        datos_candles
-                    ).__name__,
-                )
-                return None
-
-            try:
-                count_esperado = int(count)
-            except (TypeError, ValueError):
-                count_esperado = 0
-
-            # IQ nunca debería devolver MÁS velas
-            # que las solicitadas.
-            if (
-                count_esperado > 0
-                and len(datos_candles)
-                > count_esperado
-            ):
-                logging.warning(
-                    "**warning** get_candles "
-                    "respuesta contaminada "
-                    "| activo: %s "
-                    "| solicitado: %s "
-                    "| recibido: %s",
-                    ACTIVES,
-                    count_esperado,
-                    len(datos_candles),
-                )
-
-                # Una respuesta incoherente también deja
-                # la sesión de candles sin garantías.
-                #
-                # Cerrar solo el websocket evita el
-                # thread.join() bloqueante de api.close().
-                # bot.py / conexion.py harán la reconexión.
-                try:
-                    global_value.check_websocket_if_connect = 0
-                    self.api.websocket.close()
-                except Exception:
-                    pass
-
-                return None
-
-            return datos_candles
+            return None
+        
+        
+        try:
+            count_esperado = int(count)
+        except (TypeError, ValueError):
+            count_esperado = 0
+        
+        
+        # IQ nunca debería devolver MÁS velas
+        # que las solicitadas.
+        #
+        # Si pedimos 8 y aparecen 1000,
+        # descartamos la respuesta en lugar de
+        # permitir que contamine estrategia/protocolo.
+        if (
+            count_esperado > 0
+            and len(datos_candles) > count_esperado
+        ):
+            logging.warning(
+                "**warning** get_candles respuesta contaminada "
+                "| activo: %s "
+                "| solicitado: %s "
+                "| recibido: %s",
+                ACTIVES,
+                count_esperado,
+                len(datos_candles),
+            )
+        
+            return None
+        
+        
+        return datos_candles
 
     def start_candles_stream(self, ACTIVE, size, maxdict):
 
@@ -1305,188 +1050,66 @@ class IQ_Option:
         x = self.api.socket_option_closed[id_number]
         return x['msg']['win'], (0 if x['msg']['win'] == 'equal' else float(x['msg']['sum']) * -1 if x['msg']['win'] == 'loose' else float(x['msg']['win_amount']) - float(x['msg']['sum']))
 
-    def check_win_v3(
-        self,
-        id_number,
-        timeout=45,
-    ):
+    def check_win_v3(self, id_number, timeout=45):
         inicio = time.time()
+        id_number = int(id_number)
 
-        id_number = int(
-            id_number
-        )
-
-        while (
-            time.time()
-            - inicio
-            < timeout
-        ):
+        while time.time() - inicio < timeout:
             try:
-                # =====================================
-                # METODO 1
-                # SOCKET OPTION CLOSED
-                # =====================================
+                # Método 1: socket de operaciones cerradas
                 try:
-                    data = (
-                        self.api.socket_option_closed.get(
-                            id_number
-                        )
-                    )
+                    data = self.api.socket_option_closed.get(id_number)
 
                     if data:
-                        msg = data.get(
-                            "msg",
-                            {}
-                        )
-
-                        win = msg.get(
-                            "win"
-                        )
+                        msg = data.get("msg", {})
+                        win = msg.get("win")
 
                         if win == "equal":
                             return 0
 
-                        amount = float(
-                            msg.get(
-                                "sum",
-                                0,
-                            )
-                        )
-
-                        win_amount = float(
-                            msg.get(
-                                "win_amount",
-                                0,
-                            )
-                        )
+                        amount = float(msg.get("sum", 0))
+                        win_amount = float(msg.get("win_amount", 0))
 
                         if win == "loose":
                             return -amount
 
-                        return round(
-                            win_amount - amount,
-                            2,
-                        )
-
+                        return round(win_amount - amount, 2)
                 except Exception:
                     pass
 
-                # =====================================
-                # METODO 2
-                # OPTIONINFO V2
-                # =====================================
-
-                restante = (
-                    float(timeout)
-                    - (
-                        time.time()
-                        - inicio
-                    )
-                )
-
-                if restante <= 0:
-                    return None
-
-                # Nunca permitir que get_optioninfo_v2()
-                # consuma más tiempo que el disponible
-                # para check_win_v3().
-                timeout_optioninfo = min(
-                    0.75,
-                    restante,
-                )
-
-                if timeout_optioninfo <= 0:
-                    return None
-
-                result = (
-                    self.get_optioninfo_v2(
-                        50,
-                        timeout=timeout_optioninfo,
-                    )
-                )
+                # Método 2: historial de opciones cerradas
+                result = self.get_optioninfo_v2(50, timeout=10)
 
                 if result:
-                    msg = result.get(
-                        "msg",
-                        {}
-                    )
-
-                    closed_options = msg.get(
-                        "closed_options",
-                        [],
-                    )
+                    msg = result.get("msg", {})
+                    closed_options = msg.get("closed_options", [])
 
                     for op in closed_options:
                         try:
-                            op_id = op.get(
-                                "id"
-                            )
+                            op_id = op.get("id")
 
-                            if isinstance(
-                                op_id,
-                                list,
-                            ):
+                            if isinstance(op_id, list):
                                 op_id = op_id[0]
 
-                            op_id = int(
-                                op_id
-                            )
+                            op_id = int(op_id)
 
-                            if op_id != id_number:
-                                continue
+                            if op_id == id_number:
+                                win = op.get("win")
+                                amount = float(op.get("amount", 0))
+                                win_amount = float(op.get("win_amount", 0))
 
-                            win = op.get(
-                                "win"
-                            )
+                                if win == "equal":
+                                    return 0
 
-                            amount = float(
-                                op.get(
-                                    "amount",
-                                    0,
-                                )
-                            )
-
-                            win_amount = float(
-                                op.get(
-                                    "win_amount",
-                                    0,
-                                )
-                            )
-
-                            if win == "equal":
-                                return 0
-
-                            return round(
-                                win_amount - amount,
-                                2,
-                            )
+                                return round(win_amount - amount, 2)
 
                         except Exception:
                             continue
 
             except Exception as e:
-                print(
-                    "Error check_win_v3 interno:",
-                    e,
-                )
+                print("Error check_win_v3 interno:", e)
 
-            restante = (
-                float(timeout)
-                - (
-                    time.time()
-                    - inicio
-                )
-            )
-
-            if restante <= 0:
-                break
-
-            time.sleep(
-                min(
-                    0.1,
-                    restante,
-                )
-            )
+            time.sleep(1)
 
         return None
     def get_betinfo(self, id_number):
@@ -2077,63 +1700,19 @@ class IQ_Option:
         else:
             return False, None
 
-    def get_position_history_v2(
-        self,
-        instrument_type,
-        limit,
-        offset,
-        start,
-        end,
-        timeout=10,
-    ):
-        # instrument_type:
-        # crypto
-        # forex
-        # fx-option
-        # multi-option
-        # cfd
-        # digital-option
-        # turbo-option
-
+    def get_position_history_v2(self, instrument_type, limit, offset, start, end):
+        # instrument_type=crypto forex fx-option multi-option cfd digital-option turbo-option
         self.api.position_history_v2 = None
-
         self.api.get_position_history_v2(
-            instrument_type,
-            limit,
-            offset,
-            start,
-            end,
-        )
+            instrument_type, limit, offset, start, end)
+        while self.api.position_history_v2 == None:
+            pass
 
-        inicio = time.time()
+        if self.api.position_history_v2["status"] == 2000:
+            return True, self.api.position_history_v2["msg"]
+        else:
+            return False, None
 
-        while (
-            self.api.position_history_v2
-            is None
-        ):
-            if (
-                time.time()
-                - inicio
-                >= timeout
-            ):
-                return False, None
-
-            time.sleep(0.05)
-
-        if (
-            self.api.position_history_v2[
-                "status"
-            ]
-            == 2000
-        ):
-            return (
-                True,
-                self.api.position_history_v2[
-                    "msg"
-                ],
-            )
-
-        return False, None
     def get_available_leverages(self, instrument_type, actives=""):
         self.api.available_leverages = None
         if actives == "":
