@@ -1,0 +1,132 @@
+[1mdiff --git a/motor_decision.py b/motor_decision.py[m
+[1mindex d26585f..97c7d62 100644[m
+[1m--- a/motor_decision.py[m
+[1m+++ b/motor_decision.py[m
+[36m@@ -1013,35 +1013,29 @@[m [mdef convertir_decision_v3_a_oficial([m
+     ).upper().strip()[m
+ [m
+     # ========================================================[m
+[31m-    # D6.4 — DISCRIMINACION OFICIAL CHOCH POR CALIDAD[m
+[32m+[m[32m    # D7.1 — BLOQUEO OFICIAL PROTOCOLO_CHOCH[m
+     # ========================================================[m
+     #[m
+[31m-    # Evidencia combinada en dos OOS independientes:[m
+[32m+[m[32m    # D6.4 habia promovido CHOCH PREMIUM a entrada DIRECTA[m
+[32m+[m[32m    # para evitar la degradacion temporal del protocolo.[m
+     #[m
+[31m-    # CHOCH PREMIUM al origen:[m
+[31m-    #   40 señales | 27W / 13L | 67.50%[m
+[32m+[m[32m    # Validacion independiente posterior:[m
+     #[m
+[31m-    # CHOCH NO PREMIUM al origen:[m
+[31m-    #   115 señales | 46W / 69L | 40.00%[m
+[32m+[m[32m    # PROTOCOLO_CHOCH promovido por D6.4:[m
+[32m+[m[32m    #   7 operaciones | 2W / 5L | 28.57%[m
+     #[m
+[31m-    # CHOCH PREMIUM ejecutado tras protocolo:[m
+[31m-    #   22 señales | 9W / 13L | 40.91%[m
+[32m+[m[32m    # La ventaja observada durante el descubrimiento de D6.4[m
+[32m+[m[32m    # no generalizo fuera de muestra.[m
+     #[m
+[31m-    # Contrato:[m
+[31m-    # - Solo actúa sobre CHOCH ya autorizado estadísticamente.[m
+[31m-    # - PREMIUM preserva la ventaja mediante entrada DIRECTA.[m
+[31m-    # - NO PREMIUM queda bloqueado.[m
+[31m-    # - No modifica REACCION_ZONA ni otros protocolos.[m
+[32m+[m[32m    # Contrato D7.1:[m
+[32m+[m[32m    # - Solo actua sobre CHOCH ya autorizado estadisticamente[m
+[32m+[m[32m    #   cuyo protocolo real es PROTOCOLO_CHOCH.[m
+[32m+[m[32m    # - PREMIUM y NO PREMIUM quedan bloqueados.[m
+[32m+[m[32m    # - No afecta CHOCH asociados a otros protocolos.[m
+[32m+[m[32m    # - No modifica RUPTURA_RESISTENCIA / F4.3.[m
+[32m+[m[32m    # - No modifica D6.6 CORE4.[m
+     # ========================================================[m
+ [m
+[31m-    calidad_setup = str([m
+[31m-        evidencia.get([m
+[31m-            "calidad_setup",[m
+[31m-            "MEDIA",[m
+[31m-        )[m
+[31m-        or "MEDIA"[m
+[31m-    ).upper().strip()[m
+[31m-[m
+     es_choch_autorizado = ([m
+         decision_estadistica[m
+         in {[m
+[36m@@ -1053,55 +1047,6 @@[m [mdef convertir_decision_v3_a_oficial([m
+     )[m
+ [m
+     if es_choch_autorizado:[m
+[31m-[m
+[31m-        if calidad_setup == "PREMIUM":[m
+[31m-            return {[m
+[31m-                "decision": "OPERAR",[m
+[31m-                "decision_legacy": ([m
+[31m-                    "OPERAR_DIRECTO_O_CONFIRMADO"[m
+[31m-                ),[m
+[31m-                "operar": True,[m
+[31m-                "requiere_protocolo": False,[m
+[31m-                "modo_ejecucion": "DIRECTA",[m
+[31m-                "bloquear_por_riesgo": False,[m
+[31m-                "riesgo_extremo_diagnostico": False,[m
+[31m-[m
+[31m-                "origen_autoridad": ([m
+[31m-                    "PROBABILIDAD_HISTORICA_V3"[m
+[31m-                ),[m
+[31m-[m
+[31m-                "decision_sombra_origen": ([m
+[31m-                    decision_estadistica[m
+[31m-                ),[m
+[31m-[m
+[31m-                "nivel_probabilidad": nivel,[m
+[31m-                "clave_probabilidad": clave,[m
+[31m-[m
+[31m-                "directa_evidencia_solida": False,[m
+[31m-                "directa_muestra": muestra,[m
+[31m-                "directa_confiabilidad": confiabilidad,[m
+[31m-[m
+[31m-                "directa_aptitud_tecnica": True,[m
+[31m-[m
+[31m-                "directa_motivos_tecnicos": [[m
+[31m-                    ([m
+[31m-                        "D6.4: CHOCH PREMIUM validado "[m
+[31m-                        "para preservar la ventaja temporal "[m
+[31m-                        "de la señal."[m
+[31m-                    )[m
+[31m-                ],[m
+[31m-[m
+[31m-                "directa_ruta_validada": True,[m
+[31m-[m
+[31m-                "motivo": ([m
+[31m-                    "D6.4: CHOCH PREMIUM autorizado "[m
+[31m-                    "para entrada directa. El protocolo "[m
+[31m-                    "degradó esta familia entre el origen "[m
+[31m-                    "y la ejecución. "[m
+[31m-                    + motivo_estadistico[m
+[31m-                ).strip(),[m
+[31m-            }[m
+[31m-[m
+         return {[m
+             "decision": "NO_OPERAR",[m
+             "decision_legacy": "NO_OPERAR",[m
+[36m@@ -1130,15 +1075,15 @@[m [mdef convertir_decision_v3_a_oficial([m
+ [m
+             "directa_motivos_tecnicos": [[m
+                 ([m
+[31m-                    "D6.4: CHOCH no PREMIUM bloqueado. "[m
+[31m-                    "No mostró ventaja estable en dos OOS."[m
+[32m+[m[32m                    "D7.1: PROTOCOLO_CHOCH bloqueado "[m
+[32m+[m[32m                    "tras fallar generalizacion independiente."[m
+                 )[m
+             ],[m
+ [m
+             "motivo": ([m
+[31m-                "D6.4: autorización estadística anulada "[m
+[31m-                "para CHOCH no PREMIUM por falta de ventaja "[m
+[31m-                "generalizable. "[m
+[32m+[m[32m                "D7.1: autorizacion estadistica anulada "[m
+[32m+[m[32m                "para PROTOCOLO_CHOCH. La promocion directa "[m
+[32m+[m[32m                "de D6.4 no generalizo fuera de muestra. "[m
+                 + motivo_estadistico[m
+             ).strip(),[m
+         }[m

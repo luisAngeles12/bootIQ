@@ -1,0 +1,41 @@
+Conectando a IQ Option...
+Conectado correctamente
+Cuenta seleccionada: PRACTICE
+Actualizando OPCODE ligero binary/turbo...
+Total de activos en OPCODE: 631
+OPCODE ligero actualizado correctamente
+Obteniendo balance inicial...
+Balance inicial: 9644.86
+Operaciones pendientes recuperadas: 0
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 1788379213.21
+Activos compatibles filtrados: 17
+Activos reales analizados:
+COCOA-OTC | turbo | filtro: 147 | mercado: TENDENCIA_BAJISTA | calidad: LIMPIO | score mercado: 77 | tendencia: BAJISTA_FUERTE | fuerza: 85.55
+USDTHB-OTC | turbo | filtro: 129 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 69 | tendencia: BAJISTA_FUERTE | fuerza: 80.64
+USDBRL-OTC | turbo | filtro: 121 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 71 | tendencia: BAJISTA_NORMAL | fuerza: 50.37
+DYDXUSD-OTC | turbo | filtro: 120 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 70 | tendencia: BAJISTA_NORMAL | fuerza: 55.81
+LUNA-OTC | turbo | filtro: 118 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 68 | tendencia: BAJISTA_NORMAL | fuerza: 53.37
+ALIBABA-OTC | turbo | filtro: 117 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 67 | tendencia: BAJISTA_NORMAL | fuerza: 69.53
+USDAED-OTC | turbo | filtro: 116 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 66 | tendencia: ALCISTA_NORMAL | fuerza: 57.96
+WLDUSD-OTC | turbo | filtro: 115 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 65 | tendencia: BAJISTA_NORMAL | fuerza: 66.57
+USDVND-OTC | turbo | filtro: 113 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 63 | tendencia: BAJISTA_NORMAL | fuerza: 69.07
+SEIUSD-OTC | turbo | filtro: 112 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 62 | tendencia: ALCISTA_NORMAL | fuerza: 50.7
+USOUSD-OTC | turbo | filtro: 107 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 57 | tendencia: ALCISTA_NORMAL | fuerza: 54.73
+AIG-OTC | turbo | filtro: 106 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 56 | tendencia: ALCISTA_NORMAL | fuerza: 50.3
+FARTCOINUSD-OTC | turbo | filtro: 105 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 55 | tendencia: ALCISTA_NORMAL | fuerza: 63.15
+SpaceX-OTC | turbo | filtro: 105 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 55 | tendencia: BAJISTA_NORMAL | fuerza: 52.37
+BCHUSD-OTC | turbo | filtro: 104 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 69 | tendencia: BAJISTA_DEBIL | fuerza: 48.11
+DOTUSD-OTC | turbo | filtro: 101 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 66 | tendencia: ALCISTA_DEBIL | fuerza: 38.1
+USDMXN-OTC | turbo | filtro: 100 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 65 | tendencia: ALCISTA_DEBIL | fuerza: 49.34
+Activos ignorados/no soportados: 0
+D7.6C BUFFER VELAS PRECALENTADO | nuevos: 17 | reutilizados: 0 | errores: 0 | activos buffer: 17 | segundos: 5.231
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+Traceback (most recent call last):
+  File "C:\Users\Luis Manuel\bootIQ\bot.py", line 920, in <module>
+    main()
+  File "C:\Users\Luis Manuel\bootIQ\bot.py", line 454, in main
+    ts_ronda // CANDLE_TIME
+NameError: name 'CANDLE_TIME' is not defined

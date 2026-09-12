@@ -1,3 +1,13 @@
+# ============================================================
+# BOOTIQ V3 — MOTOR ESTRATEGIAS / CANDIDATO FASE 2
+# Cambios integrados:
+# - F2.2-A: continuaciones no se eliminan por puntaje >= 14.
+# - F2.2-B: PA profesional deja de vetar CHOCH CALL antes del Cerebro.
+# - F2.2-C: se mantiene eliminado el veto PUT por SIN_CONTEXTO_CLARO.
+# - F2.2-D: se conserva el veto técnico RSI/tendencia (revertido).
+# - Corrección direccional: CHOCH usa accion_precio_call/put correcta.
+# ============================================================
+
 from estadisticas import activos_bloqueables
 
 from price_action import validar_patron_con_contexto
@@ -8,7 +18,6 @@ from validaciones_estrategia import memoria_operativa
 
 from clasificador_senal import (
     clasificar_senal_profesional,
-    pa_profesional_apoya,
     score_final_senal_profesional,
 )
 
@@ -89,13 +98,24 @@ def crear_senal_profesional(activo, direccion, estrategia, puntaje, rsi, razones
         "fuerza_tendencia": ctx.get("fuerza_tendencia", 0) if ctx else 0,
     }
 
-def motor_estrategias_profesional(ctx):
+def motor_estrategias_profesional(
+    ctx,
+    activos_malos=None,
+):
     senales = []
     candidatos = []
     activo = ctx["activo"]
     rsi = ctx["rsi"]
 
-    activos_malos = activos_bloqueables()
+    # Si bot.py ya calculó la lista para esta ronda,
+    # reutilizar exactamente ese resultado.
+    #
+    # Backtest, tests y otras llamadas que no suministren
+    # la lista conservan el comportamiento histórico.
+    if activos_malos is None:
+        activos_malos = (
+            activos_bloqueables()
+        )
 
     activo_bloqueable_historico = (
         activo in activos_malos
@@ -108,7 +128,18 @@ def motor_estrategias_profesional(ctx):
     )
     direccion_presion = ctx.get("direccion_presion", "NEUTRA")
     razon_presion = ctx.get("razon_presion", "")
-    fuerza_presion = ctx.get("fuerza_presion", 0)
+
+    # FASE 2 — acción de precio por dirección.
+    # "accion_precio" se conserva fuera de este motor por compatibilidad,
+    # pero aquí cada estrategia debe consultar el diagnóstico de su lado.
+    accion_precio_call = ctx.get(
+        "accion_precio_call",
+        ctx.get("accion_precio", "SIN_DATOS"),
+    )
+    accion_precio_put = ctx.get(
+        "accion_precio_put",
+        ctx.get("accion_precio", "SIN_DATOS"),
+    )
 
     patron_call_ok, razon_patron_call = validar_patron_con_contexto(
         "call",
@@ -494,11 +525,9 @@ def motor_estrategias_profesional(ctx):
             or ctx.get("impulso_alcista", False)
         )
         and not (
-            ctx.get("accion_precio") == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA"
+            accion_precio_call == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA"
             and ctx.get("pa_tipo") != "IMPULSO_ALCISTA_FUERTE"
         )
-        and pa_profesional_apoya(ctx, "call", minimo_fuerza=0.35, aceptar_neutro=True)
-        and rsi <= 60
     ):
         puntaje = 16
         razones = [
@@ -576,19 +605,16 @@ def motor_estrategias_profesional(ctx):
             or ctx.get("rechazo_hist_direccion", "NEUTRA") in ["PUT", "NEUTRA"]
             or ctx.get("impulso_bajista", False)
         )
+
         and not (
-            ctx.get("accion_precio") == "PUT_SOPORTE_CERCA_SIN_RUPTURA"
-            and ctx.get("pa_tipo") == "SIN_CONTEXTO_CLARO"
-        )
-        and not (
-            ctx.get("accion_precio") == "PUT_SOPORTE_CERCA_SIN_RUPTURA"
+            accion_precio_put == "PUT_SOPORTE_CERCA_SIN_RUPTURA"
             and ctx.get("pa_tipo") in [
                 "AGOTAMIENTO_BAJISTA_CONFIRMADO",
                 "RECHAZO_COMPRADOR_CONFIRMADO"
             ]
         )
         and not (
-            ctx.get("accion_precio") == "PUT_SOPORTE_CERCA_SIN_RUPTURA"
+            accion_precio_put == "PUT_SOPORTE_CERCA_SIN_RUPTURA"
             and rsi < 43
             and ctx["fuerza_tendencia"] < 65
         )
@@ -654,7 +680,6 @@ def motor_estrategias_profesional(ctx):
         and ctx["tipo_mercado"] == "TENDENCIA_ALCISTA"
         and ctx["calidad_mercado"] in ["LIMPIO", "NORMAL"]
         and str(ctx["estado_tendencia"]).startswith("ALCISTA")
-        and ctx["fuerza_tendencia"] >= 58
         and 42 <= rsi <= 58
         and not ctx["cerca_resistencia"]
         and ctx["posicion_rango"] <= 0.72
@@ -787,18 +812,17 @@ def motor_estrategias_profesional(ctx):
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
 
-        if puntaje >= 14:
-            senales.append(
-                crear_senal_profesional(
-                    activo,
-                    "call",
-                    "continuación alcista con tendencia",
-                    puntaje,
-                    rsi,
-                    razones,
-                    ctx
-                )
+        senales.append(
+            crear_senal_profesional(
+                activo,
+                "call",
+                "continuación alcista con tendencia",
+                puntaje,
+                rsi,
+                razones,
+                ctx
             )
+        )
 
     # =========================
     # 12. CONTINUACIÓN BAJISTA
@@ -831,20 +855,55 @@ def motor_estrategias_profesional(ctx):
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
 
-        if puntaje >= 14:
-            senales.append(
-                crear_senal_profesional(
-                    activo,
-                    "put",
-                    "continuación bajista con tendencia",
-                    puntaje,
-                    rsi,
-                    razones,
-                    ctx
+        senales.append(
+            crear_senal_profesional(
+                activo,
+                "put",
+                "continuación bajista con tendencia",
+                puntaje,
+                rsi,
+                razones,
+                ctx
+            )
+        )
+
+    senales = [s for s in senales if s is not None]
+
+    # ========================================================
+    # F5.7-D4.1 — TELEMETRÍA DE GENERACIÓN POR FAMILIA
+    # ========================================================
+    # No filtra.
+    # No cambia puntajes.
+    # No altera decisiones.
+    #
+    # Cuenta únicamente las señales que realmente lograron
+    # satisfacer las condiciones de motor_estrategias.py.
+    try:
+        import estado
+
+        familias = estado.metricas_ronda.setdefault(
+            "familias_generadas",
+            {}
+        )
+
+        for senal_generada in senales:
+            patron_generado = str(
+                senal_generada.get(
+                    "patron",
+                    "SIN_PATRON"
                 )
             )
 
-    senales = [s for s in senales if s is not None]
+            familias[patron_generado] = (
+                familias.get(
+                    patron_generado,
+                    0
+                )
+                + 1
+            )
+
+    except Exception:
+        pass
 
     if not senales:
         return None
@@ -909,4 +968,3 @@ def motor_estrategias_profesional(ctx):
     else:
         ctx["candidatos_bootiq_v2"] = []
     return senales
-

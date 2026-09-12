@@ -5,10 +5,107 @@ import estado
 from config import HISTORIAL_CSV, OPERACIONES_PENDIENTES_JSON
 
 def columnas_historial():
-    return ["fecha", "estado", "order_id", "activo", "tipo", "direccion", "puntaje", "patron", "rsi", "resultado", "razon"]
+    return [
+        "fecha",
+        "estado",
+        "order_id",
+        "activo",
+        "tipo",
+        "direccion",
+        "puntaje",
+        "patron",
+        "rsi",
+        "resultado",
+        "razon",
 
+        # PASO 5.5C — PARIDAD DE EJECUCIÓN
+        "segundo_antes",
+        "segundo_entrada",
+        "demora_envio",
+        "tiempo_envio_inicio",
+        "tiempo_respuesta_iq",
+        "tiempo_expiracion",
 
-COLUMNAS_HISTORIAL = ["fecha", "estado", "order_id", "activo", "tipo", "direccion", "puntaje", "patron", "rsi", "resultado", "razon"]
+        # D8-E5 — VELA EXACTA QUE ORIGINO LA SENAL
+        "vela_senal_from",
+        "precio_senal_open",
+        "precio_senal_close",
+        "precio_senal_high",
+        "precio_senal_low",
+
+        "vela_confirmacion_from",
+        "precio_confirmacion_open",
+        "precio_confirmacion_close",
+        "precio_confirmacion_high",
+        "precio_confirmacion_low",
+
+        "auditoria_orden_iq_json",
+    ]
+
+COLUMNAS_HISTORIAL = [
+    "fecha",
+    "estado",
+    "order_id",
+    "activo",
+    "tipo",
+    "direccion",
+    "puntaje",
+    "patron",
+    "rsi",
+    "resultado",
+    "razon",
+
+    # D7.7C — TRAZABILIDAD DE AUTORIDAD
+    "origen_autoridad",
+    "decision_sombra_origen",
+    "core4_rescate",
+    "core4_reglas",
+    "directa_ruta_validada",
+    "validacion_mercado_ok",
+    "razon_validacion_mercado",
+
+    # D8-R6C — TRAZABILIDAD V3
+    "probabilidad_v3",
+    "muestra_probabilidad",
+    "wins_probabilidad",
+    "losses_probabilidad",
+    "confiabilidad_probabilidad",
+    "nivel_probabilidad_principal",
+    "clave_probabilidad_principal",
+    "fuente_probabilidad_principal_json",
+    "fuente_probabilidad_respaldo_json",
+
+    # D8-R8B — SALUD PROSPECTIVA SOMBRA
+    "salud_fuente_n",
+    "salud_fuente_wins",
+    "salud_fuente_losses",
+    "salud_fuente_wr",
+    "salud_fuente_prob_historica",
+    "salud_fuente_delta_pp",
+    "salud_fuente_ultimas5_wr",
+    "salud_fuente_ultimas10_wr",
+
+    # PASO 5.5C — PARIDAD DE EJECUCIÓN
+    "segundo_antes",
+    "segundo_entrada",
+    "demora_envio",
+    "tiempo_envio_inicio",
+    "tiempo_respuesta_iq",
+    "tiempo_expiracion",
+    # D8-E5 — VELA EXACTA QUE ORIGINO LA SENAL
+    "vela_senal_from",
+    "precio_senal_open",
+    "precio_senal_close",
+    "precio_senal_high",
+    "precio_senal_low",
+    "vela_confirmacion_from",
+    "precio_confirmacion_open",
+    "precio_confirmacion_close",
+    "precio_confirmacion_high",
+    "precio_confirmacion_low",
+
+    "auditoria_orden_iq_json",
+]
 
 def guardar_historial(data):
     asegurar_historial_csv()

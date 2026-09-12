@@ -1,0 +1,182 @@
+1. Iniciando backtest_data
+Conectando a IQ Option...
+Conectado correctamente
+Cuenta seleccionada: PRACTICE
+Actualizando OPCODE ligero binary/turbo...
+Total de activos en OPCODE: 631
+OPCODE ligero actualizado correctamente
+Obteniendo balance inicial...
+Balance inicial: 9699.36
+2. Conectado
+data_backtest limpiada. Archivos eliminados: 0
+3. Carpeta lista
+4. Obteniendo activos con la lógica REAL del bot...
+Activos compatibles filtrados: 18
+Activos reales analizados:
+COTTON-OTC | turbo | filtro: 149 | mercado: TENDENCIA_ALCISTA | calidad: LIMPIO | score mercado: 79 | tendencia: ALCISTA_FUERTE | fuerza: 84.37
+USDCLP-OTC | turbo | filtro: 147 | mercado: TENDENCIA_BAJISTA | calidad: LIMPIO | score mercado: 77 | tendencia: BAJISTA_FUERTE | fuerza: 79.71
+COFFEE-OTC | turbo | filtro: 145 | mercado: TENDENCIA_ALCISTA | calidad: LIMPIO | score mercado: 75 | tendencia: ALCISTA_FUERTE | fuerza: 77.46
+HK33-OTC | turbo | filtro: 123 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 63 | tendencia: ALCISTA_FUERTE | fuerza: 76.47
+EURGBP-OTC | turbo | filtro: 120 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 70 | tendencia: BAJISTA_NORMAL | fuerza: 61.3
+UK100-OTC | turbo | filtro: 118 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 68 | tendencia: ALCISTA_NORMAL | fuerza: 50.51
+JAPAN225:N | turbo | filtro: 115 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 70 | tendencia: ALCISTA_NORMAL | fuerza: 50.04
+GBPCHF-OTC | turbo | filtro: 113 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 63 | tendencia: BAJISTA_NORMAL | fuerza: 58.76
+INTEL-OTC | turbo | filtro: 112 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 62 | tendencia: ALCISTA_NORMAL | fuerza: 60.93
+SP500-OTC | turbo | filtro: 111 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 61 | tendencia: BAJISTA_NORMAL | fuerza: 58.43
+XNGUSD-OTC | turbo | filtro: 110 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 60 | tendencia: BAJISTA_NORMAL | fuerza: 68.86
+TESLA-OTC | turbo | filtro: 109 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 59 | tendencia: ALCISTA_NORMAL | fuerza: 56.38
+SUIUSD-OTC | turbo | filtro: 107 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 57 | tendencia: BAJISTA_NORMAL | fuerza: 58.2
+AIG-OTC | turbo | filtro: 107 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 57 | tendencia: ALCISTA_NORMAL | fuerza: 64.43
+US30-OTC | turbo | filtro: 106 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 56 | tendencia: ALCISTA_NORMAL | fuerza: 54.57
+TAOUSD-OTC | turbo | filtro: 105 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 55 | tendencia: ALCISTA_NORMAL | fuerza: 56.03
+USDZAR-OTC | turbo | filtro: 97 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 62 | tendencia: ALCISTA_DEBIL | fuerza: 43.27
+FETUSD-OTC | turbo | filtro: 90 | mercado: RANGO | calidad: NORMAL | score mercado: 60 | tendencia: BAJISTA_NORMAL | fuerza: 50.53
+Activos ignorados/no soportados: 0
+5. Activos seleccionados: 18
+Descargando: turbo COTTON-OTC | velas objetivo: 3000
+Bloque: turbo COTTON-OTC | solicitando: 1000 | timestamp: 1788310827
+Recibidas bloque: 1000 | acumuladas: 1000
+Bloque: turbo COTTON-OTC | solicitando: 1000 | timestamp: 1788250559
+Recibidas bloque: 1000 | acumuladas: 2000
+Bloque: turbo COTTON-OTC | solicitando: 1000 | timestamp: 1788190559
+Recibidas bloque: 1000 | acumuladas: 3000
+Guardado: data_backtest_oos_d55\turbo_COTTON-OTC.csv | velas: 3000
+Descargando: turbo USDCLP-OTC | velas objetivo: 3000
+Bloque: turbo USDCLP-OTC | solicitando: 1000 | timestamp: 1788310830
+Recibidas bloque: 1000 | acumuladas: 1000
+Bloque: turbo USDCLP-OTC | solicitando: 1000 | timestamp: 1788250859
+Recibidas bloque: 1000 | acumuladas: 2000
+Bloque: turbo USDCLP-OTC | solicitando: 1000 | timestamp: 1788190559
+Recibidas bloque: 1000 | acumuladas: 3000
+Guardado: data_backtest_oos_d55\turbo_USDCLP-OTC.csv | velas: 3000
+Descargando: turbo COFFEE-OTC | velas objetivo: 3000
+Bloque: turbo COFFEE-OTC | solicitando: 1000 | timestamp: 1788310832
+Recibidas bloque: 1000 | acumuladas: 1000
+Bloque: turbo COFFEE-OTC | solicitando: 1000 | timestamp: 1788250559
+Recibidas bloque: 1000 | acumuladas: 2000
+Bloque: turbo COFFEE-OTC | solicitando: 1000 | timestamp: 1788190559
+Recibidas bloque: 1000 | acumuladas: 3000
+Guardado: data_backtest_oos_d55\turbo_COFFEE-OTC.csv | velas: 3000
+Descargando: turbo HK33-OTC | velas objetivo: 3000
+Bloque: turbo HK33-OTC | solicitando: 1000 | timestamp: 1788310836
+Recibidas bloque: 1000 | acumuladas: 1000
+Bloque: turbo HK33-OTC | solicitando: 1000 | timestamp: 1788250559
+Recibidas bloque: 1000 | acumuladas: 2000
+Bloque: turbo HK33-OTC | solicitando: 1000 | timestamp: 1788190259
+Recibidas bloque: 1000 | acumuladas: 3000
+Guardado: data_backtest_oos_d55\turbo_HK33-OTC.csv | velas: 3000
+Descargando: turbo EURGBP-OTC | velas objetivo: 3000
+Bloque: turbo EURGBP-OTC | solicitando: 1000 | timestamp: 1788310838
+Recibidas bloque: 1000 | acumuladas: 1000
+Bloque: turbo EURGBP-OTC | solicitando: 1000 | timestamp: 1788250859
+Recibidas bloque: 1000 | acumuladas: 2000
+Bloque: turbo EURGBP-OTC | solicitando: 1000 | timestamp: 1788190859
+Recibidas bloque: 1000 | acumuladas: 3000
+Guardado: data_backtest_oos_d55\turbo_EURGBP-OTC.csv | velas: 3000
+Descargando: turbo UK100-OTC | velas objetivo: 3000
+Bloque: turbo UK100-OTC | solicitando: 1000 | timestamp: 1788310841
+Recibidas bloque: 1000 | acumuladas: 1000
+Bloque: turbo UK100-OTC | solicitando: 1000 | timestamp: 1788250859
+Recibidas bloque: 1000 | acumuladas: 2000
+Bloque: turbo UK100-OTC | solicitando: 1000 | timestamp: 1788190559
+Recibidas bloque: 1000 | acumuladas: 3000
+Guardado: data_backtest_oos_d55\turbo_UK100-OTC.csv | velas: 3000
+Descargando: turbo JAPAN225:N | velas objetivo: 3000
+Bloque: turbo JAPAN225:N | solicitando: 1000 | timestamp: 1788310844
+Recibidas bloque: 1000 | acumuladas: 1000
+Bloque: turbo JAPAN225:N | solicitando: 1000 | timestamp: 1788247259
+Recibidas bloque: 1000 | acumuladas: 2000
+Bloque: turbo JAPAN225:N | solicitando: 1000 | timestamp: 1788183659
+Recibidas bloque: 1000 | acumuladas: 3000
+Guardado: data_backtest_oos_d55\turbo_JAPAN225:N.csv | velas: 3000
+Descargando: turbo GBPCHF-OTC | velas objetivo: 3000
+Bloque: turbo GBPCHF-OTC | solicitando: 1000 | timestamp: 1788310847
+Recibidas bloque: 1000 | acumuladas: 1000
+Bloque: turbo GBPCHF-OTC | solicitando: 1000 | timestamp: 1788250859
+Recibidas bloque: 1000 | acumuladas: 2000
+Bloque: turbo GBPCHF-OTC | solicitando: 1000 | timestamp: 1788190559
+Recibidas bloque: 1000 | acumuladas: 3000
+Guardado: data_backtest_oos_d55\turbo_GBPCHF-OTC.csv | velas: 3000
+Descargando: turbo INTEL-OTC | velas objetivo: 3000
+Bloque: turbo INTEL-OTC | solicitando: 1000 | timestamp: 1788310850
+Recibidas bloque: 1000 | acumuladas: 1000
+Bloque: turbo INTEL-OTC | solicitando: 1000 | timestamp: 1788250859
+Recibidas bloque: 1000 | acumuladas: 2000
+Bloque: turbo INTEL-OTC | solicitando: 1000 | timestamp: 1788190559
+Recibidas bloque: 1000 | acumuladas: 3000
+Guardado: data_backtest_oos_d55\turbo_INTEL-OTC.csv | velas: 3000
+Descargando: turbo SP500-OTC | velas objetivo: 3000
+Bloque: turbo SP500-OTC | solicitando: 1000 | timestamp: 1788310853
+Recibidas bloque: 1000 | acumuladas: 1000
+Bloque: turbo SP500-OTC | solicitando: 1000 | timestamp: 1788250559
+Recibidas bloque: 1000 | acumuladas: 2000
+Bloque: turbo SP500-OTC | solicitando: 1000 | timestamp: 1788190259
+Recibidas bloque: 1000 | acumuladas: 3000
+Guardado: data_backtest_oos_d55\turbo_SP500-OTC.csv | velas: 3000
+Descargando: turbo XNGUSD-OTC | velas objetivo: 3000
+Bloque: turbo XNGUSD-OTC | solicitando: 1000 | timestamp: 1788310855
+Recibidas bloque: 1000 | acumuladas: 1000
+Bloque: turbo XNGUSD-OTC | solicitando: 1000 | timestamp: 1788250559
+Recibidas bloque: 1000 | acumuladas: 2000
+Bloque: turbo XNGUSD-OTC | solicitando: 1000 | timestamp: 1788190559
+Recibidas bloque: 1000 | acumuladas: 3000
+Guardado: data_backtest_oos_d55\turbo_XNGUSD-OTC.csv | velas: 3000
+Descargando: turbo TESLA-OTC | velas objetivo: 3000
+Bloque: turbo TESLA-OTC | solicitando: 1000 | timestamp: 1788310858
+Recibidas bloque: 1000 | acumuladas: 1000
+Bloque: turbo TESLA-OTC | solicitando: 1000 | timestamp: 1788250559
+Recibidas bloque: 1000 | acumuladas: 2000
+Bloque: turbo TESLA-OTC | solicitando: 1000 | timestamp: 1788190259
+Recibidas bloque: 1000 | acumuladas: 3000
+Guardado: data_backtest_oos_d55\turbo_TESLA-OTC.csv | velas: 3000
+Descargando: turbo SUIUSD-OTC | velas objetivo: 3000
+Bloque: turbo SUIUSD-OTC | solicitando: 1000 | timestamp: 1788310861
+Recibidas bloque: 1000 | acumuladas: 1000
+Bloque: turbo SUIUSD-OTC | solicitando: 1000 | timestamp: 1788250559
+Recibidas bloque: 1000 | acumuladas: 2000
+Bloque: turbo SUIUSD-OTC | solicitando: 1000 | timestamp: 1788190559
+Recibidas bloque: 1000 | acumuladas: 3000
+Guardado: data_backtest_oos_d55\turbo_SUIUSD-OTC.csv | velas: 3000
+Descargando: turbo AIG-OTC | velas objetivo: 3000
+Bloque: turbo AIG-OTC | solicitando: 1000 | timestamp: 1788310864
+Recibidas bloque: 1000 | acumuladas: 1000
+Bloque: turbo AIG-OTC | solicitando: 1000 | timestamp: 1788250919
+Recibidas bloque: 1000 | acumuladas: 2000
+Bloque: turbo AIG-OTC | solicitando: 1000 | timestamp: 1788190619
+Recibidas bloque: 1000 | acumuladas: 3000
+Guardado: data_backtest_oos_d55\turbo_AIG-OTC.csv | velas: 3000
+Descargando: turbo US30-OTC | velas objetivo: 3000
+Bloque: turbo US30-OTC | solicitando: 1000 | timestamp: 1788310867
+Recibidas bloque: 1000 | acumuladas: 1000
+Bloque: turbo US30-OTC | solicitando: 1000 | timestamp: 1788250619
+Recibidas bloque: 1000 | acumuladas: 2000
+Bloque: turbo US30-OTC | solicitando: 1000 | timestamp: 1788190319
+Recibidas bloque: 1000 | acumuladas: 3000
+Guardado: data_backtest_oos_d55\turbo_US30-OTC.csv | velas: 3000
+Descargando: turbo TAOUSD-OTC | velas objetivo: 3000
+Bloque: turbo TAOUSD-OTC | solicitando: 1000 | timestamp: 1788310869
+Recibidas bloque: 1000 | acumuladas: 1000
+Bloque: turbo TAOUSD-OTC | solicitando: 1000 | timestamp: 1788250619
+Recibidas bloque: 1000 | acumuladas: 2000
+Bloque: turbo TAOUSD-OTC | solicitando: 1000 | timestamp: 1788190619
+Recibidas bloque: 1000 | acumuladas: 3000
+Guardado: data_backtest_oos_d55\turbo_TAOUSD-OTC.csv | velas: 3000
+Descargando: turbo USDZAR-OTC | velas objetivo: 3000
+Bloque: turbo USDZAR-OTC | solicitando: 1000 | timestamp: 1788310872
+Recibidas bloque: 1000 | acumuladas: 1000
+Bloque: turbo USDZAR-OTC | solicitando: 1000 | timestamp: 1788250919
+Recibidas bloque: 1000 | acumuladas: 2000
+Bloque: turbo USDZAR-OTC | solicitando: 1000 | timestamp: 1788190619
+Recibidas bloque: 1000 | acumuladas: 3000
+Guardado: data_backtest_oos_d55\turbo_USDZAR-OTC.csv | velas: 3000
+Descargando: turbo FETUSD-OTC | velas objetivo: 3000
+Bloque: turbo FETUSD-OTC | solicitando: 1000 | timestamp: 1788310875
+Recibidas bloque: 1000 | acumuladas: 1000
+Bloque: turbo FETUSD-OTC | solicitando: 1000 | timestamp: 1788250619
+Recibidas bloque: 1000 | acumuladas: 2000
+Bloque: turbo FETUSD-OTC | solicitando: 1000 | timestamp: 1788190319
+Recibidas bloque: 1000 | acumuladas: 3000
+Guardado: data_backtest_oos_d55\turbo_FETUSD-OTC.csv | velas: 3000
+Descarga terminada.
+Archivos descargados: 18
+Carpeta: data_backtest_oos_d55

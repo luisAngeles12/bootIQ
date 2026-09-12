@@ -97,7 +97,16 @@ def construir_evidencia_operacion(senal, ctx=None):
 
     if not isinstance(pa_evidencias_raw, list):
         pa_evidencias_raw = []
-    
+    # ========================================================
+    # EVIDENCIAS GENERADAS POR LA ESTRATEGIA
+    # ========================================================
+    estrategia_evidencias_raw = senal.get(
+        "estrategia_evidencias",
+        ctx.get("estrategia_evidencias", []),
+    )
+
+    if not isinstance(estrategia_evidencias_raw, list):
+        estrategia_evidencias_raw = []
     if not isinstance(setup_completo, dict):
         setup_completo = {}
 
@@ -148,6 +157,17 @@ def construir_evidencia_operacion(senal, ctx=None):
         "indice_confirmacion_ia": senal.get("indice_confirmacion_ia", 0),
         "motivo_ejecucion": normalizar(senal.get("motivo_ejecucion")),
         "puntaje": senal.get("puntaje", 0),
+
+        # ====================================================
+        # D7.9 — RSI ESTRUCTURADO PARA CEREBRO
+        # ====================================================
+        # Solo transporta el RSI ya calculado aguas arriba.
+        # No decide ni modifica la señal.
+        "rsi": senal.get(
+            "rsi",
+            ctx.get("rsi", 0)
+        ),
+
         "prioridad": senal.get("prioridad", 0),
         "score_final": senal.get("score_final", 0),
         "estado_operativo_setup": normalizar(
@@ -184,6 +204,37 @@ def construir_evidencia_operacion(senal, ctx=None):
         "score_mercado": senal.get(
             "score_mercado",
             ctx.get("score_mercado", 0)
+        ),
+
+        # ====================================================
+        # D7.7 — VALIDACIONES TECNICAS ESTRUCTURADAS
+        # ====================================================
+        #
+        # constructor_evidencia NO decide.
+        # Solo transporta al Cerebro el resultado exacto
+        # producido previamente por estrategia.py.
+        "validacion_mercado_ok": senal.get(
+            "validacion_mercado_ok",
+            ctx.get("validacion_mercado_ok")
+        ),
+
+        "razon_validacion_mercado": normalizar(
+            senal.get(
+                "razon_validacion_mercado",
+                ctx.get("razon_validacion_mercado")
+            )
+        ),
+
+        "validacion_accion_precio_ok": senal.get(
+            "validacion_accion_precio_ok",
+            ctx.get("validacion_accion_precio_ok")
+        ),
+
+        "razon_validacion_accion_precio": normalizar(
+            senal.get(
+                "razon_validacion_accion_precio",
+                ctx.get("razon_validacion_accion_precio")
+            )
         ),
 
         "estado_tendencia": normalizar(
@@ -265,10 +316,15 @@ def construir_evidencia_operacion(senal, ctx=None):
             pa_evidencias_raw,
             "price_action"
         ),
-        
+
         "mercado_evidencias": normalizar_lista_evidencias(
             mercado_evidencias_raw,
             "mercado"
+        ),
+
+        "estrategia_evidencias": normalizar_lista_evidencias(
+            estrategia_evidencias_raw,
+            "estrategia"
         ),
     }
 
@@ -281,25 +337,6 @@ def imprimir_evidencia(evidencia):
         print(clave + ":", valor)
 
 
-if __name__ == "__main__":
-    ejemplo_senal = {
-        "activo": "BIDU-OTC",
-        "direccion": "put",
-        "patron": "CHOCH bajista",
-        "puntaje": 22,
-        "prioridad": 4,
-        "score_final": 178,
-        "consenso": 98,
-        "nivel_consenso": "PREMIUM",
-        "tipo_mercado": "TENDENCIA_BAJISTA",
-        "calidad_mercado": "NORMAL",
-        "estado_tendencia": "BAJISTA_FUERTE",
-        "pa_tipo": "IMPULSO_BAJISTA_FUERTE",
-        "pa_direccion": "PUT",
-    }
-
-    evidencia = construir_evidencia_operacion(ejemplo_senal)
-    imprimir_evidencia(evidencia)
 
 def construir_evidencias_mercado(ctx):
     """
@@ -588,3 +625,23 @@ def construir_evidencias_mercado(ctx):
         })
 
     return evidencias
+
+if __name__ == "__main__":
+    ejemplo_senal = {
+        "activo": "BIDU-OTC",
+        "direccion": "put",
+        "patron": "CHOCH bajista",
+        "puntaje": 22,
+        "prioridad": 4,
+        "score_final": 178,
+        "consenso": 98,
+        "nivel_consenso": "PREMIUM",
+        "tipo_mercado": "TENDENCIA_BAJISTA",
+        "calidad_mercado": "NORMAL",
+        "estado_tendencia": "BAJISTA_FUERTE",
+        "pa_tipo": "IMPULSO_BAJISTA_FUERTE",
+        "pa_direccion": "PUT",
+    }
+
+    evidencia = construir_evidencia_operacion(ejemplo_senal)
+    imprimir_evidencia(evidencia)

@@ -4,6 +4,7 @@ from zonas import *
 from mercado import obtener_velas
 from motor_setup import (enriquecer_senal_con_setup,clasificar_setup_estrategico)
 
+from motor_candidatos import seleccionar_mejor_candidata_v3
 import time
 import estado
 
@@ -50,7 +51,12 @@ def leer_contexto_grafico(activo):
     closes = data["close"]
     highs = data["high"]
     lows = data["low"]
+    froms = data.get("from", [])
 
+    if len(froms) != len(closes):
+        return None
+
+    vela_senal_from = int(froms[-1])
     if len(closes) < 130:
         return None
 
@@ -239,7 +245,7 @@ def leer_contexto_grafico(activo):
         resistencia,
         vol
     )
-    
+
     diagnostico_pa_put = diagnostico_accion_precio_zona(
         "put",
         opens,
@@ -250,14 +256,19 @@ def leer_contexto_grafico(activo):
         resistencia,
         vol
     )
-    
+
     accion_precio_call = diagnostico_pa_call.get("accion", "SIN_DATOS")
     razon_accion_precio_call = diagnostico_pa_call.get("razon", "")
-    
+
     accion_precio_put = diagnostico_pa_put.get("accion", "SIN_DATOS")
     razon_accion_precio_put = diagnostico_pa_put.get("razon", "")
     return {
         "activo": activo,
+
+        # PASO 5.5A
+        "froms": froms,
+        "vela_senal_from": vela_senal_from,
+
         "opens": opens,
         "closes": closes,
         "highs": highs,
@@ -357,10 +368,10 @@ def leer_contexto_grafico(activo):
 
         "accion_precio_call": accion_precio_call,
         "razon_accion_precio_call": razon_accion_precio_call,
-        
+
         "accion_precio_put": accion_precio_put,
         "razon_accion_precio_put": razon_accion_precio_put,
-        
+
         # Compatibilidad vieja: se mantiene para no romper otros módulos.
         "accion_precio": accion_precio_call,
         "razon_accion_precio": razon_accion_precio_call,
@@ -384,136 +395,297 @@ def leer_contexto_grafico(activo):
 
 
 def diagnosticar_base_estrategia(senal, ctx):
+    """
+    Detecta hechos estratégicos sin clasificarlos como fortaleza o riesgo.
+
+    Esta capa no decide si una evidencia es favorable o desfavorable.
+    Solo describe lo observado y lo entrega al Cerebro Único para que
+    este lo interprete junto con el aprendizaje histórico.
+
+    Se conservan las claves ``riesgos_base`` y ``fortalezas_base`` vacías
+    para mantener compatibilidad con módulos anteriores.
+    """
     try:
         patron = str(senal.get("patron", "")).lower()
         direccion = str(senal.get("direccion", "")).lower()
+        direccion_mayus = direccion.upper() or "NEUTRA"
 
-        accion_precio = str(senal.get("accion_precio", "SIN_DATOS")).upper()
-        pa_tipo = str(ctx.get("pa_tipo", "SIN_CONTEXTO_CLARO")).upper()
-        pa_direccion = str(ctx.get("pa_direccion", "NEUTRA")).upper()
-        fuerza_tendencia = float(ctx.get("fuerza_tendencia", 0) or 0)
-        direccion_tendencia = str(ctx.get("direccion_tendencia", "NEUTRA")).upper()
+        accion_precio = str(
+            senal.get("accion_precio", "SIN_DATOS")
+        ).upper()
+        pa_tipo = str(
+            ctx.get("pa_tipo", "SIN_CONTEXTO_CLARO")
+        ).upper()
+        pa_direccion = str(
+            ctx.get("pa_direccion", "NEUTRA")
+        ).upper()
+        fuerza_tendencia = float(
+            ctx.get("fuerza_tendencia", 0) or 0
+        )
+        direccion_tendencia = str(
+            ctx.get("direccion_tendencia", "NEUTRA")
+        ).upper()
 
-        diagnostico = {
-            "base_estrategia": "MEDIA",
-            "riesgos_base": [],
-            "fortalezas_base": []
-        }
-
-        def riesgo(nombre):
-            if nombre not in diagnostico["riesgos_base"]:
-                diagnostico["riesgos_base"].append(nombre)
-
-        def fortaleza(nombre):
-            if nombre not in diagnostico["fortalezas_base"]:
-                diagnostico["fortalezas_base"].append(nombre)
-
-        confianza_pa = evaluar_confianza_price_action(ctx, direccion)
-        nivel_pa = str(confianza_pa.get("nivel", "NINGUNA")).upper()
-        pa_valido = bool(confianza_pa.get("pa_valido", False))
-
-        # ZONAS
-        if direccion == "call" and accion_precio == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA":
-            riesgo("CALL_RESISTENCIA_SIN_RUPTURA")
-
-        if direccion == "put" and accion_precio == "PUT_SOPORTE_CERCA_SIN_RUPTURA":
-            riesgo("PUT_SOPORTE_SIN_RUPTURA")
-
-        # PRICE ACTION
-        if pa_direccion == "NEUTRA" or pa_tipo == "SIN_CONTEXTO_CLARO":
-            riesgo("SIN_CONTEXTO_CLARO")
-
-        elif pa_direccion != direccion.upper():
-            riesgo("PA_CONTRA_" + direccion.upper())
-
-        elif pa_valido and nivel_pa in ["MEDIA", "ALTA"]:
-            fortaleza("PA_A_FAVOR_" + direccion.upper() + "_" + nivel_pa)
-
-        else:
-            riesgo("PA_A_FAVOR_" + direccion.upper() + "_DEBIL")
-
-        # # No todo PA confirmado es fortaleza. Solo dejamos los que mostraron mejor comportamiento.
-        # if pa_tipo in ["RECHAZO_COMPRADOR_CONFIRMADO", "IMPULSO_BAJISTA_FUERTE"]:
-        #     fortaleza(pa_tipo)
-
-        # if pa_tipo in ["IMPULSO_ALCISTA_FUERTE", "RECHAZO_VENDEDOR_CONFIRMADO"]:
-        #     riesgo(pa_tipo + "_DEBIL_HISTORICO")
-
-        # TENDENCIA
-        tendencia_a_favor = (
-            direccion == "call" and direccion_tendencia == "ALCISTA"
-        ) or (
-            direccion == "put" and direccion_tendencia == "BAJISTA"
+        confianza_pa = evaluar_confianza_price_action(
+            ctx,
+            direccion,
+        )
+        nivel_pa = str(
+            confianza_pa.get("nivel", "NINGUNA")
+        ).upper()
+        pa_valido = bool(
+            confianza_pa.get("pa_valido", False)
         )
 
-        if tendencia_a_favor and fuerza_tendencia >= 65:
-            riesgo("TENDENCIA_FUERTE_NO_CONFIABLE")
-        elif tendencia_a_favor:
-            riesgo("TENDENCIA_A_FAVOR_NO_PREDICTIVA")
-        elif not tendencia_a_favor and direccion_tendencia in ["ALCISTA", "BAJISTA"]:
-            riesgo("CONTRA_TENDENCIA")
+        tendencia_a_favor = (
+            direccion == "call"
+            and direccion_tendencia == "ALCISTA"
+        ) or (
+            direccion == "put"
+            and direccion_tendencia == "BAJISTA"
+        )
 
-        if fuerza_tendencia < 45:
-            riesgo("FUERZA_TENDENCIA_BAJA")
+        evidencias = []
+        tipos_registrados = set()
 
-        # ESTRATEGIAS
+        def evidencia(tipo, razon, datos=None):
+            tipo = str(tipo).strip().upper()
+            if not tipo or tipo in tipos_registrados:
+                return
+
+            tipos_registrados.add(tipo)
+            evidencias.append({
+                "modulo": "estrategia",
+                "fuente": "diagnosticar_base_estrategia",
+                "tipo": tipo,
+                "direccion": direccion_mayus,
+                "peso": 0,
+                "fuerza": 0,
+                "confirmada": True,
+                "razon": razon,
+                "categoria": "HECHO_ESTRATEGICO",
+                "datos": datos or {},
+            })
+
+        # Ubicación de la señal respecto a soporte y resistencia.
+        if (
+            direccion == "call"
+            and accion_precio
+            == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA"
+        ):
+            evidencia(
+                "CALL_RESISTENCIA_CERCA_SIN_RUPTURA",
+                "La señal CALL está cerca de resistencia sin ruptura confirmada.",
+                {"accion_precio": accion_precio},
+            )
+
+        if (
+            direccion == "put"
+            and accion_precio
+            == "PUT_SOPORTE_CERCA_SIN_RUPTURA"
+        ):
+            evidencia(
+                "PUT_SOPORTE_CERCA_SIN_RUPTURA",
+                "La señal PUT está cerca de soporte sin ruptura confirmada.",
+                {"accion_precio": accion_precio},
+            )
+
+        # Hechos de Price Action. No se etiquetan como buenos o malos.
+        if pa_direccion == "NEUTRA" or pa_tipo == "SIN_CONTEXTO_CLARO":
+            evidencia(
+                "PA_SIN_CONTEXTO_CLARO",
+                "Price Action no presenta una dirección clara.",
+                {
+                    "pa_tipo": pa_tipo,
+                    "pa_direccion": pa_direccion,
+                    "nivel_pa": nivel_pa,
+                    "pa_valido": pa_valido,
+                },
+            )
+        elif pa_direccion == direccion_mayus:
+            evidencia(
+                "PA_DIRECCION_A_FAVOR",
+                "La dirección de Price Action coincide con la señal candidata.",
+                {
+                    "pa_tipo": pa_tipo,
+                    "pa_direccion": pa_direccion,
+                    "nivel_pa": nivel_pa,
+                    "pa_valido": pa_valido,
+                },
+            )
+        else:
+            evidencia(
+                "PA_DIRECCION_CONTRARIA",
+                "La dirección de Price Action contradice la señal candidata.",
+                {
+                    "pa_tipo": pa_tipo,
+                    "pa_direccion": pa_direccion,
+                    "nivel_pa": nivel_pa,
+                    "pa_valido": pa_valido,
+                },
+            )
+
+        evidencia(
+            "PA_NIVEL_" + nivel_pa,
+            "Nivel de confianza detectado por Price Action: " + nivel_pa + ".",
+            {
+                "nivel_pa": nivel_pa,
+                "pa_valido": pa_valido,
+                "pa_tipo": pa_tipo,
+            },
+        )
+
+        # Hechos de tendencia. Tampoco se convierten aquí en riesgo o fortaleza.
+        if tendencia_a_favor:
+            evidencia(
+                "TENDENCIA_A_FAVOR",
+                "La dirección de la tendencia coincide con la señal candidata.",
+                {
+                    "direccion_tendencia": direccion_tendencia,
+                    "fuerza_tendencia": fuerza_tendencia,
+                },
+            )
+        elif direccion_tendencia in ["ALCISTA", "BAJISTA"]:
+            evidencia(
+                "TENDENCIA_CONTRARIA",
+                "La dirección de la tendencia contradice la señal candidata.",
+                {
+                    "direccion_tendencia": direccion_tendencia,
+                    "fuerza_tendencia": fuerza_tendencia,
+                },
+            )
+        else:
+            evidencia(
+                "TENDENCIA_SIN_DIRECCION_CLARA",
+                "La tendencia no presenta una dirección definida.",
+                {
+                    "direccion_tendencia": direccion_tendencia,
+                    "fuerza_tendencia": fuerza_tendencia,
+                },
+            )
+
+        if fuerza_tendencia >= 65:
+            nivel_fuerza = "ALTA"
+        elif fuerza_tendencia >= 45:
+            nivel_fuerza = "MEDIA"
+        else:
+            nivel_fuerza = "BAJA"
+
+        evidencia(
+            "FUERZA_TENDENCIA_" + nivel_fuerza,
+            "Fuerza de tendencia detectada: " + nivel_fuerza + ".",
+            {"fuerza_tendencia": fuerza_tendencia},
+        )
+
+        # Hechos propios de cada familia estratégica.
         if "choch" in patron:
-            if fuerza_tendencia < 55:
-                riesgo("CHOCH_CON_TENDENCIA_DEBIL")
-            if pa_direccion == direccion.upper() and pa_valido and nivel_pa in ["MEDIA", "ALTA"]:
-                fortaleza("CHOCH_CON_PA_VALIDO")
-            else:
-                riesgo("CHOCH_SIN_PA_VALIDO")
+            evidencia(
+                "SETUP_CHOCH",
+                "La señal candidata pertenece a la familia CHOCH.",
+                {
+                    "pa_valido": pa_valido,
+                    "nivel_pa": nivel_pa,
+                    "pa_direccion": pa_direccion,
+                    "fuerza_tendencia": fuerza_tendencia,
+                },
+            )
+            evidencia(
+                "CHOCH_PA_COINCIDE"
+                if pa_direccion == direccion_mayus
+                else "CHOCH_PA_NO_COINCIDE",
+                "Relación observada entre CHOCH y la dirección de Price Action.",
+                {
+                    "pa_valido": pa_valido,
+                    "nivel_pa": nivel_pa,
+                    "pa_direccion": pa_direccion,
+                },
+            )
 
         if "liquidity sweep" in patron:
-            if (
-                ("RECHAZO" in pa_tipo or "AGOTAMIENTO" in pa_tipo)
-                and pa_valido
-                and nivel_pa in ["MEDIA", "ALTA"]
-            ):
-                fortaleza("SWEEP_CON_PA_VALIDO")
-            else:
-                riesgo("SWEEP_CON_CONFIRMACION_PA_DEBIL")
-
-            if pa_tipo == "SIN_CONTEXTO_CLARO":
-                riesgo("SWEEP_SIN_CONFIRMACION_PA")
+            evidencia(
+                "SETUP_LIQUIDITY_SWEEP",
+                "La señal candidata pertenece a la familia liquidity sweep.",
+                {
+                    "pa_tipo": pa_tipo,
+                    "pa_valido": pa_valido,
+                    "nivel_pa": nivel_pa,
+                },
+            )
+            evidencia(
+                "SWEEP_CON_RECHAZO_O_AGOTAMIENTO"
+                if ("RECHAZO" in pa_tipo or "AGOTAMIENTO" in pa_tipo)
+                else "SWEEP_SIN_RECHAZO_O_AGOTAMIENTO",
+                "Relación observada entre el sweep y el contexto de Price Action.",
+                {
+                    "pa_tipo": pa_tipo,
+                    "pa_valido": pa_valido,
+                    "nivel_pa": nivel_pa,
+                },
+            )
 
         if "pullback" in patron:
-            if tendencia_a_favor and 50 <= fuerza_tendencia <= 64 and pa_valido:
-                fortaleza("PULLBACK_CON_PA_Y_TENDENCIA")
-            else:
-                riesgo("PULLBACK_TENDENCIA_INSUFICIENTE")
+            evidencia(
+                "SETUP_PULLBACK",
+                "La señal candidata pertenece a la familia pullback.",
+                {
+                    "tendencia_a_favor": tendencia_a_favor,
+                    "fuerza_tendencia": fuerza_tendencia,
+                    "pa_valido": pa_valido,
+                },
+            )
 
         if "reacción" in patron or "reaccion" in patron:
-            if ("RECHAZO" in pa_tipo or "AGOTAMIENTO" in pa_tipo) and pa_valido:
-                fortaleza("REACCION_CONFIRMADA")
-            else:
-                riesgo("REACCION_SIN_CONFIRMACION_FUERTE")
+            evidencia(
+                "SETUP_REACCION_ZONA",
+                "La señal candidata pertenece a la familia reacción en zona.",
+                {
+                    "pa_tipo": pa_tipo,
+                    "pa_valido": pa_valido,
+                    "nivel_pa": nivel_pa,
+                },
+            )
 
         if "continuación" in patron or "continuacion" in patron:
-            if tendencia_a_favor and fuerza_tendencia >= 55 and pa_valido:
-                fortaleza("CONTINUACION_CON_PA_VALIDO")
-            else:
-                riesgo("CONTINUACION_TENDENCIA_INSUFICIENTE")
+            evidencia(
+                "SETUP_CONTINUACION",
+                "La señal candidata pertenece a la familia continuación.",
+                {
+                    "tendencia_a_favor": tendencia_a_favor,
+                    "fuerza_tendencia": fuerza_tendencia,
+                    "pa_valido": pa_valido,
+                },
+            )
 
-        riesgos = len(diagnostico["riesgos_base"])
-        fortalezas = len(diagnostico["fortalezas_base"])
-
-        if fortalezas >= 3 and riesgos <= 1:
-            diagnostico["base_estrategia"] = "FUERTE"
-        elif riesgos >= 3 and fortalezas <= 1:
-            diagnostico["base_estrategia"] = "DEBIL"
-        else:
-            diagnostico["base_estrategia"] = "MEDIA"
-
-        return diagnostico
+        return {
+            # La clasificación queda pendiente del Cerebro Único.
+            "base_estrategia": "MEDIA",
+            "riesgos_base": [],
+            "fortalezas_base": [],
+            "evidencias_base": evidencias,
+            "clasificacion_pendiente_cerebro": True,
+        }
 
     except Exception as e:
         return {
             "base_estrategia": "ERROR",
-            "riesgos_base": ["ERROR_DIAGNOSTICO_BASE"],
+            "riesgos_base": [],
             "fortalezas_base": [],
-            "error_base": str(e)
+            "evidencias_base": [{
+                "modulo": "estrategia",
+                "fuente": "diagnosticar_base_estrategia",
+                "tipo": "ERROR_DIAGNOSTICO_BASE",
+                "direccion": str(
+                    senal.get("direccion", "NEUTRA")
+                ).upper(),
+                "peso": 0,
+                "fuerza": 0,
+                "confirmada": False,
+                "razon": str(e),
+                "categoria": "ERROR_DATOS",
+                "datos": {},
+            }],
+            "clasificacion_pendiente_cerebro": True,
+            "error_base": str(e),
         }
 
 def preparar_contexto_mercado(activo, ctx):
@@ -647,8 +819,31 @@ def validar_contexto_base(activo, ctx):
     ctx["contexto_base_valido"] = not bool(riesgos_contexto)
     ctx["mercado_evidencias"] = mercado_evidencias
 
-    # Siempre continúa.
-    # El Cerebro Único decidirá.
+    # ==========================================================
+    # F5.7 — INVARIANTE DE ELEGIBILIDAD DE MERCADO
+    # ==========================================================
+    # LIMPIO y NORMAL pertenecen al universo operativo.
+    #
+    # SUCIO, CAOTICO, SIN_DATOS y cualquier otra calidad
+    # no operable quedan fuera aunque el activo hubiera sido
+    # LIMPIO/NORMAL durante el escaneo inicial.
+    #
+    # Esto NO es una decisión de trading.
+    # Solo protege la elegibilidad del universo.
+    #
+    # El resto de riesgos (score, tendencia, SR, PA, etc.)
+    # continúa como evidencia para el Cerebro Único.
+    if calidad not in ["LIMPIO", "NORMAL"]:
+        print(
+            "ACTIVO DESCARTADO POR CAMBIO DE CALIDAD:",
+            activo,
+            "| calidad:",
+            calidad,
+            "| score:",
+            score,
+        )
+        return False
+
     return True
 def evaluar_senal_candidata(activo, ctx, senal):
     if senal is None:
@@ -657,9 +852,9 @@ def evaluar_senal_candidata(activo, ctx, senal):
     en_cooldown = estrategia_en_cooldown(
         senal.get("patron", "")
     )
-    
+
     senal["estrategia_en_cooldown"] = bool(en_cooldown)
-    
+
     if en_cooldown:
         print(
             senal["direccion"].upper(),
@@ -667,11 +862,11 @@ def evaluar_senal_candidata(activo, ctx, senal):
             activo,
             senal.get("patron", "")
         )
-    
+
         riesgos_actuales = str(
             senal.get("riesgos_base", "")
         ).strip("|")
-    
+
         senal["riesgos_base"] = "|".join(
             x for x in [
                 riesgos_actuales,
@@ -679,7 +874,7 @@ def evaluar_senal_candidata(activo, ctx, senal):
             ]
             if x
         )
-    
+
         senal["razon"] = (
             str(senal.get("razon", ""))
             + ", estrategia actualmente en cooldown; "
@@ -702,26 +897,37 @@ def evaluar_senal_candidata(activo, ctx, senal):
         "estado_operativo_setup",
         "LISTO"
     )
-    
+
     senal["requiere_ruptura_setup"] = setup.get(
         "requiere_ruptura_setup",
         False
     )
-    
+
     senal["requiere_confirmacion_setup"] = setup.get(
         "requiere_confirmacion_setup",
         False
     )
-    
+
     senal["riesgo_estructural_critico_setup"] = setup.get(
         "riesgo_estructural_critico_setup",
         False
     )
-    senal["puntaje"] = senal.get("puntaje", 0) + setup.get("puntaje_extra_setup", 0)
-
-    if setup.get("riesgo_extra_setup", 0) >= 4:
-        senal["puntaje"] -= 2
-
+    # ==========================================================
+    # BOOTIQ V3 — EL SETUP SOLO APORTA EVIDENCIA
+    # ==========================================================
+    # estrategia.py no modifica el puntaje de la señal.
+    #
+    # Los valores del setup ya fueron almacenados en:
+    # - puntaje_extra_setup
+    # - riesgo_extra_setup
+    # - balance_setup
+    # - calidad_setup
+    # - modo_entrada_setup
+    #
+    # El Cerebro Único será responsable de interpretar
+    # estos valores y convertirlos en confianza o decisión.
+    senal["puntaje_antes_setup"] = senal.get("puntaje", 0)
+    senal["setup_modifico_puntaje"] = False
     ok_mercado, razon_validacion_mercado = validar_estrategia_por_mercado(
         senal,
         ctx
@@ -729,13 +935,13 @@ def evaluar_senal_candidata(activo, ctx, senal):
 
     senal["validacion_mercado_ok"] = ok_mercado
     senal["razon_validacion_mercado"] = razon_validacion_mercado
-    
+
     if not ok_mercado:
         senal["riesgos_base"] = (
-            str(senal.get("riesgos_base", "")) 
+            str(senal.get("riesgos_base", ""))
             + "|MERCADO_NO_VALIDADO"
         ).strip("|")
-    
+
         senal["razon"] += (
             ", advertencia mercado: "
             + razon_validacion_mercado
@@ -776,18 +982,18 @@ def evaluar_senal_candidata(activo, ctx, senal):
     if not ok_zona_sr:
         senal["validacion_zona_sr_ok"] = False
         senal["razon_zona_sr"] = razon_zona_sr
-    
+
         senal["riesgos_base"] = (
             str(senal.get("riesgos_base", ""))
             + "|ZONA_SR_NO_VALIDADA"
         ).strip("|")
-    
+
         senal["razon"] += (
             ", advertencia zona SR: "
             + razon_zona_sr
             + ", enviada al cerebro único como evidencia"
         )
-    
+
     else:
         senal["validacion_zona_sr_ok"] = True
         senal["razon_zona_sr"] = razon_zona_sr
@@ -807,77 +1013,195 @@ def evaluar_senal_candidata(activo, ctx, senal):
 
     riesgos_previos = str(senal.get("riesgos_base", "")).strip("|")
     fortalezas_previas = str(senal.get("fortalezas_base", "")).strip("|")
-    
+
     diagnostico_base = diagnosticar_base_estrategia(senal, ctx)
-    
+
     riesgos_nuevos = "|".join(diagnostico_base.get("riesgos_base", []))
     fortalezas_nuevas = "|".join(diagnostico_base.get("fortalezas_base", []))
-    
+
     senal["base_estrategia"] = diagnostico_base.get("base_estrategia", "MEDIA")
-    
+
     senal["riesgos_base"] = "|".join(
         x for x in [riesgos_previos, riesgos_nuevos]
         if x
     )
-    
+
     senal["fortalezas_base"] = "|".join(
         x for x in [fortalezas_previas, fortalezas_nuevas]
         if x
     )
 
+    # Incorporar los hechos detectados por la capa estratégica.
+    # Se mantienen con peso cero: estrategia.py observa; el Cerebro decide.
+    evidencias_base = diagnostico_base.get("evidencias_base", [])
+    if not isinstance(evidencias_base, list):
+        evidencias_base = []
+
+    evidencias_actuales = senal.get("estrategia_evidencias", [])
+    if not isinstance(evidencias_actuales, list):
+        evidencias_actuales = []
+
+    tipos_actuales = {
+        str(item.get("tipo", "")).upper()
+        for item in evidencias_actuales
+        if isinstance(item, dict)
+    }
+
+    for item in evidencias_base:
+        if not isinstance(item, dict):
+            continue
+        tipo_item = str(item.get("tipo", "")).upper()
+        if tipo_item and tipo_item not in tipos_actuales:
+            evidencias_actuales.append(item)
+            tipos_actuales.add(tipo_item)
+
+    senal["estrategia_evidencias"] = evidencias_actuales
+    senal["clasificacion_base_pendiente_cerebro"] = bool(
+        diagnostico_base.get(
+            "clasificacion_pendiente_cerebro",
+            True,
+        )
+    )
+
     patron_lower = str(senal.get("patron", "")).lower()
     accion_precio = senal.get("accion_precio", "")
 
+    # ==========================================================
+    # BOOTIQ V3 — EVIDENCIAS CHOCH SIN ALTERAR PUNTAJE
+    # ==========================================================
+    evidencias_estrategia = senal.get("estrategia_evidencias", [])
+
+    if not isinstance(evidencias_estrategia, list):
+        evidencias_estrategia = []
+
     if "choch" in patron_lower:
         if accion_precio in ["CALL_ZONA_NEUTRA", "PUT_ZONA_NEUTRA"]:
-            senal["puntaje"] += 2
-            senal["razon"] += ", CHOCH en zona neutra"
+            evidencias_estrategia.append({
+                "modulo": "estrategia",
+                "fuente": "estrategia",
+                "tipo": "CHOCH_ZONA_NEUTRA",
+                "direccion": senal.get("direccion", "neutra").upper(),
+                "peso": 0,
+                "fuerza": 0,
+                "confirmada": True,
+                "razon": "CHOCH detectado en zona neutra.",
+                "categoria": "ESTRATEGIA_PRICE_ACTION",
+                "datos": {
+                    "accion_precio": accion_precio,
+                    "ajuste_anterior": 2,
+                },
+            })
 
-        if accion_precio == "RECHAZO_COMPRADOR_SOPORTE" and senal["direccion"] == "call":
-            senal["puntaje"] += 4
-            senal["razon"] += ", CHOCH apoyado por rechazo comprador en soporte"
+        if (
+            accion_precio == "RECHAZO_COMPRADOR_SOPORTE"
+            and senal["direccion"] == "call"
+        ):
+            evidencias_estrategia.append({
+                "modulo": "estrategia",
+                "fuente": "estrategia",
+                "tipo": "CHOCH_RECHAZO_COMPRADOR_SOPORTE",
+                "direccion": "CALL",
+                "peso": 0,
+                "fuerza": 0,
+                "confirmada": True,
+                "razon": "CHOCH apoyado por rechazo comprador en soporte.",
+                "categoria": "ESTRATEGIA_PRICE_ACTION",
+                "datos": {
+                    "accion_precio": accion_precio,
+                    "ajuste_anterior": 4,
+                },
+            })
 
-        if accion_precio == "RECHAZO_VENDEDOR_RESISTENCIA" and senal["direccion"] == "put":
-            senal["puntaje"] += 4
-            senal["razon"] += ", CHOCH apoyado por rechazo vendedor en resistencia"
+        if (
+            accion_precio == "RECHAZO_VENDEDOR_RESISTENCIA"
+            and senal["direccion"] == "put"
+        ):
+            evidencias_estrategia.append({
+                "modulo": "estrategia",
+                "fuente": "estrategia",
+                "tipo": "CHOCH_RECHAZO_VENDEDOR_RESISTENCIA",
+                "direccion": "PUT",
+                "peso": 0,
+                "fuerza": 0,
+                "confirmada": True,
+                "razon": "CHOCH apoyado por rechazo vendedor en resistencia.",
+                "categoria": "ESTRATEGIA_PRICE_ACTION",
+                "datos": {
+                    "accion_precio": accion_precio,
+                    "ajuste_anterior": 4,
+                },
+            })
 
-        if accion_precio == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA" and senal["direccion"] == "call":
-            senal["puntaje"] -= 3
-            senal["razon"] += ", CHOCH cerca de resistencia sin ruptura: penalizado, no bloqueado"
+        if (
+            accion_precio == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA"
+            and senal["direccion"] == "call"
+        ):
+            evidencias_estrategia.append({
+                "modulo": "estrategia",
+                "fuente": "estrategia",
+                "tipo": "CHOCH_RESISTENCIA_CERCANA_SIN_RUPTURA",
+                "direccion": "CALL",
+                "peso": 0,
+                "fuerza": 0,
+                "confirmada": True,
+                "razon": "CHOCH cerca de resistencia sin ruptura confirmada.",
+                "categoria": "RIESGO_PRICE_ACTION",
+                "datos": {
+                    "accion_precio": accion_precio,
+                    "ajuste_anterior": -3,
+                },
+            })
 
-        if accion_precio == "PUT_SOPORTE_CERCA_SIN_RUPTURA" and senal["direccion"] == "put":
-            senal["puntaje"] -= 3
-            senal["razon"] += ", CHOCH cerca de soporte sin ruptura: penalizado, no bloqueado"
+        if (
+            accion_precio == "PUT_SOPORTE_CERCA_SIN_RUPTURA"
+            and senal["direccion"] == "put"
+        ):
+            evidencias_estrategia.append({
+                "modulo": "estrategia",
+                "fuente": "estrategia",
+                "tipo": "CHOCH_SOPORTE_CERCANO_SIN_RUPTURA",
+                "direccion": "PUT",
+                "peso": 0,
+                "fuerza": 0,
+                "confirmada": True,
+                "razon": "CHOCH cerca de soporte sin ruptura confirmada.",
+                "categoria": "RIESGO_PRICE_ACTION",
+                "datos": {
+                    "accion_precio": accion_precio,
+                    "ajuste_anterior": -3,
+                },
+            })
 
+    senal["estrategia_evidencias"] = evidencias_estrategia
     if diagnostico_pa.get("permite") is False:
         razon_pa = diagnostico_pa.get("razon", "").lower()
-    
+
         senal["validacion_accion_precio_ok"] = False
         senal["razon_validacion_accion_precio"] = diagnostico_pa.get("razon", "")
-    
+
         senal["riesgos_base"] = (
             str(senal.get("riesgos_base", ""))
             + "|ACCION_PRECIO_NO_VALIDADA"
         ).strip("|")
-    
+
         if "resistencia cerca" in razon_pa:
             senal["riesgos_base"] = (
                 str(senal.get("riesgos_base", ""))
                 + "|ESPERANDO_RUPTURA_RESISTENCIA"
             ).strip("|")
-    
+
         elif "soporte cerca" in razon_pa:
             senal["riesgos_base"] = (
                 str(senal.get("riesgos_base", ""))
                 + "|ESPERANDO_RUPTURA_SOPORTE"
             ).strip("|")
-    
+
         senal["razon"] += (
             ", advertencia acción precio: "
             + diagnostico_pa.get("razon", "")
             + ", enviada al cerebro único como evidencia"
         )
-    
+
     else:
         senal["validacion_accion_precio_ok"] = True
         senal["razon_validacion_accion_precio"] = diagnostico_pa.get("razon", "")
@@ -885,16 +1209,16 @@ def evaluar_senal_candidata(activo, ctx, senal):
         ctx,
         senal["direccion"]
     )
-    
+
     senal["vela_contraria_reciente"] = bloqueada_contraria
     senal["razon_vela_contraria"] = razon_contraria
-    
+
     if bloqueada_contraria:
         senal["riesgos_base"] = (
             str(senal.get("riesgos_base", ""))
             + "|VELA_CONTRARIA_RECIENTE"
         ).strip("|")
-    
+
         senal["razon"] += (
             ", advertencia vela contraria reciente: "
             + razon_contraria
@@ -911,17 +1235,17 @@ def evaluar_senal_candidata(activo, ctx, senal):
         precio_zona,
         ctx["vol"]
     )
-    
+
     senal["zona_operada"] = bloqueada
     senal["razon_zona_operada"] = razon_zona
-    
+
     if bloqueada:
-    
+
         senal["riesgos_base"] = (
             str(senal.get("riesgos_base", ""))
             + "|ZONA_OPERADA_RECIENTE"
         ).strip("|")
-    
+
         senal["razon"] += (
             ", advertencia zona operada: "
             + razon_zona
@@ -938,22 +1262,22 @@ def evaluar_senal_candidata(activo, ctx, senal):
         ctx["resistencia"],
         ctx["vol"]
     )
-    
+
     senal["validacion_ubicacion_ok"] = ok_ubicacion
     senal["razon_ubicacion"] = razon_ubicacion
-    
+
     if not ok_ubicacion:
         senal["riesgos_base"] = (
             str(senal.get("riesgos_base", ""))
             + "|UBICACION_FATIGA_NO_VALIDADA"
         ).strip("|")
-    
+
         senal["razon"] += (
             ", advertencia ubicación/fatiga: "
             + razon_ubicacion
             + ", enviada al cerebro único como evidencia"
         )
-    
+
     senal["razon"] = (
         senal["razon"]
         + ", "
@@ -979,9 +1303,31 @@ def evaluar_senal_candidata(activo, ctx, senal):
         + ", RUPTURA: "
         + senal.get("razon_ruptura", "")
     )
-    
+
     senal["precio_zona"] = precio_zona
     senal["vol"] = ctx["vol"]
+    # ============================================================
+    # PASO 5.5A — IDENTIDAD EXACTA DE LA VELA DE SEÑAL
+    # ============================================================
+
+    senal["vela_senal_from"] = int(
+        ctx.get("vela_senal_from", 0) or 0
+    )
+
+    # OHLC exacto de la vela que originó la señal.
+    # Solo diagnóstico de paridad; no modifica ninguna decisión.
+    senal["vela_senal_open"] = float(
+        ctx.get("ultima_open", 0) or 0
+    )
+    senal["vela_senal_close"] = float(
+        ctx.get("ultima_close", 0) or 0
+    )
+    senal["vela_senal_high"] = float(
+        ctx.get("ultima_high", 0) or 0
+    )
+    senal["vela_senal_low"] = float(
+        ctx.get("ultima_low", 0) or 0
+    )
     senal["tipo_setup"] = senal.get("tipo_setup", "INDEFINIDO")
     senal["calidad_setup"] = senal.get("calidad_setup", "MEDIA")
     senal["modo_entrada_setup"] = senal.get("modo_entrada_setup", "DIRECTA")
@@ -997,20 +1343,20 @@ def evaluar_senal_candidata(activo, ctx, senal):
     # ========================================================
     # EVIDENCIAS ESTRUCTURADAS
     # ========================================================
-    
+
     pa_evidencias = ctx.get("pa_evidencias", [])
-    
+
     if not isinstance(pa_evidencias, list):
         pa_evidencias = []
-    
+
     mercado_evidencias = ctx.get(
         "mercado_evidencias",
         [],
     )
-    
+
     if not isinstance(mercado_evidencias, list):
         mercado_evidencias = []
-    
+
     senal["pa_evidencias"] = list(pa_evidencias)
     senal["mercado_evidencias"] = list(
         mercado_evidencias
@@ -1044,52 +1390,64 @@ def evaluar_senal_candidata(activo, ctx, senal):
         senal,
         ctx
     )
-    
+
     senal = resultado_bootiq["senal"]
-    
+
+    # ============================================================
+    # FASE 3.4-A — SNAPSHOT REAL DEL CONTRATO BOOTIQ
+    # ============================================================
+    # Solo auditoría.
+    # Conserva exactamente el contrato estructurado producido
+    # durante la evaluación de esta señal.
+    # No recalcula ni modifica ninguna decisión.
+    senal["_decision_bootiq_snapshot"] = resultado_bootiq.get(
+        "decision",
+        {},
+    )
+
     # Auditoría completa del Cerebro Único.
     resultado_cerebro = resultado_bootiq.get("resultado", {})
-    
+
     if not isinstance(resultado_cerebro, dict):
         resultado_cerebro = {}
-    
+
     resultado_confianza = resultado_cerebro.get(
         "resultado_confianza",
         {},
     )
-    
+
     if not isinstance(resultado_confianza, dict):
         resultado_confianza = {}
-    
+
     resultado_pa = resultado_cerebro.get(
         "resultado_price_action",
         {},
     )
-    
+
     if not isinstance(resultado_pa, dict):
         resultado_pa = {}
-    
+
     resultado_mercado = resultado_cerebro.get(
         "resultado_mercado",
         {},
     )
-    
+
     if not isinstance(resultado_mercado, dict):
         resultado_mercado = {}
-    
+
     resultado_estrategia = resultado_cerebro.get(
         "resultado_estrategia",
         {},
     )
-    
+
     if not isinstance(resultado_estrategia, dict):
         resultado_estrategia = {}
-    
+
     senal["auditoria_confianza_base"] = resultado_confianza.get(
         "confianza_base",
         resultado_cerebro.get("confianza_base", 50),
     )
-    
+
     senal["auditoria_ajuste_aprendizaje"] = resultado_confianza.get(
         "ajuste_aprendizaje",
         resultado_cerebro.get(
@@ -1097,53 +1455,53 @@ def evaluar_senal_candidata(activo, ctx, senal):
             0,
         ),
     )
-    
+
     senal["auditoria_ajuste_price_action"] = resultado_pa.get(
         "ajuste",
         0,
     )
-    
+
     senal["auditoria_ajuste_mercado"] = resultado_mercado.get(
         "ajuste",
         0,
     )
-    
+
     senal["auditoria_ajuste_estrategia"] = (
         resultado_estrategia.get("ajuste", 0)
     )
-    
+
     senal["auditoria_ajuste_evidencias"] = resultado_confianza.get(
         "ajuste_evidencias",
         resultado_cerebro.get("ajuste_evidencias", 0),
     )
-    
+
     senal["auditoria_ajuste_ponderacion"] = resultado_confianza.get(
         "ajuste_ponderacion",
         resultado_cerebro.get("ajuste_ponderacion", 0),
     )
-    
+
     senal["auditoria_confianza_antes_ponderacion"] = (
         resultado_confianza.get(
             "confianza_antes_ponderacion",
             0,
         )
     )
-    
+
     senal["auditoria_confianza_final"] = resultado_confianza.get(
         "confianza",
         resultado_cerebro.get("confianza", 0),
     )
-    
+
     senal["auditoria_motivos_price_action"] = " | ".join(
         str(x)
         for x in resultado_pa.get("motivos", [])
     )
-    
+
     senal["auditoria_motivos_mercado"] = " | ".join(
         str(x)
         for x in resultado_mercado.get("motivos", [])
     )
-    
+
     senal["auditoria_motivos_estrategia"] = " | ".join(
         str(x)
         for x in resultado_estrategia.get("motivos", [])
@@ -1160,43 +1518,164 @@ def evaluar_senal_candidata(activo, ctx, senal):
     modo_diagnostico = bool(
         ctx.get("_modo_backtest_diagnostico", False)
     )
-    
+
     if (
         senal.get("decision_unificada_accion") == "NO_OPERAR"
         and not modo_diagnostico
     ):
+        # F5.7-D2 — Telemetría solamente.
+        # Registrar el rechazo real antes de que estrategia.py
+        # elimine la señal y bot.py deje de verla.
+        try:
+            import estado
+
+            estado.metricas_ronda[
+                "cerebro_no_operar"
+            ] += 1
+
+        except Exception:
+            # La telemetría nunca debe alterar
+            # el comportamiento operativo.
+            pass
+
         return None
-    
+
     return senal
 
-def analizar_activo(activo, modo_backtest_diagnostico=False):
+def analizar_activo(
+    activo,
+    modo_backtest_diagnostico=False,
+    activos_bloqueables_ronda=None,
+):
     """
     Orquestador principal del análisis por activo.
 
-    Responsabilidad:
-    - leer contexto gráfico
-    - preparar contexto de mercado
-    - generar señales candidatas
-    - evaluar cada candidata
-    - devolver la primera señal válida
+    Responsabilidades:
+    - leer el contexto gráfico;
+    - preparar el contexto de mercado;
+    - generar todas las señales candidatas;
+    - evaluar cada candidata con el Cerebro Único;
+    - ordenar las candidatas usando el ranking oficial V3;
+    - devolver la mejor señal disponible.
 
-    No debe duplicar lógica de evaluación.
-    No debe contener filtros largos.
+    estrategia.py NO decide si una operación es buena o mala.
+
+    Todas las candidatas son evaluadas primero por el Cerebro Único.
+    Después motor_candidatos.py selecciona cuál de las candidatas
+    ya evaluadas tiene mayor prioridad estadística V3.
     """
+    # D7.6D — telemetría temporal por subfase.
+    # No modifica decisiones.
+    import time as _time_d76d
 
-    ctx = leer_contexto_grafico(activo)
+    telemetria_subfases_d76d = None
+
+    try:
+        import estado as _estado_d76d
+
+        if not hasattr(
+            _estado_d76d,
+            "telemetria_subfases_d76d",
+        ):
+            _estado_d76d.telemetria_subfases_d76d = {}
+
+        telemetria_subfases_d76d = {}
+
+        _estado_d76d.telemetria_subfases_d76d[
+            activo
+        ] = telemetria_subfases_d76d
+
+    except Exception:
+        pass
+
+    inicio_grafico_d76d = (
+        _time_d76d.perf_counter()
+    )
+
+    ctx = leer_contexto_grafico(
+        activo
+    )
+
+    demora_grafico_d76d = (
+        _time_d76d.perf_counter()
+        - inicio_grafico_d76d
+    )
+
+    if telemetria_subfases_d76d is not None:
+        telemetria_subfases_d76d[
+            "grafico_total"
+        ] = demora_grafico_d76d
 
     if ctx is None:
         return None
 
-    ctx = preparar_contexto_mercado(activo, ctx)
+    inicio_mercado_d76d = (
+        _time_d76d.perf_counter()
+    )
+
+    ctx = preparar_contexto_mercado(
+        activo,
+        ctx,
+    )
+
+    demora_mercado_d76d = (
+        _time_d76d.perf_counter()
+        - inicio_mercado_d76d
+    )
+
+    if telemetria_subfases_d76d is not None:
+        telemetria_subfases_d76d[
+            "mercado"
+        ] = demora_mercado_d76d
+
     ctx["_modo_backtest_diagnostico"] = bool(
         modo_backtest_diagnostico
     )
-    if not validar_contexto_base(activo, ctx):
+
+    inicio_base_d76d = (
+        _time_d76d.perf_counter()
+    )
+
+    contexto_base_ok_d76d = (
+        validar_contexto_base(
+            activo,
+            ctx,
+        )
+    )
+
+    demora_base_d76d = (
+        _time_d76d.perf_counter()
+        - inicio_base_d76d
+    )
+
+    if telemetria_subfases_d76d is not None:
+        telemetria_subfases_d76d[
+            "base"
+        ] = demora_base_d76d
+
+    if not contexto_base_ok_d76d:
         return None
 
-    senales = motor_estrategias_profesional(ctx)
+    inicio_estrategias_d76d = (
+        _time_d76d.perf_counter()
+    )
+
+    senales = motor_estrategias_profesional(
+        ctx,
+        activos_malos=(
+            activos_bloqueables_ronda
+        ),
+    )
+
+    demora_estrategias_d76d = (
+        _time_d76d.perf_counter()
+        - inicio_estrategias_d76d
+    )
+
+    if telemetria_subfases_d76d is not None:
+        telemetria_subfases_d76d[
+            "estrategias"
+        ] = demora_estrategias_d76d
 
     if not senales:
         return None
@@ -1204,10 +1683,342 @@ def analizar_activo(activo, modo_backtest_diagnostico=False):
     if isinstance(senales, dict):
         senales = [senales]
 
-    for senal in senales[:4]:
-        senal_final = evaluar_senal_candidata(activo, ctx, senal)
+    # F5.7-D2 — Embudo real de oportunidades.
+    # Telemetría solamente: no modifica ninguna decisión.
+    try:
+        import estado
 
-        if senal_final is not None:
-            return senal_final
+        candidatas_validas_generadas = sum(
+            1
+            for candidata in senales
+            if isinstance(candidata, dict)
+        )
 
-    return None
+        if candidatas_validas_generadas > 0:
+            estado.metricas_ronda[
+                "activos_con_candidatas"
+            ] += 1
+
+        estado.metricas_ronda[
+            "candidatas_generadas"
+        ] += candidatas_validas_generadas
+
+    except Exception:
+        pass
+
+    candidatas_evaluadas = []
+
+    # ========================================================
+    # EVALUAR TODAS LAS CANDIDATAS PRINCIPALES
+    # ========================================================
+    #
+    # Ninguna señal gana por aparecer primero.
+    #
+    # motor_estrategias genera candidatos.
+    # estrategia prepara evidencia.
+    # Cerebro Único evalúa cada candidato.
+    # motor_candidatos selecciona posteriormente.
+    # ========================================================
+    tiempo_cerebro_d76d = 0.0
+    cantidad_cerebro_d76d = 0
+
+    for posicion, senal in enumerate(
+        senales,
+        start=1,
+    ):
+        if not isinstance(senal, dict):
+            continue
+
+        senal[
+            "_ranking_estrategia_inicial"
+        ] = posicion
+
+        try:
+            import estado
+
+            estado.metricas_ronda[
+                "candidatas_evaluadas_cerebro"
+            ] += 1
+
+        except Exception:
+            pass
+
+        inicio_cerebro_d76d = (
+            _time_d76d.perf_counter()
+        )
+
+        senal_final = evaluar_senal_candidata(
+            activo,
+            ctx,
+            senal,
+        )
+
+        tiempo_cerebro_d76d += (
+            _time_d76d.perf_counter()
+            - inicio_cerebro_d76d
+        )
+
+        cantidad_cerebro_d76d += 1
+
+        if senal_final is None:
+            continue
+
+        try:
+            import estado
+
+            estado.metricas_ronda[
+                "candidatas_que_continuan"
+            ] += 1
+
+        except Exception:
+            pass
+
+        candidatas_evaluadas.append(
+            senal_final
+        )
+        if telemetria_subfases_d76d is not None:
+            telemetria_subfases_d76d[
+                "cerebro"
+            ] = tiempo_cerebro_d76d
+
+            telemetria_subfases_d76d[
+                "candidatas_cerebro"
+            ] = cantidad_cerebro_d76d
+
+    if not candidatas_evaluadas:
+        return None
+
+    # ========================================================
+    # FASE C-B1 — RANKING ÚNICO V3
+    # ========================================================
+    #
+    # ANTES:
+    #
+    # estrategia.py volvía a escoger usando:
+    # - confianza legacy;
+    # - consenso;
+    # - score_final;
+    # - puntaje;
+    # - prioridad.
+    #
+    # Y paralelamente calculaba cuál habría elegido V3,
+    # pero solamente como sombra.
+    #
+    # AHORA:
+    #
+    # Las candidatas ya fueron evaluadas por el Cerebro Único.
+    # estrategia.py NO vuelve a decidir.
+    #
+    # motor_candidatos.py únicamente las ORDENA utilizando
+    # información ya producida por V3:
+    #
+    # - decisión oficial;
+    # - probabilidad histórica V3;
+    # - muestra histórica;
+    # - score/puntaje únicamente como desempate.
+    #
+    # No se calcula aprendizaje aquí.
+    # No se recalcula probabilidad.
+    # No se crea otro Cerebro.
+    # ========================================================
+
+    inicio_ranking_d76d = (
+        _time_d76d.perf_counter()
+    )
+
+    mejor_senal = (
+        seleccionar_mejor_candidata_v3(
+            candidatas_evaluadas
+        )
+    )
+
+    demora_ranking_d76d = (
+        _time_d76d.perf_counter()
+        - inicio_ranking_d76d
+    )
+
+    if telemetria_subfases_d76d is not None:
+        telemetria_subfases_d76d[
+            "ranking"
+        ] = demora_ranking_d76d
+
+    if mejor_senal is None:
+        return None
+
+    # ========================================================
+    # AUDITORÍA DE COMPETENCIA ENTRE ESTRATEGIAS
+    # ========================================================
+
+    mejor_senal[
+        "cantidad_candidatas_evaluadas"
+    ] = len(
+        candidatas_evaluadas
+    )
+
+    mejor_senal[
+        "resumen_competencia_estrategias"
+    ] = [
+        {
+            "patron": candidata.get(
+                "patron",
+                "SIN_PATRON",
+            ),
+
+            "direccion": candidata.get(
+                "direccion",
+                "SIN_DIRECCION",
+            ),
+
+            "decision": candidata.get(
+                "cerebro_unico_decision",
+                candidata.get(
+                    "decision_unificada_accion",
+                    candidata.get(
+                        "decision_bootiq",
+                        "NO_OPERAR",
+                    ),
+                ),
+            ),
+
+            # Se conserva para diagnóstico legacy.
+            "confianza": candidata.get(
+                "auditoria_confianza_final",
+                candidata.get(
+                    "confianza_final_cerebro",
+                    candidata.get(
+                        "confianza_bootiq",
+                        0,
+                    ),
+                ),
+            ),
+
+            # Información V3 que ahora sí importa
+            # para entender por qué ganó.
+            "probabilidad_v3": candidata.get(
+                "probabilidad_v3",
+                candidata.get(
+                    "probabilidad_estimada",
+                    0,
+                ),
+            ),
+
+            "muestra_probabilidad": (
+                candidata.get(
+                    "muestra_probabilidad",
+                    0,
+                )
+            ),
+
+            "confiabilidad_probabilidad": (
+                candidata.get(
+                    "confiabilidad_probabilidad",
+                    "SIN_DATOS",
+                )
+            ),
+
+            "fuente_probabilidad_principal": (
+                candidata.get(
+                    "fuente_probabilidad_principal",
+                    "",
+                )
+            ),
+
+            # Compatibilidad / desempate.
+            "score_final": candidata.get(
+                "score_final",
+                0,
+            ),
+
+            "nivel_consenso": candidata.get(
+                "nivel_consenso",
+                "MUY_BAJO",
+            ),
+
+            "ranking_inicial": candidata.get(
+                "_ranking_estrategia_inicial",
+                0,
+            ),
+        }
+
+        for candidata in candidatas_evaluadas
+    ]
+
+    # ========================================================
+    # COMPATIBILIDAD CON REPORTES V3 SOMBRA ANTERIORES
+    # ========================================================
+    #
+    # Estos nombres se mantienen temporalmente para que
+    # backtest_bot_real.py no pierda columnas/reportes.
+    #
+    # Ya NO existe una segunda selección V3 en estrategia.py.
+    # La candidata V3 oficial es mejor_senal.
+    # ========================================================
+
+    mejor_senal[
+        "seleccion_v3_sombra_patron"
+    ] = mejor_senal.get(
+        "patron",
+        "",
+    )
+
+    mejor_senal[
+        "seleccion_v3_sombra_direccion"
+    ] = mejor_senal.get(
+        "direccion",
+        "",
+    )
+
+    mejor_senal[
+        "seleccion_v3_sombra_probabilidad"
+    ] = mejor_senal.get(
+        "probabilidad_v3",
+        mejor_senal.get(
+            "probabilidad_estimada",
+            0,
+        ),
+    )
+
+    mejor_senal[
+        "seleccion_v3_sombra_decision"
+    ] = mejor_senal.get(
+        "cerebro_unico_decision",
+        mejor_senal.get(
+            "decision_estadistica_sombra",
+            "SIN_DATOS",
+        ),
+    )
+
+    mejor_senal[
+        "seleccion_v3_sombra_misma_que_actual"
+    ] = True
+
+    mejor_senal[
+        "seleccion_v3_sombra_muestra"
+    ] = mejor_senal.get(
+        "muestra_probabilidad",
+        0,
+    )
+
+    # Auditoría explícita de la nueva arquitectura.
+    mejor_senal[
+        "ranking_candidatas_origen"
+    ] = "MOTOR_CANDIDATOS_V3"
+
+    mejor_senal[
+        "ranking_candidatas_probabilidad"
+    ] = mejor_senal.get(
+        "probabilidad_v3",
+        mejor_senal.get(
+            "probabilidad_estimada",
+            0,
+        ),
+    )
+
+    mejor_senal[
+        "ranking_candidatas_muestra"
+    ] = mejor_senal.get(
+        "muestra_probabilidad",
+        0,
+    )
+
+    return mejor_senal

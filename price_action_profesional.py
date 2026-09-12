@@ -727,20 +727,21 @@ def resolver_contexto_price_action(
     rechazo_historico
 ):
     """
-    Combina los diagnósticos internos de Price Action.
+    Integra todas las evidencias de Price Action sin destruir información.
 
-    No detecta velas.
-    No consulta mercado.
-    Solo integra:
-    - rechazo confirmado
-    - impulso
-    - agotamiento
-    - rechazo histórico
+    Responsabilidades:
+    - Recibir los diagnósticos de los detectores.
+    - Crear y conservar todas las evidencias.
+    - Calcular el peso direccional CALL y PUT.
+    - Identificar contradicciones.
+    - Separar dirección, fuerza y calidad.
+    - Mantener compatibilidad con los campos anteriores.
+
+    No decide si operar.
+    No bloquea señales.
+    No convierte una dirección débil en NEUTRA.
     """
 
-    direccion = "NEUTRA"
-    tipo = "SIN_CONTEXTO_CLARO"
-    fuerza = 0
     razones = []
     contradicciones = []
     evidencias = []
@@ -748,129 +749,110 @@ def resolver_contexto_price_action(
     rechazo_dir = rechazo.get("direccion", "NEUTRA")
     impulso_dir = impulso.get("direccion", "NEUTRA")
     agotamiento_dir = agotamiento.get("direccion", "NEUTRA")
-    rechazo_historico_dir = rechazo_historico.get("direccion", "NEUTRA")
+    rechazo_historico_dir = rechazo_historico.get(
+        "direccion",
+        "NEUTRA"
+    )
 
     # ========================================================
-    # RECHAZO CONFIRMADO
+    # 1. RECHAZO CONFIRMADO
     # ========================================================
-    if rechazo.get("confirmado"):
-        evidencias.append(
-            crear_evidencia_pa(
-                tipo=rechazo.get("tipo", "RECHAZO_CONFIRMADO"),
-                direccion=rechazo_dir,
-                peso=PESO_RECHAZO_CONFIRMADO,
-                fuerza=rechazo.get("fuerza", 0),
-                confirmada=True,
-                razon=rechazo.get("razon", ""),
-            )
+    if (
+        rechazo.get("confirmado", False)
+        and rechazo_dir in ("CALL", "PUT")
+    ):
+        evidencia_rechazo = crear_evidencia_pa(
+            tipo=rechazo.get(
+                "tipo",
+                "RECHAZO_CONFIRMADO"
+            ),
+            direccion=rechazo_dir,
+            peso=PESO_RECHAZO_CONFIRMADO,
+            fuerza=rechazo.get("fuerza", 0),
+            confirmada=True,
+            razon=rechazo.get("razon", ""),
         )
 
-        direccion = rechazo_dir
-        tipo = rechazo.get("tipo", "RECHAZO_CONFIRMADO")
-        fuerza += rechazo.get("fuerza", 0)
-        razones.append(rechazo.get("razon", ""))
+        evidencias.append(evidencia_rechazo)
+
+        if rechazo.get("razon"):
+            razones.append(rechazo["razon"])
 
     # ========================================================
-    # AGOTAMIENTO
+    # 2. AGOTAMIENTO CONFIRMADO
     # ========================================================
-    if agotamiento.get("confirmado"):
-        evidencias.append(
-            crear_evidencia_pa(
-                tipo=agotamiento.get("tipo", "AGOTAMIENTO_CONFIRMADO"),
-                direccion=agotamiento_dir,
-                peso=PESO_AGOTAMIENTO_CONFIRMADO,
-                fuerza=agotamiento.get("fuerza", 0),
-                confirmada=True,
-                razon=agotamiento.get("razon", ""),
-            )
+    if (
+        agotamiento.get("confirmado", False)
+        and agotamiento_dir in ("CALL", "PUT")
+    ):
+        evidencia_agotamiento = crear_evidencia_pa(
+            tipo=agotamiento.get(
+                "tipo",
+                "AGOTAMIENTO_CONFIRMADO"
+            ),
+            direccion=agotamiento_dir,
+            peso=PESO_AGOTAMIENTO_CONFIRMADO,
+            fuerza=agotamiento.get("fuerza", 0),
+            confirmada=True,
+            razon=agotamiento.get("razon", ""),
         )
 
-        if direccion == "NEUTRA":
-            direccion = agotamiento_dir
-            tipo = agotamiento.get("tipo", tipo)
-            fuerza += agotamiento.get("fuerza", 0)
-            razones.append(agotamiento.get("razon", ""))
+        evidencias.append(evidencia_agotamiento)
 
-        elif agotamiento_dir == direccion:
-            fuerza += (
-                agotamiento.get("fuerza", 0)
-                * FACTOR_AGOTAMIENTO_ALINEADO
-            )
-            razones.append(agotamiento.get("razon", ""))
-
-        else:
-            contradicciones.append("agotamiento contradice rechazo")
+        if agotamiento.get("razon"):
+            razones.append(agotamiento["razon"])
 
     # ========================================================
-    # IMPULSO
+    # 3. IMPULSO
     # ========================================================
-    if impulso_dir != "NEUTRA":
-        evidencias.append(
-            crear_evidencia_pa(
-                tipo=impulso.get("tipo", "IMPULSO"),
-                direccion=impulso_dir,
-                peso=PESO_IMPULSO,
-                fuerza=impulso.get("fuerza", 0),
-                confirmada=impulso.get("tipo", "") in [
-                    "IMPULSO_ALCISTA_FUERTE",
-                    "IMPULSO_BAJISTA_FUERTE",
-                ],
-                razon=impulso.get("razon", ""),
-            )
-        )
-
-        razones.append(impulso.get("razon", ""))
-
-        if direccion == "NEUTRA":
-            direccion = impulso_dir
-            tipo = impulso.get("tipo", "IMPULSO")
-            fuerza += impulso.get("fuerza", 0)
-
-        elif impulso_dir == direccion:
-            fuerza += (
-                impulso.get("fuerza", 0)
-                * FACTOR_IMPULSO_ALINEADO
-            )
-
-        else:
-
-            hay_reversion_confirmada = (
-                rechazo.get("confirmado", False)
-                or agotamiento.get("confirmado", False)
-            )
-
-            if hay_reversion_confirmada:
-
-                razones.append(
-                    "impulso previo contrario compatible con reversión confirmada"
-                )
-
-            else:
-
-                contradicciones.append(
-                    "impulso contrario a price action"
-                )
-    # ========================================================
-    # RECHAZO HISTÓRICO
-    # ========================================================
-    if rechazo_historico_dir != "NEUTRA":
-        tipo_hist = rechazo_historico.get(
+    if impulso_dir in ("CALL", "PUT"):
+        tipo_impulso = impulso.get(
             "tipo",
-            "RECHAZO_HISTORICO"
+            "IMPULSO"
         )
 
-        fuerza_hist = rechazo_historico.get("fuerza", 0)
+        evidencia_impulso = crear_evidencia_pa(
+            tipo=tipo_impulso,
+            direccion=impulso_dir,
+            peso=PESO_IMPULSO,
+            fuerza=impulso.get("fuerza", 0),
+            confirmada=tipo_impulso in (
+                "IMPULSO_ALCISTA_FUERTE",
+                "IMPULSO_BAJISTA_FUERTE",
+            ),
+            razon=impulso.get("razon", ""),
+        )
 
-        es_confirmado_hist = tipo_hist in [
-            "RECHAZO_COMPRADOR_HISTORICO",
-            "RECHAZO_VENDEDOR_HISTORICO",
-        ]
+        evidencias.append(evidencia_impulso)
 
-        es_observado_hist = tipo_hist in [
-            "RECHAZO_COMPRADOR_OBSERVADO",
-            "RECHAZO_VENDEDOR_OBSERVADO",
-        ]
+        if impulso.get("razon"):
+            razones.append(impulso["razon"])
 
+    # ========================================================
+    # 4. RECHAZO HISTÓRICO
+    # ========================================================
+    tipo_hist = rechazo_historico.get(
+        "tipo",
+        "SIN_RECHAZO_HISTORICO"
+    )
+
+    es_confirmado_hist = tipo_hist in (
+        "RECHAZO_COMPRADOR_HISTORICO",
+        "RECHAZO_VENDEDOR_HISTORICO",
+    )
+
+    es_observado_hist = tipo_hist in (
+        "RECHAZO_COMPRADOR_OBSERVADO",
+        "RECHAZO_VENDEDOR_OBSERVADO",
+    )
+
+    if (
+        rechazo_historico_dir in ("CALL", "PUT")
+        and (
+            es_confirmado_hist
+            or es_observado_hist
+        )
+    ):
         if es_confirmado_hist:
             peso_hist = PESO_RECHAZO_HISTORICO_CONFIRMADO
             confirmada_hist = True
@@ -878,61 +860,261 @@ def resolver_contexto_price_action(
             peso_hist = PESO_RECHAZO_HISTORICO_OBSERVADO
             confirmada_hist = False
 
-        evidencias.append(
-            crear_evidencia_pa(
-                tipo=tipo_hist,
-                direccion=rechazo_historico_dir,
-                peso=peso_hist,
-                fuerza=fuerza_hist,
-                confirmada=confirmada_hist,
-                razon=rechazo_historico.get("razon", ""),
+        evidencia_historica = crear_evidencia_pa(
+            tipo=tipo_hist,
+            direccion=rechazo_historico_dir,
+            peso=peso_hist,
+            fuerza=rechazo_historico.get(
+                "fuerza",
+                0
+            ),
+            confirmada=confirmada_hist,
+            razon=rechazo_historico.get(
+                "razon",
+                ""
+            ),
+        )
+
+        evidencias.append(evidencia_historica)
+
+        if rechazo_historico.get("razon"):
+            razones.append(
+                rechazo_historico["razon"]
+            )
+
+    # ========================================================
+    # 5. CLASIFICAR EVIDENCIAS
+    # ========================================================
+    evidencias_call = [
+        evidencia
+        for evidencia in evidencias
+        if evidencia.get("direccion") == "CALL"
+    ]
+
+    evidencias_put = [
+        evidencia
+        for evidencia in evidencias
+        if evidencia.get("direccion") == "PUT"
+    ]
+
+    evidencias_neutras = [
+        evidencia
+        for evidencia in evidencias
+        if evidencia.get("direccion") == "NEUTRA"
+    ]
+
+    evidencias_confirmadas = [
+        evidencia
+        for evidencia in evidencias
+        if evidencia.get("confirmada", False)
+    ]
+
+    evidencias_observadas = [
+        evidencia
+        for evidencia in evidencias
+        if not evidencia.get(
+            "confirmada",
+            False
+        )
+    ]
+
+    # ========================================================
+    # 6. CALCULAR PESOS DIRECCIONALES
+    # ========================================================
+    peso_call = round(
+        sum(
+            max(
+                0,
+                float(
+                    evidencia.get("peso", 0)
+                )
+            )
+            * max(
+                0,
+                min(
+                    1,
+                    float(
+                        evidencia.get(
+                            "fuerza",
+                            0
+                        )
+                    )
+                )
+            )
+            for evidencia in evidencias_call
+        ),
+        3
+    )
+
+    peso_put = round(
+        sum(
+            max(
+                0,
+                float(
+                    evidencia.get("peso", 0)
+                )
+            )
+            * max(
+                0,
+                min(
+                    1,
+                    float(
+                        evidencia.get(
+                            "fuerza",
+                            0
+                        )
+                    )
+                )
+            )
+            for evidencia in evidencias_put
+        ),
+        3
+    )
+
+    balance_direccional = round(
+        peso_call - peso_put,
+        3
+    )
+
+    peso_dominante = max(
+        peso_call,
+        peso_put
+    )
+
+    peso_contrario = min(
+        peso_call,
+        peso_put
+    )
+
+    peso_total = round(
+        peso_call + peso_put,
+        3
+    )
+
+    # ========================================================
+    # 7. DETERMINAR DIRECCIÓN DOMINANTE
+    # ========================================================
+    if peso_total <= 0:
+        direccion = "NEUTRA"
+        estado_contexto = (
+            "SIN_EVIDENCIA_DIRECCIONAL"
+        )
+
+    elif peso_call > peso_put:
+        direccion = "CALL"
+        estado_contexto = (
+            "CONTEXTO_DIRECCIONAL"
+        )
+
+    elif peso_put > peso_call:
+        direccion = "PUT"
+        estado_contexto = (
+            "CONTEXTO_DIRECCIONAL"
+        )
+
+    else:
+        direccion = "NEUTRA"
+        estado_contexto = (
+            "CONFLICTO_DIRECCIONAL"
+        )
+
+    # ========================================================
+    # 8. DETECTAR CONTRADICCIONES
+    # ========================================================
+    hay_evidencia_call = peso_call > 0
+    hay_evidencia_put = peso_put > 0
+
+    hay_conflicto = (
+        hay_evidencia_call
+        and hay_evidencia_put
+    )
+
+    if hay_conflicto:
+        tipos_call = {
+            evidencia.get("tipo", "")
+            for evidencia in evidencias_call
+        }
+
+        tipos_put = {
+            evidencia.get("tipo", "")
+            for evidencia in evidencias_put
+        }
+
+        if (
+            rechazo.get("confirmado", False)
+            and agotamiento.get(
+                "confirmado",
+                False
+            )
+            and rechazo_dir != agotamiento_dir
+        ):
+            contradicciones.append(
+                "agotamiento contradice rechazo confirmado"
+            )
+
+        hay_reversion_confirmada = (
+            rechazo.get("confirmado", False)
+            or agotamiento.get(
+                "confirmado",
+                False
             )
         )
 
-        razones.append(rechazo_historico.get("razon", ""))
-
-        if es_confirmado_hist:
-            if direccion == "NEUTRA":
-                direccion = rechazo_historico_dir
-                tipo = tipo_hist
-                fuerza += min(
-                    0.42,
-                    fuerza_hist * 0.25
+        if (
+            impulso_dir in ("CALL", "PUT")
+            and direccion in ("CALL", "PUT")
+            and impulso_dir != direccion
+        ):
+            if hay_reversion_confirmada:
+                razones.append(
+                    "impulso previo contrario compatible con reversión confirmada"
                 )
-
-            elif rechazo_historico_dir == direccion:
-                fuerza += min(
-                    0.22,
-                    fuerza_hist * 0.12
-                )
-
             else:
                 contradicciones.append(
-                    "rechazo histórico confirmado contradice price action"
+                    "impulso contrario a la dirección dominante"
                 )
 
-        elif es_observado_hist:
-            if direccion == "NEUTRA":
-                direccion = rechazo_historico_dir
-                tipo = tipo_hist
-                fuerza += min(
-                    0.24,
-                    fuerza_hist * 0.18
-                )
+        if (
+            es_confirmado_hist
+            and rechazo_historico_dir
+            in ("CALL", "PUT")
+            and direccion in ("CALL", "PUT")
+            and rechazo_historico_dir
+            != direccion
+        ):
+            contradicciones.append(
+                "rechazo histórico confirmado contradice la dirección dominante"
+            )
 
-            elif rechazo_historico_dir == direccion:
-                fuerza += min(
-                    0.12,
-                    fuerza_hist * 0.08
-                )
+        if not contradicciones:
+            contradicciones.append(
+                "existen evidencias direccionales CALL y PUT"
+            )
 
-            else:
-                razones.append(
-                    "rechazo histórico observado contrario, no dominante"
+        razones.append(
+            "evidencias CALL: "
+            + ", ".join(
+                sorted(
+                    tipo
+                    for tipo in tipos_call
+                    if tipo
                 )
+            )
+        )
+
+        razones.append(
+            "evidencias PUT: "
+            + ", ".join(
+                sorted(
+                    tipo
+                    for tipo in tipos_put
+                    if tipo
+                )
+            )
+        )
 
     # ========================================================
-    # CONTRADICCIONES
+    # 9. EVIDENCIA DE CONTRADICCIÓN
     # ========================================================
     if contradicciones:
         evidencias.append(
@@ -942,46 +1124,254 @@ def resolver_contexto_price_action(
                 peso=PESO_CONTRADICCION_PA,
                 fuerza=0,
                 confirmada=True,
-                razon=" | ".join(contradicciones),
+                razon=" | ".join(
+                    contradicciones
+                ),
             )
         )
 
-        fuerza *= FACTOR_CONTRADICCION
+        evidencias_neutras.append(
+            evidencias[-1]
+        )
 
         razones.append(
             "contradicciones: "
-            + " | ".join(contradicciones)
+            + " | ".join(
+                contradicciones
+            )
         )
 
-        if fuerza < 0.55:
-            direccion = "NEUTRA"
-            tipo = "PA_CONTRADICTORIO"
+    # ========================================================
+    # 10. FUERZA BRUTA
+    # ========================================================
+    if peso_total <= 0:
+        fuerza_bruta = 0.0
 
-    fuerza = round(min(fuerza, 1), 3)
+    else:
+        # Fuerza absoluta del lado dominante.
+        fuerza_bruta = min(
+            1.0,
+            peso_dominante / 30.0
+        )
 
-    # Compatibilidad exacta con el comportamiento actual.
-    if fuerza < FUERZA_MINIMA_CONTEXTO:
-        direccion = "NEUTRA"
-        tipo = "SIN_CONTEXTO_CLARO"
+    fuerza_bruta = round(
+        fuerza_bruta,
+        3
+    )
+
+    # ========================================================
+    # 11. AJUSTE POR CONFLICTO
+    # ========================================================
+    if (
+        hay_conflicto
+        and peso_dominante > 0
+    ):
+        proporcion_contraria = min(
+            1.0,
+            peso_contrario
+            / peso_dominante
+        )
+
+        factor_conflicto = (
+            1.0
+            - (
+                proporcion_contraria
+                * (
+                    1.0
+                    - FACTOR_CONTRADICCION
+                )
+            )
+        )
+
+        factor_conflicto = max(
+            FACTOR_CONTRADICCION,
+            min(
+                1.0,
+                factor_conflicto
+            )
+        )
+
+    else:
+        proporcion_contraria = 0.0
+        factor_conflicto = 1.0
+
+    fuerza_ajustada = round(
+        min(
+            1.0,
+            fuerza_bruta
+            * factor_conflicto
+        ),
+        3
+    )
+
+    # Compatibilidad con los consumidores actuales.
+    fuerza = fuerza_ajustada
+
+    # ========================================================
+    # 12. CALIDAD INDEPENDIENTE DE LA DIRECCIÓN
+    # ========================================================
+    if direccion == "NEUTRA":
+        if peso_total <= 0:
+            calidad = "SIN_DIRECCION"
+        else:
+            calidad = "CONFLICTIVA"
+
+    elif fuerza_ajustada < FUERZA_MINIMA_CONTEXTO:
+        calidad = "MUY_DEBIL"
+
+    elif fuerza_ajustada < FUERZA_MINIMA_NO_DEBIL:
+        calidad = "DEBIL"
+
+    elif fuerza_ajustada < 0.65:
+        calidad = "MEDIA"
+
+    elif fuerza_ajustada < 0.82:
+        calidad = "BUENA"
+
+    else:
+        calidad = "FUERTE"
+
+    if (
+        direccion in ("CALL", "PUT")
+        and hay_conflicto
+    ):
+        estado_contexto = (
+            "CONTEXTO_DIRECCIONAL_CON_CONFLICTO"
+        )
 
     elif (
-        fuerza < FUERZA_MINIMA_NO_DEBIL
-        and direccion != "NEUTRA"
+        direccion in ("CALL", "PUT")
+        and calidad in (
+            "MUY_DEBIL",
+            "DEBIL",
+        )
     ):
-        if (
-            not tipo.endswith("_DEBIL")
-            and not tipo.endswith("_OBSERVADO")
-        ):
-            tipo = tipo + "_DEBIL"
+        estado_contexto = (
+            "CONTEXTO_DIRECCIONAL_DEBIL"
+        )
 
+    elif direccion in ("CALL", "PUT"):
+        estado_contexto = (
+            "CONTEXTO_DIRECCIONAL_VALIDO"
+        )
+
+    # ========================================================
+    # 13. TIPO PRINCIPAL
+    # ========================================================
+    evidencias_dominantes = []
+
+    if direccion == "CALL":
+        evidencias_dominantes = (
+            evidencias_call
+        )
+
+    elif direccion == "PUT":
+        evidencias_dominantes = (
+            evidencias_put
+        )
+
+    if evidencias_dominantes:
+        evidencia_principal = max(
+            evidencias_dominantes,
+            key=lambda evidencia: (
+                float(
+                    evidencia.get(
+                        "peso",
+                        0
+                    )
+                )
+                * float(
+                    evidencia.get(
+                        "fuerza",
+                        0
+                    )
+                ),
+                bool(
+                    evidencia.get(
+                        "confirmada",
+                        False
+                    )
+                ),
+            )
+        )
+
+        tipo = evidencia_principal.get(
+            "tipo",
+            "CONTEXTO_DIRECCIONAL"
+        )
+
+    elif peso_total > 0:
+        tipo = "PA_CONFLICTIVO"
+
+    else:
+        tipo = "SIN_CONTEXTO_CLARO"
+
+    # Nunca añadir "_DEBIL" al tipo.
+    # La debilidad queda exclusivamente
+    # registrada en el campo "calidad".
+
+    # ========================================================
+    # 14. SALIDA COMPLETA Y COMPATIBLE
+    # ========================================================
     return {
+        # Campos anteriores
         "direccion": direccion,
         "tipo": tipo,
         "fuerza": fuerza,
         "contradicciones": contradicciones,
         "evidencias": evidencias,
         "razon": " | ".join(
-            razon for razon in razones
+            razon
+            for razon in razones
             if razon
+        ),
+
+        # Nuevos campos auditables
+        "direccion_dominante": direccion,
+        "estado_contexto": estado_contexto,
+        "calidad": calidad,
+
+        "fuerza_bruta": fuerza_bruta,
+        "fuerza_ajustada": fuerza_ajustada,
+
+        "peso_call": peso_call,
+        "peso_put": peso_put,
+        "peso_total": peso_total,
+        "peso_dominante": round(
+            peso_dominante,
+            3
+        ),
+        "peso_contrario": round(
+            peso_contrario,
+            3
+        ),
+        "balance_direccional": (
+            balance_direccional
+        ),
+
+        "hay_conflicto": hay_conflicto,
+        "proporcion_contraria": round(
+            proporcion_contraria,
+            3
+        ),
+        "factor_contradiccion_aplicado": round(
+            factor_conflicto,
+            3
+        ),
+
+        "evidencias_call": (
+            evidencias_call
+        ),
+        "evidencias_put": (
+            evidencias_put
+        ),
+        "evidencias_neutras": (
+            evidencias_neutras
+        ),
+        "evidencias_confirmadas": (
+            evidencias_confirmadas
+        ),
+        "evidencias_observadas": (
+            evidencias_observadas
         ),
     }

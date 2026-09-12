@@ -1,0 +1,506 @@
+Conectando a IQ Option...
+Conectado correctamente
+Cuenta seleccionada: PRACTICE
+Actualizando OPCODE ligero binary/turbo...
+Total de activos en OPCODE: 631
+OPCODE ligero actualizado correctamente
+Obteniendo balance inicial...
+Balance inicial: 9644.86
+Operaciones pendientes recuperadas: 0
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 1788380533.25
+Activos compatibles filtrados: 20
+Activos reales analizados:
+CHFJPY-OTC | turbo | filtro: 130 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 70 | tendencia: ALCISTA_FUERTE | fuerza: 72.49
+ETHUSD-OTC | turbo | filtro: 124 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 64 | tendencia: BAJISTA_FUERTE | fuerza: 80.47
+FARTCOINUSD-OTC | turbo | filtro: 123 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 63 | tendencia: BAJISTA_FUERTE | fuerza: 75.48
+AUDUSD-OTC | turbo | filtro: 121 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 71 | tendencia: ALCISTA_NORMAL | fuerza: 58.06
+USDPLN-OTC | turbo | filtro: 121 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 61 | tendencia: ALCISTA_FUERTE | fuerza: 70.76
+SUGAR-OTC | turbo | filtro: 119 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 59 | tendencia: ALCISTA_FUERTE | fuerza: 73.91
+SEIUSD-OTC | turbo | filtro: 119 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 69 | tendencia: ALCISTA_NORMAL | fuerza: 64.22
+URANIUM-OTC | turbo | filtro: 118 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 68 | tendencia: BAJISTA_NORMAL | fuerza: 58.45
+COCOA-OTC | turbo | filtro: 116 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 66 | tendencia: BAJISTA_NORMAL | fuerza: 57.83
+AUDNZD-OTC | turbo | filtro: 116 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 66 | tendencia: ALCISTA_NORMAL | fuerza: 67.98
+CANNABIS-OTC | turbo | filtro: 115 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 55 | tendencia: ALCISTA_FUERTE | fuerza: 75.93
+GBPJPY-OTC | turbo | filtro: 113 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 63 | tendencia: BAJISTA_NORMAL | fuerza: 58.48
+EURJPY-OTC | turbo | filtro: 112 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 62 | tendencia: BAJISTA_NORMAL | fuerza: 51.56
+USDSGD-OTC | turbo | filtro: 111 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 61 | tendencia: BAJISTA_NORMAL | fuerza: 64.42
+USDZAR-OTC | turbo | filtro: 111 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 61 | tendencia: BAJISTA_NORMAL | fuerza: 69.34
+RAYDIUMUSD-OTC | turbo | filtro: 111 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 61 | tendencia: ALCISTA_NORMAL | fuerza: 50.87
+FETUSD-OTC | turbo | filtro: 110 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 60 | tendencia: ALCISTA_NORMAL | fuerza: 55.74
+JPYTHB-OTC | turbo | filtro: 109 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 59 | tendencia: ALCISTA_NORMAL | fuerza: 66.25
+XRPUSD-OTC | turbo | filtro: 107 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 57 | tendencia: ALCISTA_NORMAL | fuerza: 59.69
+SP35-OTC | turbo | filtro: 106 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 56 | tendencia: ALCISTA_NORMAL | fuerza: 50.78
+Activos ignorados/no soportados: 0
+D7.6C BUFFER VELAS PRECALENTADO | nuevos: 20 | reutilizados: 0 | errores: 0 | activos buffer: 20 | segundos: 6.495
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+D7.6C RONDA UNICA | vela: 29806343 | segundo: 0
+RANKING DE SEÑALES:
+CHFJPY-OTC | put | liquidity sweep bajista | puntaje: 25 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 216
+CONTEXTO FINAL: CHFJPY-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 68 | TENDENCIA: ALCISTA_NORMAL 52.03 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+ETHUSD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: ETHUSD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 66 | TENDENCIA: BAJISTA_FUERTE 73.88 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SEIUSD-OTC | call | pullback alcista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 134
+CONTEXTO FINAL: SEIUSD-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 69 | TENDENCIA: ALCISTA_NORMAL 64.37 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: CANNABIS-OTC | calidad: SUCIO | score: 53.0
+RANKING DE SEÑALES:
+FETUSD-OTC | call | pullback alcista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 105
+CONTEXTO FINAL: FETUSD-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 58 | TENDENCIA: ALCISTA_DEBIL 41.48 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: JPYTHB-OTC | calidad: SUCIO | score: 54.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: XRPUSD-OTC | calidad: SUCIO | score: 48.0
+D7.6C TIEMPO ANALISIS TOP: 8.122 segundos | activos: 20
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+pullback bajista a EMA | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+
+===== ESTADÍSTICAS POR ACTIVO =====
+EURTHB-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+
+===== RESUMEN DE RONDA =====
+Origen universo: CACHE
+Fallback caché por API: 0
+Compatibles disponibles en caché: 20
+Mercados seleccionados: 20
+Activos con candidatas: 4
+Candidatas generadas: 4
+Familias generadas:
+   pullback alcista a EMA : 2
+   continuación bajista con tendencia : 1
+   liquidity sweep bajista : 1
+Candidatas evaluadas por Cerebro: 4
+Candidatas que continúan: 0
+Sin señal final devuelta a bot: 20
+Señales finales a bot: 0
+Cerebro NO_OPERAR: 4
+Cerebro sin autorización: 0
+Señales aprobadas REALES: 0
+Autorizadas DIRECTA: 0
+Autorizadas PROTOCOLO: 0
+DIRECTAS no ejecutadas: 0
+Entradas DIRECTAS abiertas: 0
+============================
+
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+pullback bajista a EMA | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+
+===== ESTADÍSTICAS POR ACTIVO =====
+EURTHB-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+D7.6C RONDA UNICA | vela: 29806344 | segundo: 0
+RANKING DE SEÑALES:
+AUDUSD-OTC | put | liquidity sweep bajista | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 196
+CONTEXTO FINAL: AUDUSD-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 67 | TENDENCIA: ALCISTA_NORMAL 54.54 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+COCOA-OTC | put | pullback bajista a EMA | puntaje: 18 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 124
+CONTEXTO FINAL: COCOA-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 67 | TENDENCIA: BAJISTA_NORMAL 59.35 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: EURJPY-OTC | calidad: SUCIO | score: 53.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: FETUSD-OTC | calidad: SUCIO | score: 54.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: JPYTHB-OTC | calidad: SUCIO | score: 54.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: XRPUSD-OTC | calidad: SUCIO | score: 53.0
+D7.6C TIEMPO ANALISIS TOP: 3.925 segundos | activos: 20
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 92.57
+Activos compatibles filtrados: 19
+Activos reales analizados:
+USDPLN-OTC | turbo | filtro: 130 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 70 | tendencia: ALCISTA_FUERTE ERROR:root:**warning** get_all_init_v2 timeout 15 sec
+| fuerza: 78.22
+AUDNZD-OTC | turbo | filtro: 126 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 66 | tendencia: ALCISTA_FUERTE | fuerza: 70.95
+USDSGD-OTC | turbo | filtro: 126 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 66 | tendencia: BAJISTA_FUERTE | fuerza: 71.41
+KLARNA-OTC | turbo | filtro: 123 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 63 | tendencia: BAJISTA_FUERTE | fuerza: 73.63
+SEIUSD-OTC | turbo | filtro: 119 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 69 | tendencia: ALCISTA_NORMAL | fuerza: 62.88
+COCOA-OTC | turbo | filtro: 117 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 67 | tendencia: BAJISTA_NORMAL | fuerza: 59.35
+AUDUSD-OTC | turbo | filtro: 117 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 67 | tendencia: ALCISTA_NORMAL | fuerza: 54.54
+URANIUM-OTC | turbo | filtro: 116 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 66 | tendencia: BAJISTA_NORMAL | fuerza: 68.65
+ETHUSD-OTC | turbo | filtro: 114 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 64 | tendencia: BAJISTA_NORMAL | fuerza: 64.65
+GBPJPY-OTC | turbo | filtro: 113 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 63 | tendencia: BAJISTA_NORMAL | fuerza: 66.9
+CHFJPY-OTC | turbo | filtro: 113 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 63 | tendencia: ALCISTA_NORMAL | fuerza: 53.21
+SP35-OTC | turbo | filtro: 113 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 63 | tendencia: ALCISTA_NORMAL | fuerza: 63.25
+FARTCOINUSD-OTC | turbo | filtro: 111 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 61 | tendencia: BAJISTA_NORMAL | fuerza: 54.86
+WLDUSD-OTC | turbo | filtro: 110 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 60 | tendencia: BAJISTA_NORMAL | fuerza: 57.93
+LUNA-OTC | turbo | filtro: 110 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 60 | tendencia: BAJISTA_NORMAL | fuerza: 60.09
+SUGAR-OTC | turbo | filtro: 109 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 59 | tendencia: ALCISTA_NORMAL | fuerza: 68.55
+CANNABIS-OTC | turbo | filtro: 105 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 55 | tendencia: ALCISTA_NORMAL | fuerza: 65.79
+DYDXUSD-OTC | turbo | filtro: 101 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 66 | tendencia: ALCISTA_DEBIL | fuerza: 46.38
+USDMXN-OTC | turbo | filtro: 98 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 63 | tendencia: ALCISTA_DEBIL | fuerza: 47.89
+Activos ignorados/no soportados: 0
+D7.6C BUFFER VELAS PRECALENTADO | nuevos: 5 | reutilizados: 14 | errores: 0 | activos buffer: 19 | segundos: 4.577
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+
+===== RESUMEN DE RONDA =====
+Origen universo: CACHE
+Fallback caché por API: 0
+Compatibles disponibles en caché: 19
+Mercados seleccionados: 20
+Activos con candidatas: 2
+Candidatas generadas: 2
+Familias generadas:
+   liquidity sweep bajista : 1
+   pullback bajista a EMA : 1
+Candidatas evaluadas por Cerebro: 2
+Candidatas que continúan: 0
+Sin señal final devuelta a bot: 20
+Señales finales a bot: 0
+Cerebro NO_OPERAR: 2
+Cerebro sin autorización: 0
+Señales aprobadas REALES: 0
+Autorizadas DIRECTA: 0
+Autorizadas PROTOCOLO: 0
+DIRECTAS no ejecutadas: 0
+Entradas DIRECTAS abiertas: 0
+============================
+
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+pullback bajista a EMA | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+
+===== ESTADÍSTICAS POR ACTIVO =====
+EURTHB-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+pullback bajista a EMA | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+
+===== ESTADÍSTICAS POR ACTIVO =====
+EURTHB-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+D7.6C RONDA UNICA | vela: 29806346 | segundo: 0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: USDPLN-OTC | calidad: SUCIO | score: 54.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: SP35-OTC | calidad: SUCIO | score: 54.0
+D7.6C TIEMPO ANALISIS TOP: 4.245 segundos | activos: 19
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 60.05
+Activos compatibles filtrados: 18
+Activos reales analizados:
+DYDXUSD-OTC | turbo | filtro: 123 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 73 | tendencia: ALCISTA_NORMAL | fuerza: 59.31
+KLARNA-OTC | turbo | filtro: 121 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 61 | tendencia: BAJISTA_FUERTE | fuerza: 70.38
+CANNABIS-OTC | turbo | filtro: 115 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 55 | tendencia: ALCISTA_FUERTE | fuerza: 70.4
+GBPJPY-OTC | turbo | filtro: 115 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 65 | tendencia: BAJISTA_NORMAL | fuerza: 65.98
+URANIUM-OTC | turbo | filtro: 114 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 64 | tendencia: BAJISTA_NORMAL | fuerza: 63.67
+WLDUSD-OTC | turbo | filtro: 112 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 62 | tendencia: BAJISTA_NORMAL | fuerza: 68.75
+CHFJPY-OTC | turbo | filtro: 111 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 61 | tendencia: ALCISTA_NORMAL | fuerza: 68.66
+EURNZD-OTC | turbo | filtro: 110 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 60 | tendencia: BAJISTA_NORMAL | fuerza: 60.11
+COCOA-OTC | turbo | filtro: 110 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 60 | tendencia: BAJISTA_NORMAL | fuerza: 55.7
+EOSUSD-OTC | turbo | filtro: 110 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 60 | tendencia: BAJISTA_NORMAL | fuerza: 57.08
+UK100-OTC | turbo | filtro: 109 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 59 | tendencia: ALCISTA_NORMAL | fuerza: 57.42
+EURJPY-OTC | turbo | filtro: 107 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 57 | tendencia: BAJISTA_NORMAL | fuerza: 51.8
+EURCAD-OTC | turbo | filtro: 106 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 56 | tendencia: ALCISTA_NORMAL | fuerza: 53.57
+USDPLN-OTC | turbo | filtro: 106 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 56 | tendencia: ALCISTA_NORMAL | fuerza: 63.61
+LUNA-OTC | turbo | filtro: 105 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 55 | tendencia: BAJISTA_NORMAL | fuerza: 58.88
+SUGAR-OTC | turbo | filtro: 105 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 55 | tendencia: ALCISTA_NORMAL | fuerza: 67.13
+AIG-OTC | turbo | filtro: 99 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 64 | tendencia: BAJISTA_DEBIL | fuerza: 44.62
+USDMXN-OTC | turbo | filtro: 98 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 63 | tendencia: ALCISTA_DEBIL | fuerza: 48.67
+Activos ignorados/no soportados: 0
+D7.6C BUFFER VELAS PRECALENTADO | nuevos: 6 | reutilizados: 12 | errores: 0 | activos buffer: 18 | segundos: 3.348
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+D7.6C RONDA UNICA | vela: 29806347 | segundo: 1
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: WLDUSD-OTC | calidad: SUCIO | score: 53.0
+RANKING DE SEÑALES:
+EURNZD-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 107
+CONTEXTO FINAL: EURNZD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 55 | TENDENCIA: BAJISTA_DEBIL 47.53 | ACCION: ABSORCION_COMPRADORA
+D7.6C TIEMPO ANALISIS TOP: 4.017 segundos | activos: 18
+
+===== RESUMEN DE RONDA =====
+Origen universo: CACHE
+Fallback caché por API: 0
+Compatibles disponibles en caché: 18
+Mercados seleccionados: 18
+Activos con candidatas: 1
+Candidatas generadas: 1
+Familias generadas:
+   pullback bajista a EMA : 1
+Candidatas evaluadas por Cerebro: 1
+Candidatas que continúan: 0
+Sin señal final devuelta a bot: 18
+Señales finales a bot: 0
+Cerebro NO_OPERAR: 1
+Cerebro sin autorización: 0
+Señales aprobadas REALES: 0
+Autorizadas DIRECTA: 0
+Autorizadas PROTOCOLO: 0
+DIRECTAS no ejecutadas: 0
+Entradas DIRECTAS abiertas: 0
+============================
+
+
+================================================================================
+REPORTE GENERAL DE MERCADOS
+================================================================================
+AIG-OTC | TENDENCIA_BAJISTA | NORMAL | score: 64 | BAJISTA_NORMAL | fuerza: 69.6
+CANNABIS-OTC | TENDENCIA_ALCISTA | NORMAL | score: 60 | ALCISTA_NORMAL | fuerza: 58.59
+CHFJPY-OTC | TENDENCIA_ALCISTA | NORMAL | score: 59 | ALCISTA_NORMAL | fuerza: 61.94
+COCOA-OTC | RANGO | NORMAL | score: 60 | INDEFINIDA | fuerza: 31.54
+DYDXUSD-OTC | TENDENCIA_ALCISTA | NORMAL | score: 73 | ALCISTA_NORMAL | fuerza: 58.71
+EOSUSD-OTC | TENDENCIA_BAJISTA | NORMAL | score: 60 | BAJISTA_DEBIL | fuerza: 46.01
+EURCAD-OTC | TENDENCIA_ALCISTA | NORMAL | score: 63 | ALCISTA_NORMAL | fuerza: 52.0
+EURJPY-OTC | TENDENCIA_BAJISTA | NORMAL | score: 55 | BAJISTA_NORMAL | fuerza: 51.64
+EURNZD-OTC | TENDENCIA_BAJISTA | NORMAL | score: 55 | BAJISTA_DEBIL | fuerza: 47.53
+GBPJPY-OTC | TENDENCIA_BAJISTA | NORMAL | score: 67 | BAJISTA_FUERTE | fuerza: 77.88
+KLARNA-OTC | TENDENCIA_BAJISTA | NORMAL | score: 61 | BAJISTA_FUERTE | fuerza: 74.8
+LUNA-OTC | TENDENCIA_BAJISTA | NORMAL | score: 60 | BAJISTA_NORMAL | fuerza: 56.08
+SUGAR-OTC | TENDENCIA_ALCISTA | NORMAL | score: 60 | ALCISTA_NORMAL | fuerza: 57.94
+UK100-OTC | TENDENCIA_ALCISTA | NORMAL | score: 59 | ALCISTA_NORMAL | fuerza: 53.6
+URANIUM-OTC | TENDENCIA_BAJISTA | NORMAL | score: 59 | BAJISTA_NORMAL | fuerza: 58.34
+USDMXN-OTC | TENDENCIA_ALCISTA | NORMAL | score: 63 | ALCISTA_DEBIL | fuerza: 48.47
+USDPLN-OTC | TENDENCIA_ALCISTA | NORMAL | score: 56 | ALCISTA_NORMAL | fuerza: 64.02
+WLDUSD-OTC | TENDENCIA_BAJISTA | SUCIO | score: 53 | BAJISTA_NORMAL | fuerza: 58.51
+================================================================================
+
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+pullback bajista a EMA | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+
+===== ESTADÍSTICAS POR ACTIVO =====
+EURTHB-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+pullback bajista a EMA | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+
+===== ESTADÍSTICAS POR ACTIVO =====
+EURTHB-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+D7.6C RONDA UNICA | vela: 29806348 | segundo: 0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: WLDUSD-OTC | calidad: SUCIO | score: 53.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: USDPLN-OTC | calidad: SUCIO | score: 54.0
+RANKING DE SEÑALES:
+AIG-OTC | call | liquidity sweep alcista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 200
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: AIG-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 57 | TENDENCIA: BAJISTA_NORMAL 67.16 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+D7.6C TIEMPO ANALISIS TOP: 5.821 segundos | activos: 18
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+
+===== RESUMEN DE RONDA =====
+Origen universo: CACHE
+Fallback caché por API: 0
+Compatibles disponibles en caché: 18
+Mercados seleccionados: 18
+Activos con candidatas: 1
+Candidatas generadas: 1
+Familias generadas:
+   liquidity sweep alcista : 1
+Candidatas evaluadas por Cerebro: 1
+Candidatas que continúan: 0
+Sin señal final devuelta a bot: 18
+Señales finales a bot: 0
+Cerebro NO_OPERAR: 1
+Cerebro sin autorización: 0
+Señales aprobadas REALES: 0
+Autorizadas DIRECTA: 0
+Autorizadas PROTOCOLO: 0
+DIRECTAS no ejecutadas: 0
+Entradas DIRECTAS abiertas: 0
+============================
+
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 75.25
+D7.6C BUFFER VELAS PRECALENTADO | nuevos: 0 | reutilizados: 18 | errores: 0 | activos buffer: 18 | segundos: 0.0
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+pullback bajista a EMA | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+
+===== ESTADÍSTICAS POR ACTIVO =====
+EURTHB-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380941.2
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380941.45
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380941.7
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380941.97
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380942.24
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380942.49
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380942.74
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380943.0
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380943.27
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380943.52
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380943.79
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380944.05
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380944.3
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380944.57
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380944.84
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380945.1
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380945.38
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380945.65
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380945.9
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380946.16
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380946.42
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380946.67
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380946.93
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380947.18
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380947.46
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380947.72
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380947.99
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380948.24
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380948.5
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+pullback bajista a EMA | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+
+===== ESTADÍSTICAS POR ACTIVO =====
+EURTHB-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380948.77
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380949.02
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380949.44
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380949.7
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380949.97
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380950.22
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380950.48
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380950.74
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380951.0
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380951.27
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380951.52
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380951.79
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1788380952.05
+
+===== RESUMEN DE RONDA =====
+Origen universo: CACHE
+Fallback caché por API: 1
+Compatibles disponibles en caché: 18
+Mercados seleccionados: 18
+Activos con candidatas: 1
+Candidatas generadas: 1
+Familias generadas:
+   liquidity sweep alcista : 1
+Candidatas evaluadas por Cerebro: 1
+Candidatas que continúan: 0
+Sin señal final devuelta a bot: 18
+Señales finales a bot: 0
+Cerebro NO_OPERAR: 1
+Cerebro sin autorización: 0
+Señales aprobadas REALES: 0
+Autorizadas DIRECTA: 0
+Autorizadas PROTOCOLO: 0
+DIRECTAS no ejecutadas: 0
+Entradas DIRECTAS abiertas: 0
+============================
+
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 1788380953.84
+Activos compatibles filtrados: 19
+Activos reales analizados:
+AUDUSD-OTC | turbo | filtro: 145 | mercado: TENDENCIA_ALCISTA | calidad: LIMPIO | score mercado: 75 | tendencia: ALCISTA_FUERTE | fuerza: 82.75
+FARTCOINUSD-OTC | turbo | filtro: 128 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 68 | tendencia: BAJISTA_FUERTE | fuerza: 72.85
+HK33-OTC | turbo | filtro: 126 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 66 | tendencia: BAJISTA_FUERTE | fuerza: 72.03
+USDMXN-OTC | turbo | filtro: 125 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 65 | tendencia: ALCISTA_FUERTE | fuerza: 78.34
+KLARNA-OTC | turbo | filtro: 124 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 64 | tendencia: BAJISTA_FUERTE | fuerza: 72.92
+DYDXUSD-OTC | turbo | filtro: 123 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 73 | tendencia: ALCISTA_NORMAL | fuerza: 67.82
+HYPE-OTC | turbo | filtro: 122 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 62 | tendencia: BAJISTA_FUERTE | fuerza: 73.41
+TRUMPUSD-OTC | turbo | filtro: 121 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 61 | tendencia: ALCISTA_FUERTE | fuerza: 76.65
+GBPJPY-OTC | turbo | filtro: 119 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 69 | tendencia: BAJISTA_NORMAL | fuerza: 66.4
+MCDON-OTC | turbo | filtro: 116 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 56 | tendencia: ALCISTA_FUERTE | fuerza: 73.91
+AIG-OTC | turbo | filtro: 116 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 66 | tendencia: BAJISTA_NORMAL | fuerza: 61.21
+SpaceX-OTC | turbo | filtro: 114 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 64 | tendencia: BAJISTA_NORMAL | fuerza: 63.21
+SUGAR-OTC | turbo | filtro: 112 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 62 | tendencia: ALCISTA_NORMAL | fuerza: 59.65
+GOOGLE-OTC | turbo | filtro: 111 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 61 | tendencia: ALCISTA_NORMAL | fuerza: 55.46
+RENDERUSD-OTC | turbo | filtro: 110 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 60 | tendencia: ALCISTA_NORMAL | fuerza: 57.91
+TRON-OTC | turbo | filtro: 107 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 57 | tendencia: ALCISTA_NORMAL | fuerza: 59.67
+LUNA-OTC | turbo | filtro: 107 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 57 | tendencia: BAJISTA_NORMAL | fuerza: 68.28
+USDAED-OTC | turbo | filtro: 106 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 56 | tendencia: ALCISTA_NORMAL | fuerza: 57.67
+ARBUSD-OTC | turbo | filtro: 105 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 55 | tendencia: BAJISTA_NORMAL | fuerza: 57.3
+Activos ignorados/no soportados: 0
+D7.6C BUFFER VELAS PRECALENTADO | nuevos: 12 | reutilizados: 7 | errores: 0 | activos buffer: 19 | segundos: 17.5
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+
+===== RESUMEN DE RONDA =====
+Origen universo: CACHE
+Fallback caché por API: 1
+Compatibles disponibles en caché: 19
+Mercados seleccionados: 18
+Activos con candidatas: 1
+Candidatas generadas: 1
+Familias generadas:
+   liquidity sweep alcista : 1
+Candidatas evaluadas por Cerebro: 1
+Candidatas que continúan: 0
+Sin señal final devuelta a bot: 18
+Señales finales a bot: 0
+Cerebro NO_OPERAR: 1
+Cerebro sin autorización: 0
+Señales aprobadas REALES: 0
+Autorizadas DIRECTA: 0
+Autorizadas PROTOCOLO: 0
+DIRECTAS no ejecutadas: 0
+Entradas DIRECTAS abiertas: 0
+============================
+
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+reacción compradora en soporte | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+pullback bajista a EMA | total: 2 | ganadas: 0 | perdidas: 2 | winrate: 0.0% | neto: -50.0
+
+===== ESTADÍSTICAS POR ACTIVO =====
+EURTHB-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURJPY-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+XAUUSD-OTC | total: 1 | ganadas: 0 | perdidas: 1 | winrate: 0.0% | neto: -25.0
+D7.6C RONDA UNICA | vela: 29806351 | segundo: 0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: HYPE-OTC | calidad: SUCIO | score: 51.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: MCDON-OTC | calidad: SUCIO | score: 47.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: AIG-OTC | calidad: SUCIO | score: 50.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: GOOGLE-OTC | calidad: SUCIO | score: 54.0
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: TRON-OTC | calidad: SUCIO | score: 54.0
+RANKING DE SEÑALES:
+USDAED-OTC | put | liquidity sweep bajista | puntaje: 24 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 214
+CONTEXTO FINAL: USDAED-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 56 | TENDENCIA: ALCISTA_NORMAL 54.1 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+ACTIVO DESCARTADO POR CAMBIO DE CALIDAD: ARBUSD-OTC | calidad: SUCIO | score: 44.0
+D7.6C TIEMPO ANALISIS TOP: 3.633 segundos | activos: 19
+
+Balance: 9644.86 | Neto: 0.0 | Abiertas: 0
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 63.6
+Activos compatibles filtrados: 20
+Activos reales analizados:
+FARTCOINUSD-OTC | turbo | filtro: 147 | mercado: TENDENCIA_BAJISTA | calidad: LIMPIO | score mercado: 77 | tendencia: BAJISTA_FUERTE | fuerza: 70.59
+AUDUSD-OTC | turbo | filtro: 147 | mercado: TENDENCIA_ALCISTA | calidad: LIMPIO | score mercado: 77 | tendencia: ALCISTA_FUERTE | fuerza: 77.95
+SpaceX-OTC | turbo | filtro: 131 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 71 | tendencia: BAJISTA_FUERTE | fuerza: 71.11
+TRUMPUSD-OTC | turbo | filtro: 128 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 68 | tendencia: ALCISTA_FUERTE | fuerza: 73.87
+LUNA-OTC | turbo | filtro: 117 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 57 | tendencia: BAJISTA_FUERTE | fuerza: 81.01
+GBPJPY-OTC | turbo | filtro: 114 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 64 | tendencia: BAJISTA_NORMAL | fuerza: 54.51
+UK100-OTC | turbo | filtro: 112 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 62 | tendencia: ALCISTA_NORMAL | fuerza: 52.57
+SUGAR-OTC | turbo | filtro: 112 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 62 | tendencia: ALCISTA_NORMAL | fuerza: 54.8
+USDMXN-OTC | turbo | filtro: 110 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 60 | tendencia: ALCISTA_NORMAL | fuerza: 61.56
+SP35-OTC | turbo | filtro: 109 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 59 | tendencia: ALCISTA_NORMAL | fuerza: 68.68
+USDCLP-OTC | turbo 

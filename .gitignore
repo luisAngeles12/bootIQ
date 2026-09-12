@@ -7,3 +7,5 @@ dist/
 venv/
 .idea
 test.py
+# Credenciales privadas BootIQ
+credenciales_local.py

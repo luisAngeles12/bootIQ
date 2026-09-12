@@ -2,44 +2,107 @@ import os
 import pandas as pd
 from datetime import datetime, timedelta
 from config import HISTORIAL_CSV
+# ============================================================
+# CACHE HISTORIAL — EVITA RELEER historial_bot.csv
+# ============================================================
 
+_CACHE_HISTORIAL_CERRADO = {
+    "firma": None,
+    "df": None,
+}
 
 # =========================
 # CARGAR HISTORIAL CERRADO
 # =========================
 def cargar_historial_cerrado():
+    global _CACHE_HISTORIAL_CERRADO
+
     if not os.path.exists(HISTORIAL_CSV):
+        _CACHE_HISTORIAL_CERRADO = {
+            "firma": None,
+            "df": None,
+        }
         return pd.DataFrame()
 
     try:
-        df = pd.read_csv(HISTORIAL_CSV, encoding="utf-8-sig")
+        # Detectamos si historial_bot.csv cambió realmente.
+        stat = os.stat(HISTORIAL_CSV)
+
+        firma = (
+            stat.st_mtime_ns,
+            stat.st_size,
+        )
+
+        # Si el archivo no cambió, reutilizamos el historial ya procesado.
+        if (
+            _CACHE_HISTORIAL_CERRADO["firma"] == firma
+            and _CACHE_HISTORIAL_CERRADO["df"] is not None
+        ):
+            return _CACHE_HISTORIAL_CERRADO["df"]
+
+        df = pd.read_csv(
+            HISTORIAL_CSV,
+            encoding="utf-8-sig",
+        )
 
         if df.empty:
-            return pd.DataFrame()
+            _CACHE_HISTORIAL_CERRADO = {
+                "firma": firma,
+                "df": pd.DataFrame(),
+            }
+            return _CACHE_HISTORIAL_CERRADO["df"]
 
         if "estado" not in df.columns:
             return pd.DataFrame()
 
-        df = df[df["estado"] == "CERRADA"].copy()
+        df = df[
+            df["estado"] == "CERRADA"
+        ].copy()
 
         if df.empty:
-            return pd.DataFrame()
+            _CACHE_HISTORIAL_CERRADO = {
+                "firma": firma,
+                "df": pd.DataFrame(),
+            }
+            return _CACHE_HISTORIAL_CERRADO["df"]
 
-        df["resultado"] = pd.to_numeric(df["resultado"], errors="coerce")
-        df = df.dropna(subset=["resultado"])
+        if "resultado" in df.columns:
+            df["resultado"] = pd.to_numeric(
+                df["resultado"],
+                errors="coerce",
+            )
+
+            df = df.dropna(
+                subset=["resultado"]
+            )
 
         if "fecha" in df.columns:
-            df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
-            df = df.dropna(subset=["fecha"])
-            df = df.sort_values("fecha")
+            df["fecha"] = pd.to_datetime(
+                df["fecha"],
+                errors="coerce",
+            )
+
+            df = df.dropna(
+                subset=["fecha"]
+            )
+
+            df = df.sort_values(
+                "fecha"
+            )
+
+        _CACHE_HISTORIAL_CERRADO = {
+            "firma": firma,
+            "df": df,
+        }
 
         return df
 
     except Exception as e:
-        print("Error cargando historial estadístico:", e)
+        print(
+            "Error cargando historial estadístico:",
+            e
+        )
         return pd.DataFrame()
-
-
 # =========================
 # RESUMEN POR ESTRATEGIA
 # =========================
@@ -141,8 +204,12 @@ def imprimir_estadisticas():
 # =========================
 # PÉRDIDAS CONSECUTIVAS POR ACTIVO
 # =========================
-def perdidas_consecutivas_activo(activo):
-    df = cargar_historial_cerrado()
+def perdidas_consecutivas_activo(
+    activo,
+    df=None,
+):
+    if df is None:
+        df = cargar_historial_cerrado()
 
     if df.empty or not activo:
         return 0, None
@@ -178,9 +245,15 @@ def perdidas_consecutivas_activo(activo):
 def activo_en_cooldown_por_perdidas(
     activo,
     perdidas_maximas=3,
-    minutos_bloqueo=30
+    minutos_bloqueo=30,
+    df=None,
 ):
-    perdidas, ultima_fecha = perdidas_consecutivas_activo(activo)
+    perdidas, ultima_fecha = (
+        perdidas_consecutivas_activo(
+            activo,
+            df=df,
+        )
+    )
 
     if perdidas < perdidas_maximas:
         return False, "activo sin racha negativa"
@@ -221,12 +294,12 @@ def activos_bloqueables(
 
     bloqueados = set()
 
-    # Bloqueo temporal por pérdidas consecutivas.
     for activo in df["activo"].dropna().unique():
         bloqueado, _ = activo_en_cooldown_por_perdidas(
             activo,
             perdidas_maximas=perdidas_maximas,
-            minutos_bloqueo=minutos_bloqueo
+            minutos_bloqueo=minutos_bloqueo,
+            df=df,
         )
 
         if bloqueado:
