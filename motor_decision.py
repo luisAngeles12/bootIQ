@@ -1799,6 +1799,135 @@ def convertir_decision_v3_a_oficial(
         }
 
     # ========================================================
+    # D7.11 — CHOCH ALCISTA CON RESISTENCIA SIN RUPTURA
+    # ========================================================
+    #
+    # Regresión detectada tras centralizar autoridad:
+    #
+    # Antes de retirar filtros del generador, CHOCH alcista
+    # con CALL_RESISTENCIA_CERCA_SIN_RUPTURA solo nacía si
+    # PA era IMPULSO_ALCISTA_FUERTE.
+    #
+    # La generación ahora es deliberadamente amplia y el
+    # Cerebro Único debe conservar esa protección.
+    #
+    # Evidencia:
+    #
+    # LIVE desde D7.1:
+    #   CHOCH + OPERAR_CON_PROTOCOLO_SOMBRA
+    #   85 ops | 42W / 43L | 49.41% | -186.25
+    #
+    # Post 3ed671c:
+    #   16 ops | 5W / 11L | 31.25% | -169.75
+    #
+    # OOS4, CALL_RESISTENCIA_CERCA_SIN_RUPTURA:
+    #
+    #   IMPULSO_ALCISTA_FUERTE:
+    #     7 señales | 4W / 3L hipotético
+    #     2 operadas | 2W / 0L
+    #
+    #   SIN IMPULSO_ALCISTA_FUERTE:
+    #     5 señales | 2W / 3L hipotético
+    #     1 operada | 0W / 1L
+    #
+    # Contrato:
+    # - Solo autorización estadística V3 condicionada.
+    # - Solo CHOCH alcista.
+    # - Solo resistencia cerca sin ruptura.
+    # - IMPULSO_ALCISTA_FUERTE conserva permiso.
+    # - CORE4 ya tuvo prioridad antes de este punto.
+    # - No modifica motor_protocolos.py.
+    # ========================================================
+
+    patron_d711 = _txt(
+        evidencia.get(
+            "patron",
+            "",
+        )
+        or evidencia.get(
+            "estrategia",
+            "",
+        )
+    )
+
+    accion_precio_d711 = _txt(
+        evidencia.get(
+            "accion_precio",
+            "",
+        )
+    )
+
+    pa_d711 = _txt(
+        evidencia.get(
+            "pa_tipo",
+            "",
+        )
+        or evidencia.get(
+            "pa_profesional",
+            "",
+        )
+        or evidencia.get(
+            "tipo_pa_profesional",
+            "",
+        )
+    )
+
+    es_d711_choch_resistencia_debil = (
+        decision_estadistica
+        == "OPERAR_CON_PROTOCOLO_SOMBRA"
+        and patron_d711
+        == "choch alcista"
+        and accion_precio_d711
+        == "call_resistencia_cerca_sin_ruptura"
+        and pa_d711
+        != "impulso_alcista_fuerte"
+    )
+
+    if es_d711_choch_resistencia_debil:
+        return {
+            "decision": "NO_OPERAR",
+            "decision_legacy": "NO_OPERAR",
+            "operar": False,
+            "requiere_protocolo": False,
+            "modo_ejecucion": "BLOQUEADA",
+            "bloquear_por_riesgo": False,
+            "riesgo_extremo_diagnostico": False,
+
+            "origen_autoridad": (
+                "PROBABILIDAD_HISTORICA_V3"
+            ),
+
+            "decision_sombra_origen": (
+                decision_estadistica
+            ),
+
+            "nivel_probabilidad": nivel,
+            "clave_probabilidad": clave,
+
+            "directa_evidencia_solida": False,
+            "directa_muestra": muestra,
+            "directa_confiabilidad": confiabilidad,
+
+            "directa_aptitud_tecnica": False,
+
+            "directa_motivos_tecnicos": [
+                (
+                    "D7.11: CHOCH alcista condicionado "
+                    "con resistencia cercana sin ruptura "
+                    "requiere IMPULSO_ALCISTA_FUERTE."
+                )
+            ],
+
+            "motivo": (
+                "D7.11: autorización estadística condicionada "
+                "anulada para CHOCH alcista con resistencia "
+                "cercana sin ruptura y sin "
+                "IMPULSO_ALCISTA_FUERTE. "
+                + motivo_estadistico
+            ).strip(),
+        }
+
+    # ========================================================
     # V3 AUTORIZA OPERACIÓN
     # ========================================================
 
