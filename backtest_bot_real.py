@@ -3744,6 +3744,63 @@ def aplicar_paridad_capacidad_live(resultados):
                 "tipo": "PROTOCOLO",
             })
 
+            # =================================================
+            # PARIDAD LIVE — PROTOCOLO ABIERTO DESCARTA
+            # PENDIENTES FUTUROS DEL MISMO ACTIVO
+            # =================================================
+            # En LIVE, una pendiente del mismo activo deja de
+            # sobrevivir mientras exista una operación abierta.
+            if activo:
+                for orden_pendiente in list(
+                    protocolos_habilitados
+                ):
+                    try:
+                        registro_pendiente = (
+                            resultados[orden_pendiente]
+                        )
+
+                        idx_confirmacion_pendiente = int(
+                            registro_pendiente.get(
+                                "idx_entrada",
+                                -1,
+                            )
+                        )
+                    except (
+                        IndexError,
+                        TypeError,
+                        ValueError,
+                    ):
+                        continue
+
+                    activo_pendiente = str(
+                        registro_pendiente.get(
+                            "activo",
+                            "",
+                        )
+                        or ""
+                    )
+
+                    if (
+                        activo_pendiente == activo
+                        and idx_confirmacion_pendiente
+                        > idx_actual
+                    ):
+                        marcar_no_ejecutada(
+                            registro_pendiente,
+                            (
+                                "CANCELADA_PROTOCOLO_"
+                                "ACTIVO_ABIERTO_LIVE"
+                            ),
+                            (
+                                "PENDIENTE_DESCARTADA_"
+                                "POR_ACTIVO_ABIERTO_LIVE"
+                            ),
+                        )
+
+                        protocolos_habilitados.discard(
+                            orden_pendiente
+                        )
+
         # ====================================================
         # 3. SEÑALES NUEVAS DE LA RONDA
         # ====================================================
