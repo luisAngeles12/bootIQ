@@ -1447,6 +1447,13 @@ def convertir_decision_v3_a_oficial(
         )
     )
 
+    estado_tendencia_core4 = _txt(
+        evidencia.get(
+            "estado_tendencia",
+            "",
+        )
+    )
+
     # ========================================================
     # D7.8 — R4 NO RESCATA PULLBACK CON FILTRO REFORZADO
     # ========================================================
@@ -1570,8 +1577,24 @@ def convertir_decision_v3_a_oficial(
         == "put bloqueado: soporte cerca sin ruptura confirmada"
     )
 
+    core4_invalidacion_r1_vendedor_debil = (
+        core4_r1
+        and estrategia_core4
+        in {
+            "reacción vendedora en resistencia",
+            "reaccion vendedora en resistencia",
+        }
+        and estado_tendencia_core4
+        in {
+            "alcista_debil",
+            "bajista_debil",
+            "indefinida",
+        }
+    )
+
     core4_invalidacion_selectiva = (
         core4_invalidacion_r6_sr
+        or core4_invalidacion_r1_vendedor_debil
     )
 
     core4_match = (

@@ -22,7 +22,6 @@ from clasificador_senal import (
 )
 
 from motor_consenso import aplicar_consenso_senal
-from motor_candidatos import crear_candidato
 
 def crear_senal_profesional(activo, direccion, estrategia, puntaje, rsi, razones, ctx=None):
     calidad, prioridad = clasificar_senal_profesional(
@@ -103,7 +102,6 @@ def motor_estrategias_profesional(
     activos_malos=None,
 ):
     senales = []
-    candidatos = []
     activo = ctx["activo"]
     rsi = ctx["rsi"]
 
@@ -168,17 +166,7 @@ def motor_estrategias_profesional(
     # =========================
     # 1. LIQUIDITY SWEEP ALCISTA
     # =========================
-    if (
-        ctx["liquidity_sweep"] == 1
-        and ctx["patron"] != -1
-        and 30 <= rsi <= 58
-        and (
-            ctx["rechazo"] == 1
-            or ctx["patron"] == 1
-            or ctx["cerca_soporte"]
-            or direccion_presion in ["COMPRA", "ALCISTA"]
-        )
-    ):
+    if ctx["liquidity_sweep"] == 1:
         puntaje = 20
         razones = [
             "ESTRATEGIA: liquidity sweep alcista",
@@ -207,16 +195,6 @@ def motor_estrategias_profesional(
         if ctx["choch"] == 1:
             puntaje += 1
             razones.append(ctx["nombre_choch"])
-        candidatos.append(
-            crear_candidato(
-                activo,
-                "call",
-                "reacción compradora en soporte",
-                rsi,
-                razones.copy(),
-                ctx
-            )
-        )
         senales.append(
             crear_senal_profesional(
                 activo,
@@ -232,17 +210,7 @@ def motor_estrategias_profesional(
     # =========================
     # 2. LIQUIDITY SWEEP BAJISTA
     # =========================
-    if (
-        ctx["liquidity_sweep"] == -1
-        and ctx["patron"] != 1
-        and 45 <= rsi <= 68
-        and (
-            ctx["rechazo"] == -1
-            or ctx["patron"] == -1
-            or ctx["cerca_resistencia"]
-            or direccion_presion in ["VENTA", "BAJISTA"]
-        )
-    ):
+    if ctx["liquidity_sweep"] == -1:
         puntaje = 20
         razones = [
             "ESTRATEGIA: liquidity sweep bajista",
@@ -287,13 +255,7 @@ def motor_estrategias_profesional(
     # =========================
     # 3. BREAKOUT + RETEST ALCISTA
     # =========================
-    if (
-        ctx.get("br_call", 0) == 1
-        and ctx.get("ema_alcista", False)
-        and ctx.get("patron", 0) != -1
-        and 42 <= rsi <= 66
-        and direccion_presion in ["ALCISTA", "COMPRA", "NEUTRA"]
-    ):
+    if ctx.get("br_call", 0) == 1:
         puntaje = 20
         razones = [
             "ESTRATEGIA: breakout retest alcista",
@@ -331,13 +293,7 @@ def motor_estrategias_profesional(
     # =========================
     # 4. BREAKOUT + RETEST BAJISTA
     # =========================
-    if (
-        ctx.get("br_put", 0) == -1
-        and ctx.get("ema_bajista", False)
-        and ctx.get("patron", 0) != 1
-        and 34 <= rsi <= 58
-        and direccion_presion in ["BAJISTA", "VENTA", "NEUTRA"]
-    ):
+    if ctx.get("br_put", 0) == -1:
         puntaje = 20
         razones = [
             "ESTRATEGIA: breakout retest bajista",
@@ -386,21 +342,7 @@ def motor_estrategias_profesional(
         ctx["vol"]
     )
 
-    if (
-        call_reaccion
-        and ctx["patron"] != -1
-        and 30 <= rsi <= 56
-        and not (
-            ctx["tipo_mercado"] == "TENDENCIA_BAJISTA"
-            and ctx["estado_tendencia"].startswith("BAJISTA")
-            and ctx["liquidity_sweep"] != 1
-        )
-        and (
-            ctx["cerca_soporte"]
-            or patron_call_ok
-            or direccion_presion in ["COMPRA", "ALCISTA"]
-        )
-    ):
+    if call_reaccion:
         puntaje = 18
         razones = [
             "ESTRATEGIA: reacción compradora en soporte",
@@ -452,16 +394,7 @@ def motor_estrategias_profesional(
         ctx["vol"]
     )
 
-    if (
-        put_reaccion
-        and ctx["patron"] != 1
-        and 44 <= rsi <= 70
-        and (
-            ctx["cerca_resistencia"]
-            or patron_put_ok
-            or direccion_presion in ["VENTA", "BAJISTA"]
-        )
-    ):
+    if put_reaccion:
         puntaje = 18
         razones = [
             "ESTRATEGIA: reacción vendedora en resistencia",
@@ -503,32 +436,7 @@ def motor_estrategias_profesional(
     # 7. CHOCH ALCISTA
     # CHOCH con rechazo histórico inteligente
     # =========================
-    if (
-        ctx["choch"] == 1
-        and ctx["ema_alcista"]
-        and 42 <= rsi <= 62
-        and ctx["fuerza_tendencia"] >= 45
-        and ctx.get("rechazo_hist_direccion", "NEUTRA") != "PUT"
-        and not (
-            ctx["cerca_resistencia"]
-            and ctx.get("br_call", 0) != 1
-            and ctx.get("pa_direccion", "NEUTRA") != "CALL"
-            and ctx.get("rechazo_hist_direccion", "NEUTRA") != "CALL"
-        )
-        and ctx["posicion_rango"] <= 0.82
-        and not ctx.get("vela_climax_alcista", False)
-        and not ctx.get("rechazo_bajista_real", False)
-        and (
-            direccion_presion in ["ALCISTA", "COMPRA", "NEUTRA"]
-            or ctx.get("pa_direccion", "NEUTRA") in ["CALL", "NEUTRA"]
-            or ctx.get("rechazo_hist_direccion", "NEUTRA") in ["CALL", "NEUTRA"]
-            or ctx.get("impulso_alcista", False)
-        )
-        and not (
-            accion_precio_call == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA"
-            and ctx.get("pa_tipo") != "IMPULSO_ALCISTA_FUERTE"
-        )
-    ):
+    if ctx["choch"] == 1:
         puntaje = 16
         razones = [
             "ESTRATEGIA: CHOCH alcista",
@@ -584,41 +492,7 @@ def motor_estrategias_profesional(
     # 8. CHOCH BAJISTA
     # CHOCH con rechazo histórico inteligente
     # =========================
-    if (
-        ctx["choch"] == -1
-        and ctx["ema_bajista"]
-        and 38 <= rsi <= 58
-        and ctx["fuerza_tendencia"] >= 45
-        and ctx.get("rechazo_hist_direccion", "NEUTRA") != "CALL"
-        and not (
-            ctx["cerca_soporte"]
-            and ctx.get("br_put", 0) != -1
-            and ctx.get("pa_direccion", "NEUTRA") != "PUT"
-            and ctx.get("rechazo_hist_direccion", "NEUTRA") != "PUT"
-        )
-        and ctx["posicion_rango"] >= 0.18
-        and not ctx.get("vela_climax_bajista", False)
-        and not ctx.get("rechazo_alcista_real", False)
-        and (
-            direccion_presion in ["BAJISTA", "VENTA", "NEUTRA"]
-            or ctx.get("pa_direccion", "NEUTRA") in ["PUT", "NEUTRA"]
-            or ctx.get("rechazo_hist_direccion", "NEUTRA") in ["PUT", "NEUTRA"]
-            or ctx.get("impulso_bajista", False)
-        )
-
-        and not (
-            accion_precio_put == "PUT_SOPORTE_CERCA_SIN_RUPTURA"
-            and ctx.get("pa_tipo") in [
-                "AGOTAMIENTO_BAJISTA_CONFIRMADO",
-                "RECHAZO_COMPRADOR_CONFIRMADO"
-            ]
-        )
-        and not (
-            accion_precio_put == "PUT_SOPORTE_CERCA_SIN_RUPTURA"
-            and rsi < 43
-            and ctx["fuerza_tendencia"] < 65
-        )
-    ):
+    if ctx["choch"] == -1:
         puntaje = 16
         razones = [
             "ESTRATEGIA: CHOCH bajista",
@@ -674,30 +548,7 @@ def motor_estrategias_profesional(
     # =========================
     # 9. PULLBACK ALCISTA A EMA
     # =========================
-    if (
-        ctx["entrada_pullback_call"]
-        and ctx["ema_alcista"]
-        and ctx["tipo_mercado"] == "TENDENCIA_ALCISTA"
-        and ctx["calidad_mercado"] in ["LIMPIO", "NORMAL"]
-        and str(ctx["estado_tendencia"]).startswith("ALCISTA")
-        and 42 <= rsi <= 58
-        and not ctx["cerca_resistencia"]
-        and ctx["posicion_rango"] <= 0.72
-        and not ctx.get("vela_climax_alcista", False)
-        and not ctx.get("rechazo_bajista_real", False)
-        and ctx.get("presion_corta", "NEUTRA") in ["ALCISTA", "NEUTRA"]
-        and (
-            ctx["rechazo"] == 1
-            or ctx["patron"] == 1
-            or patron_call_ok
-            or direccion_presion in ["ALCISTA", "COMPRA"]
-        )
-        and not (
-            ctx["fuerza_ultima"] >= 0.78
-            and ctx["ultima_close"] > ctx["ultima_open"]
-            and ctx["posicion_rango"] >= 0.65
-        )
-    ):
+    if ctx["entrada_pullback_call"]:
         puntaje = 14
         razones = [
             "ESTRATEGIA: pullback alcista a EMA",
@@ -734,20 +585,7 @@ def motor_estrategias_profesional(
     # =========================
     # 10. PULLBACK BAJISTA A EMA
     # =========================
-    if (
-        ctx["entrada_pullback_put"]
-        and ctx["ema_bajista"]
-        and ctx["tipo_mercado"] == "TENDENCIA_BAJISTA"
-        and ctx["calidad_mercado"] in ["LIMPIO", "NORMAL"]
-        and str(ctx["estado_tendencia"]).startswith("BAJISTA")
-        and 40 <= rsi <= 64
-        and (
-            ctx["patron"] == -1
-            or ctx["rechazo"] == -1
-            or patron_put_ok
-            or direccion_presion in ["BAJISTA", "VENTA"]
-        )
-    ):
+    if ctx["entrada_pullback_put"]:
         puntaje = 14
         razones = [
             "ESTRATEGIA: pullback bajista a EMA",
@@ -789,9 +627,6 @@ def motor_estrategias_profesional(
         and ctx["estructura"] == 1
         and ctx["ema_alcista"]
         and ctx["micro"] == 1
-        and 45 <= rsi <= 62
-        and ctx["patron"] != -1
-        and direccion_presion in ["ALCISTA", "COMPRA"]
     ):
         puntaje = 11
         razones = [
@@ -832,9 +667,6 @@ def motor_estrategias_profesional(
         and ctx["estructura"] == -1
         and ctx["ema_bajista"]
         and ctx["micro"] == -1
-        and 38 <= rsi <= 55
-        and ctx["patron"] != 1
-        and direccion_presion in ["BAJISTA", "VENTA"]
     ):
         puntaje = 11
         razones = [
@@ -962,9 +794,4 @@ def motor_estrategias_profesional(
             "| score final:",
             s.get("score_final")
         )
-    if candidatos:
-        ctx["candidatos_bootiq_v2"] = candidatos
-        print("CANDIDATOS BOOTIQ V2:", len(candidatos))
-    else:
-        ctx["candidatos_bootiq_v2"] = []
     return senales

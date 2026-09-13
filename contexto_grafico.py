@@ -765,26 +765,3 @@ def preparar_contexto_mercado(activo, ctx):
         ctx["razon_tendencia"] = "error leyendo tendencia"
 
         return ctx
-
-def validar_contexto_base(activo, ctx):
-    calidad = ctx.get("calidad_mercado", "SIN_DATOS")
-    score = ctx.get("score_mercado", 0)
-    tendencia_estado = ctx.get("estado_tendencia", "INDEFINIDA")
-
-    if calidad not in ["LIMPIO", "NORMAL"]:
-        estado.cooldown_activos[activo] = time.time() + 600
-        return False
-
-    if score < 52:
-        estado.cooldown_activos[activo] = time.time() + 600
-        return False
-
-    if "DEBIL" in tendencia_estado and score < 62:
-        estado.cooldown_activos[activo] = time.time() + 600
-        return False
-
-    if tendencia_estado == "INDEFINIDA":
-        estado.cooldown_activos[activo] = time.time() + 600
-        return False
-
-    return True

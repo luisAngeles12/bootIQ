@@ -405,25 +405,30 @@ def _seleccionar_fuente_respaldo(fuentes, principal):
             continue
 
     # FASE 1.6-B:
-    # Si la principal es específica, retrocedemos primero
-    # un nivel hacia memoria intermedia antes de utilizar
-    # una memoria general mucho más amplia.
-    if candidatas_generales:
-        candidatas_generales.sort(
-            key=lambda item: item[0],
-            reverse=True,
-        )
-    
-        return candidatas_generales[0][1]
-    
+    # RESPALDO INTERMEDIO ANTES QUE GENERAL.
+    #
+    # La jerarquía documentada es:
+    #   ESPECIFICO -> INTERMEDIO -> GENERAL
+    #   INTERMEDIO -> GENERAL
+    #
+    # Dentro del mismo nivel seguimos escogiendo
+    # únicamente por mayor muestra; no por winrate.
     if candidatas_intermedias:
         candidatas_intermedias.sort(
             key=lambda item: item[0],
             reverse=True,
         )
-    
+
         return candidatas_intermedias[0][1]
-    
+
+    if candidatas_generales:
+        candidatas_generales.sort(
+            key=lambda item: item[0],
+            reverse=True,
+        )
+
+        return candidatas_generales[0][1]
+
     return None
 
 def _normalizar_token(valor):

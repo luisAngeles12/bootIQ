@@ -225,6 +225,31 @@ def construir_evidencia_operacion(senal, ctx=None):
             )
         ),
 
+        # ====================================================
+        # AUTORIDAD / MEMORIA / ZONA — TRANSPORTE PURO
+        # ====================================================
+        # Estos datos ya fueron calculados aguas arriba.
+        # constructor_evidencia no decide sobre ellos:
+        # solamente evita que se pierdan antes de llegar
+        # a motor_decision.py.
+        "memoria_permite": senal.get(
+            "memoria_permite",
+            ctx.get("memoria_permite")
+        ),
+
+        "activo_bloqueable_historico": senal.get(
+            "activo_bloqueable_historico",
+            ctx.get("activo_bloqueable_historico", False)
+        ),
+
+        "razon_zona_sr": normalizar(
+            senal.get(
+                "razon_zona_sr",
+                ctx.get("razon_zona_sr")
+            ),
+            ""
+        ),
+
         "validacion_accion_precio_ok": senal.get(
             "validacion_accion_precio_ok",
             ctx.get("validacion_accion_precio_ok")

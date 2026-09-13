@@ -390,6 +390,15 @@ def obtener_velas(activo):
         ]
 
         if len(fusionadas) < 130:
+            print(
+                "D7.6D FALLO VELAS DETALLE | activo:",
+                activo,
+                "| causa: FUSION_INSUFICIENTE",
+                "| velas:",
+                len(fusionadas),
+                flush=True,
+            )
+            estado.fallo_velas_ronda_d76d = True
             return None
 
         # ------------------------------------------------
@@ -448,6 +457,10 @@ def obtener_velas(activo):
     except Exception as e:
         texto = str(e).lower()
 
+        # Si falla la construccion de velas de cualquier
+        # activo del TOP, la ronda deja de ser integra.
+        estado.fallo_velas_ronda_d76d = True
+
         if (
             "need reconnect" in texto
             or "connection is already closed" in texto
@@ -464,6 +477,14 @@ def obtener_velas(activo):
                 activo
             )
 
+        print(
+            "D7.6D FALLO VELAS DETALLE | activo:",
+            activo,
+            "| causa: EXCEPCION_OBTENER_VELAS",
+            "| detalle:",
+            str(e),
+            flush=True,
+        )
         return None
 
 
@@ -546,12 +567,23 @@ def evaluar_estabilidad_activo(
             ] += 1
             return None
 
-        candles = sorted(
-            candles,
-            key=lambda x: x["from"]
-        )
+        # ==========================================
+        # PARIDAD SCANNER/LIVE
+        # ==========================================
+        # No eliminar candles[-1] a ciegas.
+        # Usamos la misma autoridad temporal que LIVE
+        # para identificar velas realmente cerradas.
+        candles = _solo_velas_cerradas(candles)
 
-        candles = candles[:-1]
+        if len(candles) < 80:
+            estado.metricas_ronda[
+                "scan_velas_insuficientes"
+            ] += 1
+            return None
+
+        # El scanner/backtest historico trabaja con
+        # 119 velas cerradas.
+        candles = candles[-119:]
 
         candles_contexto = []
 

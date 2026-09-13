@@ -149,6 +149,25 @@ def reconectar_iq(intentos=3):
                         flush=True
                     )
                 
+                    # ==========================================
+                    # CACHE DE VELAS INVALIDADA TRAS RECONECTAR
+                    # ==========================================
+                    # Una sesión nueva no debe reutilizar un buffer
+                    # que pudo quedar con un hueco temporal durante
+                    # la desconexión.
+                    #
+                    # Conservamos el TOP oficial, pero obligamos a
+                    # reconstruir sus velas fuera de la ventana
+                    # operativa antes de seguir trabajando normalmente.
+                    estado.velas_cache = {}
+                    estado.ultima_actualizacion_activos = 0
+
+                    print(
+                        "D7.6C CACHE VELAS INVALIDADA "
+                        "TRAS RECONEXION",
+                        flush=True,
+                    )
+
                     # NO actualizar OPCODE aquí.
                     # Ya tenemos los códigos cargados.
                     return True

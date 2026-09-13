@@ -56,7 +56,29 @@ def leer_contexto_grafico(activo):
     if len(froms) != len(closes):
         return None
 
+    # ========================================================
+    # PARIDAD BACKTEST / LIVE — VENTANA DE ANÁLISIS
+    # ========================================================
+    # LIVE conserva un buffer histórico amplio (~2999 velas)
+    # para cache y actualización incremental, pero el análisis
+    # debe recibir la misma profundidad causal que BACKTEST.
+    #
+    # BACKTEST principal entrega:
+    #     velas[i - 180:i + 1]
+    # = 181 velas cerradas incluyendo la vela de señal.
+    #
+    # El buffer de almacenamiento NO define la profundidad
+    # estadística utilizada por estrategia.py.
+    limite_analisis = 181
+
+    opens = opens[-limite_analisis:]
+    closes = closes[-limite_analisis:]
+    highs = highs[-limite_analisis:]
+    lows = lows[-limite_analisis:]
+    froms = froms[-limite_analisis:]
+
     vela_senal_from = int(froms[-1])
+
     if len(closes) < 130:
         return None
 

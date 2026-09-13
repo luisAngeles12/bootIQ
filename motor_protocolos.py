@@ -271,76 +271,104 @@ def _tipo_protocolo(senal):
 
 def _riesgo_cancelacion(senal):
     """
-    El protocolo no decide la calidad general de la operación.
+    VETOS GENERALES SIN AUTORIDAD.
 
-    Solo cancela por:
-    - bloqueo duro del cerebro;
-    - calidad extremadamente baja;
-    - riesgo de protocolo crítico.
+    motor_decision.py es la única autoridad para decidir
+    si una oportunidad puede operar.
 
-    El veto general por riesgo estructural crítico del setup queda
-    disponible solo en modo legacy mediante
-    PROTOCOLO_VETO_SETUP_LEGACY_ACTIVO.
+    motor_protocolos.py conserva riesgo, calidad y señales
+    legacy únicamente como diagnóstico. Ninguno de estos
+    datos puede cancelar por sí solo una operación que el
+    Cerebro ya autorizó para protocolo.
+
+    La cancelación válida ocurre después, dentro del
+    protocolo técnico correspondiente, cuando la
+    confirmación esperada no aparece dentro de su ventana.
     """
 
-    # Campo legacy: respaldo temporal.
-    modo = _txt(senal.get("modo_entrada_setup"))
-
-    # Evidencia neutral nueva del setup.
-    riesgo_critico_setup = _bool(
-        senal.get("riesgo_estructural_critico_setup"),
-        default=("no_operar" in modo or "cancelar" in modo)
+    modo = _txt(
+        senal.get("modo_entrada_setup")
     )
 
-    calidad = _txt(senal.get("calidad_setup"))
-    riesgo = _num(senal.get("riesgo_protocolo"), 50)
-    accion_ia = _txt(senal.get("accion_confirmacion_ia"))
-    fase4_decision = _txt(senal.get("fase4_decision"))
+    riesgo_critico_setup = _bool(
+        senal.get("riesgo_estructural_critico_setup"),
+        default=(
+            "no_operar" in modo
+            or "cancelar" in modo
+        ),
+    )
+
+    calidad = _txt(
+        senal.get("calidad_setup")
+    )
+
+    riesgo = _num(
+        senal.get("riesgo_protocolo"),
+        50,
+    )
+
+    accion_ia = _txt(
+        senal.get("accion_confirmacion_ia")
+    )
+
+    fase4_decision = _txt(
+        senal.get("fase4_decision")
+    )
 
     confianza_cerebro = _num(
         senal.get("cerebro_unico_confianza"),
-        0
+        0,
     )
+
     riesgo_cerebro = _txt(
         senal.get("cerebro_unico_riesgo")
     )
 
-    bloqueo_duro_cerebro = (
+    diagnosticos = []
+
+    if (
         fase4_decision == "no_operar"
         and riesgo_cerebro == "extremo"
         and confianza_cerebro < 38
-    )
-
-    if bloqueo_duro_cerebro:
-        return True, "CANCELADA_FASE4_NO_OPERAR"
+    ):
+        diagnosticos.append(
+            "FASE4_NO_OPERAR"
+        )
 
     if accion_ia == "cancelar":
-        if riesgo >= 90 and bloqueo_duro_cerebro:
-            return True, "CANCELADA_CONFIRMACION_IA"
+        diagnosticos.append(
+            "CONFIRMACION_IA_CANCELAR"
+        )
 
-    # Ya no se interpreta NO_OPERAR directamente.
-    # Se utiliza la evidencia neutral generada por motor_setup.
-    if (
-        PROTOCOLO_VETO_SETUP_LEGACY_ACTIVO
-        and riesgo_critico_setup
-    ):
-        return True, "CANCELADA_SETUP_NO_OPERAR"
+    if riesgo_critico_setup:
+        diagnosticos.append(
+            "RIESGO_ESTRUCTURAL_SETUP"
+        )
 
-    if calidad in ["muy_baja", "baja"]:
-        return True, "CANCELADA_CALIDAD_SETUP_BAJA"
+    if calidad in {
+        "muy_baja",
+        "baja",
+    }:
+        diagnosticos.append(
+            "CALIDAD_SETUP_BAJA"
+        )
 
     if riesgo >= 85:
-        return True, "CANCELADA_RIESGO_PROTOCOLO_CRITICO"
+        diagnosticos.append(
+            "RIESGO_PROTOCOLO_CRITICO"
+        )
 
-    # Riesgo crítico del setup queda disponible como diagnóstico,
-    # pero no veta automáticamente cuando el modo legacy está apagado.
-    if (
-        riesgo_critico_setup
-        and not PROTOCOLO_VETO_SETUP_LEGACY_ACTIVO
-    ):
-        senal["veto_setup_legacy_omitido"] = True
+    if diagnosticos:
+        senal[
+            "auditoria_vetos_generales_sin_autoridad"
+        ] = "|".join(diagnosticos)
 
+    # IMPORTANTE:
+    # estos diagnósticos NO pueden cancelar.
+    # El protocolo únicamente decide timing técnico.
     return False, ""
+
+
 def _entrada_directa_permitida(senal):
     calidad = _txt(senal.get("calidad_setup"))
 

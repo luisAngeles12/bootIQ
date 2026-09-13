@@ -571,14 +571,25 @@ def resolver_zona_pendiente(
 
 def entrada_pullback(direccion, price, ema21, soporte, resistencia, vol, patron, rechazo):
     cerca_ema = abs(price - ema21) <= vol * 1.2
+
     if direccion == "call":
-        cerca_soporte = abs(price - soporte) <= vol * 1.5
-        if (cerca_ema or cerca_soporte) and (patron == 1 or rechazo == 1):
-            return True
+        return (
+            cerca_ema
+            and (
+                patron == 1
+                or rechazo == 1
+            )
+        )
+
     if direccion == "put":
-        cerca_resistencia = abs(resistencia - price) <= vol * 1.5
-        if (cerca_ema or cerca_resistencia) and (patron == -1 or rechazo == -1):
-            return True
+        return (
+            cerca_ema
+            and (
+                patron == -1
+                or rechazo == -1
+            )
+        )
+
     return False
 
 

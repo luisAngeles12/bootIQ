@@ -35,10 +35,15 @@ import motor_aprendizaje_historico as mah
 from motor_candidatos import ordenar_candidatas_v3
 from motor_decision import evaluar_decision_post_protocolo
 from decision_bootiq import aplanar_decision_bootiq
+from config import (
+    MAX_OPERACIONES_ABIERTAS,
+    TIEMPO_EXPIRACION,
+    CANDLE_TIME,
+)
 CARPETA_DATA = "data_backtest_oos4_d75"
 
 MAX_ACTIVOS_ANALIZAR = 20
-MAX_SENALES_POR_RONDA = 5
+MAX_SENALES_POR_RONDA = None  # legacy desactivado: la capacidad real es MAX_OPERACIONES_ABIERTAS
 LIMITE_DATASETS = 160
 PASO_RONDA = 1
 
@@ -820,18 +825,35 @@ def imprimir_auditoria_datasets():
         "Datasets cargados:",
         AUDITORIA_DATASETS["cargados"],
     )
-    print(
-        "Válidos técnicamente:",
-        AUDITORIA_DATASETS["validos_tecnicamente"],
-    )
-    print(
-        "Compatibles con filtro:",
-        AUDITORIA_DATASETS["compatibles_filtro"],
-    )
-    print(
-        "Datasets seleccionados:",
-        AUDITORIA_DATASETS["seleccionados"],
-    )
+    if (
+        MODO_EXPERIMENTO
+        == MODO_EXPERIMENTO_OUT_OF_SAMPLE
+    ):
+        print(
+            "Válidos técnicamente:",
+            "EVALUACION_CAUSAL_POR_RONDA",
+        )
+        print(
+            "Compatibles con filtro:",
+            "EVALUACION_CAUSAL_POR_RONDA",
+        )
+        print(
+            "Datasets seleccionados:",
+            "EVALUACION_CAUSAL_POR_RONDA",
+        )
+    else:
+        print(
+            "Válidos técnicamente:",
+            AUDITORIA_DATASETS["validos_tecnicamente"],
+        )
+        print(
+            "Compatibles con filtro:",
+            AUDITORIA_DATASETS["compatibles_filtro"],
+        )
+        print(
+            "Datasets seleccionados:",
+            AUDITORIA_DATASETS["seleccionados"],
+        )
 
     print("\nExclusiones detectadas:")
 
@@ -3482,6 +3504,419 @@ def evaluar_d55_consenso_sombra(senal, decision_oficial):
 
 
 
+
+def aplicar_paridad_capacidad_live(resultados):
+    """
+    Aplica a los resultados ya evaluados las restricciones
+    operativas de capacidad que existen en LIVE.
+
+    NO cambia:
+    - decisión del Cerebro;
+    - protocolo técnico;
+    - probabilidad;
+    - resultado hipotético;
+    - aprendizaje.
+
+    Sí reproduce:
+    - MAX_OPERACIONES_ABIERTAS;
+    - un solo activo abierto a la vez;
+    - protocolos pendientes antes de señales nuevas;
+    - ocupación temporal del slot LIVE.
+
+    LIVE mantiene una operación aproximadamente:
+
+        TIEMPO_EXPIRACION * 60 + 10 segundos
+
+    Con velas de CANDLE_TIME segundos, la operación sigue
+    ocupando capacidad durante las rondas necesarias hasta
+    superar ese tiempo.
+    """
+
+    if not isinstance(resultados, list):
+        return resultados
+
+    if not resultados:
+        return resultados
+
+    try:
+        max_operaciones = int(
+            MAX_OPERACIONES_ABIERTAS
+        )
+    except Exception:
+        max_operaciones = 5
+
+    if max_operaciones <= 0:
+        return resultados
+
+    try:
+        candle_time = int(CANDLE_TIME)
+    except Exception:
+        candle_time = 60
+
+    if candle_time <= 0:
+        candle_time = 60
+
+    try:
+        segundos_slot = (
+            int(TIEMPO_EXPIRACION) * 60
+        ) + 10
+    except Exception:
+        segundos_slot = 70
+
+    rondas_slot = max(
+        1,
+        (
+            segundos_slot
+            + candle_time
+            - 1
+        )
+        // candle_time,
+    )
+
+    nacimientos = {}
+    confirmaciones = {}
+
+    for orden, registro in enumerate(resultados):
+        if not isinstance(registro, dict):
+            continue
+
+        try:
+            idx_senal = int(
+                registro.get(
+                    "idx_senal",
+                    -1,
+                )
+            )
+
+            idx_entrada = int(
+                registro.get(
+                    "idx_entrada",
+                    idx_senal,
+                )
+            )
+
+        except (TypeError, ValueError):
+            continue
+
+        estado_operacion = str(
+            registro.get(
+                "estado_operacion",
+                "",
+            )
+            or ""
+        ).upper().strip()
+
+        item = (
+            orden,
+            registro,
+            idx_senal,
+            idx_entrada,
+            estado_operacion,
+        )
+
+        nacimientos.setdefault(
+            idx_senal,
+            [],
+        ).append(item)
+
+        if (
+            estado_operacion
+            == "OPERADA_PROTOCOLO"
+            and idx_entrada > idx_senal
+        ):
+            confirmaciones.setdefault(
+                idx_entrada,
+                [],
+            ).append(item)
+
+    if not nacimientos:
+        return resultados
+
+    abiertas = []
+
+    # Identifica protocolos que realmente pudieron
+    # nacer durante una ronda LIVE disponible.
+    protocolos_habilitados = set()
+
+    def activo_abierto(activo):
+        return any(
+            op["activo"] == activo
+            for op in abiertas
+        )
+
+    def marcar_no_ejecutada(
+        registro,
+        estado,
+        motivo,
+    ):
+        registro["estado_operacion"] = estado
+        registro["motivo_ejecucion"] = motivo
+
+    indices_eventos = sorted(
+        set(nacimientos)
+        | set(confirmaciones)
+    )
+
+    for idx_actual in indices_eventos:
+
+        # ====================================================
+        # 1. LIBERAR OPERACIONES YA CERRADAS
+        # ====================================================
+
+        abiertas = [
+            op
+            for op in abiertas
+            if op["liberar_idx"] > idx_actual
+        ]
+
+        # ====================================================
+        # 2. PENDIENTES / PROTOCOLOS PRIMERO
+        # ====================================================
+        #
+        # bot.py procesa procesar_senales_pendientes()
+        # antes de analizar señales nuevas.
+        # ====================================================
+
+        pendientes_actuales = sorted(
+            confirmaciones.get(
+                idx_actual,
+                [],
+            ),
+            key=lambda item: item[0],
+        )
+
+        for (
+            orden,
+            registro,
+            idx_senal,
+            idx_entrada,
+            estado_operacion,
+        ) in pendientes_actuales:
+
+            if orden not in protocolos_habilitados:
+                continue
+
+            activo = str(
+                registro.get(
+                    "activo",
+                    "",
+                )
+                or ""
+            )
+
+            if len(abiertas) >= max_operaciones:
+                marcar_no_ejecutada(
+                    registro,
+                    (
+                        "CANCELADA_PROTOCOLO_"
+                        "CAPACIDAD_LIVE"
+                    ),
+                    (
+                        "CONFIRMACION_PERDIDA_"
+                        "POR_CAPACIDAD_LIVE"
+                    ),
+                )
+
+                continue
+
+            if activo and activo_abierto(activo):
+                marcar_no_ejecutada(
+                    registro,
+                    (
+                        "CANCELADA_PROTOCOLO_"
+                        "ACTIVO_ABIERTO_LIVE"
+                    ),
+                    (
+                        "PROTOCOLO_NO_EJECUTADO_"
+                        "ACTIVO_YA_ABIERTO"
+                    ),
+                )
+
+                continue
+
+            abiertas.append({
+                "activo": activo,
+                "entrada_idx": idx_entrada,
+                "liberar_idx": (
+                    idx_entrada
+                    + rondas_slot
+                ),
+                "tipo": "PROTOCOLO",
+            })
+
+        # ====================================================
+        # 3. SEÑALES NUEVAS DE LA RONDA
+        # ====================================================
+
+        senales_actuales = sorted(
+            nacimientos.get(
+                idx_actual,
+                [],
+            ),
+            key=lambda item: item[0],
+        )
+
+        for (
+            orden,
+            registro,
+            idx_senal,
+            idx_entrada,
+            estado_operacion,
+        ) in senales_actuales:
+
+            if estado_operacion not in {
+                "OPERADA_DIRECTA",
+                "OPERADA_PROTOCOLO",
+            }:
+                continue
+
+            activo = str(
+                registro.get(
+                    "activo",
+                    "",
+                )
+                or ""
+            )
+
+            # LIVE no inicia/continúa el procesamiento
+            # de nuevas operaciones cuando ya alcanzó
+            # MAX_OPERACIONES_ABIERTAS.
+            if len(abiertas) >= max_operaciones:
+                marcar_no_ejecutada(
+                    registro,
+                    "OMITIDA_CAPACIDAD_LIVE",
+                    (
+                        "RONDA_NO_EJECUTADA_"
+                        "POR_MAX_OPERACIONES_ABIERTAS"
+                    ),
+                )
+
+                continue
+
+            # Mismo contrato de bot.py:
+            # no duplicar un activo que ya está abierto.
+            if activo and activo_abierto(activo):
+                marcar_no_ejecutada(
+                    registro,
+                    "OMITIDA_ACTIVO_ABIERTO_LIVE",
+                    (
+                        "ACTIVO_YA_PRESENTE_EN_"
+                        "OPERACIONES_ABIERTAS"
+                    ),
+                )
+
+                continue
+
+            # =================================================
+            # PROTOCOLO
+            # =================================================
+            #
+            # Nace ahora, pero NO consume slot hasta que
+            # motor_protocolos.py confirme la entrada.
+            # =================================================
+
+            if estado_operacion == "OPERADA_PROTOCOLO":
+
+                if idx_entrada <= idx_senal:
+                    marcar_no_ejecutada(
+                        registro,
+                        (
+                            "CANCELADA_PROTOCOLO_"
+                            "NO_CAUSAL"
+                        ),
+                        (
+                            "IDX_ENTRADA_NO_POSTERIOR_"
+                            "A_IDX_SENAL"
+                        ),
+                    )
+
+                    continue
+
+                protocolos_habilitados.add(
+                    orden
+                )
+
+                continue
+
+            # =================================================
+            # OPERACIÓN DIRECTA
+            # =================================================
+
+            abiertas.append({
+                "activo": activo,
+                "entrada_idx": idx_entrada,
+                "liberar_idx": (
+                    idx_entrada
+                    + rondas_slot
+                ),
+                "tipo": "DIRECTA",
+            })
+
+            # =================================================
+            # PARIDAD LIVE — DESCARTAR PENDIENTE MISMO ACTIVO
+            # =================================================
+            # LIVE procesa pendientes antes de señales nuevas.
+            # Si luego abre una directa del mismo activo, en la
+            # siguiente iteración esa pendiente se descarta por:
+            #
+            #   any(op["activo"] == activo ...)
+            #
+            # Por tanto una pendiente futura del mismo activo
+            # tampoco puede sobrevivir en BACKTEST.
+            if activo:
+                for orden_pendiente in list(
+                    protocolos_habilitados
+                ):
+                    try:
+                        registro_pendiente = (
+                            resultados[orden_pendiente]
+                        )
+
+                        idx_confirmacion_pendiente = int(
+                            registro_pendiente.get(
+                                "idx_entrada",
+                                -1,
+                            )
+                        )
+                    except (
+                        IndexError,
+                        TypeError,
+                        ValueError,
+                    ):
+                        continue
+
+                    activo_pendiente = str(
+                        registro_pendiente.get(
+                            "activo",
+                            "",
+                        )
+                        or ""
+                    )
+
+                    if (
+                        activo_pendiente == activo
+                        and idx_confirmacion_pendiente
+                        > idx_actual
+                    ):
+                        marcar_no_ejecutada(
+                            registro_pendiente,
+                            (
+                                "CANCELADA_PROTOCOLO_"
+                                "ACTIVO_ABIERTO_LIVE"
+                            ),
+                            (
+                                "PENDIENTE_DESCARTADA_"
+                                "POR_ACTIVO_ABIERTO_LIVE"
+                            ),
+                        )
+
+                        protocolos_habilitados.discard(
+                            orden_pendiente
+                        )
+
+    return resultados
+
+
 def ejecutar_backtest(datasets):
     """
     Orquestador oficial del backtest BootIQ.
@@ -3562,7 +3997,7 @@ def ejecutar_backtest(datasets):
                 len(senales_ronda),
             )
 
-        for senal in senales_ronda[:MAX_SENALES_POR_RONDA]:
+        for senal in senales_ronda:
             velas = senal["_velas"]
             idx = senal["_index"]
 
@@ -4028,7 +4463,7 @@ def ejecutar_backtest(datasets):
                 )
             )
 
-    return resultados
+    return aplicar_paridad_capacidad_live(resultados)
 
 
 def guardar_resultados(resultados):
@@ -9450,6 +9885,15 @@ def main():
         == MODO_EXPERIMENTO_OUT_OF_SAMPLE
     ):
         datasets_seleccionados = list(
+            datasets_cargados
+        )
+
+        # En OOS no se ejecuta seleccionar_top_datasets()
+        # aquí, porque la selección es causal dentro del
+        # backtest. La auditoría inicial debe reflejar solo
+        # el universo cargado, sin fingir una selección previa.
+        reset_auditoria_datasets()
+        AUDITORIA_DATASETS["cargados"] = len(
             datasets_cargados
         )
     
