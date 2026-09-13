@@ -844,7 +844,7 @@ def check_win_v3_con_timeout(
 def obtener_resultado_historial_turbo_con_timeout(
     order_id,
     timeout=4,
-    limit=50,
+    limit=100,
 ):
     q = queue.Queue()
 
@@ -1057,7 +1057,7 @@ def obtener_resultado_operacion(op):
                     obtener_resultado_historial_turbo_con_timeout(
                         order_id,
                         timeout=4,
-                        limit=50,
+                        limit=100,
                     )
                 )
 
