@@ -553,7 +553,11 @@ def motor_estrategias_profesional(
         razones = [
             "ESTRATEGIA: pullback alcista a EMA",
             "pullback alcista válido",
-            "EMA favorece compra",
+            (
+                "EMA favorece compra"
+                if ctx.get("ema_alcista", False)
+                else "EMA no favorece compra"
+            ),
             "presión: " + razon_presion,
             "RSI: " + str(round(rsi, 2))
         ]
@@ -590,7 +594,11 @@ def motor_estrategias_profesional(
         razones = [
             "ESTRATEGIA: pullback bajista a EMA",
             "pullback bajista válido",
-            "EMA favorece venta",
+            (
+                "EMA favorece venta"
+                if ctx.get("ema_bajista", False)
+                else "EMA no favorece venta"
+            ),
             "presión: " + razon_presion,
             "RSI: " + str(round(rsi, 2))
         ]
