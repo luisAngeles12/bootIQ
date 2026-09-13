@@ -168,6 +168,16 @@ def construir_evidencia_operacion(senal, ctx=None):
             ctx.get("rsi", 0)
         ),
 
+        # D7.12 — transporte técnico para R4.
+        # No decide: conserva la dirección EMA ya calculada
+        # aguas arriba para que el Cerebro pueda auditarla.
+        "ema_bajista": bool(
+            senal.get(
+                "ema_bajista",
+                ctx.get("ema_bajista", False),
+            )
+        ),
+
         "prioridad": senal.get("prioridad", 0),
         "score_final": senal.get("score_final", 0),
         "estado_operativo_setup": normalizar(

@@ -1447,6 +1447,28 @@ def convertir_decision_v3_a_oficial(
         )
     )
 
+    tipo_mercado_core4 = _txt(
+        evidencia.get(
+            "tipo_mercado",
+            "",
+        )
+    )
+
+    rsi_core4 = _num(
+        evidencia.get(
+            "rsi",
+            0.0,
+        ),
+        0.0,
+    )
+
+    ema_bajista_core4 = bool(
+        evidencia.get(
+            "ema_bajista",
+            False,
+        )
+    )
+
     estado_tendencia_core4 = _txt(
         evidencia.get(
             "estado_tendencia",
@@ -1534,6 +1556,22 @@ def convertir_decision_v3_a_oficial(
         == "pullback bajista a ema"
         and calidad_setup_core4
         == "premium"
+
+        # D7.12:
+        # Al ampliar deliberadamente motor_estrategias.py,
+        # el antiguo contrato técnico de este pullback dejó
+        # de actuar antes del Cerebro.
+        #
+        # R4 conserva ahora esa protección dentro de la
+        # autoridad correcta, sin volver a estrechar el
+        # generador.
+        and ema_bajista_core4
+        and tipo_mercado_core4
+        == "tendencia_bajista"
+        and estado_tendencia_core4.startswith(
+            "bajista"
+        )
+        and 40.0 <= rsi_core4 <= 64.0
 
         # D7.8:
         # esta variante pierde permiso de rescate R4.
