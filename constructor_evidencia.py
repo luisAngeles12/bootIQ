@@ -178,6 +178,62 @@ def construir_evidencia_operacion(senal, ctx=None):
             )
         ),
 
+        # ====================================================
+        # D7.13 — TRANSPORTE TÉCNICO CHOCH
+        # ====================================================
+        # Solo conserva evidencia ya calculada aguas arriba.
+        # No decide ni bloquea operaciones.
+        "ema_alcista": bool(
+            senal.get(
+                "ema_alcista",
+                ctx.get("ema_alcista", False),
+            )
+        ),
+        "posicion_rango": senal.get(
+            "posicion_rango",
+            ctx.get("posicion_rango", 0.5),
+        ),
+        "rechazo_hist_direccion": normalizar(
+            senal.get(
+                "rechazo_hist_direccion",
+                ctx.get("rechazo_hist_direccion", "NEUTRA"),
+            )
+        ),
+        "impulso_alcista": bool(
+            senal.get(
+                "impulso_alcista",
+                ctx.get("impulso_alcista", False),
+            )
+        ),
+        "rechazo_bajista_real": bool(
+            senal.get(
+                "rechazo_bajista_real",
+                ctx.get("rechazo_bajista_real", False),
+            )
+        ),
+        "cerca_resistencia": bool(
+            senal.get(
+                "cerca_resistencia",
+                ctx.get("cerca_resistencia", False),
+            )
+        ),
+        "br_call": senal.get(
+            "br_call",
+            ctx.get("br_call", 0),
+        ),
+        "vela_climax_alcista": bool(
+            senal.get(
+                "vela_climax_alcista",
+                ctx.get("vela_climax_alcista", False),
+            )
+        ),
+        "direccion_presion": normalizar(
+            senal.get(
+                "direccion_presion",
+                ctx.get("direccion_presion", "NEUTRA"),
+            )
+        ),
+
         "prioridad": senal.get("prioridad", 0),
         "score_final": senal.get("score_final", 0),
         "estado_operativo_setup": normalizar(

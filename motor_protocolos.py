@@ -1,6 +1,7 @@
 # motor_protocolos.py
 from motor_confirmacion import decidir_confirmacion
 from motor_riesgo import evaluar_riesgo_protocolo
+from zonas import confirmar_ruptura_zona
 
 # ============================================================
 # VETO GENERAL DEL SETUP — LEGACY OPCIONAL
@@ -112,6 +113,54 @@ def _ruptura_micro(velas, idx, direccion):
         return vela["close"] < min_prev
 
     return False
+
+
+def _ruptura_estructural_confirmada(
+    velas,
+    idx,
+    senal,
+    direccion,
+):
+    """
+    D7.13 — Valida la resistencia estructural únicamente para
+    PROTOCOLO_RUPTURA_RESISTENCIA en CALL.
+
+    PUT conserva el comportamiento previo.
+    """
+    if direccion != "call":
+        return True
+
+    if idx < 0 or idx >= len(velas):
+        return False
+
+    resistencia = senal.get("resistencia")
+    vol = _num(senal.get("vol"), 0)
+
+    if resistencia is None:
+        return False
+
+    usadas = velas[:idx + 1]
+
+    opens = [v["open"] for v in usadas]
+    closes = [v["close"] for v in usadas]
+    highs = [v["max"] for v in usadas]
+    lows = [v["min"] for v in usadas]
+
+    resultado = confirmar_ruptura_zona(
+        "call",
+        opens,
+        closes,
+        highs,
+        lows,
+        0,
+        _num(resistencia, 0),
+        vol,
+    )
+
+    return _bool(
+        resultado.get("confirmada", False),
+        False,
+    )
 
 
 def _pullback_recuperado(velas, idx, direccion):
@@ -845,10 +894,16 @@ def _protocolo_ruptura_resistencia(velas, idx, senal):
         velas,
     )
 
-    # Nivel 1: ruptura acompañada de impulso.
+    # Nivel 1: ruptura estructural acompañada de impulso.
     for j in range(inicio, fin):
         if (
             _ruptura_micro(velas, j, direccion)
+            and _ruptura_estructural_confirmada(
+                velas,
+                j,
+                senal,
+                direccion,
+            )
             and _impulso(velas[j], direccion)
         ):
             return (
@@ -859,7 +914,15 @@ def _protocolo_ruptura_resistencia(velas, idx, senal):
     # Nivel 2: ruptura seguida de conservación del nivel, siempre
     # dentro de la ventana temporal permitida.
     for j in range(inicio, fin):
-        if not _ruptura_micro(velas, j, direccion):
+        if not (
+            _ruptura_micro(velas, j, direccion)
+            and _ruptura_estructural_confirmada(
+                velas,
+                j,
+                senal,
+                direccion,
+            )
+        ):
             continue
 
         idx_confirmacion = j + 1

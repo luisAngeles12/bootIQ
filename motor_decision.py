@@ -1462,6 +1462,14 @@ def convertir_decision_v3_a_oficial(
         0.0,
     )
 
+    puntaje_core4 = _num(
+        evidencia.get(
+            "puntaje",
+            0.0,
+        ),
+        0.0,
+    )
+
     ema_bajista_core4 = bool(
         evidencia.get(
             "ema_bajista",
@@ -1568,8 +1576,16 @@ def convertir_decision_v3_a_oficial(
         and ema_bajista_core4
         and tipo_mercado_core4
         == "tendencia_bajista"
-        and estado_tendencia_core4.startswith(
-            "bajista"
+        and estado_tendencia_core4
+        in {
+            "bajista_normal",
+            "bajista_fuerte",
+        }
+        and puntaje_core4 >= 18.0
+        and (
+            estado_tendencia_core4
+            == "bajista_fuerte"
+            or puntaje_core4 >= 20.0
         )
         and 40.0 <= rsi_core4 <= 64.0
 
