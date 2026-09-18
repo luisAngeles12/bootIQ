@@ -179,6 +179,14 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
         self.buy_successful = None
         self.__active_account_type = None
 
+        # BootIQ — initialization-data V2 correlacionado.
+        #
+        # IQ devuelve el request_id enviado en
+        # get-initialization-data. Cada solicitud conserva
+        # su propia respuesta para impedir que una respuesta
+        # tardía sea consumida por una petición posterior.
+        self.api_option_init_all_result_v2_by_request = {}
+
     def prepare_http_url(self, resource):
         """Construct http url from resource url.
 
@@ -271,12 +279,43 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
         data = json.dumps(dict(name=name,
                                msg=msg, request_id=request_id))
 
+        inicio_espera_mutex = time.time()
+
         while (global_value.ssl_Mutual_exclusion or global_value.ssl_Mutual_exclusion_write) and no_force_send:
             pass
+
+        demora_espera_mutex = (
+            time.time()
+            - inicio_espera_mutex
+        )
+
+        if demora_espera_mutex >= 0.250:
+            logger.warning(
+                "**warning** websocket espera mutex lenta %.3f sec | request: %s",
+                demora_espera_mutex,
+                name,
+            )
+
         global_value.ssl_Mutual_exclusion_write = True
-        self.websocket.send(data)
-        logger.debug(data)
-        global_value.ssl_Mutual_exclusion_write = False
+        inicio_envio_websocket = time.time()
+
+        try:
+            self.websocket.send(data)
+            logger.debug(data)
+        finally:
+            demora_envio_websocket = (
+                time.time()
+                - inicio_envio_websocket
+            )
+
+            if demora_envio_websocket >= 0.250:
+                logger.warning(
+                    "**warning** websocket send lento %.3f sec | request: %s",
+                    demora_envio_websocket,
+                    name,
+                )
+
+            global_value.ssl_Mutual_exclusion_write = False
 
     @property
     def logout(self):
@@ -623,13 +662,22 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
     def get_api_option_init_all(self):
         self.send_websocket_request(name="api_option_init_all", msg="")
 
-    def get_api_option_init_all_v2(self):
+    def get_api_option_init_all_v2(
+        self,
+        request_id="",
+    ):
 
-        msg = {"name": "get-initialization-data",
-               "version": "3.0",
-               "body": {}
-               }
-        self.send_websocket_request(name="sendMessage", msg=msg)
+        msg = {
+            "name": "get-initialization-data",
+            "version": "3.0",
+            "body": {},
+        }
+
+        self.send_websocket_request(
+            name="sendMessage",
+            msg=msg,
+            request_id=str(request_id),
+        )
 # -------------get information-------------
 
     @property

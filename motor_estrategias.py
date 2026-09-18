@@ -163,6 +163,12 @@ def motor_estrategias_profesional(
         ctx["vol"]
     )
 
+    # D7.18 — evidencia estructurada para restaurar
+    # el contrato técnico original de CORE4 R2.
+    # No decide ni bloquea señales.
+    ctx["patron_call_ok"] = bool(patron_call_ok)
+    ctx["razon_patron_call"] = razon_patron_call
+
     # =========================
     # 1. LIQUIDITY SWEEP ALCISTA
     # =========================

@@ -670,20 +670,78 @@ def aplicar_setup_decision(decision_bootiq):
         return decision_bootiq
 
 
-def enriquecer_senal_con_setup(senal):
+def enriquecer_senal_con_setup(senal, ctx=None):
     """
     Ejecuta la capa contextual final y ensambla el contrato completo.
 
-    La capa estratégica debe haber sido calculada previamente.
-    No vuelve a modificar el puntaje de la señal.
+    Si recibe ctx, recalcula la capa estratégica con el contexto
+    final de la señal. No modifica el puntaje.
     """
 
     setup_contextual = clasificar_setup(senal)
 
-    setup_estrategico = senal.get(
-        "_setup_estrategico",
-        {}
-    )
+    if ctx is not None:
+        setup_estrategico = clasificar_setup_estrategico(
+            senal,
+            ctx,
+        )
+        senal["_setup_estrategico"] = setup_estrategico.copy()
+
+        senal["tipo_setup"] = setup_estrategico.get(
+            "tipo_setup",
+            "INDEFINIDO",
+        )
+        senal["calidad_setup"] = setup_estrategico.get(
+            "calidad_setup",
+            "MEDIA",
+        )
+        senal["modo_entrada_setup"] = setup_estrategico.get(
+            "modo_entrada",
+            "DIRECTA",
+        )
+        senal["puntaje_extra_setup"] = setup_estrategico.get(
+            "puntaje_extra_setup",
+            0,
+        )
+        senal["riesgo_extra_setup"] = setup_estrategico.get(
+            "riesgo_extra_setup",
+            0,
+        )
+        senal["balance_setup"] = setup_estrategico.get(
+            "balance_setup",
+            0,
+        )
+        senal["a_favor_tendencia"] = setup_estrategico.get(
+            "a_favor_tendencia",
+            False,
+        )
+        senal["razones_setup"] = " | ".join(
+            setup_estrategico.get(
+                "razones_setup",
+                [],
+            )
+        )
+        senal["estado_operativo_setup"] = setup_estrategico.get(
+            "estado_operativo_setup",
+            "LISTO",
+        )
+        senal["requiere_ruptura_setup"] = setup_estrategico.get(
+            "requiere_ruptura_setup",
+            False,
+        )
+        senal["requiere_confirmacion_setup"] = setup_estrategico.get(
+            "requiere_confirmacion_setup",
+            False,
+        )
+        senal["riesgo_estructural_critico_setup"] = setup_estrategico.get(
+            "riesgo_estructural_critico_setup",
+            False,
+        )
+    else:
+        setup_estrategico = senal.get(
+            "_setup_estrategico",
+            {}
+        )
 
     setup_completo = ensamblar_setup_completo(
         setup_estrategico,

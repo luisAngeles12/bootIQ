@@ -211,8 +211,8 @@ def precargar_velas_activos(
                 CANDLE_TIME,
                 CANDLE_NUMBER,
                 time.time(),
-                timeout=1.5,
-                drain_timeout=2.5,
+                timeout=3.0,
+                drain_timeout=1.0,
             )
 
             cerradas = _solo_velas_cerradas(
@@ -322,8 +322,8 @@ def obtener_velas(activo):
                 CANDLE_TIME,
                 4,
                 time.time(),
-                timeout=1.5,
-                drain_timeout=2.5,
+                timeout=3.0,
+                drain_timeout=1.0,
             )
 
         finally:
@@ -550,8 +550,13 @@ def evaluar_estabilidad_activo(
                 conectado = False
 
             if not conectado:
+                # D7.20:
+                # La petición de candles YA fue intentada.
+                # Si esa petición dejó la sesión desconectada,
+                # el scanner no debe volver al mismo activo
+                # después de reconectar.
                 raise ConnectionError(
-                    "IQ_DESCONECTADO_DURANTE_SCAN"
+                    "IQ_DESCONECTADO_TRAS_GET_CANDLES_SCAN"
                 )
 
             # Timeout/dato no disponible, pero websocket vivo.
@@ -872,11 +877,10 @@ def refrescar_activos_incremental():
         conectado = False
 
     if not conectado:
-        reset_refresh_incremental()
-
         print(
             "D7.6D REFRESH INCREMENTAL "
-            "ABORTADO POR DESCONEXION",
+            "PAUSADO POR DESCONEXION | "
+            "SE CONSERVA PROGRESO",
             flush=True,
         )
 
@@ -1111,7 +1115,7 @@ def refrescar_activos_incremental():
 
         # Dejamos margen para devolver el control
         # antes de consumir la vela siguiente.
-        if restante <= 0.55:
+        if restante <= 4.05:
             print(
                 "D7.6D REFRESH INCREMENTAL PAUSADO |",
                 "indice:",
@@ -1158,16 +1162,20 @@ def refrescar_activos_incremental():
             conectado = False
 
         if not conectado:
+            estado.refresh_activos_indice = max(
+                0,
+                estado.refresh_activos_indice - 1,
+            )
+
             print(
                 "D7.6D REFRESH INCREMENTAL "
-                "ABORTADO DURANTE SCAN |",
-                "indice:",
+                "PAUSADO DURANTE SCAN |",
+                "reintento_indice:",
                 estado.refresh_activos_indice,
                 "/",
                 total_universo,
+                "| progreso conservado",
             )
-
-            reset_refresh_incremental()
 
             return []
 
@@ -1210,30 +1218,17 @@ def refrescar_activos_incremental():
             "activos_evaluados_filtro"
         ] += 1
 
-        reserva_drenaje_d76d = 0.25
-
-        presupuesto_candles_d76d = max(
-            0.0,
-            restante - 0.05,
-        )
-
-        timeout_activo_d76d = min(
-            0.75,
-            max(
-                0.25,
-                presupuesto_candles_d76d
-                - reserva_drenaje_d76d,
-            ),
-        )
-
-        drenaje_activo_d76d = min(
-            2.5,
-            max(
-                reserva_drenaje_d76d,
-                presupuesto_candles_d76d
-                - timeout_activo_d76d,
-            ),
-        )
+        # D7.6D — separar presupuesto del scanner
+        # de la salud de la conexión.
+        #
+        # Un activo lento no debe declarar muerto el
+        # websocket después de solo 0.25-0.75 s.
+        #
+        # Usamos la misma ventana segura que la
+        # precarga LIVE:
+        #   3.0 s respuesta + 1.0 s drenaje.
+        timeout_activo_d76d = 3.0
+        drenaje_activo_d76d = 1.0
 
         try:
             evaluado = (
@@ -1249,14 +1244,42 @@ def refrescar_activos_incremental():
                 )
             )
 
-        except ConnectionError:
+        except ConnectionError as e:
+            causa_conexion = str(e)
+
+            # D7.20:
+            # Si la conexión ya estaba caída ANTES de pedir
+            # candles, esta posición todavía no fue realmente
+            # procesada y debe reintentarse.
+            #
+            # Si get_candles YA fue intentado y esa petición
+            # dejó la sesión desconectada, mantener el índice
+            # avanzado evita que el mismo activo vuelva a
+            # derribar la sesión inmediatamente tras reconectar.
+            if (
+                causa_conexion
+                != "IQ_DESCONECTADO_TRAS_GET_CANDLES_SCAN"
+            ):
+                estado.refresh_activos_indice = max(
+                    0,
+                    estado.refresh_activos_indice - 1,
+                )
+                accion_indice = "REINTENTAR_MISMO_ACTIVO"
+            else:
+                accion_indice = "CONTINUAR_SIGUIENTE_ACTIVO"
+
             print(
                 "D7.6D REFRESH INCREMENTAL "
-                "ABORTADO POR CONEXION |",
+                "PAUSADO POR CONEXION |",
                 asset,
+                "| indice:",
+                estado.refresh_activos_indice,
+                "| accion:",
+                accion_indice,
+                "| causa:",
+                causa_conexion,
+                "| progreso conservado",
             )
-
-            reset_refresh_incremental()
 
             return []
 
@@ -1839,7 +1862,7 @@ def obtener_activos(
                 - demora_scan_d76d
             )
 
-            if restante_scan_d76d <= 0.55:
+            if restante_scan_d76d <= 4.05:
                 return fallback_cache_scan_d76d(
                     "PRESUPUESTO TOTAL AGOTADO"
                 )
@@ -1901,30 +1924,10 @@ def obtener_activos(
             ] += 1
 
             try:
-                reserva_drenaje_d76d = 0.25
-
-                presupuesto_candles_d76d = max(
-                    0.0,
-                    restante_scan_d76d - 0.05,
-                )
-
-                timeout_activo_d76d = min(
-                    0.75,
-                    max(
-                        0.25,
-                        presupuesto_candles_d76d
-                        - reserva_drenaje_d76d,
-                    ),
-                )
-
-                drenaje_activo_d76d = min(
-                    2.5,
-                    max(
-                        reserva_drenaje_d76d,
-                        presupuesto_candles_d76d
-                        - timeout_activo_d76d,
-                    ),
-                )
+                # D7.6D — misma ventana segura usada
+                # por el refresh incremental.
+                timeout_activo_d76d = 3.0
+                drenaje_activo_d76d = 1.0
 
                 evaluado = (
                     evaluar_estabilidad_activo(

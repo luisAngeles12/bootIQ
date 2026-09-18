@@ -55,11 +55,16 @@ def conectar():
     # La espera ocurre solo en la conexión inicial.
     time.sleep(2)
 
-    actualizar_activos_opcode()
-
     # IMPORTANTE:
-    # No usamos get_profile_ansyc porque también puede quedarse colgado.
-    # Mejor usamos get_balance(), que ya estás usando en bot.py.
+    # El primer request operativo de la sesión debe ser balance.
+    #
+    # Validación A/B en conexión fresca:
+    # - OPCODE primero:
+    #   OPCODE timeout + balance timeout.
+    # - BALANCE primero:
+    #   balance respondió correctamente y OPCODE respondió después.
+    #
+    # No cambiamos timeouts ni añadimos esperas adicionales.
     try:
         print("Obteniendo balance inicial...", flush=True)
         estado.balance_inicial = float(estado.Iq.get_balance())
@@ -68,6 +73,9 @@ def conectar():
         estado.balance_inicial = None
 
     print("Balance inicial:", estado.balance_inicial, flush=True)
+
+    actualizar_activos_opcode()
+
     return True
 
 
@@ -161,6 +169,11 @@ def reconectar_iq(intentos=3):
                     # operativa antes de seguir trabajando normalmente.
                     estado.velas_cache = {}
                     estado.ultima_actualizacion_activos = 0
+
+                    # La instancia IQ_Option se reutiliza al
+                    # reconectar. Nunca reutilizar initialization-data
+                    # obtenido antes de perder el websocket.
+                    estado.Iq._bootiq_init_v2_bootstrap = None
 
                     print(
                         "D7.6C CACHE VELAS INVALIDADA "

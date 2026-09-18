@@ -1197,6 +1197,170 @@ def convertir_decision_v3_a_oficial(
         }
 
     # ========================================================
+    # D7.13C — CHOCH INVALIDADO POR TENDENCIA SUCIA
+    # ========================================================
+    #
+    # Evidencia histórica V3:
+    #   50 operaciones | 24W / 26L | 48.00% | -139.25
+    #
+    # Todas:
+    #   core4_rescate = False
+    #
+    # Contrato:
+    # - Solo autorizaciones estadísticas V3.
+    # - Solo CHOCH alcista.
+    # - Solo invalidación explícita de mercado.
+    # - Solo motivo "tendencia sucia ... CHOCH ... bloqueado".
+    # - No convierte validacion_mercado_ok=False en veto global.
+    # - No modifica CORE4 ni otros patrones/motivos.
+    # ========================================================
+
+    patron_d713c = _txt(
+        evidencia.get(
+            "patron",
+            "",
+        )
+    )
+
+    validacion_mercado_d713c = evidencia.get(
+        "validacion_mercado_ok",
+        None,
+    )
+
+    razon_validacion_d713c = _txt(
+        evidencia.get(
+            "razon_validacion_mercado",
+            "",
+        )
+    )
+
+    es_d713c_choch_tendencia_sucia = (
+        decision_estadistica
+        in {
+            "OPERAR_SOMBRA",
+            "OPERAR_CON_PROTOCOLO_SOMBRA",
+        }
+        and patron_d713c == "choch alcista"
+        and validacion_mercado_d713c is False
+        and "tendencia sucia" in razon_validacion_d713c
+        and "choch" in razon_validacion_d713c
+        and "bloqueado" in razon_validacion_d713c
+    )
+
+    if es_d713c_choch_tendencia_sucia:
+        return {
+            "decision": "NO_OPERAR",
+            "decision_legacy": "NO_OPERAR",
+            "operar": False,
+            "requiere_protocolo": False,
+            "modo_ejecucion": "BLOQUEADA",
+            "bloquear_por_riesgo": False,
+            "riesgo_extremo_diagnostico": False,
+
+            "origen_autoridad": (
+                "PROBABILIDAD_HISTORICA_V3"
+            ),
+
+            "decision_sombra_origen": (
+                decision_estadistica
+            ),
+
+            "nivel_probabilidad": nivel,
+            "clave_probabilidad": clave,
+
+            "directa_evidencia_solida": False,
+            "directa_muestra": muestra,
+            "directa_confiabilidad": confiabilidad,
+            "directa_aptitud_tecnica": False,
+
+            "directa_motivos_tecnicos": [
+                (
+                    "D7.13C: CHOCH alcista invalidado "
+                    "por tendencia sucia."
+                )
+            ],
+
+            "motivo": (
+                "D7.13C: autorizacion estadistica anulada "
+                "para CHOCH alcista con invalidacion explicita "
+                "de mercado por tendencia sucia. "
+                + motivo_estadistico
+            ).strip(),
+        }
+
+    # ========================================================
+    # D7.17 — CHOCH V3 CONDICIONADO CONTRA TENDENCIA
+    # ========================================================
+    #
+    # Evidencia prospectiva bajo la ruta:
+    #   CHOCH alcista
+    #   + OPERAR_CON_PROTOCOLO_SOMBRA
+    #   + validacion_mercado_ok = False
+    #   + "CHOCH contra tendencia bloqueado"
+    #
+    # Resultado observado:
+    #   5 ops | 1W / 4L | PNL -79.00
+    #
+    # Contrato:
+    # - Solo autorización V3 condicionada.
+    # - Solo CHOCH alcista.
+    # - Solo invalidación técnica exacta contra tendencia.
+    # - No convierte validacion_mercado_ok=False en veto global.
+    # - No modifica CORE4 ni otros patrones.
+    # ========================================================
+
+    es_d717_choch_contra_tendencia = (
+        decision_estadistica
+        == "OPERAR_CON_PROTOCOLO_SOMBRA"
+        and patron_d713c
+        == "choch alcista"
+        and validacion_mercado_d713c is False
+        and razon_validacion_d713c
+        == "choch contra tendencia bloqueado"
+    )
+
+    if es_d717_choch_contra_tendencia:
+        return {
+            "decision": "NO_OPERAR",
+            "decision_legacy": "NO_OPERAR",
+            "operar": False,
+            "requiere_protocolo": False,
+            "modo_ejecucion": "BLOQUEADA",
+            "bloquear_por_riesgo": False,
+            "riesgo_extremo_diagnostico": False,
+
+            "origen_autoridad": (
+                "PROBABILIDAD_HISTORICA_V3"
+            ),
+
+            "decision_sombra_origen": (
+                decision_estadistica
+            ),
+
+            "nivel_probabilidad": nivel,
+            "clave_probabilidad": clave,
+
+            "directa_evidencia_solida": False,
+            "directa_muestra": muestra,
+            "directa_confiabilidad": confiabilidad,
+            "directa_aptitud_tecnica": False,
+
+            "directa_motivos_tecnicos": [
+                (
+                    "D7.17: CHOCH alcista condicionado "
+                    "invalidado por estar contra tendencia."
+                )
+            ],
+
+            "motivo": (
+                "D7.17: autorizacion V3 condicionada anulada "
+                "para CHOCH alcista con invalidacion tecnica "
+                "exacta contra tendencia. "
+                + motivo_estadistico
+            ).strip(),
+        }
+
+    # ========================================================
     # D7.5 — REACCION_ZONA EN TENDENCIA ALCISTA → DIRECTA
     # ========================================================
     #
@@ -1230,7 +1394,7 @@ def convertir_decision_v3_a_oficial(
     # - Solo TENDENCIA_ALCISTA.
     # - Solo mercado LIMPIO o NORMAL.
     # - Solo setups cuyo modo técnico ya es DIRECTA.
-    # - Puede rescatar NO_OPERAR_SOMBRA o evitar protocolo.
+    # - No elimina un protocolo exigido por V3.
     # - Nunca habilita SUCIO / CAOTICO.
     # - No modifica D7.1, D6.6 ni F4.3.
     # ========================================================
@@ -1305,8 +1469,29 @@ def convertir_decision_v3_a_oficial(
         or "reaccion vendedora" in estrategia_d75
     )
 
+    # ========================================================
+    # D7.15 — D7.5 NO RESCATA RECHAZO ESTADISTICO V3
+    # ========================================================
+    #
+    # Validacion PRACTICE posterior al freeze D7.5:
+    #
+    # NO_OPERAR_SOMBRA rescatado por D7.5:
+    #   19 ops | 10W / 9L | 52.63% | PNL -12.25
+    #
+    # V3 ya autorizado y promovido por D7.5:
+    #   3 ops | 2W / 1L | 66.67% | PNL +17.25
+    #
+    # Contrato:
+    # - D7.5 ya NO revive un rechazo estadistico V3.
+    # - Solo puede promover OPERAR_SOMBRA ya autorizado por V3.
+    # - OPERAR_CON_PROTOCOLO_SOMBRA conserva su protocolo.
+    # - No modifica CORE4 ni otras autoridades.
+    # ========================================================
+
     cumple_d75 = (
         es_reaccion_zona_d75
+        and decision_estadistica
+        == "OPERAR_SOMBRA"
         and mercado_d75 == "tendencia_alcista"
         and calidad_mercado_d75
         in {
@@ -1422,6 +1607,13 @@ def convertir_decision_v3_a_oficial(
         )
     )
 
+    direccion_core4 = _txt(
+        evidencia.get(
+            "direccion",
+            "",
+        )
+    )
+
     estrategia_core4 = _txt(
         evidencia.get(
             "estrategia",
@@ -1510,6 +1702,13 @@ def convertir_decision_v3_a_oficial(
         )
     )
 
+    accion_precio_core4 = _txt(
+        evidencia.get(
+            "accion_precio",
+            "",
+        )
+    )
+
     activo_debil_core4 = bool(
         evidencia.get(
             "activo_bloqueable_historico",
@@ -1554,9 +1753,203 @@ def convertir_decision_v3_a_oficial(
         and calidad_setup_core4 == "premium"
     )
 
-    core4_r2 = (
-        pa_core4
+    # ========================================================
+    # D7.18 — R2 RESPETA CONTRATO ORIGINAL DEL PULLBACK CALL
+    # ========================================================
+    #
+    # CORE4 R2 fue validado cuando "pullback alcista a EMA"
+    # solo podía nacer con el filtro técnico completo del
+    # generador original.
+    #
+    # Al ampliar posteriormente motor_estrategias.py para que
+    # el Cerebro recibiera señales más amplias, R2 empezó a
+    # rescatar también pullbacks que nunca formaron parte de
+    # su población OOS original.
+    #
+    # Esta protección NO restringe R2 globalmente.
+    # Solo restaura el contrato original cuando la estrategia
+    # concreta es "pullback alcista a EMA".
+    # ========================================================
+
+    core4_r2_base = (
+        direccion_core4 == "call"
+        and pa_core4
         == "rechazo_comprador_confirmado"
+    )
+
+    ema_alcista_core4 = bool(
+        evidencia.get(
+            "ema_alcista",
+            False,
+        )
+    )
+
+    cerca_resistencia_core4 = bool(
+        evidencia.get(
+            "cerca_resistencia",
+            False,
+        )
+    )
+
+    posicion_rango_core4 = _num(
+        evidencia.get(
+            "posicion_rango",
+            0.5,
+        ),
+        0.5,
+    )
+
+    vela_climax_alcista_core4 = bool(
+        evidencia.get(
+            "vela_climax_alcista",
+            False,
+        )
+    )
+
+    rechazo_bajista_real_core4 = bool(
+        evidencia.get(
+            "rechazo_bajista_real",
+            False,
+        )
+    )
+
+    presion_corta_core4 = _txt(
+        evidencia.get(
+            "presion_corta",
+            "",
+        )
+    )
+
+    direccion_presion_core4 = _txt(
+        evidencia.get(
+            "direccion_presion",
+            "",
+        )
+    )
+
+    rechazo_contexto_core4 = _num(
+        evidencia.get(
+            "rechazo_contexto",
+            0,
+        ),
+        0.0,
+    )
+
+    patron_vela_contexto_core4 = _num(
+        evidencia.get(
+            "patron_vela_contexto",
+            0,
+        ),
+        0.0,
+    )
+
+    nombre_patron_vela_core4 = _txt(
+        evidencia.get(
+            "nombre_patron_vela",
+            "",
+        )
+    )
+
+    patron_call_ok_core4 = bool(
+        evidencia.get(
+            "patron_call_ok",
+            False,
+        )
+    )
+
+    fuerza_ultima_core4 = _num(
+        evidencia.get(
+            "fuerza_ultima",
+            0.0,
+        ),
+        0.0,
+    )
+
+    ultima_open_core4 = _num(
+        evidencia.get(
+            "ultima_open",
+            0.0,
+        ),
+        0.0,
+    )
+
+    ultima_close_core4 = _num(
+        evidencia.get(
+            "ultima_close",
+            0.0,
+        ),
+        0.0,
+    )
+
+    core4_r2_pullback_alcista_contrato = (
+        ema_alcista_core4
+        and tipo_mercado_core4
+        == "tendencia_alcista"
+        and calidad_mercado_core4
+        in {
+            "limpio",
+            "normal",
+        }
+        and estado_tendencia_core4.startswith(
+            "alcista"
+        )
+        and 42.0 <= rsi_core4 <= 58.0
+        and not cerca_resistencia_core4
+        and posicion_rango_core4 <= 0.72
+        and not vela_climax_alcista_core4
+        and not rechazo_bajista_real_core4
+        and presion_corta_core4
+        in {
+            "alcista",
+            "neutra",
+        }
+        and (
+            rechazo_contexto_core4 == 1.0
+            or patron_vela_contexto_core4 == 1.0
+            or patron_call_ok_core4
+            or direccion_presion_core4
+            in {
+                "alcista",
+                "compra",
+            }
+        )
+        and not (
+            fuerza_ultima_core4 >= 0.78
+            and ultima_close_core4 > ultima_open_core4
+            and posicion_rango_core4 >= 0.65
+        )
+    )
+
+    core4_r2 = (
+        core4_r2_base
+        and (
+            estrategia_core4
+            != "pullback alcista a ema"
+            or core4_r2_pullback_alcista_contrato
+        )
+    )
+
+    # ========================================================
+    # D7.19 — CORE4 R1/R2 NO RESCATAN ENVOLVENTE
+    # ========================================================
+    #
+    # Evidencia vigente tras excluir R4 D7.16 obsoleto:
+    #   3 operaciones | 0W / 3L | PNL -75.00
+    #
+    # Casos:
+    # - R1 a favor de tendencia: 1L
+    # - R1 contra tendencia:     1L
+    # - R2 contra tendencia:     1L
+    #
+    # No bloquea envolventes globalmente.
+    # No modifica R4 ni R6.
+    # Solo impide que CORE4 R1/R2 reviva un NO_OPERAR_SOMBRA
+    # cuando el patrón de vela detectado es una envolvente.
+    # ========================================================
+
+    core4_invalidacion_r1_r2_envolvente = (
+        (core4_r1 or core4_r2)
+        and "envolvente" in nombre_patron_vela_core4
     )
 
     core4_r4 = (
@@ -1589,10 +1982,20 @@ def convertir_decision_v3_a_oficial(
         )
         and 40.0 <= rsi_core4 <= 64.0
 
-        # D7.8:
-        # esta variante pierde permiso de rescate R4.
+        # D7.8 / D7.16:
+        # estas variantes pierden permiso de rescate R4.
+        #
+        # D7.16:
+        # validar_estrategia_por_mercado() retorna antes en
+        # TENDENCIA_SUCIA, por lo que esa señal nunca alcanza
+        # el filtro reforzado inferior. La ruta prospectiva
+        # observada bajo el contrato actual:
+        #   6 ops | 2W / 4L | PNL -58.75
         and razon_validacion_mercado_core4
-        != "pullback bajista permitido con filtro reforzado"
+        not in {
+            "pullback bajista permitido con filtro reforzado",
+            "tendencia sucia: pullback bajista permitido con puntaje alto",
+        }
     )
 
     core4_r6 = (
@@ -1627,8 +2030,12 @@ def convertir_decision_v3_a_oficial(
     core4_invalidacion_r6_sr = (
         core4_r6
         and probabilidad_core4 < 50.0
-        and razon_zona_sr_core4
-        == "put bloqueado: soporte cerca sin ruptura confirmada"
+        and (
+            razon_zona_sr_core4
+            == "put bloqueado: soporte cerca sin ruptura confirmada"
+            or accion_precio_core4
+            == "put_soporte_cerca_sin_ruptura"
+        )
     )
 
     core4_invalidacion_r1_vendedor_debil = (
@@ -1649,6 +2056,7 @@ def convertir_decision_v3_a_oficial(
     core4_invalidacion_selectiva = (
         core4_invalidacion_r6_sr
         or core4_invalidacion_r1_vendedor_debil
+        or core4_invalidacion_r1_r2_envolvente
     )
 
     core4_match = (
@@ -1700,6 +2108,79 @@ def convertir_decision_v3_a_oficial(
             reglas_core4.append(
                 "R6_CONT_BAJISTA_IMPULSO_FUERTE"
             )
+
+        # ====================================================
+        # D7.13B — CORE4 R2 RESPETA RUPTURA DE RESISTENCIA
+        # ====================================================
+        #
+        # R2 conserva su autoridad de rescate CORE4.
+        #
+        # Pero si la capa técnica ya determinó que existe una
+        # resistencia cercana sin ruptura y asignó
+        # PROTOCOLO_RUPTURA_RESISTENCIA, CORE4 no puede
+        # convertir esa señal en DIRECTA.
+        #
+        # No se bloquea la señal:
+        # pasa a motor_protocolos.py para confirmar una ruptura
+        # estructural real dentro de su ventana temporal.
+        # ====================================================
+
+        if (
+            core4_r2
+            and protocolo_sugerido
+            == "protocolo_ruptura_resistencia"
+        ):
+            return {
+                "decision": "OPERAR_CON_PROTOCOLO",
+                "decision_legacy": (
+                    "OPERAR_CON_CONFIRMACION"
+                ),
+                "operar": True,
+                "requiere_protocolo": True,
+                "modo_ejecucion": "PROTOCOLO",
+                "bloquear_por_riesgo": False,
+                "riesgo_extremo_diagnostico": False,
+
+                "origen_autoridad": (
+                    "D6_6_CORE4_OOS"
+                ),
+
+                "decision_sombra_origen": (
+                    decision_estadistica
+                ),
+
+                "nivel_probabilidad": nivel,
+                "clave_probabilidad": clave,
+
+                "directa_evidencia_solida": False,
+                "directa_muestra": muestra,
+                "directa_confiabilidad": confiabilidad,
+
+                "directa_aptitud_tecnica": False,
+
+                "directa_motivos_tecnicos": [
+                    (
+                        "D7.13B: CORE4 R2 conserva rescate, "
+                        "pero requiere "
+                        "PROTOCOLO_RUPTURA_RESISTENCIA."
+                    )
+                ],
+
+                "directa_ruta_validada": False,
+
+                "core4_rescate": True,
+                "core4_reglas": "|".join(
+                    reglas_core4
+                ),
+
+                "motivo": (
+                    "D7.13B: R2 conserva autorización CORE4, "
+                    "pero la resistencia cercana sin ruptura "
+                    "debe confirmarse técnicamente mediante "
+                    "PROTOCOLO_RUPTURA_RESISTENCIA. "
+                    + motivo_estadistico
+                ).strip(),
+            }
 
         return {
             "decision": "OPERAR",
@@ -1977,6 +2458,114 @@ def convertir_decision_v3_a_oficial(
                 "anulada para CHOCH alcista con resistencia "
                 "cercana sin ruptura y sin "
                 "IMPULSO_ALCISTA_FUERTE. "
+                + motivo_estadistico
+            ).strip(),
+        }
+
+    # ========================================================
+    # D7.14 — CHOCH ALCISTA FUERTE EXTENDIDO EN RESISTENCIA
+    # ========================================================
+    #
+    # Evidencia histórica V3:
+    #
+    # CHOCH + ALCISTA_FUERTE + resistencia cercana:
+    #
+    #   RSI < 60:
+    #     8 ops | 5W / 3L | 62.50% | +29.75
+    #
+    #   RSI 60-69.99:
+    #     5 ops | 3W / 2L | 60.00% | +12.50
+    #
+    #   RSI >= 70:
+    #     12 ops | 5W / 7L | 41.67% | -69.75
+    #
+    # Contrato:
+    # - Solo autorizaciones estadísticas V3.
+    # - Solo CHOCH alcista.
+    # - Solo tendencia avanzada ALCISTA_FUERTE.
+    # - Solo CALL con resistencia cercana sin ruptura.
+    # - Solo RSI >= 70.
+    # - No bloquea RSI < 70.
+    # - No modifica CORE4.
+    # - No modifica motor_protocolos.py.
+    # ========================================================
+
+    estado_tendencia_d714 = _txt(
+        evidencia.get(
+            "estado_tendencia",
+            "",
+        )
+    )
+
+    try:
+        rsi_d714 = float(
+            evidencia.get(
+                "rsi",
+                0.0,
+            )
+            or 0.0
+        )
+    except (
+        TypeError,
+        ValueError,
+    ):
+        rsi_d714 = 0.0
+
+    es_d714_choch_fuerte_extendido = (
+        decision_estadistica
+        in {
+            "OPERAR_SOMBRA",
+            "OPERAR_CON_PROTOCOLO_SOMBRA",
+        }
+        and patron_d711
+        == "choch alcista"
+        and accion_precio_d711
+        == "call_resistencia_cerca_sin_ruptura"
+        and estado_tendencia_d714
+        == "alcista_fuerte"
+        and rsi_d714
+        >= 70.0
+    )
+
+    if es_d714_choch_fuerte_extendido:
+        return {
+            "decision": "NO_OPERAR",
+            "decision_legacy": "NO_OPERAR",
+            "operar": False,
+            "requiere_protocolo": False,
+            "modo_ejecucion": "BLOQUEADA",
+            "bloquear_por_riesgo": False,
+            "riesgo_extremo_diagnostico": False,
+
+            "origen_autoridad": (
+                "PROBABILIDAD_HISTORICA_V3"
+            ),
+
+            "decision_sombra_origen": (
+                decision_estadistica
+            ),
+
+            "nivel_probabilidad": nivel,
+            "clave_probabilidad": clave,
+
+            "directa_evidencia_solida": False,
+            "directa_muestra": muestra,
+            "directa_confiabilidad": confiabilidad,
+
+            "directa_aptitud_tecnica": False,
+
+            "directa_motivos_tecnicos": [
+                (
+                    "D7.14: CHOCH alcista ALCISTA_FUERTE "
+                    "con resistencia cercana sin ruptura "
+                    "y RSI >= 70."
+                )
+            ],
+
+            "motivo": (
+                "D7.14: autorización estadística V3 anulada "
+                "para CHOCH alcista ALCISTA_FUERTE con "
+                "resistencia cercana sin ruptura y RSI >= 70. "
                 + motivo_estadistico
             ).strip(),
         }

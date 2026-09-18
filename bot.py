@@ -52,11 +52,20 @@ def main():
 
     # Controlar la frecuencia real de consultas al broker.
     # El balance se consulta como máximo una vez cada 10 segundos.
-    ultima_consulta_balance = 0
+    #
+    # conectar() ya obtiene el balance inicial. Si ese valor
+    # existe, no debemos volver a pedir get_balance()
+    # inmediatamente al entrar en el loop principal.
     balance_inicial_conocido = getattr(
         estado,
         "balance_inicial",
         None,
+    )
+
+    ultima_consulta_balance = (
+        time.time()
+        if balance_inicial_conocido is not None
+        else 0.0
     )
 
     balance_actual = (

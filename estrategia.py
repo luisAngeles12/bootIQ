@@ -998,7 +998,9 @@ def evaluar_senal_candidata(activo, ctx, senal):
         ctx.get("tipo_mercado", "INDEFINIDO"),
         ctx.get("calidad_mercado", "NORMAL"),
         senal.get("ruptura_confirmada", False),
-        senal.get("tipo_ruptura", "SIN_DATOS")
+        senal.get("tipo_ruptura", "SIN_DATOS"),
+        cerca_soporte=ctx.get("cerca_soporte", False),
+        cerca_resistencia=ctx.get("cerca_resistencia", False),
     )
 
     if not ok_zona_sr:
@@ -1405,7 +1407,10 @@ def evaluar_senal_candidata(activo, ctx, senal):
     )
     # Recalcular setup cuando la señal ya contiene
     # todas las validaciones, riesgos y evidencias finales.
-    senal = enriquecer_senal_con_setup(senal)
+    senal = enriquecer_senal_con_setup(
+        senal,
+        ctx,
+    )
     from decision_bootiq import aplicar_decision_unificada_a_senal
 
     resultado_bootiq = aplicar_decision_unificada_a_senal(

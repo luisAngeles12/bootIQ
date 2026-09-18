@@ -48,7 +48,7 @@ def activo_en_cooldown(activo):
     if activo not in estado.cooldown_activos:
         return False
 
-    if time.time() >= estado.cooldown_activos[activo]:
+    if time.time() - estado.cooldown_activos[activo] > 20:
         del estado.cooldown_activos[activo]
         return False
 

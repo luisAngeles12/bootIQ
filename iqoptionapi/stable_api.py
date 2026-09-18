@@ -42,6 +42,21 @@ class IQ_Option:
         # históricas de velas simultáneas.
         self._candles_lock = threading.Lock()
 
+        # get-balances responde mediante un único
+        # balances_raw compartido y no expone un request_id
+        # utilizable para correlacionar respuestas.
+        #
+        # Nunca deben existir dos solicitudes de balances
+        # simultáneas.
+        self._balances_lock = threading.Lock()
+
+        # Respuesta V2 exitosa obtenida durante OPCODE.
+        #
+        # Se reutiliza UNA sola vez para construir el
+        # OPEN_TIME inicial y evitar pedir inmediatamente
+        # el mismo initialization-data otra vez a IQ.
+        self._bootiq_init_v2_bootstrap = None
+
         self.subscribe_candle = []
         self.subscribe_candle_all_size = []
         self.subscribe_mood = []
@@ -98,6 +113,14 @@ class IQ_Option:
             self.api.close()
         except Exception:
             pass
+
+        # La nueva sesión debe obtener su propio balance_id.
+        #
+        # global_value.balance_id sobrevive a la instancia
+        # anterior. Si no se invalida aquí, la espera de
+        # inicialización de abajo puede usar el ID viejo y
+        # declarar lista una sesión todavía no inicializada.
+        global_value.balance_id = None
 
         self.api = IQOptionAPI(
             "iqoption.com",
@@ -311,6 +334,11 @@ class IQ_Option:
                 "tras 3 intentos acotados"
             )
 
+        # La misma respuesta contiene binary/turbo + estado
+        # open/suspended. Guardarla para el primer OPEN_TIME
+        # evita una segunda solicitud V2 inmediata.
+        self._bootiq_init_v2_bootstrap = init_info
+
         for dirr in ("binary", "turbo"):
             datos_tipo = init_info.get(
                 dirr,
@@ -380,11 +408,14 @@ class IQ_Option:
         Obtiene binary/turbo open-time sin iniciar
         reconexiones internas.
 
-        BootIQ/conexion.py conserva la autoridad
-        exclusiva de reconexión.
-        """
+        Cada solicitud usa un request_id único. IQ devuelve
+        ese mismo identificador en initialization-data, por
+        lo que una respuesta tardía de una petición anterior
+        no puede satisfacer esta petición.
 
-        self.api.api_option_init_all_result_v2 = None
+        BootIQ/conexion.py conserva la autoridad exclusiva
+        de reconexión.
+        """
 
         try:
             if not self.check_connect():
@@ -397,8 +428,37 @@ class IQ_Option:
         except Exception:
             return None
 
+        request_id = (
+            "BOOTIQ_INIT_V2_"
+            + str(time.time_ns())
+            + "_"
+            + str(threading.get_ident())
+        )
+
+        respuestas = getattr(
+            self.api,
+            "api_option_init_all_result_v2_by_request",
+            None,
+        )
+
+        if respuestas is None:
+            self.api.api_option_init_all_result_v2_by_request = {}
+            respuestas = (
+                self.api.api_option_init_all_result_v2_by_request
+            )
+
+        # Registrar exclusivamente ESTA solicitud como
+        # pendiente antes de enviarla.
+        #
+        # Si vence el timeout, eliminamos la clave. Una
+        # respuesta que llegue después será ignorada por
+        # initialization_data.py y no quedará almacenada.
+        respuestas[request_id] = None
+
         try:
-            self.api.get_api_option_init_all_v2()
+            self.api.get_api_option_init_all_v2(
+                request_id=request_id,
+            )
 
         except Exception as e:
             logging.error(
@@ -406,51 +466,65 @@ class IQ_Option:
                 "request failed: %s",
                 e,
             )
+            respuestas.pop(request_id, None)
             return None
+
+        try:
+            timeout = max(
+                0.2,
+                float(timeout),
+            )
+        except (TypeError, ValueError):
+            timeout = 2.0
 
         inicio = time.time()
 
-        while (
-            self.api.api_option_init_all_result_v2
-            is None
-        ):
+        while respuestas.get(request_id) is None:
             try:
                 if not self.check_connect():
                     logging.error(
                         "**error** get_all_init_v2 "
                         "connection lost"
                     )
+                    respuestas.pop(request_id, None)
                     return None
 
             except Exception:
+                respuestas.pop(request_id, None)
                 return None
 
-            if (
-                time.time()
-                - inicio
-                >= timeout
-            ):
+            if time.time() - inicio >= timeout:
+                respuestas.pop(request_id, None)
+
                 if avisar_timeout:
                     logging.warning(
                         "**warning** get_all_init_v2 "
                         "timeout %.1f sec",
                         timeout,
                     )
+
                 return None
 
             time.sleep(0.01)
 
-        return (
-            self.api.api_option_init_all_result_v2
+        respuesta = respuestas.pop(
+            request_id,
+            None,
         )
+
+        return respuesta
+
     def __get_binary_open(
         self,
         timeout=2.0,
+        binary_data=None,
     ):
         # for turbo and binary pairs
-        binary_data = self.get_all_init_v2(
-            timeout=timeout
-        )
+        if binary_data is None:
+            binary_data = self.get_all_init_v2(
+                timeout=timeout
+            )
+
         binary_list = ["binary", "turbo"]
         if binary_data:
             for option in binary_list:
@@ -534,9 +608,25 @@ class IQ_Option:
         self.OPEN_TIME = nested_dict(3, dict)
 
         try:
-            self.__get_binary_open(
-                timeout=timeout
+            bootstrap_v2 = getattr(
+                self,
+                "_bootiq_init_v2_bootstrap",
+                None,
             )
+
+            if bootstrap_v2 is not None:
+                # One-shot: invalidar ANTES de procesar.
+                # Nunca debe sobrevivir para un refresh futuro.
+                self._bootiq_init_v2_bootstrap = None
+
+                self.__get_binary_open(
+                    timeout=timeout,
+                    binary_data=bootstrap_v2,
+                )
+            else:
+                self.__get_binary_open(
+                    timeout=timeout
+                )
 
         except Exception as e:
             logging.error(
@@ -651,58 +741,105 @@ class IQ_Option:
 
     def get_balances(self, timeout=10):
         """
-        Obtiene balances con timeout.
+        Obtiene balances de forma secuencial y segura.
 
-        No reconecta internamente. Si el websocket cae,
-        lanza ConnectionError para que bot.py use
-        reconectar_iq().
+        IQ responde get-balances mediante un único
+        balances_raw compartido y no devuelve un request_id
+        utilizable para correlacionar respuestas.
+
+        Regla BootIQ:
+        - una sola petición de balances a la vez;
+        - si vence el timeout, la sesión se invalida;
+        - ninguna petición posterior puede consumir una
+          respuesta tardía de la sesión anterior;
+        - conexion.py conserva la autoridad para reconectar.
         """
-        try:
-            if not self.check_connect():
-                raise ConnectionError(
-                    "IQ websocket desconectado antes de get_balances"
-                )
-        except ConnectionError:
-            raise
-        except Exception as e:
-            raise ConnectionError(
-                "No se pudo validar conexión en get_balances"
-            ) from e
 
-        self.api.balances_raw = None
-
-        try:
-            self.api.get_balances()
-
-        except Exception as e:
-            raise ConnectionError(
-                "Falló solicitud get_balances"
-            ) from e
-
-        inicio = time.time()
-
-        while self.api.balances_raw is None:
+        with self._balances_lock:
 
             try:
                 if not self.check_connect():
                     raise ConnectionError(
-                        "IQ websocket se perdió esperando balances"
+                        "IQ websocket desconectado antes de get_balances"
                     )
             except ConnectionError:
                 raise
             except Exception as e:
                 raise ConnectionError(
-                    "Error validando conexión mientras esperaba balances"
+                    "No se pudo validar conexión en get_balances"
                 ) from e
 
-            if time.time() - inicio >= timeout:
-                raise TimeoutError(
-                    f"get_balances timeout {timeout} sec"
+            self.api.balances_raw = None
+
+            try:
+                self.api.get_balances()
+
+            except Exception as e:
+                global_value.check_websocket_if_connect = 0
+
+                try:
+                    self.api.websocket.close(timeout=0)
+                except Exception:
+                    pass
+
+                raise ConnectionError(
+                    "Falló solicitud get_balances"
+                ) from e
+
+            try:
+                timeout = max(
+                    0.2,
+                    float(timeout),
                 )
+            except (TypeError, ValueError):
+                timeout = 10.0
 
-            time.sleep(0.01)
+            inicio = time.time()
 
-        return self.api.balances_raw
+            while self.api.balances_raw is None:
+
+                try:
+                    if not self.check_connect():
+                        raise ConnectionError(
+                            "IQ websocket se perdió esperando balances"
+                        )
+                except ConnectionError:
+                    raise
+                except Exception as e:
+                    raise ConnectionError(
+                        "Error validando conexión mientras esperaba balances"
+                    ) from e
+
+                if time.time() - inicio >= timeout:
+                    logging.warning(
+                        "**warning** get_balances "
+                        "sin respuesta %.2f sec | "
+                        "websocket invalidado",
+                        timeout,
+                    )
+
+                    # balances_raw no tiene correlación de solicitud.
+                    # Tras un timeout ya no es seguro enviar otro
+                    # get-balances sobre esta misma sesión.
+                    global_value.check_websocket_if_connect = 0
+
+                    try:
+                        self.api.websocket.close(timeout=0)
+                    except Exception as e:
+                        logging.warning(
+                            "**warning** get_balances "
+                            "error cerrando websocket tras timeout "
+                            "| error: %s",
+                            e,
+                        )
+
+                    raise TimeoutError(
+                        f"get_balances timeout {timeout} sec"
+                    )
+
+                time.sleep(0.01)
+
+            return self.api.balances_raw
 
     def get_balance_mode(self):
         # self.api.profile.balance_type=None
@@ -740,6 +877,15 @@ class IQ_Option:
 
     def change_balance(self, Balance_MODE):
         def set_id(b_id):
+            # BootIQ: change_balance debe ser idempotente.
+            #
+            # connect() ya selecciona PRACTICE por defecto
+            # desde el profile recibido. Reaplicar el mismo
+            # balance generaba unsubscribe/subscribe redundantes
+            # justo durante el bootstrap de la sesion.
+            if global_value.balance_id == b_id:
+                return
+
             if global_value.balance_id != None:
                 self.position_change_all(
                     "unsubscribeMessage", global_value.balance_id)
@@ -985,7 +1131,7 @@ class IQ_Option:
                         # No usar self.api.close() aquí:
                         # ese método ejecuta thread.join()
                         # y puede bloquear varios segundos.
-                        self.api.websocket.close()
+                        self.api.websocket.close(timeout=0)
                     except Exception as e:
                         logging.warning(
                             "**warning** get_candles "

@@ -234,6 +234,59 @@ def construir_evidencia_operacion(senal, ctx=None):
             )
         ),
 
+        # D7.18 — MICRO PRESION PARA CONTRATO CORE4 R2.
+        # Transporte puro. No decide ni bloquea.
+        "presion_corta": normalizar(
+            senal.get(
+                "presion_corta",
+                ctx.get("presion_corta", "NEUTRA"),
+            )
+        ),
+
+        # D7.18 — confirmaciones originales del pullback CALL.
+        # Se usan nombres propios para no confundir
+        # evidencia["patron"] (estrategia) con ctx["patron"]
+        # (patron de vela numerico).
+        "rechazo_contexto": ctx.get(
+            "rechazo",
+            0,
+        ),
+        "patron_vela_contexto": ctx.get(
+            "patron",
+            0,
+        ),
+
+        # D7.19 — nombre estructurado del patrón de vela.
+        # Transporte puro: no decide ni bloquea.
+        "nombre_patron_vela": normalizar(
+            senal.get(
+                "nombre_patron_vela",
+                ctx.get("nombre_patron", ""),
+            )
+        ),
+
+        "patron_call_ok": bool(
+            ctx.get(
+                "patron_call_ok",
+                False,
+            )
+        ),
+
+        # D7.18 — VELA ORIGEN PARA CONTRATO CORE4 R2.
+        # Transporte puro. No decide ni bloquea.
+        "ultima_open": senal.get(
+            "ultima_open",
+            ctx.get("ultima_open", 0.0),
+        ),
+        "ultima_close": senal.get(
+            "ultima_close",
+            ctx.get("ultima_close", 0.0),
+        ),
+        "fuerza_ultima": senal.get(
+            "fuerza_ultima",
+            ctx.get("fuerza_ultima", 0.0),
+        ),
+
         "prioridad": senal.get("prioridad", 0),
         "score_final": senal.get("score_final", 0),
         "estado_operativo_setup": normalizar(
