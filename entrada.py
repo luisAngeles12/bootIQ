@@ -742,6 +742,21 @@ def procesar_senales_pendientes(abrir_operacion):
                 senal["protocolo_live_sombra_tipo"] = (
                     protocolo_live.get("protocolo", "")
                 )
+
+                # D8-E6.1 — conservar la acción de confirmación
+                # que motor_protocolos calculó sobre su copia interna.
+                # Solo trazabilidad; no participa en una nueva decisión.
+                if protocolo_live.get(
+                    "accion_confirmacion_ia",
+                    "",
+                ):
+                    senal["accion_confirmacion_ia"] = (
+                        protocolo_live.get(
+                            "accion_confirmacion_ia",
+                            "",
+                        )
+                    )
+
                 senal["protocolo_live_sombra_idx_entrada"] = (
                     protocolo_live.get("idx_entrada", None)
                 )

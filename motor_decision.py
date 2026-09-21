@@ -130,6 +130,33 @@ def evaluar_veto_tecnico_sombra(evidencia):
         )
     )
 
+    # ========================================================
+    # D8-E50 — CONFLICTO ENTRE ESTRATEGIAS CON MAYORIA
+    # ========================================================
+    #
+    # Evidencia:
+    # - E47: cohorte de señales consistentemente negativa;
+    # - E48: operaciones reales 4W/7L;
+    # - E49: stress OOS3 2W/3L.
+    #
+    # TODAVIA ES SOMBRA:
+    # no modifica la decisión oficial.
+    # ========================================================
+
+    if bool(
+        evidencia.get(
+            "competencia_conflicto_con_mayoria",
+            False,
+        )
+    ):
+        detectados.append(
+            "CONFLICTO_ESTRATEGIAS_CON_MAYORIA"
+        )
+
+    detectados = sorted(
+        set(detectados)
+    )
+
     return {
         "veto_tecnico_sombra": bool(detectados),
         "cantidad_vetos_tecnicos_sombra": len(detectados),
@@ -2053,10 +2080,40 @@ def convertir_decision_v3_a_oficial(
         }
     )
 
+    # ========================================================
+    # D7.20 — R2 SOLO PIERDE AUTORIDAD DE RESCATE
+    # ========================================================
+    #
+    # Evidencia prospectiva independiente:
+    #
+    # 2026-09-02 a 2026-09-08:
+    #   R2 solo: 28 ops | 14W / 14L | PNL -50.50
+    #
+    # 2026-09-15 a 2026-09-17:
+    #   R2 solo: 12 ops | 4W / 8L | PNL -115.25
+    #
+    # Combinado:
+    #   40 ops | 18W / 22L | PNL -165.75
+    #
+    # En cambio R1+R2:
+    #   10 ops | 8W / 2L | PNL +121.25
+    #
+    # No bloquea R2 como evidencia.
+    # No modifica R1, R4 ni R6.
+    # Solo impide que R2, por sí solo, sobreescriba
+    # un NO_OPERAR_SOMBRA del V3 estadístico.
+    # ========================================================
+
+    core4_invalidacion_r2_solo = (
+        core4_r2
+        and not core4_r1
+    )
+
     core4_invalidacion_selectiva = (
         core4_invalidacion_r6_sr
         or core4_invalidacion_r1_vendedor_debil
         or core4_invalidacion_r1_r2_envolvente
+        or core4_invalidacion_r2_solo
     )
 
     core4_match = (

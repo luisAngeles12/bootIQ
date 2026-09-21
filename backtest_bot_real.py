@@ -1168,6 +1168,90 @@ def crear_registro_resultado(
         "rsi": senal.get("rsi", ""),
 
         # ==================================================
+        # D8-E64A — GEOMETRIA CAUSAL PRE-ENTRADA
+        # ==================================================
+        # Telemetria exclusivamente diagnostica.
+        # Se reconstruye con datos ya existentes en la vela
+        # donde nace la señal. No consulta velas futuras y
+        # no participa en ninguna decision.
+        "e64_dist_res_vol": (
+            (
+                float(senal.get("resistencia", 0) or 0)
+                - float(senal.get("vela_senal_close", 0) or 0)
+            )
+            / float(senal.get("vol", 0) or 0)
+            if float(senal.get("vol", 0) or 0) > 0
+            else None
+        ),
+        "e64_dist_high_res_vol": (
+            (
+                float(senal.get("resistencia", 0) or 0)
+                - float(senal.get("vela_senal_high", 0) or 0)
+            )
+            / float(senal.get("vol", 0) or 0)
+            if float(senal.get("vol", 0) or 0) > 0
+            else None
+        ),
+        "e64_cuerpo_vol": (
+            abs(
+                float(senal.get("vela_senal_close", 0) or 0)
+                - float(senal.get("vela_senal_open", 0) or 0)
+            )
+            / float(senal.get("vol", 0) or 0)
+            if float(senal.get("vol", 0) or 0) > 0
+            else None
+        ),
+        "e64_rango_vela_vol": (
+            (
+                float(senal.get("vela_senal_high", 0) or 0)
+                - float(senal.get("vela_senal_low", 0) or 0)
+            )
+            / float(senal.get("vol", 0) or 0)
+            if float(senal.get("vol", 0) or 0) > 0
+            else None
+        ),
+        "e64_mecha_sup_vol": (
+            (
+                float(senal.get("vela_senal_high", 0) or 0)
+                - max(
+                    float(senal.get("vela_senal_open", 0) or 0),
+                    float(senal.get("vela_senal_close", 0) or 0),
+                )
+            )
+            / float(senal.get("vol", 0) or 0)
+            if float(senal.get("vol", 0) or 0) > 0
+            else None
+        ),
+        "e64_mecha_inf_vol": (
+            (
+                min(
+                    float(senal.get("vela_senal_open", 0) or 0),
+                    float(senal.get("vela_senal_close", 0) or 0),
+                )
+                - float(senal.get("vela_senal_low", 0) or 0)
+            )
+            / float(senal.get("vol", 0) or 0)
+            if float(senal.get("vol", 0) or 0) > 0
+            else None
+        ),
+        "e64_close_pos_vela": (
+            (
+                float(senal.get("vela_senal_close", 0) or 0)
+                - float(senal.get("vela_senal_low", 0) or 0)
+            )
+            /
+            (
+                float(senal.get("vela_senal_high", 0) or 0)
+                - float(senal.get("vela_senal_low", 0) or 0)
+            )
+            if (
+                float(senal.get("vela_senal_high", 0) or 0)
+                - float(senal.get("vela_senal_low", 0) or 0)
+            ) > 0
+            else None
+        ),
+
+        # ==================================================
         # MERCADO
         # ==================================================
 
@@ -4539,6 +4623,15 @@ def guardar_resultados(resultados):
         "razones_consenso",
         "calidad",
         "rsi",
+
+        # D8-E64A — geometria causal pre-entrada
+        "e64_dist_res_vol",
+        "e64_dist_high_res_vol",
+        "e64_cuerpo_vol",
+        "e64_rango_vela_vol",
+        "e64_mecha_sup_vol",
+        "e64_mecha_inf_vol",
+        "e64_close_pos_vela",
 
         "tipo_mercado",
         "calidad_mercado",

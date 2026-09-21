@@ -314,6 +314,42 @@ def construir_evidencia_operacion(senal, ctx=None):
         "nivel_consenso": normalizar(senal.get("nivel_consenso")),
         "ajuste_consenso": senal.get("ajuste_consenso", 0),
 
+        # ====================================================
+        # D8-E50 — COMPETENCIA CRUDA ENTRE ESTRATEGIAS
+        # ====================================================
+        # Transporte puro.
+        # constructor_evidencia.py NO decide ni bloquea.
+        "competencia_candidatas_crudas": senal.get(
+            "competencia_candidatas_crudas",
+            0,
+        ),
+        "competencia_calls_crudas": senal.get(
+            "competencia_calls_crudas",
+            0,
+        ),
+        "competencia_puts_crudas": senal.get(
+            "competencia_puts_crudas",
+            0,
+        ),
+        "competencia_conflicto": bool(
+            senal.get(
+                "competencia_conflicto",
+                False,
+            )
+        ),
+        "competencia_conflicto_con_mayoria": bool(
+            senal.get(
+                "competencia_conflicto_con_mayoria",
+                False,
+            )
+        ),
+        "competencia_direccion_mayoria": normalizar(
+            senal.get(
+                "competencia_direccion_mayoria",
+                "SIN_CONFLICTO",
+            )
+        ),
+
         "tipo_mercado": normalizar(
             senal.get("tipo_mercado", ctx.get("tipo_mercado"))
         ),

@@ -1546,6 +1546,141 @@ def evaluar_senal_candidata(activo, ctx, senal):
         ctx.get("_modo_backtest_diagnostico", False)
     )
 
+    # ==========================================================
+    # D8-E7 — CONSOLA OPERATIVA DEL CEREBRO ÚNICO
+    # ==========================================================
+    # Solo telemetría.
+    #
+    # Muestra la decisión oficial YA TOMADA por el Cerebro:
+    # - candidato descartado o autorizado;
+    # - probabilidad V3;
+    # - tamaño de muestra;
+    # - confiabilidad;
+    # - autoridad;
+    # - motivo oficial exacto.
+    #
+    # No recalcula nada.
+    # No cambia ninguna decisión.
+    # No modifica estrategias, protocolos ni ejecución.
+    # ==========================================================
+
+    try:
+        detalle_oficial_d8e7 = resultado_cerebro.get(
+            "resultado_decision_oficial",
+            {},
+        )
+
+        if not isinstance(
+            detalle_oficial_d8e7,
+            dict,
+        ):
+            detalle_oficial_d8e7 = {}
+
+        motivo_cerebro_d8e7 = str(
+            detalle_oficial_d8e7.get(
+                "motivo",
+                "",
+            )
+            or ""
+        ).strip()
+
+        if not motivo_cerebro_d8e7:
+            motivo_cerebro_d8e7 = str(
+                senal.get(
+                    "motivo_decision_estadistica_sombra",
+                    "",
+                )
+                or ""
+            ).strip()
+
+        motivo_cerebro_d8e7 = " ".join(
+            motivo_cerebro_d8e7.split()
+        )
+
+        if len(motivo_cerebro_d8e7) > 180:
+            motivo_cerebro_d8e7 = (
+                motivo_cerebro_d8e7[:177]
+                + "..."
+            )
+
+        if not motivo_cerebro_d8e7:
+            motivo_cerebro_d8e7 = "SIN_MOTIVO_REGISTRADO"
+
+        try:
+            probabilidad_cerebro_d8e7 = float(
+                senal.get(
+                    "probabilidad_v3",
+                    senal.get(
+                        "probabilidad_estimada",
+                        0,
+                    ),
+                )
+                or 0
+            )
+        except (TypeError, ValueError):
+            probabilidad_cerebro_d8e7 = 0.0
+
+        try:
+            muestra_cerebro_d8e7 = int(
+                float(
+                    senal.get(
+                        "muestra_probabilidad",
+                        0,
+                    )
+                    or 0
+                )
+            )
+        except (TypeError, ValueError):
+            muestra_cerebro_d8e7 = 0
+
+        confianza_cerebro_d8e7 = str(
+            senal.get(
+                "confiabilidad_probabilidad",
+                "SIN_DATOS",
+            )
+            or "SIN_DATOS"
+        ).upper().strip()
+
+        autoridad_cerebro_d8e7 = str(
+            senal.get(
+                "origen_autoridad",
+                "SIN_DATOS",
+            )
+            or "SIN_DATOS"
+        ).strip()
+
+        direccion_cerebro_d8e7 = str(
+            senal.get(
+                "direccion",
+                "",
+            )
+            or ""
+        ).upper().strip()
+
+        patron_cerebro_d8e7 = str(
+            senal.get(
+                "patron",
+                "",
+            )
+            or ""
+        ).strip()
+
+    except Exception:
+        # La consola nunca puede romper la evaluación.
+        probabilidad_cerebro_d8e7 = 0.0
+        muestra_cerebro_d8e7 = 0
+        confianza_cerebro_d8e7 = "SIN_DATOS"
+        autoridad_cerebro_d8e7 = "SIN_DATOS"
+        direccion_cerebro_d8e7 = str(
+            senal.get("direccion", "")
+            or ""
+        ).upper().strip()
+        patron_cerebro_d8e7 = str(
+            senal.get("patron", "")
+            or ""
+        ).strip()
+        motivo_cerebro_d8e7 = "TELEMETRIA_NO_DISPONIBLE"
+
     if (
         senal.get("decision_unificada_accion") == "NO_OPERAR"
         and not modo_diagnostico
@@ -1565,7 +1700,49 @@ def evaluar_senal_candidata(activo, ctx, senal):
             # el comportamiento operativo.
             pass
 
+        print(
+            "CEREBRO DESCARTA |",
+            activo,
+            "|",
+            direccion_cerebro_d8e7,
+            "|",
+            patron_cerebro_d8e7,
+            "| prob:",
+            f"{probabilidad_cerebro_d8e7:.2f}%",
+            "| n:",
+            muestra_cerebro_d8e7,
+            "| conf:",
+            confianza_cerebro_d8e7,
+            "| motivo:",
+            motivo_cerebro_d8e7,
+        )
+
         return None
+
+    if not modo_diagnostico:
+        print(
+            "CEREBRO TOMA |",
+            activo,
+            "|",
+            direccion_cerebro_d8e7,
+            "|",
+            patron_cerebro_d8e7,
+            "| prob:",
+            f"{probabilidad_cerebro_d8e7:.2f}%",
+            "| n:",
+            muestra_cerebro_d8e7,
+            "| conf:",
+            confianza_cerebro_d8e7,
+            "| modo:",
+            senal.get(
+                "cerebro_unico_modo_ejecucion",
+                "SIN_DATOS",
+            ),
+            "| autoridad:",
+            autoridad_cerebro_d8e7,
+            "| motivo:",
+            motivo_cerebro_d8e7,
+        )
 
     return senal
 
@@ -1709,6 +1886,121 @@ def analizar_activo(
 
     if isinstance(senales, dict):
         senales = [senales]
+
+    # ========================================================
+    # D8-E50 — COMPETENCIA CRUDA ENTRE ESTRATEGIAS
+    # ========================================================
+    #
+    # Se calcula ANTES de evaluar cada candidata con el
+    # Cerebro Único.
+    #
+    # Objetivo:
+    # - permitir que el Cerebro conozca si varias estrategias
+    #   nacieron simultáneamente;
+    # - detectar contradicción CALL/PUT;
+    # - distinguir conflicto con mayoría direccional.
+    #
+    # IMPORTANTE:
+    # - NO decide;
+    # - NO bloquea;
+    # - NO selecciona candidata;
+    # - NO modifica ranking;
+    # - solo adjunta evidencia estructurada.
+    # ========================================================
+
+    direcciones_competencia_d8e50 = [
+        str(
+            candidata.get(
+                "direccion",
+                "",
+            )
+        ).upper().strip()
+        for candidata in senales
+        if isinstance(candidata, dict)
+    ]
+
+    direcciones_competencia_d8e50 = [
+        direccion
+        for direccion in direcciones_competencia_d8e50
+        if direccion in {"CALL", "PUT"}
+    ]
+
+    competencia_calls_d8e50 = (
+        direcciones_competencia_d8e50.count(
+            "CALL"
+        )
+    )
+
+    competencia_puts_d8e50 = (
+        direcciones_competencia_d8e50.count(
+            "PUT"
+        )
+    )
+
+    competencia_conflicto_d8e50 = (
+        competencia_calls_d8e50 > 0
+        and competencia_puts_d8e50 > 0
+    )
+
+    competencia_conflicto_mayoria_d8e50 = (
+        competencia_conflicto_d8e50
+        and competencia_calls_d8e50
+        != competencia_puts_d8e50
+    )
+
+    if competencia_conflicto_d8e50:
+        if (
+            competencia_calls_d8e50
+            > competencia_puts_d8e50
+        ):
+            competencia_direccion_mayoria_d8e50 = (
+                "CALL"
+            )
+        elif (
+            competencia_puts_d8e50
+            > competencia_calls_d8e50
+        ):
+            competencia_direccion_mayoria_d8e50 = (
+                "PUT"
+            )
+        else:
+            competencia_direccion_mayoria_d8e50 = (
+                "EMPATE"
+            )
+    else:
+        competencia_direccion_mayoria_d8e50 = (
+            "SIN_CONFLICTO"
+        )
+
+    for candidata in senales:
+        if not isinstance(candidata, dict):
+            continue
+
+        candidata[
+            "competencia_candidatas_crudas"
+        ] = len(
+            direcciones_competencia_d8e50
+        )
+
+        candidata[
+            "competencia_calls_crudas"
+        ] = competencia_calls_d8e50
+
+        candidata[
+            "competencia_puts_crudas"
+        ] = competencia_puts_d8e50
+
+        candidata[
+            "competencia_conflicto"
+        ] = competencia_conflicto_d8e50
+
+        candidata[
+            "competencia_conflicto_con_mayoria"
+        ] = competencia_conflicto_mayoria_d8e50
+
+        candidata[
+            "competencia_direccion_mayoria"
+        ] = competencia_direccion_mayoria_d8e50
 
     # F5.7-D2 — Embudo real de oportunidades.
     # Telemetría solamente: no modifica ninguna decisión.

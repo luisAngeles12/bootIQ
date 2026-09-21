@@ -55,6 +55,29 @@ COLUMNAS_HISTORIAL = [
     "resultado",
     "razon",
 
+    # D8-E8 — CONTEXTO PRE-ENTRADA
+    "prioridad",
+    "score_final",
+    "consenso",
+    "nivel_consenso",
+    "calidad",
+    "tipo_mercado",
+    "calidad_mercado",
+    "score_mercado",
+    "estado_tendencia",
+    "fuerza_tendencia",
+    "direccion_tendencia",
+    "accion_precio",
+    "pa_tipo",
+    "pa_direccion",
+    "pa_fuerza",
+    "tipo_setup",
+    "calidad_setup",
+    "modo_entrada_setup",
+    "familia_setup",
+    "subtipo_setup",
+    "nivel_setup",
+
     # D7.7C — TRAZABILIDAD DE AUTORIDAD
     "origen_autoridad",
     "decision_sombra_origen",
@@ -63,6 +86,20 @@ COLUMNAS_HISTORIAL = [
     "directa_ruta_validada",
     "validacion_mercado_ok",
     "razon_validacion_mercado",
+
+    # D8-E6 — TRAZABILIDAD REAL DEL PROTOCOLO LIVE
+    # Solo auditoría. No modifica decisión ni ejecución.
+    "protocolo_sugerido",
+    "protocolo_live_tipo",
+    "protocolo_live_estado",
+    "accion_confirmacion_ia",
+    "protocolo_espera_velas",
+    "protocolo_espera_timestamp",
+    "motivo_confirmacion_protocolo_live",
+    "decision_post_protocolo",
+    "probabilidad_post_protocolo",
+    "muestra_post_protocolo",
+    "confiabilidad_post_protocolo",
 
     # D8-R6C — TRAZABILIDAD V3
     "probabilidad_v3",

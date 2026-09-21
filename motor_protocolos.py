@@ -1378,6 +1378,14 @@ def evaluar_protocolo_live_sombra(
                 "auditoria_protocolo_tipo",
                 "",
             ),
+            # D8-E6.1 — trazabilidad solamente.
+            # buscar_entrada_confirmada() calcula este dato
+            # sobre senal_motor, que es una copia de la señal LIVE.
+            # Se devuelve para no perderlo al salir del motor.
+            "accion_confirmacion_ia": senal_motor.get(
+                "accion_confirmacion_ia",
+                "",
+            ),
         }
 
     # ========================================================

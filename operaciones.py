@@ -392,6 +392,89 @@ def abrir_operacion(senal):
             "patron": patron,
             "rsi": rsi,
             "razon": razon,
+
+            # D8-E8 — CONTEXTO PRE-ENTRADA
+            # Solo telemetria. No participa en decisiones.
+            "prioridad": senal.get("prioridad", ""),
+            "score_final": senal.get("score_final", ""),
+            "consenso": senal.get("consenso", ""),
+            "nivel_consenso": senal.get("nivel_consenso", ""),
+            "calidad": senal.get("calidad", ""),
+
+            "tipo_mercado": senal.get("tipo_mercado", ""),
+            "calidad_mercado": senal.get("calidad_mercado", ""),
+            "score_mercado": senal.get("score_mercado", ""),
+            "estado_tendencia": senal.get("estado_tendencia", ""),
+            "fuerza_tendencia": senal.get("fuerza_tendencia", ""),
+            "direccion_tendencia": senal.get(
+                "direccion_tendencia",
+                "",
+            ),
+
+            "accion_precio": senal.get("accion_precio", ""),
+            "pa_tipo": senal.get("pa_tipo", ""),
+            "pa_direccion": senal.get("pa_direccion", ""),
+            "pa_fuerza": senal.get("pa_fuerza", ""),
+
+            "tipo_setup": senal.get("tipo_setup", ""),
+            "calidad_setup": senal.get("calidad_setup", ""),
+            "modo_entrada_setup": senal.get(
+                "modo_entrada_setup",
+                "",
+            ),
+            "familia_setup": senal.get("familia_setup", ""),
+            "subtipo_setup": senal.get("subtipo_setup", ""),
+            "nivel_setup": senal.get("nivel_setup", ""),
+
+            # D8-E6 — TRAZABILIDAD REAL DEL PROTOCOLO LIVE
+            "protocolo_sugerido": senal.get(
+                "protocolo_sugerido",
+                "",
+            ),
+            "protocolo_live_tipo": senal.get(
+                "tipo_protocolo_live",
+                senal.get(
+                    "protocolo_live_sombra_tipo",
+                    "",
+                ),
+            ),
+            "protocolo_live_estado": senal.get(
+                "protocolo_live_sombra_estado",
+                "",
+            ),
+            "accion_confirmacion_ia": senal.get(
+                "accion_confirmacion_ia",
+                "",
+            ),
+            "protocolo_espera_velas": senal.get(
+                "protocolo_live_sombra_espera",
+                -1,
+            ),
+            "protocolo_espera_timestamp": senal.get(
+                "protocolo_live_espera_timestamp",
+                -1,
+            ),
+            "motivo_confirmacion_protocolo_live": senal.get(
+                "motivo_confirmacion_protocolo_live",
+                "",
+            ),
+            "decision_post_protocolo": senal.get(
+                "decision_post_protocolo",
+                "",
+            ),
+            "probabilidad_post_protocolo": senal.get(
+                "probabilidad_post_protocolo",
+                "",
+            ),
+            "muestra_post_protocolo": senal.get(
+                "muestra_post_protocolo",
+                "",
+            ),
+            "confiabilidad_post_protocolo": senal.get(
+                "confiabilidad_post_protocolo",
+                "",
+            ),
+
             "hora_apertura": time.time(),
             "balance_antes": balance_antes,
             "segundo_entrada": segundo_despues,
@@ -529,6 +612,39 @@ def abrir_operacion(senal):
             "rsi": rsi,
             "razon": razon,
         
+            # D8-E8 — CONTEXTO PRE-ENTRADA
+            # Solo telemetria. No participa en decisiones.
+            "prioridad": senal.get("prioridad", ""),
+            "score_final": senal.get("score_final", ""),
+            "consenso": senal.get("consenso", ""),
+            "nivel_consenso": senal.get("nivel_consenso", ""),
+            "calidad": senal.get("calidad", ""),
+
+            "tipo_mercado": senal.get("tipo_mercado", ""),
+            "calidad_mercado": senal.get("calidad_mercado", ""),
+            "score_mercado": senal.get("score_mercado", ""),
+            "estado_tendencia": senal.get("estado_tendencia", ""),
+            "fuerza_tendencia": senal.get("fuerza_tendencia", ""),
+            "direccion_tendencia": senal.get(
+                "direccion_tendencia",
+                "",
+            ),
+
+            "accion_precio": senal.get("accion_precio", ""),
+            "pa_tipo": senal.get("pa_tipo", ""),
+            "pa_direccion": senal.get("pa_direccion", ""),
+            "pa_fuerza": senal.get("pa_fuerza", ""),
+
+            "tipo_setup": senal.get("tipo_setup", ""),
+            "calidad_setup": senal.get("calidad_setup", ""),
+            "modo_entrada_setup": senal.get(
+                "modo_entrada_setup",
+                "",
+            ),
+            "familia_setup": senal.get("familia_setup", ""),
+            "subtipo_setup": senal.get("subtipo_setup", ""),
+            "nivel_setup": senal.get("nivel_setup", ""),
+
             "resultado": "",
 
             # ==========================================
@@ -568,6 +684,69 @@ def abrir_operacion(senal):
 
             "razon_validacion_mercado": senal.get(
                 "razon_validacion_mercado",
+                "",
+            ),
+
+            # ==========================================
+            # D8-E6 — TRAZABILIDAD REAL PROTOCOLO LIVE
+            # Solo auditoría. No cambia ninguna decisión.
+            # ==========================================
+
+            "protocolo_sugerido": senal.get(
+                "protocolo_sugerido",
+                "",
+            ),
+
+            "protocolo_live_tipo": senal.get(
+                "tipo_protocolo_live",
+                senal.get(
+                    "protocolo_live_sombra_tipo",
+                    "",
+                ),
+            ),
+
+            "protocolo_live_estado": senal.get(
+                "protocolo_live_sombra_estado",
+                "",
+            ),
+
+            "accion_confirmacion_ia": senal.get(
+                "accion_confirmacion_ia",
+                "",
+            ),
+
+            "protocolo_espera_velas": senal.get(
+                "protocolo_live_sombra_espera",
+                -1,
+            ),
+
+            "protocolo_espera_timestamp": senal.get(
+                "protocolo_live_espera_timestamp",
+                -1,
+            ),
+
+            "motivo_confirmacion_protocolo_live": senal.get(
+                "motivo_confirmacion_protocolo_live",
+                "",
+            ),
+
+            "decision_post_protocolo": senal.get(
+                "decision_post_protocolo",
+                "",
+            ),
+
+            "probabilidad_post_protocolo": senal.get(
+                "probabilidad_post_protocolo",
+                "",
+            ),
+
+            "muestra_post_protocolo": senal.get(
+                "muestra_post_protocolo",
+                "",
+            ),
+
+            "confiabilidad_post_protocolo": senal.get(
+                "confiabilidad_post_protocolo",
                 "",
             ),
 
