@@ -316,7 +316,74 @@ def _seleccionar_fuente_principal(fuentes):
             reverse=True,
         )
 
-        return candidatas[0][3]
+        principal = candidatas[0][3]
+
+        # OPT-27/28:
+        # Si la fuente principal seleccionada es PA, permitimos
+        # especializarla por dirección únicamente cuando existe
+        # PA_DIRECCION para el MISMO token PA.
+        #
+        # No se permite sustituir una evidencia PA por otra distinta.
+        if _txt(principal.get("nivel")) == "PA":
+            clave_principal = _txt(
+                principal.get("clave")
+            )
+
+            if clave_principal.startswith("PA|"):
+                token = clave_principal.split("|", 1)[1]
+
+                if token:
+                    candidatas_pa_direccion = []
+
+                    for fuente in fuentes or []:
+                        if _txt(
+                            fuente.get("nivel")
+                        ) != "PA_DIRECCION":
+                            continue
+
+                        clave = _txt(
+                            fuente.get("clave")
+                        )
+
+                        partes = clave.split("|")
+
+                        # Formato:
+                        # PA_DIRECCION|TOKEN|CALL/PUT
+                        if len(partes) != 3:
+                            continue
+
+                        if partes[0] != "PA_DIRECCION":
+                            continue
+
+                        if partes[1] != token:
+                            continue
+
+                        if partes[2] not in {"CALL", "PUT"}:
+                            continue
+
+                        total = _entero(
+                            fuente.get("total"),
+                            0,
+                        )
+
+                        if total < MIN_MUESTRA_APORTE:
+                            continue
+
+                        candidatas_pa_direccion.append(
+                            fuente
+                        )
+
+                    if candidatas_pa_direccion:
+                        refinada = (
+                            _seleccionar_fuente_principal(
+                                candidatas_pa_direccion
+                            )
+                        )
+
+                        if isinstance(refinada, dict):
+                            return refinada
+
+        return principal
 
     return None
 def _seleccionar_fuente_respaldo(fuentes, principal):
