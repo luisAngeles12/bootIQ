@@ -46,6 +46,7 @@ COLUMNAS_HISTORIAL = [
     "fecha",
     "estado",
     "order_id",
+    "estado_operacion",
     "activo",
     "tipo",
     "direccion",
@@ -100,6 +101,26 @@ COLUMNAS_HISTORIAL = [
     "probabilidad_post_protocolo",
     "muestra_post_protocolo",
     "confiabilidad_post_protocolo",
+
+    # C-C2 LIVE — identidad exacta producida por motor_protocolos.
+    # Solo persistencia/auditoría.
+    "auditoria_protocolo_tipo",
+    "auditoria_protocolo_subtipo",
+    "auditoria_protocolo_familia",
+    "auditoria_protocolo_operada",
+    "auditoria_protocolo_idx_senal",
+    "auditoria_protocolo_idx_entrada",
+    "auditoria_protocolo_espera_velas",
+    "auditoria_protocolo_motivo",
+    "auditoria_protocolo_riesgo",
+    "auditoria_protocolo_nivel_riesgo",
+    "auditoria_protocolo_indice_confirmacion",
+    "auditoria_protocolo_nivel_confirmacion",
+    "auditoria_protocolo_accion_confirmacion",
+    "auditoria_protocolo_tipo_mercado",
+    "auditoria_protocolo_tendencia",
+    "auditoria_protocolo_pa_tipo",
+    "auditoria_protocolo_probabilidad",
 
     # D8-R6C — TRAZABILIDAD V3
     "probabilidad_v3",

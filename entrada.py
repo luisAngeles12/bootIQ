@@ -986,6 +986,27 @@ def procesar_senales_pendientes(abrir_operacion):
                         "",
                     )
 
+                    # C-C2 LIVE:
+                    # recuperar exactamente la auditoría generada
+                    # por motor_protocolos antes de consultar
+                    # aprendizaje post-protocolo.
+                    auditoria_protocolo = protocolo_live.get(
+                        "auditoria_protocolo",
+                        {},
+                    )
+
+                    if isinstance(
+                        auditoria_protocolo,
+                        dict,
+                    ):
+                        for clave, valor in (
+                            auditoria_protocolo.items()
+                        ):
+                            if str(clave).startswith(
+                                "auditoria_protocolo_"
+                            ):
+                                senal[clave] = valor
+
                     decision_post = evaluar_decision_post_protocolo(
                         senal
                     )

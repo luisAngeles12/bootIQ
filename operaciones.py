@@ -110,6 +110,14 @@ def abrir_operacion(senal):
         )
         return False
 
+    # Paridad semántica LIVE ↔ BACKTEST.
+    # Solo trazabilidad; no modifica autorización ni ejecución.
+    estado_operacion = (
+        "OPERADA_PROTOCOLO"
+        if decision_cerebro == "OPERAR_CON_PROTOCOLO"
+        else "OPERADA_DIRECTA"
+    )
+
     activo = str(
         senal.get("activo", "")
     ).strip()
@@ -385,6 +393,7 @@ def abrir_operacion(senal):
         
         op = {
             "order_id": order_id,
+            "estado_operacion": estado_operacion,
             "activo": activo,
             "tipo": tipo,
             "direccion": direccion,
@@ -472,6 +481,77 @@ def abrir_operacion(senal):
             ),
             "confiabilidad_post_protocolo": senal.get(
                 "confiabilidad_post_protocolo",
+                "",
+            ),
+
+            # C-C2 LIVE — identidad exacta producida por
+            # motor_protocolos. Solo persistencia/auditoría.
+            "auditoria_protocolo_tipo": senal.get(
+                "auditoria_protocolo_tipo",
+                "",
+            ),
+            "auditoria_protocolo_subtipo": senal.get(
+                "auditoria_protocolo_subtipo",
+                "",
+            ),
+            "auditoria_protocolo_familia": senal.get(
+                "auditoria_protocolo_familia",
+                "",
+            ),
+            "auditoria_protocolo_operada": senal.get(
+                "auditoria_protocolo_operada",
+                False,
+            ),
+            "auditoria_protocolo_idx_senal": senal.get(
+                "auditoria_protocolo_idx_senal",
+                -1,
+            ),
+            "auditoria_protocolo_idx_entrada": senal.get(
+                "auditoria_protocolo_idx_entrada",
+                -1,
+            ),
+            "auditoria_protocolo_espera_velas": senal.get(
+                "auditoria_protocolo_espera_velas",
+                -1,
+            ),
+            "auditoria_protocolo_motivo": senal.get(
+                "auditoria_protocolo_motivo",
+                "",
+            ),
+            "auditoria_protocolo_riesgo": senal.get(
+                "auditoria_protocolo_riesgo",
+                "",
+            ),
+            "auditoria_protocolo_nivel_riesgo": senal.get(
+                "auditoria_protocolo_nivel_riesgo",
+                "",
+            ),
+            "auditoria_protocolo_indice_confirmacion": senal.get(
+                "auditoria_protocolo_indice_confirmacion",
+                "",
+            ),
+            "auditoria_protocolo_nivel_confirmacion": senal.get(
+                "auditoria_protocolo_nivel_confirmacion",
+                "",
+            ),
+            "auditoria_protocolo_accion_confirmacion": senal.get(
+                "auditoria_protocolo_accion_confirmacion",
+                "",
+            ),
+            "auditoria_protocolo_tipo_mercado": senal.get(
+                "auditoria_protocolo_tipo_mercado",
+                "",
+            ),
+            "auditoria_protocolo_tendencia": senal.get(
+                "auditoria_protocolo_tendencia",
+                "",
+            ),
+            "auditoria_protocolo_pa_tipo": senal.get(
+                "auditoria_protocolo_pa_tipo",
+                "",
+            ),
+            "auditoria_protocolo_probabilidad": senal.get(
+                "auditoria_protocolo_probabilidad",
                 "",
             ),
 
@@ -603,6 +683,7 @@ def abrir_operacion(senal):
             ),
             "estado": "ABIERTA",
             "order_id": order_id,
+            "estado_operacion": estado_operacion,
             "activo": activo,
             "tipo": tipo,
             "direccion": direccion,
@@ -747,6 +828,77 @@ def abrir_operacion(senal):
 
             "confiabilidad_post_protocolo": senal.get(
                 "confiabilidad_post_protocolo",
+                "",
+            ),
+
+            # C-C2 LIVE — identidad exacta producida por
+            # motor_protocolos. Solo persistencia/auditoría.
+            "auditoria_protocolo_tipo": senal.get(
+                "auditoria_protocolo_tipo",
+                "",
+            ),
+            "auditoria_protocolo_subtipo": senal.get(
+                "auditoria_protocolo_subtipo",
+                "",
+            ),
+            "auditoria_protocolo_familia": senal.get(
+                "auditoria_protocolo_familia",
+                "",
+            ),
+            "auditoria_protocolo_operada": senal.get(
+                "auditoria_protocolo_operada",
+                False,
+            ),
+            "auditoria_protocolo_idx_senal": senal.get(
+                "auditoria_protocolo_idx_senal",
+                -1,
+            ),
+            "auditoria_protocolo_idx_entrada": senal.get(
+                "auditoria_protocolo_idx_entrada",
+                -1,
+            ),
+            "auditoria_protocolo_espera_velas": senal.get(
+                "auditoria_protocolo_espera_velas",
+                -1,
+            ),
+            "auditoria_protocolo_motivo": senal.get(
+                "auditoria_protocolo_motivo",
+                "",
+            ),
+            "auditoria_protocolo_riesgo": senal.get(
+                "auditoria_protocolo_riesgo",
+                "",
+            ),
+            "auditoria_protocolo_nivel_riesgo": senal.get(
+                "auditoria_protocolo_nivel_riesgo",
+                "",
+            ),
+            "auditoria_protocolo_indice_confirmacion": senal.get(
+                "auditoria_protocolo_indice_confirmacion",
+                "",
+            ),
+            "auditoria_protocolo_nivel_confirmacion": senal.get(
+                "auditoria_protocolo_nivel_confirmacion",
+                "",
+            ),
+            "auditoria_protocolo_accion_confirmacion": senal.get(
+                "auditoria_protocolo_accion_confirmacion",
+                "",
+            ),
+            "auditoria_protocolo_tipo_mercado": senal.get(
+                "auditoria_protocolo_tipo_mercado",
+                "",
+            ),
+            "auditoria_protocolo_tendencia": senal.get(
+                "auditoria_protocolo_tendencia",
+                "",
+            ),
+            "auditoria_protocolo_pa_tipo": senal.get(
+                "auditoria_protocolo_pa_tipo",
+                "",
+            ),
+            "auditoria_protocolo_probabilidad": senal.get(
+                "auditoria_protocolo_probabilidad",
                 "",
             ),
 

@@ -1386,6 +1386,17 @@ def evaluar_protocolo_live_sombra(
                 "accion_confirmacion_ia",
                 "",
             ),
+            # C-C2 LIVE:
+            # conservar exactamente la auditoría ya generada
+            # por motor_protocolos para la evaluación post-protocolo.
+            # No recalcula ni interpreta ningún dato.
+            "auditoria_protocolo": {
+                clave: valor
+                for clave, valor in senal_motor.items()
+                if str(clave).startswith(
+                    "auditoria_protocolo_"
+                )
+            },
         }
 
     # ========================================================
