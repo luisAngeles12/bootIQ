@@ -1511,27 +1511,49 @@ def buscar_entrada_confirmada(velas, idx, senal):
     )
 
     # ========================================================
-    # C4 — RUPTURA RESISTENCIA
+    # RUPTURA RESISTENCIA — SOLO SOMBRA
     # ========================================================
     #
-    # C3 mostró que este protocolo sí conserva ventaja
-    # cuando las señales vetadas llegan a su confirmación
-    # técnica:
+    # La evidencia multiventana posterior invalidó la antigua
+    # autorización productiva C4.
     #
-    # TRAIN      ~59.65%
-    # VALIDACION ~60.71%
+    # Resultado consolidado previo al corte:
+    # 54 operaciones | 25W/29L | WR 46.30%.
     #
-    # Por eso setup/riesgo permanecen como evidencia,
-    # pero no bloquean antes de comprobar la ruptura real.
+    # Se conserva la evaluación técnica exclusivamente para
+    # auditoría/sombra. No posee autoridad para abrir operaciones.
     # ========================================================
 
     if (
         protocolo_sugerido
         == "protocolo_ruptura_resistencia"
     ):
-        senal["c4_bypass_veto_ruptura_resistencia"] = True
+        # ====================================================
+        # LIMPIEZA PRODUCTIVA — RUPTURA_RESISTENCIA EN SOMBRA
+        # ====================================================
+        #
+        # Evidencia consolidada:
+        # - D55:          3W/7L
+        # - OOS anterior: 9W/4L
+        # - OOS3:         3W/7L
+        # - FRESCO:      10W/11L
+        #
+        # Total: 25W/29L = 46.30%, por debajo de break-even.
+        #
+        # Conservamos el protocolo técnico para seguir midiendo
+        # cuándo habría confirmado, pero pierde autoridad
+        # productiva. No abre operaciones.
+        # ====================================================
 
-        idx_entrada, motivo = (
+        senal[
+            "c4_bypass_veto_ruptura_resistencia"
+        ] = False
+
+        senal[
+            "auditoria_protocolo_modo_sombra"
+        ] = True
+
+        idx_sombra, motivo_sombra = (
             _protocolo_ruptura_resistencia(
                 velas,
                 idx,
@@ -1539,11 +1561,33 @@ def buscar_entrada_confirmada(velas, idx, senal):
             )
         )
 
+        senal[
+            "auditoria_protocolo_sombra_confirmada"
+        ] = idx_sombra is not None
+
+        senal[
+            "auditoria_protocolo_sombra_idx_entrada"
+        ] = (
+            idx_sombra
+            if idx_sombra is not None
+            else -1
+        )
+
+        senal[
+            "auditoria_protocolo_sombra_motivo"
+        ] = motivo_sombra
+
+        motivo_productivo = (
+            "SOMBRA_RUPTURA_RESISTENCIA_CONFIRMADA"
+            if idx_sombra is not None
+            else "SOMBRA_RUPTURA_RESISTENCIA_NO_CONFIRMADA"
+        )
+
         return _registrar_auditoria_protocolo(
             senal,
             idx,
-            idx_entrada,
-            motivo,
+            None,
+            motivo_productivo,
             "RUPTURA_RESISTENCIA",
         )
 

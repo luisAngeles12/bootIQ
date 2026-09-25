@@ -1619,6 +1619,13 @@ def convertir_decision_v3_a_oficial(
         )
     )
 
+    subtipo_setup_core4 = _txt(
+        evidencia.get(
+            "subtipo_setup",
+            "",
+        )
+    )
+
     pa_core4 = _txt(
         evidencia.get(
             "pa_tipo",
@@ -2080,6 +2087,16 @@ def convertir_decision_v3_a_oficial(
         }
     )
 
+    # D7.21 - R1 NO RESCATA ZONA_GENERICA
+    # Evidencia multiventana ZONA_GENERICA: 16 ops | 6W/10L | 37.50%.
+    # En fresco, los 2 casos directos fueron 0W/2L y ambos fueron
+    # rescates R1 de un NO_OPERAR_SOMBRA del V3.
+    # Solo retira esa combinacion; R1 conserva el resto de su autoridad.
+    core4_invalidacion_r1_zona_generica = (
+        core4_r1
+        and subtipo_setup_core4 == "zona_generica"
+    )
+
     # ========================================================
     # D7.20 — R2 SOLO PIERDE AUTORIDAD DE RESCATE
     # ========================================================
@@ -2112,6 +2129,7 @@ def convertir_decision_v3_a_oficial(
     core4_invalidacion_selectiva = (
         core4_invalidacion_r6_sr
         or core4_invalidacion_r1_vendedor_debil
+        or core4_invalidacion_r1_zona_generica
         or core4_invalidacion_r1_r2_envolvente
         or core4_invalidacion_r2_solo
     )
