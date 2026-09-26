@@ -2097,6 +2097,25 @@ def convertir_decision_v3_a_oficial(
         and subtipo_setup_core4 == "zona_generica"
     )
 
+    # D7.22 - R1 NO RESCATA CONTRADICCION_PA
+    # Evidencia multiventana: 11 rescates R1 con contradiccion PA,
+    # 4W/7L = 36.36%. La evidencia PA se conserva; solo pierde
+    # autoridad extraordinaria de rescate sobre NO_OPERAR_SOMBRA.
+    pa_evidencias_core4 = evidencia.get("pa_evidencias", [])
+    if not isinstance(pa_evidencias_core4, list):
+        pa_evidencias_core4 = []
+
+    core4_contradiccion_pa = any(
+        isinstance(ev, dict)
+        and _txt(ev.get("tipo", "")) == "contradiccion_pa"
+        for ev in pa_evidencias_core4
+    )
+
+    core4_invalidacion_r1_contradiccion_pa = (
+        core4_r1
+        and core4_contradiccion_pa
+    )
+
     # ========================================================
     # D7.20 — R2 SOLO PIERDE AUTORIDAD DE RESCATE
     # ========================================================
@@ -2130,6 +2149,7 @@ def convertir_decision_v3_a_oficial(
         core4_invalidacion_r6_sr
         or core4_invalidacion_r1_vendedor_debil
         or core4_invalidacion_r1_zona_generica
+        or core4_invalidacion_r1_contradiccion_pa
         or core4_invalidacion_r1_r2_envolvente
         or core4_invalidacion_r2_solo
     )
