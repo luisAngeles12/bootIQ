@@ -25,6 +25,15 @@ AJUSTE_MINIMO = -5.0
 
 RESULTADOS_VALIDOS = {"WIN", "LOSS"}
 
+# Fuentes cuya evidencia técnica se conserva, pero que no deben tener
+# autoridad estadística autónoma para rescatar operaciones PUT.
+# Evidencia OOS multiventana: RECHAZO_VENDEDOR_HISTORICO PUT generalizó
+# por debajo del punto de equilibrio pese a una memoria TRAIN favorable.
+FUENTES_SIN_AUTORIDAD_PRODUCTIVA_PUT = {
+    "PA|RECHAZO_VENDEDOR_HISTORICO",
+    "PA_DIRECCION|RECHAZO_VENDEDOR_HISTORICO|PUT",
+}
+
 # Prior conservador del universo observado. Se usa solo para suavizar
 # muestras pequeñas; no autoriza ni bloquea operaciones.
 PRIOR_WINRATE = 49.25
@@ -1872,10 +1881,23 @@ def cargar_aprendizaje(ruta=RUTA_APRENDIZAJE):
 def _buscar_fuentes_aprendizaje(senal, memoria):
     fuentes = []
     descartadas = []
+    direccion = _txt(senal.get("direccion"))
 
     for item in _claves_jerarquicas(senal):
         nivel = item["nivel"]
         clave = item["clave"]
+
+        if (
+            direccion == "PUT"
+            and clave in FUENTES_SIN_AUTORIDAD_PRODUCTIVA_PUT
+        ):
+            descartadas.append({
+                "nivel": nivel,
+                "clave": clave,
+                "motivo": "SIN_AUTORIDAD_PRODUCTIVA_OOS",
+            })
+            continue
+
         data = memoria.get(clave)
 
         if not data:
