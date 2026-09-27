@@ -2984,6 +2984,95 @@ def convertir_decision_v3_a_oficial(
             ).strip(),
         }
 
+    # ========================================================
+    # D7.26 — REACCION_ZONA NO AUTORIZA PUT EN RANGO ALCISTA_DEBIL
+    # ========================================================
+    #
+    # Evidencia multiventana:
+    #
+    # Contexto exacto:
+    # - PROTOCOLO_REACCION_ZONA
+    # - mercado RANGO
+    # - tendencia ALCISTA_DEBIL
+    # - direccion PUT
+    # - subtipo ZONA_RECHAZO_CONFIRMADO
+    # - accion PUT_SOPORTE_CERCA_SIN_RUPTURA
+    #
+    # Universo observado:
+    #   28 casos | 13W / 15L | 46.43%
+    #
+    # Casos que V3 llego a autorizar con protocolo:
+    #   2 casos | 0W / 2L
+    #
+    # La confirmacion posterior no corrige el contexto:
+    # ambas perdidas mostraron impulso y micro-ruptura validos.
+    #
+    # Contrato:
+    # - no modifica PROTOCOLO_REACCION_ZONA globalmente;
+    # - no modifica timing;
+    # - solo retira autoridad productiva a este contexto exacto.
+    # ========================================================
+
+    es_d726_reaccion_zona_rango_alcista_debil = (
+        decision_estadistica
+        == "OPERAR_CON_PROTOCOLO_SOMBRA"
+        and protocolo_sugerido
+        == "protocolo_reaccion_zona"
+        and tipo_mercado_core4
+        == "rango"
+        and estado_tendencia_core4
+        == "alcista_debil"
+        and direccion_core4
+        == "put"
+        and subtipo_setup_core4
+        == "zona_rechazo_confirmado"
+        and accion_precio_core4
+        == "put_soporte_cerca_sin_ruptura"
+    )
+
+    if es_d726_reaccion_zona_rango_alcista_debil:
+        return {
+            "decision": "NO_OPERAR",
+            "decision_legacy": "NO_OPERAR",
+            "operar": False,
+            "requiere_protocolo": False,
+            "modo_ejecucion": "BLOQUEADA",
+            "bloquear_por_riesgo": False,
+            "riesgo_extremo_diagnostico": False,
+
+            "origen_autoridad": (
+                "PROBABILIDAD_HISTORICA_V3"
+            ),
+
+            "decision_sombra_origen": (
+                decision_estadistica
+            ),
+
+            "nivel_probabilidad": nivel,
+            "clave_probabilidad": clave,
+
+            "directa_evidencia_solida": False,
+            "directa_muestra": muestra,
+            "directa_confiabilidad": confiabilidad,
+
+            "directa_aptitud_tecnica": False,
+            "directa_motivos_tecnicos": [
+                (
+                    "D7.26: REACCION_ZONA PUT en RANGO "
+                    "con tendencia ALCISTA_DEBIL, "
+                    "zona_rechazo_confirmado y soporte "
+                    "cercano sin ruptura."
+                )
+            ],
+
+            "motivo": (
+                "D7.26: autoridad estadistica condicionada "
+                "anulada para REACCION_ZONA PUT en RANGO "
+                "ALCISTA_DEBIL con soporte cercano sin ruptura. "
+                + motivo_estadistico
+            ).strip(),
+        }
+
     if (
         decision_estadistica
         == "OPERAR_CON_PROTOCOLO_SOMBRA"
