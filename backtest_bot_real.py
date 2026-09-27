@@ -1524,6 +1524,20 @@ def crear_registro_resultado(
 
         "cerebro_unico_decision": decision_oficial,
 
+        "core4_rescate": bool(
+            senal.get(
+                "core4_rescate",
+                False,
+            )
+        ),
+
+        "core4_reglas": _texto(
+            senal.get(
+                "core4_reglas",
+                "",
+            )
+        ),
+
         "cerebro_unico_decision_legacy": senal.get(
             "cerebro_unico_decision_legacy",
             decision_oficial,
@@ -4690,6 +4704,8 @@ def guardar_resultados(resultados):
         "espera_velas",
 
         "cerebro_unico_decision",
+        "core4_rescate",
+        "core4_reglas",
         "cerebro_unico_decision_legacy",
         "cerebro_unico_operar",
         "cerebro_unico_confianza",
