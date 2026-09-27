@@ -2097,6 +2097,30 @@ def convertir_decision_v3_a_oficial(
         and subtipo_setup_core4 == "zona_generica"
     )
 
+    # D7.25 - R1 NO RESCATA EN MERCADO RANGO
+    # Evidencia multiventana post-D7.24:
+    # - rescates R1 en TENDENCIA_ALCISTA: 16 | 12W/4L | 75.00%
+    # - rescates R1 en TENDENCIA_BAJISTA: 39 | 26W/13L | 66.67%
+    # - rescates R1 en RANGO:              3 |  0W/3L |  0.00%
+    #
+    # Universo R1-like completo en RANGO:
+    # 54 señales | 26W/28L | 48.15%, por debajo de break-even.
+    #
+    # Solo retira autoridad extraordinaria de rescate R1 cuando
+    # el V3 estadístico ya decidió NO_OPERAR_SOMBRA en un mercado RANGO.
+    # Conserva expresamente R1+R2 cuando R2 debe pasar por
+    # PROTOCOLO_RUPTURA_RESISTENCIA.
+    # No bloquea RANGO globalmente ni modifica R4/R6.
+    core4_invalidacion_r1_mercado_rango = (
+        core4_r1
+        and tipo_mercado_core4 == "rango"
+        and not (
+            core4_r2
+            and protocolo_sugerido
+            == "protocolo_ruptura_resistencia"
+        )
+    )
+
     # D7.22 - R1 NO RESCATA CONTRADICCION_PA
     # Evidencia multiventana: 11 rescates R1 con contradiccion PA,
     # 4W/7L = 36.36%. La evidencia PA se conserva; solo pierde
@@ -2194,6 +2218,7 @@ def convertir_decision_v3_a_oficial(
         core4_invalidacion_r6_sr
         or core4_invalidacion_r1_vendedor_debil
         or core4_invalidacion_r1_zona_generica
+        or core4_invalidacion_r1_mercado_rango
         or core4_invalidacion_r1_contradiccion_pa
         or core4_invalidacion_r1_rechazo_vendedor_put_debil
         or core4_invalidacion_r1_r2_envolvente
