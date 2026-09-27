@@ -2116,6 +2116,51 @@ def convertir_decision_v3_a_oficial(
         and core4_contradiccion_pa
     )
 
+    # D7.24 - R1 NO RESCATA RECHAZO VENDEDOR PUT DEBIL/AGOTADO
+    # Evidencia multiventana bajo D7.22:
+    #   5 rescates R1 operados | 0W / 5L
+    #   FRESCO: 1L
+    #   D55:    1L
+    #   OOS3:   3L
+    #
+    # Contrato quirurgico:
+    # - solo fuente principal exacta
+    #   PA_DIRECCION|RECHAZO_VENDEDOR_CONFIRMADO|PUT;
+    # - solo PUT con soporte cercano sin ruptura o absorcion compradora;
+    # - solo R1;
+    # - invalida si la tendencia es BAJISTA_AGOTADA
+    #   o BAJISTA_FUERTE,
+    #   o si PA detecta IMPULSO_BAJISTA_AGOTANDOSE.
+    #
+    # No toca autorizaciones estadisticas normales/protocolo.
+    # No modifica R2, R4 ni R6.
+    core4_impulso_bajista_agotandose = any(
+        isinstance(ev, dict)
+        and _txt(ev.get("tipo", ""))
+        == "impulso_bajista_agotandose"
+        for ev in pa_evidencias_core4
+    )
+
+    core4_invalidacion_r1_rechazo_vendedor_put_debil = (
+        core4_r1
+        and direccion_core4 == "put"
+        and str(clave or "").upper().strip()
+        == "PA_DIRECCION|RECHAZO_VENDEDOR_CONFIRMADO|PUT"
+        and accion_precio_core4
+        in {
+            "put_soporte_cerca_sin_ruptura",
+            "absorcion_compradora",
+        }
+        and (
+            estado_tendencia_core4
+            in {
+                "bajista_agotada",
+                "bajista_fuerte",
+            }
+            or core4_impulso_bajista_agotandose
+        )
+    )
+
     # ========================================================
     # D7.20 — R2 SOLO PIERDE AUTORIDAD DE RESCATE
     # ========================================================
@@ -2150,6 +2195,7 @@ def convertir_decision_v3_a_oficial(
         or core4_invalidacion_r1_vendedor_debil
         or core4_invalidacion_r1_zona_generica
         or core4_invalidacion_r1_contradiccion_pa
+        or core4_invalidacion_r1_rechazo_vendedor_put_debil
         or core4_invalidacion_r1_r2_envolvente
         or core4_invalidacion_r2_solo
     )
