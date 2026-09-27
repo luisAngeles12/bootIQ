@@ -42,4 +42,5 @@ CALIDADES_MERCADO_OPERABLES = [ "LIMPIO", "NORMAL" ]
 # ============================================================
 HISTORIAL_JSON = "historial_bot.json"
 HISTORIAL_CSV = "historial_bot.csv"
+PARIDAD_LIVE_CSV = "auditoria_paridad_live.csv"
 OPERACIONES_PENDIENTES_JSON = "operaciones_abiertas.json"

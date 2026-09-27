@@ -1032,6 +1032,12 @@ def abrir_operacion(senal):
             # PASO 5.5C — PARIDAD DE EJECUCIÓN
             # ==========================================
         
+            "paridad_live_estado": senal.get("paridad_live_estado", ""),
+            "paridad_live_resultado_actual": senal.get("paridad_live_resultado_actual", ""),
+            "paridad_live_razon_actual": senal.get("paridad_live_razon_actual", ""),
+            "paridad_live_estado_sombra": senal.get("paridad_live_estado_sombra", ""),
+            "paridad_live_motivo_sombra": senal.get("paridad_live_motivo_sombra", ""),
+
             "segundo_antes": segundo_antes,
             "segundo_entrada": segundo_despues,
             "demora_envio": demora_envio,

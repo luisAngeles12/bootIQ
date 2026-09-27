@@ -1,11 +1,14 @@
 import time
+import csv
+from pathlib import Path
 import estado
 from config import (
     CANDLE_TIME,
     VENTANA_ENTRADA_INICIO,
     VENTANA_ENTRADA_FIN,
     FUERZA_MAXIMA_VELA_NORMAL,
-    SEGUNDO_MAXIMO_VELA_CORRIDA
+    SEGUNDO_MAXIMO_VELA_CORRIDA,
+    PARIDAD_LIVE_CSV
 )
 from motor_protocolos import (
     evaluar_protocolo_live_sombra,
@@ -88,6 +91,77 @@ def registrar_paridad_protocolo_live(
         "protocolo_live_sombra_motivo",
         "",
     )
+
+    # ========================================================
+    # AUDITORÍA LIVE PERSISTENTE
+    # Registra todas las ramas: SIN_DATOS, ESPERAR,
+    # CANCELADA, CONFIRMACION_PASADA y CONFIRMADA.
+    # Solo telemetría. No altera ninguna decisión.
+    # ========================================================
+    campos_paridad = [
+        "timestamp",
+        "activo",
+        "direccion",
+        "patron",
+        "vela_senal_from",
+        "protocolo_live_tipo",
+        "protocolo_live_espera",
+        "paridad_live_estado",
+        "paridad_live_resultado_actual",
+        "paridad_live_razon_actual",
+        "paridad_live_estado_sombra",
+        "paridad_live_motivo_sombra",
+        "protocolo_live_vela_entrada_from",
+    ]
+
+    fila_paridad = {
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "activo": senal.get("activo", ""),
+        "direccion": senal.get("direccion", ""),
+        "patron": senal.get("patron", ""),
+        "vela_senal_from": senal.get("vela_senal_from", ""),
+        "protocolo_live_tipo": senal.get(
+            "protocolo_live_sombra_tipo",
+            "",
+        ),
+        "protocolo_live_espera": senal.get(
+            "protocolo_live_sombra_espera",
+            "",
+        ),
+        "paridad_live_estado": estado_paridad,
+        "paridad_live_resultado_actual": resultado_live,
+        "paridad_live_razon_actual": razon_live,
+        "paridad_live_estado_sombra": estado_sombra,
+        "paridad_live_motivo_sombra": senal.get(
+            "protocolo_live_sombra_motivo",
+            "",
+        ),
+        "protocolo_live_vela_entrada_from": senal.get(
+            "protocolo_live_vela_entrada_from",
+            "",
+        ),
+    }
+
+    try:
+        existe = Path(PARIDAD_LIVE_CSV).exists()
+        with open(
+            PARIDAD_LIVE_CSV,
+            "a",
+            newline="",
+            encoding="utf-8-sig",
+        ) as f:
+            writer = csv.DictWriter(
+                f,
+                fieldnames=campos_paridad,
+            )
+            if not existe or Path(PARIDAD_LIVE_CSV).stat().st_size == 0:
+                writer.writeheader()
+            writer.writerow(fila_paridad)
+    except Exception as e:
+        print(
+            "ERROR AUDITORIA PARIDAD LIVE:",
+            e,
+        )
 
     print(
         "PARIDAD BACKTEST-LIVE:",
