@@ -2251,6 +2251,73 @@ def convertir_decision_v3_a_oficial(
         == "directa"
     )
 
+    # ========================================================
+    # AUDITORÍA CORE4 PREVIA A AUTORIDAD
+    # ========================================================
+    # Telemetría pura:
+    # - describe las reglas estructurales CORE4 observadas;
+    # - se calcula antes de ejecutar cualquier rescate;
+    # - no modifica decision, operar, protocolo ni ranking;
+    # - permite estudiar CORE4 sin aprender de core4_rescate.
+    reglas_core4_previas = []
+
+    if core4_r1:
+        reglas_core4_previas.append(
+            "R1_INDEFINIDO_PREMIUM"
+        )
+
+    if core4_r2:
+        reglas_core4_previas.append(
+            "R2_RECHAZO_COMPRADOR_CONFIRMADO"
+        )
+
+    if core4_r4:
+        reglas_core4_previas.append(
+            "R4_PULLBACK_BAJISTA_PREMIUM"
+        )
+
+    if core4_r6:
+        reglas_core4_previas.append(
+            "R6_CONT_BAJISTA_IMPULSO_FUERTE"
+        )
+
+    core4_elegible_estructural_previo = (
+        core4_match
+        and core4_mercado_valido
+        and not core4_invalidacion_dura
+        and not core4_invalidacion_selectiva
+        and modo_entrada_core4
+        == "directa"
+    )
+
+    evidencia["_core4_diagnostico_previo"] = {
+        "core4_match_previo": bool(core4_match),
+        "core4_r1_previo": bool(core4_r1),
+        "core4_r2_previo": bool(core4_r2),
+        "core4_r4_previo": bool(core4_r4),
+        "core4_r6_previo": bool(core4_r6),
+        "core4_reglas_previas": "|".join(
+            reglas_core4_previas
+        ),
+        "core4_invalidacion_dura_previa": bool(
+            core4_invalidacion_dura
+        ),
+        "core4_invalidacion_selectiva_previa": bool(
+            core4_invalidacion_selectiva
+        ),
+        "core4_mercado_valido_previo": bool(
+            core4_mercado_valido
+        ),
+        "core4_elegible_estructural_previo": bool(
+            core4_elegible_estructural_previo
+        ),
+        "core4_elegible_rescate_previo": bool(
+            decision_estadistica
+            == "NO_OPERAR_SOMBRA"
+            and core4_elegible_estructural_previo
+        ),
+    }
+
     if core4_directa:
 
         reglas_core4 = []
@@ -3868,6 +3935,16 @@ def evaluar_decision_cerebro_unico(evidencia):
          resultado_decision_estadistica,
          evidencia=evidencia,
      )
+
+    diagnostico_core4_previo = evidencia.get(
+        "_core4_diagnostico_previo",
+        {},
+    )
+
+    if isinstance(diagnostico_core4_previo, dict):
+        resultado_decision_oficial.update(
+            diagnostico_core4_previo
+        )
 
     auditoria_separacion_v3 = construir_auditoria_separacion_v3(
         resultado_confianza=resultado_confianza_legacy,

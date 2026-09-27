@@ -562,6 +562,26 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
             or ""
         ).strip()
 
+        campos_core4_previos = (
+            "core4_match_previo",
+            "core4_r1_previo",
+            "core4_r2_previo",
+            "core4_r4_previo",
+            "core4_r6_previo",
+            "core4_reglas_previas",
+            "core4_invalidacion_dura_previa",
+            "core4_invalidacion_selectiva_previa",
+            "core4_mercado_valido_previo",
+            "core4_elegible_estructural_previo",
+            "core4_elegible_rescate_previo",
+        )
+
+        for campo in campos_core4_previos:
+            senal[campo] = resultado_oficial_detalle.get(
+                campo,
+                "" if campo == "core4_reglas_previas" else False,
+            )
+
         senal["directa_ruta_validada"] = bool(
             resultado_oficial_detalle.get(
                 "directa_ruta_validada",

@@ -1538,6 +1538,55 @@ def crear_registro_resultado(
             )
         ),
 
+        "core4_match_previo": bool(
+            senal.get("core4_match_previo", False)
+        ),
+        "core4_r1_previo": bool(
+            senal.get("core4_r1_previo", False)
+        ),
+        "core4_r2_previo": bool(
+            senal.get("core4_r2_previo", False)
+        ),
+        "core4_r4_previo": bool(
+            senal.get("core4_r4_previo", False)
+        ),
+        "core4_r6_previo": bool(
+            senal.get("core4_r6_previo", False)
+        ),
+        "core4_reglas_previas": _texto(
+            senal.get("core4_reglas_previas", "")
+        ),
+        "core4_invalidacion_dura_previa": bool(
+            senal.get(
+                "core4_invalidacion_dura_previa",
+                False,
+            )
+        ),
+        "core4_invalidacion_selectiva_previa": bool(
+            senal.get(
+                "core4_invalidacion_selectiva_previa",
+                False,
+            )
+        ),
+        "core4_mercado_valido_previo": bool(
+            senal.get(
+                "core4_mercado_valido_previo",
+                False,
+            )
+        ),
+        "core4_elegible_estructural_previo": bool(
+            senal.get(
+                "core4_elegible_estructural_previo",
+                False,
+            )
+        ),
+        "core4_elegible_rescate_previo": bool(
+            senal.get(
+                "core4_elegible_rescate_previo",
+                False,
+            )
+        ),
+
         "cerebro_unico_decision_legacy": senal.get(
             "cerebro_unico_decision_legacy",
             decision_oficial,
@@ -4706,6 +4755,17 @@ def guardar_resultados(resultados):
         "cerebro_unico_decision",
         "core4_rescate",
         "core4_reglas",
+        "core4_match_previo",
+        "core4_r1_previo",
+        "core4_r2_previo",
+        "core4_r4_previo",
+        "core4_r6_previo",
+        "core4_reglas_previas",
+        "core4_invalidacion_dura_previa",
+        "core4_invalidacion_selectiva_previa",
+        "core4_mercado_valido_previo",
+        "core4_elegible_estructural_previo",
+        "core4_elegible_rescate_previo",
         "cerebro_unico_decision_legacy",
         "cerebro_unico_operar",
         "cerebro_unico_confianza",
