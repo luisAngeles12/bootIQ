@@ -147,17 +147,76 @@ def descargar_velas_activo(tipo, activo):
         candles_finales = list(velas_unicas.values())
         candles_finales = sorted(candles_finales, key=lambda x: x["from"])
 
-        if not candles_finales or len(candles_finales) < MIN_VELAS_VALIDAS:
+        if not candles_finales:
             print(
                 "Sin suficientes velas:",
                 tipo,
                 activo,
-                "| recibidas:",
-                len(candles_finales) if candles_finales else 0,
+                "| recibidas: 0",
                 flush=True
             )
             return False
 
+        # STEP 6 — conservar un único segmento temporal continuo real.
+        #
+        # IQ puede devolver huecos dentro de una descarga histórica extensa.
+        # No se rellenan, no se ignoran y no se unen velas a ambos lados
+        # del hueco. Se separa la serie en segmentos estrictamente
+        # consecutivos y se conserva el más largo. En empate se prioriza
+        # el segmento más reciente.
+        segmentos = []
+        segmento_actual = [candles_finales[0]]
+
+        for siguiente in candles_finales[1:]:
+            anterior = segmento_actual[-1]
+            delta = int(siguiente["from"]) - int(anterior["from"])
+
+            if delta == CANDLE_TIME:
+                segmento_actual.append(siguiente)
+            else:
+                segmentos.append(segmento_actual)
+                segmento_actual = [siguiente]
+
+        segmentos.append(segmento_actual)
+
+        candles_finales = max(
+            segmentos,
+            key=lambda segmento: (
+                len(segmento),
+                int(segmento[-1]["from"]),
+            ),
+        )
+
+        print(
+            "Segmento continuo seleccionado:",
+            tipo,
+            activo,
+            "| segmentos:",
+            len(segmentos),
+            "| velas:",
+            len(candles_finales),
+            "| desde:",
+            candles_finales[0]["from"],
+            "| hasta:",
+            candles_finales[-1]["from"],
+            flush=True,
+        )
+
+        if len(candles_finales) < MIN_VELAS_VALIDAS:
+            print(
+                "Sin suficientes velas continuas:",
+                tipo,
+                activo,
+                "| segmento:",
+                len(candles_finales),
+                "| mínimo:",
+                MIN_VELAS_VALIDAS,
+                flush=True,
+            )
+            return False
+
+        # Defensa final antes de persistir: el segmento elegido debe
+        # conservar continuidad exacta de CANDLE_TIME.
         for anterior, siguiente in zip(
             candles_finales,
             candles_finales[1:],
