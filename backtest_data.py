@@ -3,7 +3,7 @@ import csv
 import os
 
 import estado
-from conexion import conectar
+from conexion import conectar, reconectar_iq
 from config import CANDLE_TIME , CANDLE_NUMBER
 from mercado import obtener_activos
 
@@ -199,11 +199,89 @@ def main():
 
     print("4. Obteniendo activos con la lógica REAL del bot...", flush=True)
     activos = obtener_activos()
+
+    if not activos:
+        try:
+            conectado = (
+                estado.Iq is not None
+                and estado.Iq.check_connect()
+            )
+        except Exception:
+            conectado = False
+
+        if not conectado:
+            print(
+                "Escaneo inicial abortado por desconexión. "
+                "Intentando recuperar IQ una vez...",
+                flush=True
+            )
+
+            if reconectar_iq():
+                print(
+                    "Conexión recuperada para repetir escaneo inicial. "
+                    "Esperando estabilización...",
+                    flush=True
+                )
+                time.sleep(3)
+
+                try:
+                    conectado = (
+                        estado.Iq is not None
+                        and estado.Iq.check_connect()
+                    )
+                except Exception:
+                    conectado = False
+
+                if conectado:
+                    activos = obtener_activos()
+
     print("5. Activos seleccionados:", len(activos), flush=True)
 
     descargados = 0
 
     for item in activos:
+        try:
+            conectado = (
+                estado.Iq is not None
+                and estado.Iq.check_connect()
+            )
+        except Exception:
+            conectado = False
+
+        if not conectado:
+            if not reconectar_iq():
+                print(
+                    "No se pudo recuperar conexión antes de descargar:",
+                    item["tipo"],
+                    item["activo"],
+                    flush=True
+                )
+                continue
+
+            print(
+                "Conexión recuperada para descarga histórica. "
+                "Esperando estabilización...",
+                flush=True
+            )
+            time.sleep(3)
+
+            try:
+                conectado = (
+                    estado.Iq is not None
+                    and estado.Iq.check_connect()
+                )
+            except Exception:
+                conectado = False
+
+            if not conectado:
+                print(
+                    "Conexión no disponible tras estabilización:",
+                    item["tipo"],
+                    item["activo"],
+                    flush=True
+                )
+                continue
+
         ok = descargar_velas_activo(
             item["tipo"],
             item["activo"]
