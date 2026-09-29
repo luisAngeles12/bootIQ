@@ -3310,119 +3310,61 @@ def evaluar_d43_timing_minimo_sombra(
     )
 
     # ========================================================
-    # GUARDAR AUTORIDAD TEMPORAL OFICIAL
+    # EJECUTAR MOTOR OFICIAL INTACTO EN SOMBRA
     # ========================================================
+    #
+    # D4.3B estudia un mínimo temporal de ENTRADA, no un mínimo
+    # temporal para que exista el evento técnico. Por eso no se
+    # modifica _ventana_confirmacion: hacerlo desplazaría también
+    # la búsqueda de ruptura/reacción del protocolo.
+    #
+    # El motor conserva aquí toda su detección técnica oficial.
+    # Más abajo D4.3B aplica exclusivamente:
+    #
+    #     espera_sombra >= objetivo_espera
+    #
+    # sin conceder autoridad productiva a esta telemetría.
 
-    ventana_oficial = (
-        motor_protocolos_mod._ventana_confirmacion
+    idx_sombra, motivo_sombra = (
+        motor_protocolos_mod.buscar_entrada_confirmada(
+            velas,
+            idx,
+            senal_sombra,
+        )
     )
 
-    def ventana_timing_minimo(
-        senal_local,
-        idx_local,
-        velas_local,
+    # Algunos protocolos, como RUPTURA_RESISTENCIA, pueden
+    # confirmar técnicamente una entrada en auditoría sombra y
+    # devolver None deliberadamente a la ruta productiva.
+    # Recuperamos ese índice solo para telemetría D4.3B.
+    if (
+        idx_sombra is None
+        and senal_sombra.get(
+            "auditoria_protocolo_modo_sombra"
+        ) is True
+        and senal_sombra.get(
+            "auditoria_protocolo_sombra_confirmada"
+        ) is True
     ):
-        """
-        Reutiliza exactamente la ventana oficial y cambia
-        únicamente su punto de inicio.
-
-        Antes:
-            inicio = idx + 1
-
-        D4.3B:
-            inicio = objetivo
-
-        El final permanece exactamente igual.
-        """
-
-        inicio_oficial, objetivo, fin = (
-            ventana_oficial(
-                senal_local,
-                idx_local,
-                velas_local,
-            )
-        )
-
-        accion_local = str(
-            senal_local.get(
-                "accion_confirmacion_ia",
-                "",
-            )
-            or ""
-        ).lower().strip()
-
-        if accion_local in {
-            "esperar_2",
-            "esperar_3",
-        }:
-            inicio_sombra = objetivo
-        else:
-            inicio_sombra = inicio_oficial
-
-        return (
-            inicio_sombra,
-            objetivo,
-            fin,
-        )
-
-    # ========================================================
-    # EJECUTAR MISMO MOTOR EN SOMBRA
-    # ========================================================
-
-    try:
-        motor_protocolos_mod._ventana_confirmacion = (
-            ventana_timing_minimo
-        )
-
-        idx_sombra, motivo_sombra = (
-            motor_protocolos_mod.buscar_entrada_confirmada(
-                velas,
-                idx,
-                senal_sombra,
-            )
-        )
-
-        # D4.3B es telemetría sombra. Algunos protocolos pueden
-        # conservar una confirmación técnica para auditoría mientras
-        # devuelven None deliberadamente a la ruta productiva.
-        # En ese caso recuperamos exclusivamente el índice sombra que
-        # el propio motor acaba de calcular, sin otorgarle autoridad
-        # productiva ni modificar la entrada oficial.
-        if (
-            idx_sombra is None
-            and senal_sombra.get(
-                "auditoria_protocolo_modo_sombra"
-            ) is True
-            and senal_sombra.get(
-                "auditoria_protocolo_sombra_confirmada"
-            ) is True
-        ):
-            try:
-                idx_auditoria_sombra = int(
-                    senal_sombra.get(
-                        "auditoria_protocolo_sombra_idx_entrada",
-                        -1,
-                    )
+        try:
+            idx_auditoria_sombra = int(
+                senal_sombra.get(
+                    "auditoria_protocolo_sombra_idx_entrada",
+                    -1,
                 )
-            except (TypeError, ValueError):
-                idx_auditoria_sombra = -1
+            )
+        except (TypeError, ValueError):
+            idx_auditoria_sombra = -1
 
-            if idx_auditoria_sombra >= 0:
-                idx_sombra = idx_auditoria_sombra
-                motivo_sombra = str(
-                    senal_sombra.get(
-                        "auditoria_protocolo_sombra_motivo",
-                        motivo_sombra,
-                    )
-                    or motivo_sombra
+        if idx_auditoria_sombra >= 0:
+            idx_sombra = idx_auditoria_sombra
+            motivo_sombra = str(
+                senal_sombra.get(
+                    "auditoria_protocolo_sombra_motivo",
+                    motivo_sombra,
                 )
-
-    finally:
-        # CRÍTICO:
-        # restaurar inmediatamente el comportamiento oficial.
-        motor_protocolos_mod._ventana_confirmacion = (
-            ventana_oficial
-        )
+                or motivo_sombra
+            )
 
     salida["motivo"] = motivo_sombra
 
