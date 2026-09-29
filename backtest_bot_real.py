@@ -3382,6 +3382,41 @@ def evaluar_d43_timing_minimo_sombra(
             )
         )
 
+        # D4.3B es telemetría sombra. Algunos protocolos pueden
+        # conservar una confirmación técnica para auditoría mientras
+        # devuelven None deliberadamente a la ruta productiva.
+        # En ese caso recuperamos exclusivamente el índice sombra que
+        # el propio motor acaba de calcular, sin otorgarle autoridad
+        # productiva ni modificar la entrada oficial.
+        if (
+            idx_sombra is None
+            and senal_sombra.get(
+                "auditoria_protocolo_modo_sombra"
+            ) is True
+            and senal_sombra.get(
+                "auditoria_protocolo_sombra_confirmada"
+            ) is True
+        ):
+            try:
+                idx_auditoria_sombra = int(
+                    senal_sombra.get(
+                        "auditoria_protocolo_sombra_idx_entrada",
+                        -1,
+                    )
+                )
+            except (TypeError, ValueError):
+                idx_auditoria_sombra = -1
+
+            if idx_auditoria_sombra >= 0:
+                idx_sombra = idx_auditoria_sombra
+                motivo_sombra = str(
+                    senal_sombra.get(
+                        "auditoria_protocolo_sombra_motivo",
+                        motivo_sombra,
+                    )
+                    or motivo_sombra
+                )
+
     finally:
         # CRÍTICO:
         # restaurar inmediatamente el comportamiento oficial.
