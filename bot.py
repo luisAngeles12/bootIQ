@@ -836,6 +836,11 @@ def main():
         # D7.6D — telemetría temporal solamente.
         timings_activos_d76d = []
 
+        print(
+            "BUSCANDO OPERACIÓN | mercados elegibles:",
+            len(activos),
+        )
+
         for item in activos:
 
             # Reservamos aproximadamente 2 segundos para:
@@ -875,6 +880,19 @@ def main():
 
                 inicio_activo_d76d = (
                     time.perf_counter()
+                )
+
+                candidatas_antes = estado.metricas_ronda.get(
+                    "candidatas_generadas",
+                    0,
+                )
+                evaluadas_antes = estado.metricas_ronda.get(
+                    "candidatas_evaluadas_cerebro",
+                    0,
+                )
+                continuan_antes = estado.metricas_ronda.get(
+                    "candidatas_que_continuan",
+                    0,
                 )
 
                 try:
@@ -1022,6 +1040,44 @@ def main():
 
                     break
 
+                candidatas_activo = (
+                    estado.metricas_ronda.get(
+                        "candidatas_generadas",
+                        0,
+                    )
+                    - candidatas_antes
+                )
+                evaluadas_activo = (
+                    estado.metricas_ronda.get(
+                        "candidatas_evaluadas_cerebro",
+                        0,
+                    )
+                    - evaluadas_antes
+                )
+                continuan_activo = (
+                    estado.metricas_ronda.get(
+                        "candidatas_que_continuan",
+                        0,
+                    )
+                    - continuan_antes
+                )
+
+                if candidatas_activo <= 0:
+                    print(
+                        "ANALIZADO — SIN CANDIDATA | activo:",
+                        activo,
+                    )
+
+                elif senal is None and continuan_activo <= 0:
+                    print(
+                        "ANALIZADO — CANDIDATAS NO CONTINÚAN | activo:",
+                        activo,
+                        "| generadas:",
+                        candidatas_activo,
+                        "| evaluadas:",
+                        evaluadas_activo,
+                    )
+
                 if senal is not None:
 
                     estado.metricas_ronda[
@@ -1136,6 +1192,15 @@ def main():
 
             time.sleep(0.25)
             continue
+
+        print(
+            (
+                "BÚSQUEDA COMPLETADA | señales finales:"
+                if senales
+                else "BÚSQUEDA COMPLETADA — SIN SEÑAL FINAL | señales finales:"
+            ),
+            len(senales),
+        )
 
         # ==========================================
         # MOSTRAR SEÑALES

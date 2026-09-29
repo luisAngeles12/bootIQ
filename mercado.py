@@ -422,8 +422,56 @@ def obtener_velas(activo):
             )
         )
 
+        # D7.6D:
+        # si IQ respondió con velas recientes pero atrasadas,
+        # hacer UN único reintento usando el reloj del servidor
+        # IQ como endtime. Nunca aceptar el bloque viejo.
+        if ultima_buffer < ultima_esperada:
+            try:
+                recientes_retry = estado.Iq.get_candles(
+                    activo,
+                    CANDLE_TIME,
+                    4,
+                    ahora,
+                    timeout=3.0,
+                    drain_timeout=1.0,
+                )
+            except Exception:
+                recientes_retry = None
+
+            recientes_retry_cerradas = (
+                _solo_velas_cerradas(recientes_retry)
+            )
+
+            for c in recientes_retry_cerradas:
+                try:
+                    por_timestamp[
+                        int(float(c["from"]))
+                    ] = c
+                except Exception:
+                    continue
+
+            fusionadas = [
+                por_timestamp[k]
+                for k in sorted(por_timestamp)
+            ][-objetivo_cerradas:]
+
+            ultima_buffer = int(
+                float(fusionadas[-1]["from"])
+            )
+
+            print(
+                "D7.6D RETRY VELAS RECIENTES | activo:",
+                activo,
+                "| ultima_retry:",
+                ultima_buffer,
+                "| esperada:",
+                ultima_esperada,
+                flush=True,
+            )
+
         # Nunca analizar una vela vieja como si fuese
-        # la última cerrada.
+        # la última cerrada. Tampoco aceptar una vela futura.
         if ultima_buffer != ultima_esperada:
             print(
                 "D7.6D FALLO VELAS DETALLE | activo:",
@@ -511,6 +559,24 @@ def evaluar_estabilidad_activo(
     """
 
     try:
+        # ------------------------------------------
+        # DESCARTES DETERMINISTAS ANTES DE IQ
+        # ------------------------------------------
+        # Estos formatos nunca son elegibles.
+        # No consumir get_candles() para rechazarlos
+        # después ni arriesgar un timeout innecesario.
+        if "-op" in asset:
+            estado.metricas_ronda[
+                "scan_formato_op"
+            ] += 1
+            return None
+
+        if "/" in asset:
+            estado.metricas_ronda[
+                "scan_formato_combinado"
+            ] += 1
+            return None
+
         # ------------------------------------------
         # CONEXIÓN ANTES DE PEDIR VELAS
         # ------------------------------------------
@@ -642,20 +708,6 @@ def evaluar_estabilidad_activo(
         # =========================
         # FILTRO DURO DE ACTIVOS
         # =========================
-
-        # Evitar activos tipo -op por ahora.
-        if "-op" in asset:
-            estado.metricas_ronda[
-                "scan_formato_op"
-            ] += 1
-            return None
-
-        # Evitar activos combinados.
-        if "/" in asset:
-            estado.metricas_ronda[
-                "scan_formato_combinado"
-            ] += 1
-            return None
 
         # Solo trabajar mercados limpios o normales.
         if calidad not in [
@@ -1192,7 +1244,6 @@ def refrescar_activos_incremental():
             estado.metricas_ronda[
                 "duplicados_omitidos"
             ] += 1
-
             continue
 
         if (
@@ -1202,7 +1253,6 @@ def refrescar_activos_incremental():
             estado.metricas_ronda[
                 "descartados_invalidos"
             ] += 1
-
             continue
 
         if activo_en_cooldown(
@@ -1211,13 +1261,11 @@ def refrescar_activos_incremental():
             estado.metricas_ronda[
                 "descartados_cooldown"
             ] += 1
-
             continue
 
         estado.metricas_ronda[
             "activos_evaluados_filtro"
         ] += 1
-
         # D7.6D — separar presupuesto del scanner
         # de la salud de la conexión.
         #
@@ -1287,7 +1335,6 @@ def refrescar_activos_incremental():
             estado.metricas_ronda[
                 "descartados_sin_datos"
             ] += 1
-
             continue
 
         if (
@@ -1300,13 +1347,11 @@ def refrescar_activos_incremental():
             estado.metricas_ronda[
                 "descartados_score"
             ] += 1
-
             continue
 
         estado.refresh_activos_candidatos.append(
             evaluado
         )
-
         # Igual que el scanner original:
         # solo entra en vistos si fue aceptado.
         estado.refresh_activos_vistos.add(
@@ -1351,7 +1396,7 @@ def refrescar_activos_incremental():
         )
     )
 
-    if top_nuevo:
+    if len(top_nuevo) >= MAX_ACTIVOS_ANALIZAR:
 
         # ==========================================
         # D7.6D — TOP COMPLETO PENDIENTE DE BUFFER
@@ -1392,8 +1437,12 @@ def refrescar_activos_incremental():
     else:
         print(
             "D7.6D REFRESH INCREMENTAL COMPLETO "
-            "SIN TOP VALIDO | "
-            "SE CONSERVA CACHE OFICIAL"
+            "TOP INCOMPLETO |",
+            "compatibles:",
+            len(candidatos),
+            "| requeridos:",
+            MAX_ACTIVOS_ANALIZAR,
+            "| SE CONSERVA CACHE OFICIAL",
         )
 
         resultado = devolver_cache_oficial()
@@ -2008,7 +2057,7 @@ def obtener_activos(
         :MAX_ACTIVOS_ANALIZAR
     ]
 
-    if activos:
+    if len(activos) >= MAX_ACTIVOS_ANALIZAR:
         if not cache_previa_d76d:
             # Bootstrap:
             # el TOP ya está calculado, pero todavía

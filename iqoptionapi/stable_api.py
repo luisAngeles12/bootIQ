@@ -531,7 +531,28 @@ class IQ_Option:
                 if option in binary_data:
                     for actives_id in binary_data[option]["actives"]:
                         active = binary_data[option]["actives"][actives_id]
-                        name = str(active["name"]).split(".")[1]
+
+                        nombre_raw = str(
+                            active.get("name", "")
+                        )
+
+                        if "." not in nombre_raw:
+                            continue
+
+                        name = nombre_raw.split(".", 1)[1]
+
+                        # BootIQ:
+                        # una respuesta V2 válida para OPEN_TIME
+                        # también es autoridad válida para sincronizar
+                        # el active_id usado posteriormente por
+                        # get_candles().
+                        try:
+                            OP_code.ACTIVES[name] = int(
+                                actives_id
+                            )
+                        except (TypeError, ValueError):
+                            continue
+
                         if active["enabled"] == True:
                             if active["is_suspended"] == True:
                                 self.OPEN_TIME[option][name]["open"] = False
@@ -1032,9 +1053,17 @@ class IQ_Option:
                     logging.warning(
                         "**warning** get_candles "
                         "sin respuesta %s sec "
-                        "| activo: %s",
+                        "| activo: %s "
+                        "| interval: %s "
+                        "| count: %s "
+                        "| endtime: %s "
+                        "| drain_timeout: %s",
                         round(timeout, 2),
                         ACTIVES,
+                        interval,
+                        count,
+                        endtime,
+                        drain_timeout,
                     )
 
                     # ====================================================
@@ -1089,8 +1118,16 @@ class IQ_Option:
                             "**warning** get_candles "
                             "respuesta tardia descartada "
                             "| activo: %s "
+                            "| interval: %s "
+                            "| count: %s "
+                            "| endtime: %s "
+                            "| drain_timeout: %s "
                             "| drenaje: %.3f sec",
                             ACTIVES,
+                            interval,
+                            count,
+                            endtime,
+                            drain_timeout,
                             demora_drenaje,
                         )
 
@@ -1112,8 +1149,16 @@ class IQ_Option:
                         "**warning** get_candles "
                         "respuesta tardia no drenada "
                         "| activo: %s "
+                        "| interval: %s "
+                        "| count: %s "
+                        "| endtime: %s "
+                        "| drain_timeout: %s "
                         "| websocket invalidado",
                         ACTIVES,
+                        interval,
+                        count,
+                        endtime,
+                        drain_timeout,
                     )
 
                     try:
