@@ -158,6 +158,29 @@ def descargar_velas_activo(tipo, activo):
             )
             return False
 
+        for anterior, siguiente in zip(
+            candles_finales,
+            candles_finales[1:],
+        ):
+            delta = int(siguiente["from"]) - int(anterior["from"])
+
+            if delta != CANDLE_TIME:
+                print(
+                    "Dataset rechazado por continuidad temporal:",
+                    tipo,
+                    activo,
+                    "| desde:",
+                    anterior["from"],
+                    "| hasta:",
+                    siguiente["from"],
+                    "| delta:",
+                    delta,
+                    "| esperado:",
+                    CANDLE_TIME,
+                    flush=True,
+                )
+                return False
+
         guardar_velas_csv(tipo, activo, candles_finales)
         return True
 

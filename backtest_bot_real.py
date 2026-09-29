@@ -206,6 +206,18 @@ def evaluar_estabilidad_dataset(
     if not activo:
         return None, "ACTIVO_VACIO"
 
+    for anterior, siguiente in zip(velas, velas[1:]):
+        delta = siguiente["from"] - anterior["from"]
+
+        if delta != CANDLE_TIME:
+            dataset["error_continuidad_temporal"] = {
+                "from_anterior": anterior["from"],
+                "from_siguiente": siguiente["from"],
+                "delta": delta,
+                "esperado": CANDLE_TIME,
+            }
+            return None, "CONTINUIDAD_TEMPORAL_INVALIDA"
+
     # ========================================================
     # VENTANA DE SELECCION
     # ========================================================
