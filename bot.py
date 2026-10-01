@@ -651,6 +651,10 @@ def main():
                         "entradas_abiertas",
                         0
                     ) > 0
+                    or estado.metricas_ronda.get(
+                        "mercados_abiertos_recorridos",
+                        0
+                    ) > 0
                 ):
                     imprimir_resumen_ronda()
 
@@ -1528,6 +1532,10 @@ def main():
                     ) > 0
                     or estado.metricas_ronda.get(
                         "entradas_abiertas",
+                        0
+                    ) > 0
+                    or estado.metricas_ronda.get(
+                        "mercados_abiertos_recorridos",
                         0
                     ) > 0
                 ):
