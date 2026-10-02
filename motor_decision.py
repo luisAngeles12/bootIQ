@@ -1533,6 +1533,32 @@ def convertir_decision_v3_a_oficial(
         and validacion_mercado_d77 is not False
     )
 
+    # ========================================================
+    # STEP 7 LIVE SHADOW — DIAGNOSTICO D7.5
+    # ========================================================
+    # Telemetria pura. No modifica ninguna condicion,
+    # decision, protocolo ni modo de ejecucion.
+    evidencia["_d75_diagnostico_previo"] = {
+        "d75_alcanzado": True,
+        "d75_es_reaccion_zona": bool(es_reaccion_zona_d75),
+        "d75_v3_operar_sombra": bool(
+            decision_estadistica == "OPERAR_SOMBRA"
+        ),
+        "d75_tendencia_alcista": bool(
+            mercado_d75 == "tendencia_alcista"
+        ),
+        "d75_mercado_limpio_normal": bool(
+            calidad_mercado_d75 in {"limpio", "normal"}
+        ),
+        "d75_modo_directa": bool(
+            modo_entrada_d75 == "directa"
+        ),
+        "d75_validacion_mercado": bool(
+            validacion_mercado_d77 is not False
+        ),
+        "d75_cumple": bool(cumple_d75),
+    }
+
     if cumple_d75:
         return {
             "decision": "OPERAR",
@@ -2291,6 +2317,7 @@ def convertir_decision_v3_a_oficial(
     )
 
     evidencia["_core4_diagnostico_previo"] = {
+        "core4_alcanzado": True,
         "core4_match_previo": bool(core4_match),
         "core4_r1_previo": bool(core4_r1),
         "core4_r2_previo": bool(core4_r2),
@@ -3944,6 +3971,20 @@ def evaluar_decision_cerebro_unico(evidencia):
     if isinstance(diagnostico_core4_previo, dict):
         resultado_decision_oficial.update(
             diagnostico_core4_previo
+        )
+
+    # ========================================================
+    # STEP 7 LIVE SHADOW — TRANSPORTE DIAGNOSTICO D7.5
+    # ========================================================
+    # Solo auditoria. No modifica la decision oficial.
+    diagnostico_d75_previo = evidencia.get(
+        "_d75_diagnostico_previo",
+        {},
+    )
+
+    if isinstance(diagnostico_d75_previo, dict):
+        resultado_decision_oficial.update(
+            diagnostico_d75_previo
         )
 
     auditoria_separacion_v3 = construir_auditoria_separacion_v3(

@@ -563,6 +563,7 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         ).strip()
 
         campos_core4_previos = (
+            "core4_alcanzado",
             "core4_match_previo",
             "core4_r1_previo",
             "core4_r2_previo",
@@ -580,6 +581,94 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
             senal[campo] = resultado_oficial_detalle.get(
                 campo,
                 "" if campo == "core4_reglas_previas" else False,
+            )
+
+        # =====================================================
+        # STEP 7 LIVE SHADOW — DIAGNOSTICO D7.5
+        # =====================================================
+        # Solo transporte de telemetria.
+        # No modifica la decision oficial.
+        campos_d75_previos = (
+            "d75_alcanzado",
+            "d75_es_reaccion_zona",
+            "d75_v3_operar_sombra",
+            "d75_tendencia_alcista",
+            "d75_mercado_limpio_normal",
+            "d75_modo_directa",
+            "d75_validacion_mercado",
+            "d75_cumple",
+        )
+
+        for campo in campos_d75_previos:
+            senal[campo] = bool(
+                resultado_oficial_detalle.get(
+                    campo,
+                    False,
+                )
+            )
+
+        # =====================================================
+        # STEP 7 LIVE SHADOW — FUNNEL AUTORIZACION DIRECTA
+        # =====================================================
+        # Telemetria pura.
+        # No modifica decision, operar, protocolo ni ejecucion.
+        _step7_familia = str(
+            senal.get("familia_setup", "") or ""
+        ).lower().strip()
+
+        _step7_protocolo = str(
+            senal.get("protocolo_sugerido", "") or ""
+        ).lower().strip()
+
+        _step7_patron = str(
+            senal.get(
+                "estrategia",
+                senal.get("patron", ""),
+            )
+            or ""
+        ).lower().strip()
+
+        _step7_reaccion_d75 = (
+            _step7_familia == "reaccion_zona"
+            or _step7_protocolo == "protocolo_reaccion_zona"
+            or "reaccion compradora" in _step7_patron
+            or "reaccion vendedora" in _step7_patron
+        )
+
+        _step7_mostrar_directa = (
+            _step7_reaccion_d75
+            or bool(senal.get("core4_match_previo", False))
+            or str(decision_oficial).upper().strip() == "OPERAR"
+        )
+
+        if _step7_mostrar_directa:
+            print(
+                "STEP7 DIRECTA |",
+                senal.get("activo", ""),
+                "| FINAL:", decision_oficial,
+                "| AUT:", senal.get("origen_autoridad", ""),
+                "| D75",
+                "cand:", int(_step7_reaccion_d75),
+                "reach:", int(senal.get("d75_alcanzado", False)),
+                "rz:", int(senal.get("d75_es_reaccion_zona", False)),
+                "v3:", int(senal.get("d75_v3_operar_sombra", False)),
+                "trend:", int(senal.get("d75_tendencia_alcista", False)),
+                "market:", int(senal.get("d75_mercado_limpio_normal", False)),
+                "mode:", int(senal.get("d75_modo_directa", False)),
+                "val:", int(senal.get("d75_validacion_mercado", False)),
+                "cumple:", int(senal.get("d75_cumple", False)),
+                "| C4",
+                "reach:", int(senal.get("core4_alcanzado", False)),
+                "match:", int(senal.get("core4_match_previo", False)),
+                "r1:", int(senal.get("core4_r1_previo", False)),
+                "r2:", int(senal.get("core4_r2_previo", False)),
+                "r4:", int(senal.get("core4_r4_previo", False)),
+                "r6:", int(senal.get("core4_r6_previo", False)),
+                "market:", int(senal.get("core4_mercado_valido_previo", False)),
+                "hard:", int(senal.get("core4_invalidacion_dura_previa", False)),
+                "selective:", int(senal.get("core4_invalidacion_selectiva_previa", False)),
+                "rescue:", int(senal.get("core4_elegible_rescate_previo", False)),
+                flush=True,
             )
 
         senal["directa_ruta_validada"] = bool(
@@ -709,6 +798,46 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         for campo in campos_sombra:
             if campo in decision_cerebro:
                 senal[campo] = decision_cerebro.get(campo)
+
+        # =====================================================
+        # STEP 7 — TELEMETRIA FUENTES PROBABILIDAD V3
+        # =====================================================
+        # Observabilidad pura. No modifica probabilidad,
+        # decision, aprendizaje, pesos ni autoridad operativa.
+        _step7_principal = senal.get(
+            "fuente_probabilidad_principal",
+            {},
+        )
+        _step7_respaldo = senal.get(
+            "fuente_probabilidad_respaldo",
+            {},
+        )
+
+        if not isinstance(_step7_principal, dict):
+            _step7_principal = {}
+        if not isinstance(_step7_respaldo, dict):
+            _step7_respaldo = {}
+
+        print(
+            "STEP7 V3 FUENTES | "
+            f"activo:{senal.get('activo', '')} | "
+            f"final:{decision_oficial} | "
+            f"v3:{senal.get('decision_estadistica_sombra', '')} | "
+            f"prob:{senal.get('probabilidad_estimada', 0)} | "
+            f"muestra:{senal.get('muestra_probabilidad', 0)} | "
+            f"PRINCIPAL[nivel:{_step7_principal.get('nivel', '')} "
+            f"clave:{_step7_principal.get('clave', '')} "
+            f"n:{_step7_principal.get('total', 0)} "
+            f"wr:{_step7_principal.get('winrate', 0)} "
+            f"p:{_step7_principal.get('probabilidad_ajustada', 0)} "
+            f"peso:{senal.get('peso_fuente_probabilidad_principal', 0)}] | "
+            f"RESPALDO[nivel:{_step7_respaldo.get('nivel', '')} "
+            f"clave:{_step7_respaldo.get('clave', '')} "
+            f"n:{_step7_respaldo.get('total', 0)} "
+            f"wr:{_step7_respaldo.get('winrate', 0)} "
+            f"p:{_step7_respaldo.get('probabilidad_ajustada', 0)} "
+            f"peso:{senal.get('peso_fuente_probabilidad_respaldo', 0)}]"
+        )
 
         # Garantías defensivas del contrato sombra.
         senal.setdefault("modo_probabilidad", "SOMBRA")

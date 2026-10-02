@@ -1288,6 +1288,102 @@ def main():
             # Defensa adicional.
             # Normalmente estrategia.py
             # ya elimina estas señales.
+            # =================================================
+            # STEP 7 LIVE SHADOW — EMBUDO AUTORIZACION DIRECTA
+            # =================================================
+            # Telemetria pura. Debe ejecutarse ANTES del
+            # continue de NO_OPERAR para no perder rechazos.
+            d75_alcanzado = bool(
+                senal.get("d75_alcanzado", False)
+            )
+            core4_alcanzado = bool(
+                senal.get("core4_alcanzado", False)
+            )
+
+            if (
+                d75_alcanzado
+                or core4_alcanzado
+                or decision_cerebro == "OPERAR"
+            ):
+                print(
+                    "STEP7 DIRECTA |",
+                    senal.get("activo", "SIN_ACTIVO"),
+                    "| D75:",
+                    "SI" if d75_alcanzado else "NO",
+                    "| RZ:",
+                    int(bool(senal.get(
+                        "d75_es_reaccion_zona", False
+                    ))),
+                    "| V3OP:",
+                    int(bool(senal.get(
+                        "d75_v3_operar_sombra", False
+                    ))),
+                    "| ALC:",
+                    int(bool(senal.get(
+                        "d75_tendencia_alcista", False
+                    ))),
+                    "| CAL:",
+                    int(bool(senal.get(
+                        "d75_mercado_limpio_normal", False
+                    ))),
+                    "| DIR:",
+                    int(bool(senal.get(
+                        "d75_modo_directa", False
+                    ))),
+                    "| VM:",
+                    int(bool(senal.get(
+                        "d75_validacion_mercado", False
+                    ))),
+                    "| D75_OK:",
+                    int(bool(senal.get(
+                        "d75_cumple", False
+                    ))),
+                    "| CORE4:",
+                    "SI" if core4_alcanzado else "NO",
+                    "| MATCH:",
+                    int(bool(senal.get(
+                        "core4_match_previo", False
+                    ))),
+                    "| R:",
+                    "{}{}{}{}".format(
+                        int(bool(senal.get(
+                            "core4_r1_previo", False
+                        ))),
+                        int(bool(senal.get(
+                            "core4_r2_previo", False
+                        ))),
+                        int(bool(senal.get(
+                            "core4_r4_previo", False
+                        ))),
+                        int(bool(senal.get(
+                            "core4_r6_previo", False
+                        ))),
+                    ),
+                    "| INV_D:",
+                    int(bool(senal.get(
+                        "core4_invalidacion_dura_previa", False
+                    ))),
+                    "| INV_S:",
+                    int(bool(senal.get(
+                        "core4_invalidacion_selectiva_previa",
+                        False,
+                    ))),
+                    "| ELEG:",
+                    int(bool(senal.get(
+                        "core4_elegible_estructural_previo",
+                        False,
+                    ))),
+                    "| RESC:",
+                    int(bool(senal.get(
+                        "core4_elegible_rescate_previo",
+                        False,
+                    ))),
+                    "| FINAL:",
+                    decision_cerebro,
+                    "| AUT:",
+                    senal.get("origen_autoridad", ""),
+                )
+
             if decision_cerebro == "NO_OPERAR":
 
                 estado.metricas_ronda[
