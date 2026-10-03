@@ -786,6 +786,8 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
             "confiabilidad_probabilidad",
             "fuente_probabilidad_principal",
             "fuente_probabilidad_respaldo",
+            "peso_fuente_probabilidad_principal",
+            "peso_fuente_probabilidad_respaldo",
             "nivel_probabilidad_principal",
             "clave_probabilidad_principal",
             "decision_estadistica_sombra",

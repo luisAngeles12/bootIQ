@@ -4254,6 +4254,14 @@ def evaluar_decision_cerebro_unico(evidencia):
         "confiabilidad_probabilidad": confiabilidad_probabilidad,
         "fuente_probabilidad_principal": fuente_probabilidad_principal,
         "fuente_probabilidad_respaldo": fuente_probabilidad_respaldo,
+        "peso_fuente_probabilidad_principal": aprendizaje.get(
+            "peso_fuente_probabilidad_principal",
+            0.0,
+        ),
+        "peso_fuente_probabilidad_respaldo": aprendizaje.get(
+            "peso_fuente_probabilidad_respaldo",
+            0.0,
+        ),
         "decision_estadistica_sombra": resultado_decision_estadistica.get(
             "decision", "SIN_DATOS"
         ),
