@@ -1167,6 +1167,59 @@ def convertir_decision_v3_a_oficial(
         0.0,
     )
 
+    # ========================================================
+    # 9W — RUTA DIRECTA EXACTA VALIDADA DEV + HOLDOUT
+    # ========================================================
+    #
+    # Firma congelada antes de HOLDOUT:
+    # CONTEXTO_SETUP|CALL|REVERSIÓN_ESTRUCTURAL|
+    # CHOCH_ALCISTA|CHOCH_CON_PA_A_FAVOR|TENDENCIA
+    #
+    # Evidencia:
+    # - DEV exacto D7.9 + D7.14:
+    #     14 señales | 10W / 4L | 71.43%
+    # - HOLDOUT sellado:
+    #     14 señales | 9W / 5L | 64.29%
+    # - Ejecucion oficial integrada tras capacidad LIVE:
+    #     DEV      8 ops | 5W / 3L | 62.50%
+    #     HOLDOUT  6 ops | 4W / 2L | 66.67%
+    #
+    # Contrato:
+    # - Solo OPERAR_SOMBRA.
+    # - Solo clave CONTEXTO_SETUP exacta validada.
+    # - Solo TENDENCIA_ALCISTA.
+    # - Solo puede excepcionar D7.9 y D7.14.
+    # - D7.1 conserva prioridad previa.
+    # - D7.13C conserva prioridad posterior a D7.9.
+    # - No activa PERMITIR_ENTRADA_DIRECTA global.
+    # - No abre SUCIO / CAOTICO.
+    # ========================================================
+
+    clave_directa_9w = (
+        "CONTEXTO_SETUP|CALL|REVERSIÓN_ESTRUCTURAL|"
+        "CHOCH_ALCISTA|CHOCH_CON_PA_A_FAVOR|TENDENCIA"
+    )
+
+    mercado_directa_9w = _txt(
+        evidencia.get(
+            "mercado",
+            "",
+        )
+        or evidencia.get(
+            "tipo_mercado",
+            "",
+        )
+    )
+
+    es_directa_validada_9w = (
+        decision_estadistica
+        == "OPERAR_SOMBRA"
+        and nivel == "CONTEXTO_SETUP"
+        and clave == clave_directa_9w
+        and mercado_directa_9w
+        == "tendencia_alcista"
+    )
+
     es_d79_choch_normal_rsi60 = (
         decision_estadistica
         in {
@@ -1180,7 +1233,10 @@ def convertir_decision_v3_a_oficial(
         and rsi_d79 >= 60.0
     )
 
-    if es_d79_choch_normal_rsi60:
+    if (
+        es_d79_choch_normal_rsi60
+        and not es_directa_validada_9w
+    ):
         return {
             "decision": "NO_OPERAR",
             "decision_legacy": "NO_OPERAR",
@@ -2787,7 +2843,10 @@ def convertir_decision_v3_a_oficial(
         >= 70.0
     )
 
-    if es_d714_choch_fuerte_extendido:
+    if (
+        es_d714_choch_fuerte_extendido
+        and not es_directa_validada_9w
+    ):
         return {
             "decision": "NO_OPERAR",
             "decision_legacy": "NO_OPERAR",
@@ -2826,6 +2885,57 @@ def convertir_decision_v3_a_oficial(
                 "D7.14: autorización estadística V3 anulada "
                 "para CHOCH alcista ALCISTA_FUERTE con "
                 "resistencia cercana sin ruptura y RSI >= 70. "
+                + motivo_estadistico
+            ).strip(),
+        }
+
+    # ========================================================
+    # 9W — AUTORIZACIÓN DIRECTA EXACTA VALIDADA
+    # ========================================================
+
+    if es_directa_validada_9w:
+        return {
+            "decision": "OPERAR",
+            "decision_legacy": (
+                "OPERAR_DIRECTO_O_CONFIRMADO"
+            ),
+            "operar": True,
+            "requiere_protocolo": False,
+            "modo_ejecucion": "DIRECTA",
+            "bloquear_por_riesgo": False,
+            "riesgo_extremo_diagnostico": False,
+
+            "origen_autoridad": (
+                "RUTA_DIRECTA_VALIDADA_9W"
+            ),
+
+            "decision_sombra_origen": (
+                decision_estadistica
+            ),
+
+            "nivel_probabilidad": nivel,
+            "clave_probabilidad": clave,
+
+            "directa_evidencia_solida": True,
+            "directa_muestra": muestra,
+            "directa_confiabilidad": confiabilidad,
+
+            "directa_aptitud_tecnica": True,
+
+            "directa_motivos_tecnicos": [
+                (
+                    "9W: firma exacta CONTEXTO_SETUP "
+                    "validada en DEV y HOLDOUT oficiales "
+                    "con capacidad LIVE y vetos protegidos."
+                )
+            ],
+
+            "directa_ruta_validada": True,
+
+            "motivo": (
+                "9W: autorización DIRECTA para firma exacta "
+                "validada independientemente; D7.1 y D7.13C "
+                "mantienen prioridad y no fueron modificados. "
                 + motivo_estadistico
             ).strip(),
         }
