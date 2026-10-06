@@ -256,9 +256,13 @@ def abrir_operacion(senal):
     from utils import segundo_actual
     segundo_antes = segundo_actual()
     tiempo_antes = time.time()
-    try:
-        balance_antes = estado.Iq.get_balance()
 
+    # No consultar balance en la ruta crítica de envío.
+    # Esta lectura no participa en autorización, monto ni riesgo
+    # y puede bloquear la orden después de haber validado timing.
+    balance_antes = None
+
+    try:
         if tipo in ["turbo", "binary"]:
             check, order_id = estado.Iq.buy(
                 MONTO_BASE,
