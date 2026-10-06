@@ -309,17 +309,11 @@ def abrir_operacion(senal):
         
         order_id_original = order_id
         
-        # Consultar los datos que IQ asocia realmente
-        # a esta operación. Solo diagnóstico.
+        # No bloquear la ruta crítica esperando get_async_order().
+        # IQ ya confirmó la apertura mediante check/order_id.
+        # Esta consulta era únicamente diagnóstica y podía consumir
+        # hasta 1.2 s antes de procesar la siguiente candidata.
         orden_async_5_5c = None
-        
-        if tipo in ["turbo", "binary"]:
-            orden_async_5_5c = (
-                obtener_auditoria_orden_async(
-                    order_id_original,
-                    timeout=1.2,
-                )
-            )
         
         order_id = str(order_id_original)
         # ============================================================
