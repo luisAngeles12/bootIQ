@@ -176,7 +176,15 @@ COLUMNAS_HISTORIAL = [
 ]
 
 def guardar_historial(data):
-    asegurar_historial_csv()
+    # El esquema se valida al arrancar bot.py. En la ruta crítica
+    # de una apertura evitamos releer y reescribir todo el CSV en
+    # cada append. Conservamos protección si el archivo desaparece
+    # o queda vacío durante la sesión.
+    if (
+        not os.path.exists(HISTORIAL_CSV)
+        or os.path.getsize(HISTORIAL_CSV) == 0
+    ):
+        asegurar_historial_csv()
 
     ruta = os.path.abspath(HISTORIAL_CSV)
     print("Guardando historial en:", ruta)
