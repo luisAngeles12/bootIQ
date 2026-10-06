@@ -3710,13 +3710,10 @@ def aplicar_paridad_capacidad_live(resultados):
     - protocolos pendientes antes de señales nuevas;
     - ocupación temporal del slot LIVE.
 
-    LIVE mantiene una operación aproximadamente:
-
-        TIEMPO_EXPIRACION * 60 + 10 segundos
-
-    Con velas de CANDLE_TIME segundos, la operación sigue
-    ocupando capacidad durante las rondas necesarias hasta
-    superar ese tiempo.
+    La capacidad reproduce la duración real de la
+    posición en IQ. La recuperación posterior del resultado
+    no mantiene ocupado un slot una vez alcanzado el
+    expiration_time del broker.
     """
 
     if not isinstance(resultados, list):
@@ -3746,9 +3743,9 @@ def aplicar_paridad_capacidad_live(resultados):
     try:
         segundos_slot = (
             int(TIEMPO_EXPIRACION) * 60
-        ) + 10
+        )
     except Exception:
-        segundos_slot = 70
+        segundos_slot = 60
 
     rondas_slot = max(
         1,
