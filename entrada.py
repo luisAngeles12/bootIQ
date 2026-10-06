@@ -556,7 +556,21 @@ def procesar_senales_pendientes(abrir_operacion):
 
     abiertas = 0
     restantes = []
-    vela_actual = int(time.time() // CANDLE_TIME)
+
+    try:
+        timestamp_iq = float(
+            estado.Iq.get_server_timestamp()
+        )
+        if timestamp_iq > 10_000_000_000:
+            timestamp_iq /= 1000.0
+        if timestamp_iq <= 0:
+            raise ValueError("timestamp IQ inválido")
+    except Exception:
+        timestamp_iq = time.time()
+
+    vela_actual = int(
+        timestamp_iq // CANDLE_TIME
+    )
     segundo = segundo_actual()
 
     for senal in estado.senales_pendientes:
@@ -723,7 +737,18 @@ def procesar_senales_pendientes(abrir_operacion):
             # PASO 5.5C — SOLO VELAS CERRADAS PARA EL PROTOCOLO
             # ========================================================
             
-            ahora_protocolo = time.time()
+            try:
+                ahora_protocolo = float(
+                    estado.Iq.get_server_timestamp()
+                )
+                if ahora_protocolo > 10_000_000_000:
+                    ahora_protocolo /= 1000.0
+                if ahora_protocolo <= 0:
+                    raise ValueError(
+                        "timestamp IQ inválido"
+                    )
+            except Exception:
+                ahora_protocolo = time.time()
             
             candles = estado.Iq.get_candles(
                 activo,
@@ -778,6 +803,36 @@ def procesar_senales_pendientes(abrir_operacion):
             if len(candles_protocolo) < 4:
                 restantes.append(senal)
                 continue
+
+            ultima_cerrada_from = int(
+                float(
+                    candles_protocolo[-1]["from"]
+                )
+            )
+
+            ultima_cerrada_esperada = (
+                (bucket_actual - 1)
+                * CANDLE_TIME
+            )
+
+            # No congelar este bucket si IQ respondió con un
+            # bloque atrasado. La señal sigue pendiente y puede
+            # reintentarse dentro del mismo minuto hasta recibir
+            # la última vela realmente cerrada.
+            if (
+                ultima_cerrada_from
+                != ultima_cerrada_esperada
+            ):
+                print(
+                    "PROTOCOLO LIVE — VELAS ATRASADAS:",
+                    activo,
+                    "| ultima:",
+                    ultima_cerrada_from,
+                    "| esperada:",
+                    ultima_cerrada_esperada,
+                )
+                restantes.append(senal)
+                continue
             
             senal[
                 "auditoria_5_5c_solo_velas_cerradas"
@@ -789,11 +844,7 @@ def procesar_senales_pendientes(abrir_operacion):
             
             senal[
                 "auditoria_5_5c_ultima_vela_cerrada_from"
-            ] = int(
-                float(
-                    candles_protocolo[-1]["from"]
-                )
-            )
+            ] = ultima_cerrada_from
             
             # ========================================================
             # PASO 5 — PARIDAD BACKTEST ↔ LIVE (SOLO SOMBRA)
