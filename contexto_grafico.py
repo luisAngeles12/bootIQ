@@ -372,6 +372,51 @@ def detectar_liquidity_sweep(opens, closes, highs, lows, lookback=12):
         return 0, "error liquidity sweep"
 
 
+def _nivel_referencia_choch_sombra(highs, lows, direccion_choch, lookback=10):
+    """
+    SOMBRA solamente.
+
+    Reconstruye exactamente el nivel estructural que el detector CHOCH
+    ya utilizó para declarar la señal. No altera la detección ni decide
+    entradas.
+    """
+    if direccion_choch not in [-1, 1]:
+        return None
+
+    if len(highs) < lookback + 4 or len(lows) < lookback + 4:
+        return None
+
+    highs_previos = highs[-lookback-2:-2]
+    lows_previos = lows[-lookback-2:-2]
+
+    if direccion_choch == 1:
+        return max(highs_previos)
+
+    return min(lows_previos)
+
+
+def _nivel_referencia_sweep_sombra(highs, lows, direccion_sweep, lookback=12):
+    """
+    SOMBRA solamente.
+
+    Reconstruye exactamente el nivel barrido que el detector de liquidity
+    sweep ya utilizó. No altera la detección ni decide entradas.
+    """
+    if direccion_sweep not in [-1, 1]:
+        return None
+
+    if len(highs) < lookback + 5 or len(lows) < lookback + 5:
+        return None
+
+    highs_previos = highs[-lookback-1:-1]
+    lows_previos = lows[-lookback-1:-1]
+
+    if direccion_sweep == -1:
+        return max(highs_previos)
+
+    return min(lows_previos)
+
+
 def leer_contexto_grafico(activo):
     data = obtener_velas(activo)
 
@@ -500,6 +545,25 @@ def leer_contexto_grafico(activo):
 
     choch, nombre_choch = detectar_cambio_estructura_choch(
         highs, lows, closes, opens
+    )
+
+    # ========================================================
+    # SOMBRA — REFERENCIAS ESTRUCTURALES ORIGINALES
+    # ========================================================
+    # Conserva, sin autoridad productiva, el nivel exacto que
+    # los detectores CHOCH/SWEEP ya usaron para crear el evento.
+    # Esto permite medir después si el protocolo entra cuando
+    # esa estructura original todavía sigue vigente.
+    choch_nivel_referencia_sombra = _nivel_referencia_choch_sombra(
+        highs,
+        lows,
+        choch,
+    )
+
+    sweep_nivel_referencia_sombra = _nivel_referencia_sweep_sombra(
+        highs,
+        lows,
+        liquidity_sweep,
     )
 
     puntos_patron_vela, razon_patron_vela = fuerza_patron_vela(nombre_patron)
@@ -661,9 +725,11 @@ def leer_contexto_grafico(activo):
 
         "liquidity_sweep": liquidity_sweep,
         "nombre_liquidity_sweep": nombre_liquidity_sweep,
+        "sweep_nivel_referencia_sombra": sweep_nivel_referencia_sombra,
 
         "choch": choch,
         "nombre_choch": nombre_choch,
+        "choch_nivel_referencia_sombra": choch_nivel_referencia_sombra,
 
         "ultima_open": ultima_open,
         "ultima_close": ultima_close,
