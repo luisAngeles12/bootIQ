@@ -105,6 +105,12 @@ def main():
                 time.sleep(5)
                 continue
 
+            # La reconexión invalida velas_cache en conexion.py.
+            # No conservar el cooldown de una precarga anterior:
+            # permitimos reconstruir buffers en la próxima ventana
+            # de mantenimiento 12-18 sin esperar hasta 45 s.
+            ultima_precarga_activos = 0.0
+
             # La sesión acaba de reconstruirse.
             # Dar tiempo a websocket, timesync y suscripciones
             # para estabilizarse antes de volver a usar la API.
@@ -280,6 +286,12 @@ def main():
 
                 if not conectado_balance:
                     if reconectar_iq():
+                        # Mismo contrato que la reconexión principal:
+                        # conexion.py vacía velas_cache, por lo que el
+                        # próximo mantenimiento debe poder precargar
+                        # de inmediato, sin heredar el cooldown previo.
+                        ultima_precarga_activos = 0.0
+
                         print(
                             "Conexión recuperada. "
                             "Esperando estabilización de la sesión...",
