@@ -1751,6 +1751,23 @@ def buscar_entrada_confirmada(velas, idx, senal):
             senal,
         )
 
+    # ========================================================
+    # INVARIANTE CAUSAL GLOBAL
+    # ========================================================
+    # Toda señal que llega a motor_protocolos fue autorizada como
+    # OPERAR_CON_PROTOCOLO. Por contrato, su confirmación debe
+    # ocurrir en una vela posterior a la vela donde nació la señal.
+    #
+    # Esta defensa evita que una rama presente o futura vuelva a
+    # introducir una entrada en idx_senal o antes, lo que rompería
+    # la autoridad del Cerebro y la paridad BACKTEST ↔ LIVE.
+    if (
+        idx_entrada is not None
+        and idx_entrada <= idx
+    ):
+        idx_entrada = None
+        motivo = "CANCELADA_PROTOCOLO_ENTRADA_NO_CAUSAL"
+
     _evaluar_referencia_estructural_sombra(
         velas,
         idx_entrada,
