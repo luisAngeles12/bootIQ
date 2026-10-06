@@ -1013,6 +1013,91 @@ def _protocolo_generico(velas, idx, senal):
             )
 
     return None, "CANCELADA_GENERICO_SIN_CONFIRMACION"
+def _evaluar_referencia_estructural_sombra(
+    velas,
+    idx_entrada,
+    senal,
+    protocolo,
+):
+    """
+    Auditoría SOMBRA solamente.
+
+    Comprueba si, en la vela que el protocolo oficial eligió para entrar,
+    seguía vigente el nivel estructural ORIGINAL que generó un CHOCH o
+    SWEEP. No cambia idx_entrada, motivo, decisión ni autorización.
+    """
+    protocolo = _txt(protocolo)
+    direccion = _direccion(senal)
+
+    senal["auditoria_protocolo_referencia_estructural_aplica"] = False
+    senal["auditoria_protocolo_referencia_estructural_tipo"] = ""
+    senal["auditoria_protocolo_referencia_estructural_nivel"] = None
+    senal["auditoria_protocolo_referencia_estructural_evaluada"] = False
+    senal["auditoria_protocolo_referencia_estructural_vigente"] = False
+    senal["auditoria_protocolo_referencia_estructural_close_entrada"] = None
+    senal["auditoria_protocolo_referencia_estructural_distancia"] = None
+    senal["auditoria_protocolo_referencia_estructural_motivo"] = "NO_APLICA"
+
+    if protocolo == "choch":
+        tipo = "CHOCH_NIVEL_ROTO_ORIGINAL"
+        nivel = senal.get("choch_nivel_referencia_sombra")
+    elif protocolo == "sweep":
+        tipo = "SWEEP_NIVEL_BARRIDO_ORIGINAL"
+        nivel = senal.get("sweep_nivel_referencia_sombra")
+    else:
+        return
+
+    senal["auditoria_protocolo_referencia_estructural_aplica"] = True
+    senal["auditoria_protocolo_referencia_estructural_tipo"] = tipo
+    senal["auditoria_protocolo_referencia_estructural_nivel"] = nivel
+
+    if nivel is None:
+        senal["auditoria_protocolo_referencia_estructural_motivo"] = (
+            "NIVEL_ORIGINAL_NO_DISPONIBLE"
+        )
+        return
+
+    if idx_entrada is None:
+        senal["auditoria_protocolo_referencia_estructural_motivo"] = (
+            "PROTOCOLO_SIN_ENTRADA"
+        )
+        return
+
+    if idx_entrada < 0 or idx_entrada >= len(velas):
+        senal["auditoria_protocolo_referencia_estructural_motivo"] = (
+            "IDX_ENTRADA_INVALIDO"
+        )
+        return
+
+    close_entrada = _num(
+        velas[idx_entrada].get("close"),
+        0,
+    )
+    nivel = _num(nivel, 0)
+
+    if direccion == "call":
+        vigente = close_entrada > nivel
+        distancia = close_entrada - nivel
+    elif direccion == "put":
+        vigente = close_entrada < nivel
+        distancia = nivel - close_entrada
+    else:
+        senal["auditoria_protocolo_referencia_estructural_motivo"] = (
+            "DIRECCION_INVALIDA"
+        )
+        return
+
+    senal["auditoria_protocolo_referencia_estructural_evaluada"] = True
+    senal["auditoria_protocolo_referencia_estructural_vigente"] = bool(vigente)
+    senal["auditoria_protocolo_referencia_estructural_close_entrada"] = close_entrada
+    senal["auditoria_protocolo_referencia_estructural_distancia"] = distancia
+    senal["auditoria_protocolo_referencia_estructural_motivo"] = (
+        "REFERENCIA_VIGENTE"
+        if vigente
+        else "REFERENCIA_PERDIDA"
+    )
+
+
 def _registrar_auditoria_protocolo(
     senal,
     idx_senal,
@@ -1665,6 +1750,13 @@ def buscar_entrada_confirmada(velas, idx, senal):
             idx,
             senal,
         )
+
+    _evaluar_referencia_estructural_sombra(
+        velas,
+        idx_entrada,
+        senal,
+        protocolo,
+    )
 
     return _registrar_auditoria_protocolo(
         senal,
