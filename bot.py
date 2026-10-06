@@ -10,7 +10,14 @@ from config import (
     VENTANA_ENTRADA_FIN,
     CANDLE_TIME
 )
-from utils import segundo_actual, registrar_bloqueo, imprimir_resumen_ronda, reiniciar_metricas_ronda
+from utils import (
+    segundo_actual,
+    registrar_bloqueo,
+    imprimir_resumen_ronda,
+    reiniciar_metricas_ronda,
+    contar_operaciones_activas,
+    activo_con_operacion_activa,
+)
 from conexion import conectar, reconectar_iq
 from historial import asegurar_historial_csv, cargar_operaciones_pendientes
 from mercado import (
@@ -678,9 +685,7 @@ def main():
                 continue
 
             if (
-                len(
-                    estado.operaciones_abiertas
-                )
+                contar_operaciones_activas()
                 >= MAX_OPERACIONES_ABIERTAS
             ):
                 revisar_operaciones_abiertas()
@@ -1269,18 +1274,13 @@ def main():
         for senal in senales:
 
             if (
-                len(
-                    estado.operaciones_abiertas
-                )
+                contar_operaciones_activas()
                 >= MAX_OPERACIONES_ABIERTAS
             ):
                 break
 
-            if any(
-                op["activo"]
-                == senal["activo"]
-                for op
-                in estado.operaciones_abiertas
+            if activo_con_operacion_activa(
+                senal["activo"]
             ):
                 continue
 
