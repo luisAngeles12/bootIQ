@@ -1960,7 +1960,58 @@ def crear_registro_resultado(
             "auditoria_protocolo_probabilidad",
             0,
         ),
-                # ==================================================
+
+        # ==================================================
+        # SOMBRA — VIGENCIA DE REFERENCIA ESTRUCTURAL
+        # ==================================================
+        # Diagnóstico solamente. No modifica la operación.
+        "auditoria_protocolo_referencia_estructural_aplica": bool(
+            senal.get(
+                "auditoria_protocolo_referencia_estructural_aplica",
+                False,
+            )
+        ),
+
+        "auditoria_protocolo_referencia_estructural_tipo": senal.get(
+            "auditoria_protocolo_referencia_estructural_tipo",
+            "",
+        ),
+
+        "auditoria_protocolo_referencia_estructural_nivel": senal.get(
+            "auditoria_protocolo_referencia_estructural_nivel",
+            "",
+        ),
+
+        "auditoria_protocolo_referencia_estructural_evaluada": bool(
+            senal.get(
+                "auditoria_protocolo_referencia_estructural_evaluada",
+                False,
+            )
+        ),
+
+        "auditoria_protocolo_referencia_estructural_vigente": bool(
+            senal.get(
+                "auditoria_protocolo_referencia_estructural_vigente",
+                False,
+            )
+        ),
+
+        "auditoria_protocolo_referencia_estructural_close_entrada": senal.get(
+            "auditoria_protocolo_referencia_estructural_close_entrada",
+            "",
+        ),
+
+        "auditoria_protocolo_referencia_estructural_distancia": senal.get(
+            "auditoria_protocolo_referencia_estructural_distancia",
+            "",
+        ),
+
+        "auditoria_protocolo_referencia_estructural_motivo": senal.get(
+            "auditoria_protocolo_referencia_estructural_motivo",
+            "",
+        ),
+
+        # ==================================================
         # F5.7-D4.3B — TIMING MÍNIMO SOMBRA
         # ==================================================
 
