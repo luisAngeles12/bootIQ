@@ -1260,14 +1260,10 @@ def refrescar_activos_incremental():
             ] += 1
             continue
 
-        if activo_en_cooldown(
-            asset
-        ):
-            estado.metricas_ronda[
-                "descartados_cooldown"
-            ] += 1
-            continue
-
+        # El cooldown es transitorio (20 s) y se aplica
+        # al consumir el TOP en la ventana 0-10. No debe
+        # congelarse dentro de una caché que puede vivir
+        # varios minutos.
         estado.metricas_ronda[
             "activos_evaluados_filtro"
         ] += 1
@@ -1965,14 +1961,10 @@ def obtener_activos(
                 ] += 1
                 continue
 
-            if activo_en_cooldown(
-                asset
-            ):
-                estado.metricas_ronda[
-                    "descartados_cooldown"
-                ] += 1
-                continue
-
+            # El cooldown es transitorio (20 s) y se aplica
+            # al consumir el TOP en la ventana 0-10. No debe
+            # congelarse dentro de una caché que puede vivir
+            # varios minutos.
             estado.metricas_ronda[
                 "activos_evaluados_filtro"
             ] += 1
