@@ -52,8 +52,11 @@ def main():
     # el scanner completo.
     ultima_precarga_activos = 0.0
 
-    # D7.6C — una sola ronda LIVE por vela.
+    # D7.6C — una sola ronda LIVE válida por vela.
+    # Si una ronda falla muy temprano por infraestructura,
+    # permitimos como máximo un reintento completo de esa vela.
     ultima_ronda_live_d76c = None
+    ronda_reintento_usado_d76c = None
     ultima_impresion_estado = 0
     ultima_impresion_resumen = 0
 
@@ -1181,11 +1184,36 @@ def main():
                         for x in timings_activos_d76d
                     ),
                 )
+            segundo_descarta_d76d = (
+                segundo_actual()
+            )
+
             print(
                 "D7.6D RONDA DESCARTADA — "
                 "NO SE ORDENA TOP PARCIAL | segundo:",
-                segundo_actual(),
+                segundo_descarta_d76d,
             )
+
+            # Si la ronda falló muy temprano, todavía existe
+            # margen suficiente para repetir el universo COMPLETO.
+            # Nunca reutilizamos señales parciales y nunca hacemos
+            # más de un reintento por vela.
+            if (
+                segundo_descarta_d76d <= 3
+                and ronda_reintento_usado_d76c
+                != clave_ronda_d76c
+            ):
+                ronda_reintento_usado_d76c = (
+                    clave_ronda_d76c
+                )
+                ultima_ronda_live_d76c = None
+
+                print(
+                    "D7.6D REINTENTO COMPLETO DE RONDA | vela:",
+                    clave_ronda_d76c,
+                    "| segundo:",
+                    segundo_descarta_d76d,
+                )
 
             time.sleep(0.25)
             continue
