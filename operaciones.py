@@ -636,44 +636,22 @@ def abrir_operacion(senal):
             fuente_respaldo_v3 = {}
 
         # ==================================================
-        # D8-R8B — SALUD PROSPECTIVA SOMBRA
-        # Se calcula DESPUES de enviar/aceptar la orden.
-        # No altera decision, ranking ni ejecucion.
+        # D8-R8B — SALUD PROSPECTIVA FUERA DE RUTA CRITICA
         # ==================================================
-
-        clave_salud_v3 = senal.get(
-            "clave_probabilidad_principal",
-            senal.get(
-                "directa_clave_probabilidad",
-                fuente_principal_v3.get(
-                    "clave",
-                    "",
-                ),
-            ),
-        )
-
-        prob_salud_v3 = senal.get(
-            "probabilidad_v3",
-            senal.get(
-                "probabilidad_estimada",
-                fuente_principal_v3.get(
-                    "probabilidad_ajustada",
-                    "",
-                ),
-            ),
-        )
-
-        salud_fuente_v3 = (
-            evaluar_salud_prospectiva_fuente(
-                clave=clave_salud_v3,
-                probabilidad_historica=prob_salud_v3,
-                origen_autoridad=senal.get(
-                    "origen_autoridad",
-                    "",
-                ),
-                ruta_historial=HISTORIAL_CSV,
-            )
-        )
+        # Esta medición es exclusivamente shadow y recorría todo
+        # historial_bot.csv después de cada orden aceptada. No puede
+        # bloquear el procesamiento de otra candidata de la misma
+        # ronda. Conservamos el esquema con valores vacíos.
+        salud_fuente_v3 = {
+            "salud_fuente_n": 0,
+            "salud_fuente_wins": 0,
+            "salud_fuente_losses": 0,
+            "salud_fuente_wr": "",
+            "salud_fuente_prob_historica": "",
+            "salud_fuente_delta_pp": "",
+            "salud_fuente_ultimas5_wr": "",
+            "salud_fuente_ultimas10_wr": "",
+        }
 
         guardar_historial({
             "fecha": datetime.now().strftime(
