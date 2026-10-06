@@ -860,10 +860,8 @@ def main():
                 activo = item["activo"]
                 tipo = item["tipo"]
 
-                if any(
-                    op["activo"] == activo
-                    for op
-                    in estado.operaciones_abiertas
+                if activo_con_operacion_activa(
+                    activo
                 ):
                     continue
 
