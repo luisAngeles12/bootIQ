@@ -552,6 +552,35 @@ def abrir_operacion(senal):
             ),
 
             "hora_apertura": time.time(),
+
+            # Capacidad LIVE: una posición TURBO de N minutos
+            # deja de ocupar slot en el límite de vela que IQ
+            # usa como expiration_time, aunque su resultado aún
+            # no haya sido recuperado localmente.
+            "expiracion_iq": (
+                (
+                    int(
+                        ahora_paridad
+                        // CANDLE_TIME
+                    )
+                    + max(
+                        1,
+                        int(
+                            (
+                                (
+                                    TIEMPO_EXPIRACION
+                                    * 60
+                                )
+                                + CANDLE_TIME
+                                - 1
+                            )
+                            // CANDLE_TIME
+                        ),
+                    )
+                )
+                * CANDLE_TIME
+            ),
+
             "balance_antes": balance_antes,
             "segundo_entrada": segundo_despues,
             "demora_envio": demora_envio,
