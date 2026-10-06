@@ -969,9 +969,10 @@ def _protocolo_ruptura_resistencia(velas, idx, senal):
 def _protocolo_continuacion(velas, idx, senal):
     direccion = _direccion(senal)
 
-    if _entrada_directa_permitida(senal):
-        return idx, "PROTOCOLO_CONTINUACION_DIRECTA_PREMIUM"
-
+    # Una señal que llegó aquí fue autorizada por el Cerebro como
+    # OPERAR_CON_PROTOCOLO. El protocolo no puede convertirla de
+    # nuevo en entrada de la misma vela por aptitud técnica local:
+    # debe existir una confirmación posterior y causal.
     inicio, _, fin = _ventana_confirmacion(
         senal,
         idx,
@@ -993,9 +994,8 @@ def _protocolo_continuacion(velas, idx, senal):
 def _protocolo_generico(velas, idx, senal):
     direccion = _direccion(senal)
 
-    if _entrada_directa_permitida(senal):
-        return idx, "PROTOCOLO_GENERICO_DIRECTA_PREMIUM"
-
+    # Igual que CONTINUACION: si el Cerebro exigió protocolo,
+    # esta capa solo puede confirmar en una vela posterior.
     inicio, _, fin = _ventana_confirmacion(
         senal,
         idx,
