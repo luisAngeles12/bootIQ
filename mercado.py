@@ -312,6 +312,12 @@ def obtener_velas(activo):
             estado.fallo_velas_ronda_d76d = True
             return None
 
+        # Usar desde la primera consulta el mismo reloj
+        # oficial de IQ que después valida la última vela cerrada.
+        # Evita una llamada adicional provocada únicamente por
+        # desfase entre el reloj local de Windows y el broker.
+        ahora = _timestamp_servidor_iq()
+
         inicio_get_candles_d76d = (
             time.perf_counter()
         )
@@ -321,7 +327,7 @@ def obtener_velas(activo):
                 activo,
                 CANDLE_TIME,
                 4,
-                time.time(),
+                ahora,
                 timeout=3.0,
                 drain_timeout=1.0,
             )
@@ -404,8 +410,7 @@ def obtener_velas(activo):
         # ------------------------------------------------
         # PARIDAD TEMPORAL
         # ------------------------------------------------
-        ahora = _timestamp_servidor_iq()
-
+        # Reutilizamos el timestamp IQ que originó la consulta.
         inicio_actual = (
             int(ahora // CANDLE_TIME)
             * CANDLE_TIME
