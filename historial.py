@@ -246,7 +246,11 @@ def asegurar_historial_csv():
 
 
 def actualizar_historial_cierre(order_id, resultado):
-    asegurar_historial_csv()
+    if (
+        not os.path.exists(HISTORIAL_CSV)
+        or os.path.getsize(HISTORIAL_CSV) == 0
+    ):
+        asegurar_historial_csv()
 
     try:
         df = pd.read_csv(HISTORIAL_CSV, encoding="utf-8-sig")
