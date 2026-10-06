@@ -1454,6 +1454,32 @@ def main():
                 == "OPERAR_CON_PROTOCOLO"
             ):
 
+                protocolo_sugerido = str(
+                    senal.get(
+                        "protocolo_sugerido",
+                        "",
+                    )
+                    or ""
+                ).upper().strip()
+
+                # PROTOCOLO_RUPTURA_RESISTENCIA permanece
+                # exclusivamente en sombra por contrato actual.
+                # No puede producir una entrada productiva, por lo
+                # que no debe consumir la cola operativa LIVE ni
+                # tiempo crítico de procesar_senales_pendientes().
+                if (
+                    protocolo_sugerido
+                    == "PROTOCOLO_RUPTURA_RESISTENCIA"
+                ):
+                    print(
+                        "SEÑAL SOLO SOMBRA — "
+                        "NO ENCOLADA EN LIVE:",
+                        senal.get("activo", ""),
+                        "| protocolo:",
+                        protocolo_sugerido,
+                    )
+                    continue
+
                 estado.metricas_ronda[
                     "senales_aprobadas"
                 ] += 1
