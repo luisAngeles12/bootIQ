@@ -18,8 +18,6 @@ from historial import (
     asegurar_historial_csv,
     guardar_historial,
     actualizar_historial_cierre,
-    perdidas_consecutivas_activo,
-    perdidas_consecutivas_patron
 )
 from validaciones_estrategia import registrar_zona_operada
 from motor_aprendizaje_historico import evaluar_salud_prospectiva_fuente
@@ -1451,35 +1449,9 @@ def revisar_operaciones_abiertas():
             )
             bloqueo_activo_aplicado = False
 
-            if resultado < 0:
-
-                # ================================================
-                # D7.6B — RACHA HISTORICA SOLO TELEMETRIA
-                # ================================================
-                #
-                # operaciones.py ejecuta y registra.
-                # Las rachas históricas no tienen autoridad
-                # para bloquear activos ni estrategias.
-                #
-                if perdidas_consecutivas_activo(
-                    op["activo"],
-                    3,
-                ):
-                    print(
-                        "D7.6B RACHA ACTIVO >=3 LOSS "
-                        "DETECTADA — SIN BLOQUEO:",
-                        op["activo"],
-                    )
-
-                if perdidas_consecutivas_patron(
-                    op["patron"],
-                    3,
-                ):
-                    print(
-                        "D7.6B RACHA ESTRATEGIA >=3 LOSS "
-                        "DETECTADA — SIN BLOQUEO:",
-                        op["patron"],
-                    )
+            # Las rachas históricas eran telemetría sin autoridad
+            # y exigían dos lecturas completas adicionales del CSV
+            # por cada LOSS. No se calculan en la ruta de cierre.
 
             print(
                 "OPERACIÓN CERRADA:",
