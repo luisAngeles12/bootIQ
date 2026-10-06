@@ -15,7 +15,6 @@ from motor_protocolos import (
 )
 from utils import segundo_actual
 from confirmacion_entrada import evaluar_confirmacion_entrada
-from motor_decision import evaluar_decision_post_protocolo
 # ============================================================
 # CEREBRO INTERMEDIO DE ENTRADA — MODO DIAGNÓSTICO
 # ============================================================
@@ -1169,54 +1168,20 @@ def procesar_senales_pendientes(abrir_operacion):
                             ):
                                 senal[clave] = valor
 
-                    decision_post = evaluar_decision_post_protocolo(
-                        senal
-                    )
-
-                    senal["decision_post_protocolo"] = decision_post.get(
-                        "decision_post_protocolo",
-                        "SIN_DATOS",
-                    )
-                    senal["autoriza_post_protocolo"] = decision_post.get(
-                        "autoriza_post_protocolo",
-                        True,
-                    )
-                    senal["probabilidad_post_protocolo"] = decision_post.get(
-                        "probabilidad_post_protocolo",
-                        0,
-                    )
-                    senal[
-                        "intervalo_post_protocolo_inferior"
-                    ] = decision_post.get(
-                        "intervalo_post_protocolo_inferior",
-                        0,
-                    )
-                    senal[
-                        "intervalo_post_protocolo_superior"
-                    ] = decision_post.get(
-                        "intervalo_post_protocolo_superior",
-                        0,
-                    )
-                    senal["muestra_post_protocolo"] = decision_post.get(
-                        "muestra_post_protocolo",
-                        0,
-                    )
-                    senal[
-                        "confiabilidad_post_protocolo"
-                    ] = decision_post.get(
-                        "confiabilidad_post_protocolo",
-                        "SIN_DATOS",
-                    )
-                    senal[
-                        "fuente_post_protocolo_principal"
-                    ] = decision_post.get(
-                        "fuente_post_protocolo_principal"
-                    )
-                    senal[
-                        "fuente_post_protocolo_respaldo"
-                    ] = decision_post.get(
-                        "fuente_post_protocolo_respaldo"
-                    )
+                    # La evaluación post-protocolo es solo shadow y
+                    # siempre autoriza. No puede leer aprendizaje
+                    # histórico entre una confirmación válida y buy().
+                    # Conservamos el esquema de auditoría con valores
+                    # neutrales fuera de la ruta crítica.
+                    senal["decision_post_protocolo"] = "SIN_DATOS"
+                    senal["autoriza_post_protocolo"] = True
+                    senal["probabilidad_post_protocolo"] = 0
+                    senal["intervalo_post_protocolo_inferior"] = 0
+                    senal["intervalo_post_protocolo_superior"] = 0
+                    senal["muestra_post_protocolo"] = 0
+                    senal["confiabilidad_post_protocolo"] = "SIN_DATOS"
+                    senal["fuente_post_protocolo_principal"] = None
+                    senal["fuente_post_protocolo_respaldo"] = None
 
                     print(
                         "PROTOCOLO AUTORIZÓ ENTRADA:",
