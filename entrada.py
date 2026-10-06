@@ -550,7 +550,11 @@ def procesar_senales_pendientes(abrir_operacion):
         VENTANA_ENTRADA_INICIO,
         VENTANA_ENTRADA_FIN
     )
-    from utils import segundo_actual
+    from utils import (
+        segundo_actual,
+        contar_operaciones_activas,
+        activo_con_operacion_activa,
+    )
     if not estado.senales_pendientes:
         return 0
 
@@ -658,11 +662,16 @@ def procesar_senales_pendientes(abrir_operacion):
                 "ESPERANDO_RUPTURA_SOPORTE"
             ]
 
-            if len(estado.operaciones_abiertas) >= MAX_OPERACIONES_ABIERTAS:
+            if (
+                contar_operaciones_activas()
+                >= MAX_OPERACIONES_ABIERTAS
+            ):
                 restantes.append(senal)
                 continue
 
-            if any(op["activo"] == activo for op in estado.operaciones_abiertas):
+            if activo_con_operacion_activa(
+                activo
+            ):
                 continue
 
             if vela_actual <= senal["vela_detectada"]:
