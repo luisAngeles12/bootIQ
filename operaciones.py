@@ -607,7 +607,9 @@ def abrir_operacion(senal):
         except Exception:
             pass
 
-        asegurar_historial_csv()
+        # guardar_historial() asegura y valida el CSV
+        # internamente. Evitamos repetir esa lectura/reescritura
+        # completa antes de cada append.
 
         # ==================================================
         # D8-R6C — FUENTES V3 SOLO PARA TELEMETRIA
