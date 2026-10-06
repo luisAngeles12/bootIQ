@@ -1,5 +1,7 @@
 import time
+import math
 import estado
+from config import CANDLE_TIME, TIEMPO_EXPIRACION
 
 
 def segundo_actual():
@@ -42,6 +44,107 @@ def esperar_inicio_vela():
             continue
 
         return False
+
+
+def _timestamp_iq_para_capacidad():
+    try:
+        if estado.Iq is not None:
+            ts = float(
+                estado.Iq.get_server_timestamp()
+            )
+            if ts > 10_000_000_000:
+                ts /= 1000.0
+            if ts > 0:
+                return ts
+    except Exception:
+        pass
+
+    return time.time()
+
+
+def operacion_ocupa_slot(op, ahora_iq=None):
+    """
+    True únicamente mientras la posición sigue viva en IQ.
+
+    Una operación puede permanecer en estado.operaciones_abiertas
+    después de expirar mientras se recupera su resultado. Esa
+    espera administrativa no debe consumir MAX_OPERACIONES_ABIERTAS.
+    """
+    if not isinstance(op, dict):
+        return False
+
+    if ahora_iq is None:
+        ahora_iq = _timestamp_iq_para_capacidad()
+
+    try:
+        expiracion = float(
+            op.get("expiracion_iq", 0)
+            or 0
+        )
+    except Exception:
+        expiracion = 0.0
+
+    if expiracion <= 0:
+        try:
+            hora_apertura = float(
+                op.get("hora_apertura", 0)
+                or 0
+            )
+
+            duracion_buckets = max(
+                1,
+                int(
+                    math.ceil(
+                        (
+                            float(TIEMPO_EXPIRACION)
+                            * 60.0
+                        )
+                        / float(CANDLE_TIME)
+                    )
+                ),
+            )
+
+            bucket_apertura = int(
+                hora_apertura
+                // float(CANDLE_TIME)
+            )
+
+            expiracion = (
+                bucket_apertura
+                + duracion_buckets
+            ) * float(CANDLE_TIME)
+
+        except Exception:
+            return True
+
+    return float(ahora_iq) < expiracion
+
+
+def contar_operaciones_activas():
+    ahora_iq = _timestamp_iq_para_capacidad()
+
+    return sum(
+        1
+        for op in estado.operaciones_abiertas
+        if operacion_ocupa_slot(
+            op,
+            ahora_iq=ahora_iq,
+        )
+    )
+
+
+def activo_con_operacion_activa(activo):
+    ahora_iq = _timestamp_iq_para_capacidad()
+
+    return any(
+        str(op.get("activo", "")) == str(activo)
+        and operacion_ocupa_slot(
+            op,
+            ahora_iq=ahora_iq,
+        )
+        for op in estado.operaciones_abiertas
+        if isinstance(op, dict)
+    )
 
 
 def activo_en_cooldown(activo):
