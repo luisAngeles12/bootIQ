@@ -699,6 +699,26 @@ def procesar_senales_pendientes(abrir_operacion):
                     activo
                 )
                 continue
+
+            # ========================================================
+            # UNA EVALUACIÓN PRODUCTIVA POR VELA CERRADA
+            # ========================================================
+            # motor_protocolos.py trabaja exclusivamente con velas
+            # cerradas. Mientras seguimos dentro del mismo bucket,
+            # el conjunto de velas cerradas no puede cambiar.
+            #
+            # Evitamos repetir get_candles() y todo el protocolo
+            # varias veces sobre exactamente la misma información.
+            # Si una consulta previa falló, este campo no se actualiza
+            # y el siguiente loop conserva la posibilidad de reintento.
+            ultimo_bucket_evaluado = senal.get(
+                "protocolo_live_ultimo_bucket_evaluado"
+            )
+
+            if ultimo_bucket_evaluado == vela_actual:
+                restantes.append(senal)
+                continue
+
             # ========================================================
             # PASO 5.5C — SOLO VELAS CERRADAS PARA EL PROTOCOLO
             # ========================================================
@@ -803,6 +823,14 @@ def procesar_senales_pendientes(abrir_operacion):
                     senal,
                     CANDLE_TIME,
                 )
+
+                # Solo marcar el bucket como evaluado después de que
+                # obtuvimos velas suficientes y motor_protocolos
+                # respondió correctamente. Los fallos de API o de
+                # evaluación permanecen reintentables.
+                senal[
+                    "protocolo_live_ultimo_bucket_evaluado"
+                ] = bucket_actual
 
                 senal["protocolo_live_sombra_estado"] = (
                     protocolo_live.get("estado", "SIN_DATOS")
