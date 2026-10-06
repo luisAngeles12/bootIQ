@@ -72,6 +72,29 @@ def clave_ranking_v3(senal):
         0,
     )
 
+    # ========================================================
+    # RUTA SOLO SOMBRA — NO PUEDE DESPLAZAR UNA EJECUTABLE
+    # ========================================================
+    # motor_protocolos.py mantiene PROTOCOLO_RUPTURA_RESISTENCIA
+    # exclusivamente para auditoría/sombra. Por contrato actual
+    # nunca produce una entrada productiva.
+    #
+    # La señal se conserva para medición, pero su ranking debe
+    # quedar por debajo de cualquier candidata realmente
+    # ejecutable. Si es la única candidata, seguirá pudiendo
+    # llegar a la capa shadow para ser observada.
+    protocolo_sugerido = str(
+        senal.get("protocolo_sugerido", "")
+        or ""
+    ).lower().strip()
+
+    if (
+        decision == "OPERAR_CON_PROTOCOLO"
+        and protocolo_sugerido
+        == "protocolo_ruptura_resistencia"
+    ):
+        prioridad_decision = -1
+
     probabilidad = _num(
         senal.get(
             "probabilidad_v3",
