@@ -684,37 +684,13 @@ def main():
                 time.sleep(0.25)
                 continue
 
-            if (
-                contar_operaciones_activas()
-                >= MAX_OPERACIONES_ABIERTAS
-            ):
-                revisar_operaciones_abiertas()
-
-                if (
-                    time.time()
-                    - ultima_impresion_resumen
-                    >= 60
-                ):
-                    if (
-                        estado.metricas_ronda.get(
-                            "mercados_analizados",
-                            0
-                        ) > 0
-                        or estado.metricas_ronda.get(
-                            "senales_detectadas",
-                            0
-                        ) > 0
-                        or estado.metricas_ronda.get(
-                            "entradas_abiertas",
-                            0
-                        ) > 0
-                    ):
-                        imprimir_resumen_ronda()
-
-                    ultima_impresion_resumen = (
-                        time.time()
-                    )
-
+            # La recuperación de resultados se ejecuta únicamente
+            # en la ventana 20-24 definida arriba.
+            #
+            # La capacidad LIVE ya se calcula por expiracion_iq,
+            # así que no necesitamos consultar resultados aquí para
+            # liberar slots. Evitamos que una consulta iniciada cerca
+            # de 58-59 s invada la próxima ventana operativa 0-10.
             time.sleep(0.25)
             continue
 
