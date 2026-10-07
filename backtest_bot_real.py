@@ -1960,7 +1960,58 @@ def crear_registro_resultado(
             "auditoria_protocolo_probabilidad",
             0,
         ),
-                # ==================================================
+
+        # ==================================================
+        # SOMBRA — VIGENCIA DE REFERENCIA ESTRUCTURAL
+        # ==================================================
+        # Diagnóstico solamente. No modifica la operación.
+        "auditoria_protocolo_referencia_estructural_aplica": bool(
+            senal.get(
+                "auditoria_protocolo_referencia_estructural_aplica",
+                False,
+            )
+        ),
+
+        "auditoria_protocolo_referencia_estructural_tipo": senal.get(
+            "auditoria_protocolo_referencia_estructural_tipo",
+            "",
+        ),
+
+        "auditoria_protocolo_referencia_estructural_nivel": senal.get(
+            "auditoria_protocolo_referencia_estructural_nivel",
+            "",
+        ),
+
+        "auditoria_protocolo_referencia_estructural_evaluada": bool(
+            senal.get(
+                "auditoria_protocolo_referencia_estructural_evaluada",
+                False,
+            )
+        ),
+
+        "auditoria_protocolo_referencia_estructural_vigente": bool(
+            senal.get(
+                "auditoria_protocolo_referencia_estructural_vigente",
+                False,
+            )
+        ),
+
+        "auditoria_protocolo_referencia_estructural_close_entrada": senal.get(
+            "auditoria_protocolo_referencia_estructural_close_entrada",
+            "",
+        ),
+
+        "auditoria_protocolo_referencia_estructural_distancia": senal.get(
+            "auditoria_protocolo_referencia_estructural_distancia",
+            "",
+        ),
+
+        "auditoria_protocolo_referencia_estructural_motivo": senal.get(
+            "auditoria_protocolo_referencia_estructural_motivo",
+            "",
+        ),
+
+        # ==================================================
         # F5.7-D4.3B — TIMING MÍNIMO SOMBRA
         # ==================================================
 
@@ -3659,13 +3710,10 @@ def aplicar_paridad_capacidad_live(resultados):
     - protocolos pendientes antes de señales nuevas;
     - ocupación temporal del slot LIVE.
 
-    LIVE mantiene una operación aproximadamente:
-
-        TIEMPO_EXPIRACION * 60 + 10 segundos
-
-    Con velas de CANDLE_TIME segundos, la operación sigue
-    ocupando capacidad durante las rondas necesarias hasta
-    superar ese tiempo.
+    La capacidad reproduce la duración real de la
+    posición en IQ. La recuperación posterior del resultado
+    no mantiene ocupado un slot una vez alcanzado el
+    expiration_time del broker.
     """
 
     if not isinstance(resultados, list):
@@ -3695,9 +3743,9 @@ def aplicar_paridad_capacidad_live(resultados):
     try:
         segundos_slot = (
             int(TIEMPO_EXPIRACION) * 60
-        ) + 10
+        )
     except Exception:
-        segundos_slot = 70
+        segundos_slot = 60
 
     rondas_slot = max(
         1,

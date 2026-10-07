@@ -1,21 +1,17 @@
 import time
-import csv
-from pathlib import Path
 import estado
 from config import (
     CANDLE_TIME,
     VENTANA_ENTRADA_INICIO,
     VENTANA_ENTRADA_FIN,
     FUERZA_MAXIMA_VELA_NORMAL,
-    SEGUNDO_MAXIMO_VELA_CORRIDA,
-    PARIDAD_LIVE_CSV
+    SEGUNDO_MAXIMO_VELA_CORRIDA
 )
 from motor_protocolos import (
     evaluar_protocolo_live_sombra,
 )
 from utils import segundo_actual
 from confirmacion_entrada import evaluar_confirmacion_entrada
-from motor_decision import evaluar_decision_post_protocolo
 # ============================================================
 # CEREBRO INTERMEDIO DE ENTRADA — MODO DIAGNÓSTICO
 # ============================================================
@@ -92,76 +88,9 @@ def registrar_paridad_protocolo_live(
         "",
     )
 
-    # ========================================================
-    # AUDITORÍA LIVE PERSISTENTE
-    # Registra todas las ramas: SIN_DATOS, ESPERAR,
-    # CANCELADA, CONFIRMACION_PASADA y CONFIRMADA.
-    # Solo telemetría. No altera ninguna decisión.
-    # ========================================================
-    campos_paridad = [
-        "timestamp",
-        "activo",
-        "direccion",
-        "patron",
-        "vela_senal_from",
-        "protocolo_live_tipo",
-        "protocolo_live_espera",
-        "paridad_live_estado",
-        "paridad_live_resultado_actual",
-        "paridad_live_razon_actual",
-        "paridad_live_estado_sombra",
-        "paridad_live_motivo_sombra",
-        "protocolo_live_vela_entrada_from",
-    ]
-
-    fila_paridad = {
-        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "activo": senal.get("activo", ""),
-        "direccion": senal.get("direccion", ""),
-        "patron": senal.get("patron", ""),
-        "vela_senal_from": senal.get("vela_senal_from", ""),
-        "protocolo_live_tipo": senal.get(
-            "protocolo_live_sombra_tipo",
-            "",
-        ),
-        "protocolo_live_espera": senal.get(
-            "protocolo_live_sombra_espera",
-            "",
-        ),
-        "paridad_live_estado": estado_paridad,
-        "paridad_live_resultado_actual": resultado_live,
-        "paridad_live_razon_actual": razon_live,
-        "paridad_live_estado_sombra": estado_sombra,
-        "paridad_live_motivo_sombra": senal.get(
-            "protocolo_live_sombra_motivo",
-            "",
-        ),
-        "protocolo_live_vela_entrada_from": senal.get(
-            "protocolo_live_vela_entrada_from",
-            "",
-        ),
-    }
-
-    try:
-        existe = Path(PARIDAD_LIVE_CSV).exists()
-        with open(
-            PARIDAD_LIVE_CSV,
-            "a",
-            newline="",
-            encoding="utf-8-sig",
-        ) as f:
-            writer = csv.DictWriter(
-                f,
-                fieldnames=campos_paridad,
-            )
-            if not existe or Path(PARIDAD_LIVE_CSV).stat().st_size == 0:
-                writer.writeheader()
-            writer.writerow(fila_paridad)
-    except Exception as e:
-        print(
-            "ERROR AUDITORIA PARIDAD LIVE:",
-            e,
-        )
+    # Paridad ya validada y persistida en la fase de auditoría.
+    # Conservamos el estado en memoria, pero no hacemos I/O
+    # síncrono dentro de la ventana crítica 0-10.
 
     print(
         "PARIDAD BACKTEST-LIVE:",
@@ -550,13 +479,31 @@ def procesar_senales_pendientes(abrir_operacion):
         VENTANA_ENTRADA_INICIO,
         VENTANA_ENTRADA_FIN
     )
-    from utils import segundo_actual
+    from utils import (
+        segundo_actual,
+        contar_operaciones_activas,
+        activo_con_operacion_activa,
+    )
     if not estado.senales_pendientes:
         return 0
 
     abiertas = 0
     restantes = []
-    vela_actual = int(time.time() // CANDLE_TIME)
+
+    try:
+        timestamp_iq = float(
+            estado.Iq.get_server_timestamp()
+        )
+        if timestamp_iq > 10_000_000_000:
+            timestamp_iq /= 1000.0
+        if timestamp_iq <= 0:
+            raise ValueError("timestamp IQ inválido")
+    except Exception:
+        timestamp_iq = time.time()
+
+    vela_actual = int(
+        timestamp_iq // CANDLE_TIME
+    )
     segundo = segundo_actual()
 
     for senal in estado.senales_pendientes:
@@ -644,11 +591,16 @@ def procesar_senales_pendientes(abrir_operacion):
                 "ESPERANDO_RUPTURA_SOPORTE"
             ]
 
-            if len(estado.operaciones_abiertas) >= MAX_OPERACIONES_ABIERTAS:
+            if (
+                contar_operaciones_activas()
+                >= MAX_OPERACIONES_ABIERTAS
+            ):
                 restantes.append(senal)
                 continue
 
-            if any(op["activo"] == activo for op in estado.operaciones_abiertas):
+            if activo_con_operacion_activa(
+                activo
+            ):
                 continue
 
             if vela_actual <= senal["vela_detectada"]:
@@ -699,11 +651,42 @@ def procesar_senales_pendientes(abrir_operacion):
                     activo
                 )
                 continue
+
+            # ========================================================
+            # UNA EVALUACIÓN PRODUCTIVA POR VELA CERRADA
+            # ========================================================
+            # motor_protocolos.py trabaja exclusivamente con velas
+            # cerradas. Mientras seguimos dentro del mismo bucket,
+            # el conjunto de velas cerradas no puede cambiar.
+            #
+            # Evitamos repetir get_candles() y todo el protocolo
+            # varias veces sobre exactamente la misma información.
+            # Si una consulta previa falló, este campo no se actualiza
+            # y el siguiente loop conserva la posibilidad de reintento.
+            ultimo_bucket_evaluado = senal.get(
+                "protocolo_live_ultimo_bucket_evaluado"
+            )
+
+            if ultimo_bucket_evaluado == vela_actual:
+                restantes.append(senal)
+                continue
+
             # ========================================================
             # PASO 5.5C — SOLO VELAS CERRADAS PARA EL PROTOCOLO
             # ========================================================
             
-            ahora_protocolo = time.time()
+            try:
+                ahora_protocolo = float(
+                    estado.Iq.get_server_timestamp()
+                )
+                if ahora_protocolo > 10_000_000_000:
+                    ahora_protocolo /= 1000.0
+                if ahora_protocolo <= 0:
+                    raise ValueError(
+                        "timestamp IQ inválido"
+                    )
+            except Exception:
+                ahora_protocolo = time.time()
             
             candles = estado.Iq.get_candles(
                 activo,
@@ -758,6 +741,36 @@ def procesar_senales_pendientes(abrir_operacion):
             if len(candles_protocolo) < 4:
                 restantes.append(senal)
                 continue
+
+            ultima_cerrada_from = int(
+                float(
+                    candles_protocolo[-1]["from"]
+                )
+            )
+
+            ultima_cerrada_esperada = (
+                (bucket_actual - 1)
+                * CANDLE_TIME
+            )
+
+            # No congelar este bucket si IQ respondió con un
+            # bloque atrasado. La señal sigue pendiente y puede
+            # reintentarse dentro del mismo minuto hasta recibir
+            # la última vela realmente cerrada.
+            if (
+                ultima_cerrada_from
+                != ultima_cerrada_esperada
+            ):
+                print(
+                    "PROTOCOLO LIVE — VELAS ATRASADAS:",
+                    activo,
+                    "| ultima:",
+                    ultima_cerrada_from,
+                    "| esperada:",
+                    ultima_cerrada_esperada,
+                )
+                restantes.append(senal)
+                continue
             
             senal[
                 "auditoria_5_5c_solo_velas_cerradas"
@@ -769,11 +782,7 @@ def procesar_senales_pendientes(abrir_operacion):
             
             senal[
                 "auditoria_5_5c_ultima_vela_cerrada_from"
-            ] = int(
-                float(
-                    candles_protocolo[-1]["from"]
-                )
-            )
+            ] = ultima_cerrada_from
             
             # ========================================================
             # PASO 5 — PARIDAD BACKTEST ↔ LIVE (SOLO SOMBRA)
@@ -803,6 +812,14 @@ def procesar_senales_pendientes(abrir_operacion):
                     senal,
                     CANDLE_TIME,
                 )
+
+                # Solo marcar el bucket como evaluado después de que
+                # obtuvimos velas suficientes y motor_protocolos
+                # respondió correctamente. Los fallos de API o de
+                # evaluación permanecen reintentables.
+                senal[
+                    "protocolo_live_ultimo_bucket_evaluado"
+                ] = bucket_actual
 
                 senal["protocolo_live_sombra_estado"] = (
                     protocolo_live.get("estado", "SIN_DATOS")
@@ -1081,54 +1098,20 @@ def procesar_senales_pendientes(abrir_operacion):
                             ):
                                 senal[clave] = valor
 
-                    decision_post = evaluar_decision_post_protocolo(
-                        senal
-                    )
-
-                    senal["decision_post_protocolo"] = decision_post.get(
-                        "decision_post_protocolo",
-                        "SIN_DATOS",
-                    )
-                    senal["autoriza_post_protocolo"] = decision_post.get(
-                        "autoriza_post_protocolo",
-                        True,
-                    )
-                    senal["probabilidad_post_protocolo"] = decision_post.get(
-                        "probabilidad_post_protocolo",
-                        0,
-                    )
-                    senal[
-                        "intervalo_post_protocolo_inferior"
-                    ] = decision_post.get(
-                        "intervalo_post_protocolo_inferior",
-                        0,
-                    )
-                    senal[
-                        "intervalo_post_protocolo_superior"
-                    ] = decision_post.get(
-                        "intervalo_post_protocolo_superior",
-                        0,
-                    )
-                    senal["muestra_post_protocolo"] = decision_post.get(
-                        "muestra_post_protocolo",
-                        0,
-                    )
-                    senal[
-                        "confiabilidad_post_protocolo"
-                    ] = decision_post.get(
-                        "confiabilidad_post_protocolo",
-                        "SIN_DATOS",
-                    )
-                    senal[
-                        "fuente_post_protocolo_principal"
-                    ] = decision_post.get(
-                        "fuente_post_protocolo_principal"
-                    )
-                    senal[
-                        "fuente_post_protocolo_respaldo"
-                    ] = decision_post.get(
-                        "fuente_post_protocolo_respaldo"
-                    )
+                    # La evaluación post-protocolo es solo shadow y
+                    # siempre autoriza. No puede leer aprendizaje
+                    # histórico entre una confirmación válida y buy().
+                    # Conservamos el esquema de auditoría con valores
+                    # neutrales fuera de la ruta crítica.
+                    senal["decision_post_protocolo"] = "SIN_DATOS"
+                    senal["autoriza_post_protocolo"] = True
+                    senal["probabilidad_post_protocolo"] = 0
+                    senal["intervalo_post_protocolo_inferior"] = 0
+                    senal["intervalo_post_protocolo_superior"] = 0
+                    senal["muestra_post_protocolo"] = 0
+                    senal["confiabilidad_post_protocolo"] = "SIN_DATOS"
+                    senal["fuente_post_protocolo_principal"] = None
+                    senal["fuente_post_protocolo_respaldo"] = None
 
                     print(
                         "PROTOCOLO AUTORIZÓ ENTRADA:",

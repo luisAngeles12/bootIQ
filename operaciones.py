@@ -18,8 +18,6 @@ from historial import (
     asegurar_historial_csv,
     guardar_historial,
     actualizar_historial_cierre,
-    perdidas_consecutivas_activo,
-    perdidas_consecutivas_patron
 )
 from validaciones_estrategia import registrar_zona_operada
 from motor_aprendizaje_historico import evaluar_salud_prospectiva_fuente
@@ -256,9 +254,13 @@ def abrir_operacion(senal):
     from utils import segundo_actual
     segundo_antes = segundo_actual()
     tiempo_antes = time.time()
-    try:
-        balance_antes = estado.Iq.get_balance()
 
+    # No consultar balance en la ruta crítica de envío.
+    # Esta lectura no participa en autorización, monto ni riesgo
+    # y puede bloquear la orden después de haber validado timing.
+    balance_antes = None
+
+    try:
         if tipo in ["turbo", "binary"]:
             check, order_id = estado.Iq.buy(
                 MONTO_BASE,
@@ -305,17 +307,11 @@ def abrir_operacion(senal):
         
         order_id_original = order_id
         
-        # Consultar los datos que IQ asocia realmente
-        # a esta operación. Solo diagnóstico.
+        # No bloquear la ruta crítica esperando get_async_order().
+        # IQ ya confirmó la apertura mediante check/order_id.
+        # Esta consulta era únicamente diagnóstica y podía consumir
+        # hasta 1.2 s antes de procesar la siguiente candidata.
         orden_async_5_5c = None
-        
-        if tipo in ["turbo", "binary"]:
-            orden_async_5_5c = (
-                obtener_auditoria_orden_async(
-                    order_id_original,
-                    timeout=1.2,
-                )
-            )
         
         order_id = str(order_id_original)
         # ============================================================
@@ -556,6 +552,35 @@ def abrir_operacion(senal):
             ),
 
             "hora_apertura": time.time(),
+
+            # Capacidad LIVE: una posición TURBO de N minutos
+            # deja de ocupar slot en el límite de vela que IQ
+            # usa como expiration_time, aunque su resultado aún
+            # no haya sido recuperado localmente.
+            "expiracion_iq": (
+                (
+                    int(
+                        ahora_paridad
+                        // CANDLE_TIME
+                    )
+                    + max(
+                        1,
+                        int(
+                            (
+                                (
+                                    TIEMPO_EXPIRACION
+                                    * 60
+                                )
+                                + CANDLE_TIME
+                                - 1
+                            )
+                            // CANDLE_TIME
+                        ),
+                    )
+                )
+                * CANDLE_TIME
+            ),
+
             "balance_antes": balance_antes,
             "segundo_entrada": segundo_despues,
             "demora_envio": demora_envio,
@@ -609,7 +634,9 @@ def abrir_operacion(senal):
         except Exception:
             pass
 
-        asegurar_historial_csv()
+        # guardar_historial() asegura y valida el CSV
+        # internamente. Evitamos repetir esa lectura/reescritura
+        # completa antes de cada append.
 
         # ==================================================
         # D8-R6C — FUENTES V3 SOLO PARA TELEMETRIA
@@ -638,44 +665,22 @@ def abrir_operacion(senal):
             fuente_respaldo_v3 = {}
 
         # ==================================================
-        # D8-R8B — SALUD PROSPECTIVA SOMBRA
-        # Se calcula DESPUES de enviar/aceptar la orden.
-        # No altera decision, ranking ni ejecucion.
+        # D8-R8B — SALUD PROSPECTIVA FUERA DE RUTA CRITICA
         # ==================================================
-
-        clave_salud_v3 = senal.get(
-            "clave_probabilidad_principal",
-            senal.get(
-                "directa_clave_probabilidad",
-                fuente_principal_v3.get(
-                    "clave",
-                    "",
-                ),
-            ),
-        )
-
-        prob_salud_v3 = senal.get(
-            "probabilidad_v3",
-            senal.get(
-                "probabilidad_estimada",
-                fuente_principal_v3.get(
-                    "probabilidad_ajustada",
-                    "",
-                ),
-            ),
-        )
-
-        salud_fuente_v3 = (
-            evaluar_salud_prospectiva_fuente(
-                clave=clave_salud_v3,
-                probabilidad_historica=prob_salud_v3,
-                origen_autoridad=senal.get(
-                    "origen_autoridad",
-                    "",
-                ),
-                ruta_historial=HISTORIAL_CSV,
-            )
-        )
+        # Esta medición es exclusivamente shadow y recorría todo
+        # historial_bot.csv después de cada orden aceptada. No puede
+        # bloquear el procesamiento de otra candidata de la misma
+        # ronda. Conservamos el esquema con valores vacíos.
+        salud_fuente_v3 = {
+            "salud_fuente_n": 0,
+            "salud_fuente_wins": 0,
+            "salud_fuente_losses": 0,
+            "salud_fuente_wr": "",
+            "salud_fuente_prob_historica": "",
+            "salud_fuente_delta_pp": "",
+            "salud_fuente_ultimas5_wr": "",
+            "salud_fuente_ultimas10_wr": "",
+        }
 
         guardar_historial({
             "fecha": datetime.now().strftime(
@@ -1473,35 +1478,9 @@ def revisar_operaciones_abiertas():
             )
             bloqueo_activo_aplicado = False
 
-            if resultado < 0:
-
-                # ================================================
-                # D7.6B — RACHA HISTORICA SOLO TELEMETRIA
-                # ================================================
-                #
-                # operaciones.py ejecuta y registra.
-                # Las rachas históricas no tienen autoridad
-                # para bloquear activos ni estrategias.
-                #
-                if perdidas_consecutivas_activo(
-                    op["activo"],
-                    3,
-                ):
-                    print(
-                        "D7.6B RACHA ACTIVO >=3 LOSS "
-                        "DETECTADA — SIN BLOQUEO:",
-                        op["activo"],
-                    )
-
-                if perdidas_consecutivas_patron(
-                    op["patron"],
-                    3,
-                ):
-                    print(
-                        "D7.6B RACHA ESTRATEGIA >=3 LOSS "
-                        "DETECTADA — SIN BLOQUEO:",
-                        op["patron"],
-                    )
+            # Las rachas históricas eran telemetría sin autoridad
+            # y exigían dos lecturas completas adicionales del CSV
+            # por cada LOSS. No se calculan en la ruta de cierre.
 
             print(
                 "OPERACIÓN CERRADA:",

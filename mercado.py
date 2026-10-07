@@ -312,6 +312,12 @@ def obtener_velas(activo):
             estado.fallo_velas_ronda_d76d = True
             return None
 
+        # Usar desde la primera consulta el mismo reloj
+        # oficial de IQ que después valida la última vela cerrada.
+        # Evita una llamada adicional provocada únicamente por
+        # desfase entre el reloj local de Windows y el broker.
+        ahora = _timestamp_servidor_iq()
+
         inicio_get_candles_d76d = (
             time.perf_counter()
         )
@@ -321,7 +327,7 @@ def obtener_velas(activo):
                 activo,
                 CANDLE_TIME,
                 4,
-                time.time(),
+                ahora,
                 timeout=3.0,
                 drain_timeout=1.0,
             )
@@ -404,8 +410,7 @@ def obtener_velas(activo):
         # ------------------------------------------------
         # PARIDAD TEMPORAL
         # ------------------------------------------------
-        ahora = _timestamp_servidor_iq()
-
+        # Reutilizamos el timestamp IQ que originó la consulta.
         inicio_actual = (
             int(ahora // CANDLE_TIME)
             * CANDLE_TIME
@@ -1255,14 +1260,10 @@ def refrescar_activos_incremental():
             ] += 1
             continue
 
-        if activo_en_cooldown(
-            asset
-        ):
-            estado.metricas_ronda[
-                "descartados_cooldown"
-            ] += 1
-            continue
-
+        # El cooldown es transitorio (20 s) y se aplica
+        # al consumir el TOP en la ventana 0-10. No debe
+        # congelarse dentro de una caché que puede vivir
+        # varios minutos.
         estado.metricas_ronda[
             "activos_evaluados_filtro"
         ] += 1
@@ -1960,14 +1961,10 @@ def obtener_activos(
                 ] += 1
                 continue
 
-            if activo_en_cooldown(
-                asset
-            ):
-                estado.metricas_ronda[
-                    "descartados_cooldown"
-                ] += 1
-                continue
-
+            # El cooldown es transitorio (20 s) y se aplica
+            # al consumir el TOP en la ventana 0-10. No debe
+            # congelarse dentro de una caché que puede vivir
+            # varios minutos.
             estado.metricas_ronda[
                 "activos_evaluados_filtro"
             ] += 1

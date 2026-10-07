@@ -10,7 +10,14 @@ from config import (
     VENTANA_ENTRADA_FIN,
     CANDLE_TIME
 )
-from utils import segundo_actual, registrar_bloqueo, imprimir_resumen_ronda, reiniciar_metricas_ronda
+from utils import (
+    segundo_actual,
+    registrar_bloqueo,
+    imprimir_resumen_ronda,
+    reiniciar_metricas_ronda,
+    contar_operaciones_activas,
+    activo_con_operacion_activa,
+)
 from conexion import conectar, reconectar_iq
 from historial import asegurar_historial_csv, cargar_operaciones_pendientes
 from mercado import (
@@ -45,8 +52,11 @@ def main():
     # el scanner completo.
     ultima_precarga_activos = 0.0
 
-    # D7.6C — una sola ronda LIVE por vela.
+    # D7.6C — una sola ronda LIVE válida por vela.
+    # Si una ronda falla muy temprano por infraestructura,
+    # permitimos como máximo un reintento completo de esa vela.
     ultima_ronda_live_d76c = None
+    ronda_reintento_usado_d76c = None
     ultima_impresion_estado = 0
     ultima_impresion_resumen = 0
 
@@ -104,6 +114,12 @@ def main():
                 )
                 time.sleep(5)
                 continue
+
+            # La reconexión invalida velas_cache en conexion.py.
+            # No conservar el cooldown de una precarga anterior:
+            # permitimos reconstruir buffers en la próxima ventana
+            # de mantenimiento 12-18 sin esperar hasta 45 s.
+            ultima_precarga_activos = 0.0
 
             # La sesión acaba de reconstruirse.
             # Dar tiempo a websocket, timesync y suscripciones
@@ -280,6 +296,12 @@ def main():
 
                 if not conectado_balance:
                     if reconectar_iq():
+                        # Mismo contrato que la reconexión principal:
+                        # conexion.py vacía velas_cache, por lo que el
+                        # próximo mantenimiento debe poder precargar
+                        # de inmediato, sin heredar el cooldown previo.
+                        ultima_precarga_activos = 0.0
+
                         print(
                             "Conexión recuperada. "
                             "Esperando estabilización de la sesión...",
@@ -665,39 +687,13 @@ def main():
                 time.sleep(0.25)
                 continue
 
-            if (
-                len(
-                    estado.operaciones_abiertas
-                )
-                >= MAX_OPERACIONES_ABIERTAS
-            ):
-                revisar_operaciones_abiertas()
-
-                if (
-                    time.time()
-                    - ultima_impresion_resumen
-                    >= 60
-                ):
-                    if (
-                        estado.metricas_ronda.get(
-                            "mercados_analizados",
-                            0
-                        ) > 0
-                        or estado.metricas_ronda.get(
-                            "senales_detectadas",
-                            0
-                        ) > 0
-                        or estado.metricas_ronda.get(
-                            "entradas_abiertas",
-                            0
-                        ) > 0
-                    ):
-                        imprimir_resumen_ronda()
-
-                    ultima_impresion_resumen = (
-                        time.time()
-                    )
-
+            # La recuperación de resultados se ejecuta únicamente
+            # en la ventana 20-24 definida arriba.
+            #
+            # La capacidad LIVE ya se calcula por expiracion_iq,
+            # así que no necesitamos consultar resultados aquí para
+            # liberar slots. Evitamos que una consulta iniciada cerca
+            # de 58-59 s invada la próxima ventana operativa 0-10.
             time.sleep(0.25)
             continue
 
@@ -864,10 +860,8 @@ def main():
                 activo = item["activo"]
                 tipo = item["tipo"]
 
-                if any(
-                    op["activo"] == activo
-                    for op
-                    in estado.operaciones_abiertas
+                if activo_con_operacion_activa(
+                    activo
                 ):
                     continue
 
@@ -1188,11 +1182,36 @@ def main():
                         for x in timings_activos_d76d
                     ),
                 )
+            segundo_descarta_d76d = (
+                segundo_actual()
+            )
+
             print(
                 "D7.6D RONDA DESCARTADA — "
                 "NO SE ORDENA TOP PARCIAL | segundo:",
-                segundo_actual(),
+                segundo_descarta_d76d,
             )
+
+            # Si la ronda falló muy temprano, todavía existe
+            # margen suficiente para repetir el universo COMPLETO.
+            # Nunca reutilizamos señales parciales y nunca hacemos
+            # más de un reintento por vela.
+            if (
+                segundo_descarta_d76d <= 3
+                and ronda_reintento_usado_d76c
+                != clave_ronda_d76c
+            ):
+                ronda_reintento_usado_d76c = (
+                    clave_ronda_d76c
+                )
+                ultima_ronda_live_d76c = None
+
+                print(
+                    "D7.6D REINTENTO COMPLETO DE RONDA | vela:",
+                    clave_ronda_d76c,
+                    "| segundo:",
+                    segundo_descarta_d76d,
+                )
 
             time.sleep(0.25)
             continue
@@ -1257,18 +1276,13 @@ def main():
         for senal in senales:
 
             if (
-                len(
-                    estado.operaciones_abiertas
-                )
+                contar_operaciones_activas()
                 >= MAX_OPERACIONES_ABIERTAS
             ):
                 break
 
-            if any(
-                op["activo"]
-                == senal["activo"]
-                for op
-                in estado.operaciones_abiertas
+            if activo_con_operacion_activa(
+                senal["activo"]
             ):
                 continue
 
@@ -1441,6 +1455,32 @@ def main():
                 decision_cerebro
                 == "OPERAR_CON_PROTOCOLO"
             ):
+
+                protocolo_sugerido = str(
+                    senal.get(
+                        "protocolo_sugerido",
+                        "",
+                    )
+                    or ""
+                ).upper().strip()
+
+                # PROTOCOLO_RUPTURA_RESISTENCIA permanece
+                # exclusivamente en sombra por contrato actual.
+                # No puede producir una entrada productiva, por lo
+                # que no debe consumir la cola operativa LIVE ni
+                # tiempo crítico de procesar_senales_pendientes().
+                if (
+                    protocolo_sugerido
+                    == "PROTOCOLO_RUPTURA_RESISTENCIA"
+                ):
+                    print(
+                        "SEÑAL SOLO SOMBRA — "
+                        "NO ENCOLADA EN LIVE:",
+                        senal.get("activo", ""),
+                        "| protocolo:",
+                        protocolo_sugerido,
+                    )
+                    continue
 
                 estado.metricas_ronda[
                     "senales_aprobadas"

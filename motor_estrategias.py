@@ -95,6 +95,17 @@ def crear_senal_profesional(activo, direccion, estrategia, puntaje, rsi, razones
         "rechazo_bajista_real": ctx.get("rechazo_bajista_real", False) if ctx else False,
         "direccion_tendencia": ctx.get("direccion_tendencia", "NEUTRA") if ctx else "NEUTRA",
         "fuerza_tendencia": ctx.get("fuerza_tendencia", 0) if ctx else 0,
+
+        # SOMBRA: referencias originales ya calculadas por contexto.
+        # No participan en score, Cerebro, setup ni autorización.
+        "choch_nivel_referencia_sombra": (
+            ctx.get("choch_nivel_referencia_sombra")
+            if ctx else None
+        ),
+        "sweep_nivel_referencia_sombra": (
+            ctx.get("sweep_nivel_referencia_sombra")
+            if ctx else None
+        ),
     }
 
 def motor_estrategias_profesional(
