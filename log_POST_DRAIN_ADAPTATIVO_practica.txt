@@ -1,0 +1,23 @@
+Conectando a IQ Option...
+Conectado correctamente
+Cuenta seleccionada: PRACTICE
+Actualizando OPCODE ligero binary/turbo...
+WARNING:root:**warning** get_all_init_v2 timeout 5.0 sec
+No se pudo actualizar OPCODE ligero: OPCODE binary/turbo no disponible tras 3 intentos acotados
+Obteniendo balance inicial...
+No se pudo obtener balance inicial: get_balances timeout 10 sec
+Balance inicial: 0
+Operaciones pendientes recuperadas: 0
+No se pudo actualizar balance: get_balances timeout 10 sec
+
+Balance: 0.0 | Neto: 0.0 | Abiertas: 0
+No se pudo actualizar balance: get_balances timeout 10 sec
+No se pudo actualizar balance: get_balances timeout 10 sec
+
+Balance: 0.0 | Neto: 0.0 | Abiertas: 0
+No se pudo actualizar balance: get_balances timeout 10 sec
+No se pudo actualizar balance: get_balances timeout 10 sec
+
+Balance: 0.0 | Neto: 0.0 | Abiertas: 0
+D7.6D TIMING BALANCE | antes: 45 | despues: 30 | demora: 2.91
+Stop win alcanzado. Bot detenido.

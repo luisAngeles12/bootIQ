@@ -1,0 +1,7 @@
+BOOTIQ STEP 7 LIVE SHADOW - CIERRE
+Branch: bootiq-v3-auditoria
+Commit: 1cd5325edc874bb3e49fb753e91a11575e9c5685
+Log: step7_final_live_shadow.log
+SHA256: 7146ac377082eb1c99ac32794d8abdb754e024d1222109bca17b771fb7b92b59
+Resultado: 371 oportunidades unicas | 0 DIRECTAS | 3 PROTOCOLOS | 3 CANCELADAS | 88/88 paridad COINCIDE | 0 conflictos
+Conclusion: 0 operaciones explicado por el embudo actual; no se demostro fallo de ejecucion ni causa para relajar filtros.

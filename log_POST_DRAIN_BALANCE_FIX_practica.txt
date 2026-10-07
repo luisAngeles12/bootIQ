@@ -1,0 +1,18 @@
+Conectando a IQ Option...
+Conectado correctamente
+Cuenta seleccionada: PRACTICE
+Actualizando OPCODE ligero binary/turbo...
+Total de activos en OPCODE: 632
+OPCODE ligero actualizado correctamente
+Obteniendo balance inicial...
+Balance inicial: 9497.86
+WARNING:root:**warning** get_candles sin respuesta 0.75 sec | activo: COKE-OTC
+WARNING:root:**warning** get_candles respuesta tardia descartada | activo: COKE-OTC | drenaje: 0.147 sec
+WARNING:root:**warning** get_candles sin respuesta 0.75 sec | activo: US30-OTC
+WARNING:root:**warning** get_candles respuesta tardia descartada | activo: US30-OTC | drenaje: 0.181 sec
+WARNING:root:**warning** get_candles sin respuesta 0.75 sec | activo: COTTON-OTC
+WARNING:root:**warning** get_candles respuesta tardia descartada | activo: COTTON-OTC | drenaje: 0.617 sec
+WARNING:root:**warning** get_all_init_v2 timeout 5.0 sec
+WARNING:root:**warning** get_candles sin respuesta 0.75 sec | activo: EURCHF-OTC
+WARNING:root:**warning** get_candles respuesta tardia no drenada | activo: EURCHF-OTC | websocket invalidado
+ERROR:root:**error** get_candles request failed | activo: MELANIAUSD-OTC | error: Connection is already closed.

@@ -1,0 +1,197 @@
+Conectando a IQ Option...
+Conectado correctamente
+Cuenta seleccionada: PRACTICE
+Actualizando OPCODE ligero binary/turbo...
+Total de activos en OPCODE: 632
+OPCODE ligero actualizado correctamente
+Obteniendo balance inicial...
+Balance inicial: 9497.86
+WARNING:root:**warning** get_all_init_v2 timeout 5.0 sec
+WARNING:root:**warning** get_candles sin respuesta 0.75 sec | activo: USDHKD-OTC
+WARNING:root:**warning** get_candles respuesta tardia descartada | activo: USDHKD-OTC | drenaje: 2.270 sec
+WARNING:root:**warning** get_candles sin respuesta 0.75 sec | activo: USDDOP-OTC
+WARNING:root:**warning** get_candles respuesta tardia descartada | activo: USDDOP-OTC | drenaje: 0.446 sec
+WARNING:root:**warning** get_candles sin respuesta 0.75 sec | activo: CANNABIS-OTC
+WARNING:root:**warning** get_candles respuesta tardia descartada | activo: CANNABIS-OTC | drenaje: 0.750 sec
+WARNING:root:**warning** get_candles sin respuesta 0.75 sec | activo: INTEL/IBM-OTC
+WARNING:root:**warning** get_candles respuesta tardia descartada | activo: INTEL/IBM-OTC | drenaje: 0.702 sec
+WARNING:root:**warning** get_candles sin respuesta 0.75 sec | activo: CHFNOK-OTC
+WARNING:root:**warning** get_candles respuesta tardia descartada | activo: CHFNOK-OTC | drenaje: 0.905 sec
+WARNING:root:**warning** get_candles sin respuesta 0.75 sec | activo: GBPNZD-OTC
+WARNING:root:**warning** get_candles respuesta tardia no drenada | activo: GBPNZD-OTC | websocket invalidado
+Operaciones pendientes recuperadas: 0
+D7.6D TIMING BALANCE | antes: 43 | despues: 43 | demora: 0.203
+
+Balance: 9497.86 | Neto: 0.0 | Abiertas: 0
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169702.05
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169702.31
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169702.56
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169702.82
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169703.08
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169703.35
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169703.61
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169703.87
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169704.13
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169704.38
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169704.64
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169704.9
+
+Balance: 9497.86 | Neto: 0.0 | Abiertas: 0
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169705.15
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169705.4
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169705.67
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169705.93
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169706.18
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169706.45
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169706.72
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169706.97
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169707.24
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169707.5
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169707.76
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169708.02
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169708.28
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169708.53
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169708.8
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169709.06
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169709.33
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169709.58
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169709.84
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169710.1
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169710.35
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169710.62
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169710.88
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169711.15
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169711.41
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169711.67
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169711.92
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169712.18
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169712.43
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169712.69
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169712.95
+D7.6A PRECALENTANDO CACHE FUERA DE VENTANA | edad: 1789169714.23
+D7.6D BOOTSTRAP OPEN_TIME REINTENTO | timeout: 5.0s
+ESCANEO ABORTADO DURANTE get_candles: conexión IQ perdida.
+D7.6D TIMING OBTENER ACTIVOS | antes: 12 | despues: 33 | demora: 24.253
+D7.6D TIMING PRECARGA TOTAL | antes: 12 | despues: 33 | demora: 24.253
+Conexión IQ perdida. Iniciando reconexión controlada...
+Reconexión IQ 1/3...
+IQ Option reconectado correctamente. | cuenta: PRACTICE
+Conexión recuperada. Esperando estabilización de la sesión...
+D7.6D TIMING BALANCE | antes: 44 | despues: 44 | demora: 0.26
+
+Balance: 9497.86 | Neto: 0.0 | Abiertas: 0
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169762.25
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169762.51
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169762.78
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169763.03
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169763.3
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169763.55
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169763.8
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169764.07
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169764.33
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169764.6
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169764.87
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169765.13
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169765.39
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169765.65
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169765.9
+
+Balance: 9497.86 | Neto: 0.0 | Abiertas: 0
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169766.16
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169766.43
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169766.68
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169766.95
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169767.2
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169767.46
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169767.72
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169767.98
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169768.25
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169768.5
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169768.78
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169769.03
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169769.3
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169769.56
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169769.82
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169770.07
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169770.33
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169770.6
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169770.85
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169771.1
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169771.37
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169771.63
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169771.9
+D7.6A VENTANA OMITIDA — CACHE NO PREPARADA | edad: 1789169772.15
+D7.6D TIMING BALANCE | antes: 20 | despues: 20 | demora: 0.169
+
+Balance: 9497.86 | Neto: 0.0 | Abiertas: 0
+D7.6D TIMING BALANCE | antes: 30 | despues: 30 | demora: 0.248
+
+===== ESTADÍSTICAS POR ESTRATEGIA =====
+liquidity sweep alcista | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 64.0
+reacción compradora en soporte | total: 48 | ganadas: 27 | perdidas: 21 | winrate: 56.25% | neto: 48.75
+continuación alcista con tendencia | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+continuación bajista con tendencia | total: 32 | ganadas: 18 | perdidas: 14 | winrate: 56.25% | neto: 30.5
+CHOCH alcista | total: 74 | ganadas: 40 | perdidas: 34 | winrate: 54.05% | neto: -4.5
+pullback bajista a EMA | total: 101 | ganadas: 54 | perdidas: 47 | winrate: 53.47% | neto: -29.5
+pullback alcista a EMA | total: 9 | ganadas: 2 | perdidas: 7 | winrate: 22.22% | neto: -131.5
+reacción vendedora en resistencia | total: 52 | ganadas: 24 | perdidas: 28 | winrate: 46.15% | neto: -197.75
+
+===== ESTADÍSTICAS POR ACTIVO =====
+TRUMPUSD-OTC | total: 5 | ganadas: 5 | perdidas: 0 | winrate: 100.0% | neto: 104.75
+SP35-OTC | total: 7 | ganadas: 6 | perdidas: 1 | winrate: 85.71% | neto: 98.75
+COCOA-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 64.0
+DASHUSD-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 63.5
+FB-OTC | total: 3 | ganadas: 3 | perdidas: 0 | winrate: 100.0% | neto: 62.75
+USDTHB-OTC | total: 5 | ganadas: 4 | perdidas: 1 | winrate: 80.0% | neto: 58.5
+GDX | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GEV-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+PENGUUSD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.5
+GS-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 43.0
+SHIBUSD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 42.25
+GBPNZD-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+SNAP-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+USDINR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.75
+HYPE-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+USDZAR-OTC | total: 2 | ganadas: 2 | perdidas: 0 | winrate: 100.0% | neto: 41.0
+CANNABIS-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 40.25
+XRPUSD-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 39.25
+CHFJPY-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 38.5
+EURAUD-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 38.0
+USDDOP-OTC | total: 4 | ganadas: 3 | perdidas: 1 | winrate: 75.0% | neto: 38.0
+USDCLP-OTC | total: 6 | ganadas: 4 | perdidas: 2 | winrate: 66.67% | neto: 35.75
+APPLE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+AUS200:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+CADJPY-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+EURCAD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+FARTCOINUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+IMXUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+MU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NIKE-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+NZDJPY-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SMH | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+SUIUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+WDC-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.75
+UK100:N | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.5
+BIDU-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+DOTUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MANAUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MATICUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+MORSTAN-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+PYTHUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+UKOUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.25
+SpaceX-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.0
+USNDAQ100-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 21.0
+ALIBABA-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURCHF-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+EURUSD-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+OpenAI-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDPHP-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+USDSAR-OTC | total: 1 | ganadas: 1 | perdidas: 0 | winrate: 100.0% | neto: 20.5
+TAOUSD-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+US2000-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+USDBRL-OTC | total: 3 | ganadas: 2 | perdidas: 1 | winrate: 66.67% | neto: 18.5
+AUDJPY-OTC | total: 3 | ganadas: 2 WARNING:root:**warning** get_all_init_v2 timeout 5.0 sec
+WARNING:root:**warning** get_all_init_v2 timeout 5.0 sec
+WARNING:root:**warning** get_all_init_v2 timeout 5.0 sec
+WARNING:root:**warning** get_all_init_v2 timeout 5.0 sec

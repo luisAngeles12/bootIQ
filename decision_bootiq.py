@@ -280,6 +280,76 @@ def crear_decision_bootiq(senal=None, ctx=None):
                 "confianza_final_cerebro", 0
             ),
         },
+        "veto_tecnico_sombra": {
+            "detectado": senal.get(
+                "veto_tecnico_sombra",
+                False,
+            ),
+            "cantidad": senal.get(
+                "cantidad_vetos_tecnicos_sombra",
+                0,
+            ),
+            "tipos": _texto_lista(
+                senal.get(
+                    "vetos_tecnicos_sombra",
+                    [],
+                )
+            ),
+            "modo": senal.get(
+                "modo_veto_tecnico",
+                "DIAGNOSTICO",
+            ),
+        },
+        "estadistica_sombra": {
+            "modo_probabilidad": senal.get(
+                "modo_probabilidad", "SOMBRA"
+            ),
+            "probabilidad_estimada": senal.get(
+                "probabilidad_estimada", 0
+            ),
+            "intervalo_probabilidad_inferior": senal.get(
+                "intervalo_probabilidad_inferior", 0
+            ),
+            "intervalo_probabilidad_superior": senal.get(
+                "intervalo_probabilidad_superior", 0
+            ),
+            "muestra_probabilidad": senal.get(
+                "muestra_probabilidad", 0
+            ),
+            "wins_probabilidad": senal.get(
+                "wins_probabilidad", 0
+            ),
+            "losses_probabilidad": senal.get(
+                "losses_probabilidad", 0
+            ),
+            "confiabilidad_probabilidad": senal.get(
+                "confiabilidad_probabilidad", "SIN_DATOS"
+            ),
+            "fuente_probabilidad_principal": senal.get(
+                "fuente_probabilidad_principal", {}
+            ),
+            "fuente_probabilidad_respaldo": senal.get(
+                "fuente_probabilidad_respaldo", {}
+            ),
+            "nivel_probabilidad_principal": senal.get(
+                "nivel_probabilidad_principal", ""
+            ),
+            "clave_probabilidad_principal": senal.get(
+                "clave_probabilidad_principal", ""
+            ),
+            "decision_estadistica_sombra": senal.get(
+                "decision_estadistica_sombra", "SIN_DATOS"
+            ),
+            "operar_estadistico_sombra": senal.get(
+                "operar_estadistico_sombra", False
+            ),
+            "requiere_protocolo_estadistico_sombra": senal.get(
+                "requiere_protocolo_estadistico_sombra", False
+            ),
+            "motivo_decision_estadistica_sombra": senal.get(
+                "motivo_decision_estadistica_sombra", ""
+            ),
+        },
         "riesgos": {
             "riesgos_base": senal.get("riesgos_base", ""),
             "riesgo_extra_setup": senal.get("riesgo_extra_setup", 0),
@@ -447,10 +517,363 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         senal["cerebro_unico_bloquear_por_riesgo"] = bloquear_por_riesgo
         senal["cerebro_unico_motivos"] = motivos_texto
 
+        # =====================================================
+        # D7.7C — TRAZABILIDAD DE AUTORIDAD
+        # =====================================================
+        # Solo auditoría.
+        # No altera operar, decision ni modo_ejecucion.
+
+        resultado_oficial_detalle = decision_cerebro.get(
+            "resultado_decision_oficial",
+            {},
+        )
+
+        if not isinstance(resultado_oficial_detalle, dict):
+            resultado_oficial_detalle = {}
+
+        senal["origen_autoridad"] = str(
+            resultado_oficial_detalle.get(
+                "origen_autoridad",
+                "SIN_DATOS",
+            )
+            or "SIN_DATOS"
+        ).strip()
+
+        senal["decision_sombra_origen"] = str(
+            resultado_oficial_detalle.get(
+                "decision_sombra_origen",
+                "",
+            )
+            or ""
+        ).strip()
+
+        senal["core4_rescate"] = bool(
+            resultado_oficial_detalle.get(
+                "core4_rescate",
+                False,
+            )
+        )
+
+        senal["core4_reglas"] = str(
+            resultado_oficial_detalle.get(
+                "core4_reglas",
+                "",
+            )
+            or ""
+        ).strip()
+
+        campos_core4_previos = (
+            "core4_alcanzado",
+            "core4_match_previo",
+            "core4_r1_previo",
+            "core4_r2_previo",
+            "core4_r4_previo",
+            "core4_r6_previo",
+            "core4_reglas_previas",
+            "core4_invalidacion_dura_previa",
+            "core4_invalidacion_selectiva_previa",
+            "core4_mercado_valido_previo",
+            "core4_elegible_estructural_previo",
+            "core4_elegible_rescate_previo",
+        )
+
+        for campo in campos_core4_previos:
+            senal[campo] = resultado_oficial_detalle.get(
+                campo,
+                "" if campo == "core4_reglas_previas" else False,
+            )
+
+        # =====================================================
+        # STEP 7 LIVE SHADOW — DIAGNOSTICO D7.5
+        # =====================================================
+        # Solo transporte de telemetria.
+        # No modifica la decision oficial.
+        campos_d75_previos = (
+            "d75_alcanzado",
+            "d75_es_reaccion_zona",
+            "d75_v3_operar_sombra",
+            "d75_tendencia_alcista",
+            "d75_mercado_limpio_normal",
+            "d75_modo_directa",
+            "d75_validacion_mercado",
+            "d75_cumple",
+        )
+
+        for campo in campos_d75_previos:
+            senal[campo] = bool(
+                resultado_oficial_detalle.get(
+                    campo,
+                    False,
+                )
+            )
+
+        # =====================================================
+        # STEP 7 LIVE SHADOW — FUNNEL AUTORIZACION DIRECTA
+        # =====================================================
+        # Telemetria pura.
+        # No modifica decision, operar, protocolo ni ejecucion.
+        _step7_familia = str(
+            senal.get("familia_setup", "") or ""
+        ).lower().strip()
+
+        _step7_protocolo = str(
+            senal.get("protocolo_sugerido", "") or ""
+        ).lower().strip()
+
+        _step7_patron = str(
+            senal.get(
+                "estrategia",
+                senal.get("patron", ""),
+            )
+            or ""
+        ).lower().strip()
+
+        _step7_reaccion_d75 = (
+            _step7_familia == "reaccion_zona"
+            or _step7_protocolo == "protocolo_reaccion_zona"
+            or "reaccion compradora" in _step7_patron
+            or "reaccion vendedora" in _step7_patron
+        )
+
+        _step7_mostrar_directa = (
+            _step7_reaccion_d75
+            or bool(senal.get("core4_match_previo", False))
+            or str(decision_oficial).upper().strip() == "OPERAR"
+        )
+
+        if _step7_mostrar_directa:
+            print(
+                "STEP7 DIRECTA |",
+                senal.get("activo", ""),
+                "| FINAL:", decision_oficial,
+                "| AUT:", senal.get("origen_autoridad", ""),
+                "| D75",
+                "cand:", int(_step7_reaccion_d75),
+                "reach:", int(senal.get("d75_alcanzado", False)),
+                "rz:", int(senal.get("d75_es_reaccion_zona", False)),
+                "v3:", int(senal.get("d75_v3_operar_sombra", False)),
+                "trend:", int(senal.get("d75_tendencia_alcista", False)),
+                "market:", int(senal.get("d75_mercado_limpio_normal", False)),
+                "mode:", int(senal.get("d75_modo_directa", False)),
+                "val:", int(senal.get("d75_validacion_mercado", False)),
+                "cumple:", int(senal.get("d75_cumple", False)),
+                "| C4",
+                "reach:", int(senal.get("core4_alcanzado", False)),
+                "match:", int(senal.get("core4_match_previo", False)),
+                "r1:", int(senal.get("core4_r1_previo", False)),
+                "r2:", int(senal.get("core4_r2_previo", False)),
+                "r4:", int(senal.get("core4_r4_previo", False)),
+                "r6:", int(senal.get("core4_r6_previo", False)),
+                "market:", int(senal.get("core4_mercado_valido_previo", False)),
+                "hard:", int(senal.get("core4_invalidacion_dura_previa", False)),
+                "selective:", int(senal.get("core4_invalidacion_selectiva_previa", False)),
+                "rescue:", int(senal.get("core4_elegible_rescate_previo", False)),
+                flush=True,
+            )
+
+        senal["directa_ruta_validada"] = bool(
+            resultado_oficial_detalle.get(
+                "directa_ruta_validada",
+                False,
+            )
+        )
+
+        # =====================================================
+        # F5.7-C2A — VETO TÉCNICO SOMBRA
+        # =====================================================
+        # Solo auditoría. No modifica la decisión oficial.
+
+        senal["veto_tecnico_sombra"] = bool(
+            decision_cerebro.get(
+                "veto_tecnico_sombra",
+                False,
+            )
+        )
+
+        try:
+            senal["cantidad_vetos_tecnicos_sombra"] = int(
+                decision_cerebro.get(
+                    "cantidad_vetos_tecnicos_sombra",
+                    0,
+                )
+                or 0
+            )
+        except (TypeError, ValueError):
+            senal["cantidad_vetos_tecnicos_sombra"] = 0
+
+        senal["vetos_tecnicos_sombra"] = _lista_segura(
+            decision_cerebro.get(
+                "vetos_tecnicos_sombra",
+                [],
+            )
+        )
+
+        senal["modo_veto_tecnico"] = str(
+            decision_cerebro.get(
+                "modo_veto_tecnico",
+                "DIAGNOSTICO",
+            )
+            or "DIAGNOSTICO"
+        ).upper().strip()
+        # =====================================================
+        # AUDITORÍA DE ENTRADA DIRECTA V3
+        # =====================================================
+        # Solo transporte de información.
+        # No modifica la decisión oficial.
+        
+        senal["directa_evidencia_solida"] = bool(
+            decision_cerebro.get(
+                "directa_evidencia_solida",
+                False,
+            )
+        )
+        
+        try:
+            senal["directa_muestra"] = int(
+                float(
+                    decision_cerebro.get(
+                        "directa_muestra",
+                        0,
+                    )
+                    or 0
+                )
+            )
+        except (TypeError, ValueError):
+            senal["directa_muestra"] = 0
+        
+        senal["directa_confiabilidad"] = str(
+            decision_cerebro.get(
+                "directa_confiabilidad",
+                "SIN_DATOS",
+            )
+            or "SIN_DATOS"
+        ).upper().strip()
+        
+        senal["directa_nivel_probabilidad"] = str(
+            decision_cerebro.get(
+                "directa_nivel_probabilidad",
+                decision_cerebro.get(
+                    "nivel_probabilidad",
+                    "",
+                ),
+            )
+            or ""
+        ).upper().strip()
+        
+        senal["directa_clave_probabilidad"] = str(
+            decision_cerebro.get(
+                "directa_clave_probabilidad",
+                decision_cerebro.get(
+                    "clave_probabilidad",
+                    "",
+                ),
+            )
+            or ""
+        ).strip()
+        # =====================================================
+        # MODO SOMBRA ESTADÍSTICO BOOTIQ V3
+        # =====================================================
+        # Estos campos se transportan sin reinterpretarlos.
+        # No cambian operar, decision_oficial ni modo_ejecucion.
+        campos_sombra = (
+            "modo_probabilidad",
+            "probabilidad_estimada",
+            "intervalo_probabilidad_inferior",
+            "intervalo_probabilidad_superior",
+            "muestra_probabilidad",
+            "wins_probabilidad",
+            "losses_probabilidad",
+            "confiabilidad_probabilidad",
+            "fuente_probabilidad_principal",
+            "fuente_probabilidad_respaldo",
+            "peso_fuente_probabilidad_principal",
+            "peso_fuente_probabilidad_respaldo",
+            "nivel_probabilidad_principal",
+            "clave_probabilidad_principal",
+            "decision_estadistica_sombra",
+            "operar_estadistico_sombra",
+            "requiere_protocolo_estadistico_sombra",
+            "motivo_decision_estadistica_sombra",
+            "resultado_decision_estadistica_sombra",
+        )
+
+        for campo in campos_sombra:
+            if campo in decision_cerebro:
+                senal[campo] = decision_cerebro.get(campo)
+
+        # =====================================================
+        # STEP 7 — TELEMETRIA FUENTES PROBABILIDAD V3
+        # =====================================================
+        # Observabilidad pura. No modifica probabilidad,
+        # decision, aprendizaje, pesos ni autoridad operativa.
+        _step7_principal = senal.get(
+            "fuente_probabilidad_principal",
+            {},
+        )
+        _step7_respaldo = senal.get(
+            "fuente_probabilidad_respaldo",
+            {},
+        )
+
+        if not isinstance(_step7_principal, dict):
+            _step7_principal = {}
+        if not isinstance(_step7_respaldo, dict):
+            _step7_respaldo = {}
+
+        print(
+            "STEP7 V3 FUENTES | "
+            f"activo:{senal.get('activo', '')} | "
+            f"final:{decision_oficial} | "
+            f"v3:{senal.get('decision_estadistica_sombra', '')} | "
+            f"prob:{senal.get('probabilidad_estimada', 0)} | "
+            f"muestra:{senal.get('muestra_probabilidad', 0)} | "
+            f"PRINCIPAL[nivel:{_step7_principal.get('nivel', '')} "
+            f"clave:{_step7_principal.get('clave', '')} "
+            f"n:{_step7_principal.get('total', 0)} "
+            f"wr:{_step7_principal.get('winrate', 0)} "
+            f"p:{_step7_principal.get('probabilidad_ajustada', 0)} "
+            f"peso:{senal.get('peso_fuente_probabilidad_principal', 0)}] | "
+            f"RESPALDO[nivel:{_step7_respaldo.get('nivel', '')} "
+            f"clave:{_step7_respaldo.get('clave', '')} "
+            f"n:{_step7_respaldo.get('total', 0)} "
+            f"wr:{_step7_respaldo.get('winrate', 0)} "
+            f"p:{_step7_respaldo.get('probabilidad_ajustada', 0)} "
+            f"peso:{senal.get('peso_fuente_probabilidad_respaldo', 0)}]"
+        )
+
+        # Garantías defensivas del contrato sombra.
+        senal.setdefault("modo_probabilidad", "SOMBRA")
+        senal.setdefault("probabilidad_estimada", 0.0)
+        senal.setdefault("intervalo_probabilidad_inferior", 0.0)
+        senal.setdefault("intervalo_probabilidad_superior", 0.0)
+        senal.setdefault("muestra_probabilidad", 0)
+        senal.setdefault("wins_probabilidad", 0)
+        senal.setdefault("losses_probabilidad", 0)
+        senal.setdefault("confiabilidad_probabilidad", "SIN_DATOS")
+        senal.setdefault("fuente_probabilidad_principal", {})
+        senal.setdefault("fuente_probabilidad_respaldo", {})
+        senal.setdefault("nivel_probabilidad_principal", "")
+        senal.setdefault("clave_probabilidad_principal", "")
+        senal.setdefault("decision_estadistica_sombra", "SIN_DATOS")
+        senal.setdefault("operar_estadistico_sombra", False)
+        senal.setdefault(
+            "requiere_protocolo_estadistico_sombra", False
+        )
+        senal.setdefault("motivo_decision_estadistica_sombra", "")
+        # Garantías defensivas de auditoría directa V3.
+        senal.setdefault("directa_evidencia_solida", False)
+        senal.setdefault("directa_muestra", 0)
+        senal.setdefault("directa_confiabilidad", "SIN_DATOS")
+        senal.setdefault("directa_nivel_probabilidad", "")
+        senal.setdefault("directa_clave_probabilidad", "")
+        senal.setdefault("veto_tecnico_sombra", False)
+        senal.setdefault("cantidad_vetos_tecnicos_sombra", 0)
+        senal.setdefault("vetos_tecnicos_sombra", [])
+        senal.setdefault("modo_veto_tecnico", "DIAGNOSTICO")
         # Alias de Fase 4: no representan una segunda decisión.
         senal["fase4_evaluada"] = True
         senal["fase4_confianza"] = confianza
-        senal["fase4_decision"] = decision_legacy
+        senal["fase4_decision"] = decision_oficial
         senal["fase4_permitir_operacion"] = operar
         senal["fase4_debe_bloquear"] = not operar
         senal["fase4_modo"] = modo_ejecucion
@@ -473,7 +896,55 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         senal["motivos_ponderacion"] = motivos_ponderacion
         senal["pesos_aplicados"] = pesos_aplicados
         senal["confianza_final_cerebro"] = confianza
-
+        # =====================================================
+        # BOOTIQ V3 — SEPARACIÓN LEGACY VS ESTADÍSTICA
+        # =====================================================
+        # Estos campos son exclusivamente de auditoría.
+        # No modifican la decisión ni permiten operar.
+        
+        senal["origen_decision_oficial"] = decision_cerebro.get(
+            "origen_decision_oficial",
+            "CONFIANZA_LEGACY",
+        )
+        
+        senal["origen_decision_estadistica"] = decision_cerebro.get(
+            "origen_decision_estadistica",
+            "PROBABILIDAD_HISTORICA_V3",
+        )
+        
+        senal["sistemas_decision_separados"] = bool(
+            decision_cerebro.get(
+                "sistemas_decision_separados",
+                False,
+            )
+        )
+        
+        senal["confianza_legacy"] = decision_cerebro.get(
+            "confianza_legacy",
+            confianza,
+        )
+        
+        senal["confianza_base_legacy"] = decision_cerebro.get(
+            "confianza_base_legacy",
+            decision_cerebro.get("confianza_base", 50),
+        )
+        
+        senal["probabilidad_v3"] = decision_cerebro.get(
+            "probabilidad_v3",
+            decision_cerebro.get("probabilidad_estimada", 0),
+        )
+        
+        senal["desacuerdo_actual_vs_v3"] = bool(
+            decision_cerebro.get(
+                "desacuerdo_actual_vs_v3",
+                False,
+            )
+        )
+        
+        senal["auditoria_separacion_v3"] = decision_cerebro.get(
+            "auditoria_separacion_v3",
+            {},
+        )
         senal["pa_evidencias"] = decision_cerebro.get(
             "pa_evidencias",
             evidencia.get(
@@ -567,6 +1038,28 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         senal["decision_unificada_advertencias"] = mensaje_error
         senal["decision_unificada_bloqueos"] = "error"
 
+        # El fallo del Cerebro también cierra el modo sombra de forma segura.
+        senal["modo_probabilidad"] = "SOMBRA"
+        senal["probabilidad_estimada"] = 0.0
+        senal["intervalo_probabilidad_inferior"] = 0.0
+        senal["intervalo_probabilidad_superior"] = 0.0
+        senal["muestra_probabilidad"] = 0
+        senal["wins_probabilidad"] = 0
+        senal["losses_probabilidad"] = 0
+        senal["confiabilidad_probabilidad"] = "SIN_DATOS"
+        senal["fuente_probabilidad_principal"] = {}
+        senal["fuente_probabilidad_respaldo"] = {}
+        senal["nivel_probabilidad_principal"] = ""
+        senal["clave_probabilidad_principal"] = ""
+        senal["decision_estadistica_sombra"] = "ERROR_SOMBRA"
+        senal["operar_estadistico_sombra"] = False
+        senal["requiere_protocolo_estadistico_sombra"] = False
+        senal["motivo_decision_estadistica_sombra"] = mensaje_error
+
+        senal["veto_tecnico_sombra"] = False
+        senal["cantidad_vetos_tecnicos_sombra"] = 0
+        senal["vetos_tecnicos_sombra"] = []
+        senal["modo_veto_tecnico"] = "ERROR"
         return {
             "permitida": False,
             "requiere_protocolo": False,

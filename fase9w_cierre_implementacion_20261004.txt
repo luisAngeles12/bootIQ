@@ -1,0 +1,115 @@
+BOOTIQ V3 — CIERRE FASE 9W
+Fecha: 2026-10-04
+Branch: bootiq-v3-auditoria
+
+OBJETIVO
+Habilitar una ruta DIRECTA exclusivamente para una firma exacta previamente
+detectada en DEV, congelada antes de HOLDOUT y validada sin relajar filtros
+globales ni abrir mercados SUCIO/CAOTICO.
+
+FIRMA EXACTA
+CONTEXTO_SETUP|CALL|REVERSIÓN_ESTRUCTURAL|CHOCH_ALCISTA|CHOCH_CON_PA_A_FAVOR|TENDENCIA
+
+CONTRATO
+- Solo decision estadistica OPERAR_SOMBRA.
+- Solo nivel CONTEXTO_SETUP.
+- Solo clave exacta anterior.
+- Solo mercado TENDENCIA_ALCISTA.
+- Excepciona exclusivamente D7.9 y D7.14.
+- D7.1 conserva prioridad.
+- D7.13C conserva prioridad.
+- PERMITIR_ENTRADA_DIRECTA global permanece desactivado.
+- No se modifican thresholds.
+- No se modifica TOP20.
+- No se modifica MAX_OPERACIONES_ABIERTAS.
+- No se modifica segundo_actual() >= 9.
+- No se modifica expiracion.
+- No se habilita SUCIO ni CAOTICO.
+- No se habilita productivamente RUPTURA_RESISTENCIA.
+
+LOCK PRE-HOLDOUT
+Archivo: fase9w2_candidate_lock.txt
+SHA256: 329ee337bbf26522b9cccf1b7fc5e310ec0f5981b5815851e7a6b8efd86b2d9e
+
+MANIFEST HOLDOUT ALINEADO
+Archivo: fase9v6_aligned_holdout_lock_manifest.txt
+SHA256: 04d20c6322643df96773f3230117a112d6f192193eee47f800b70178dc63d694
+
+EVIDENCIA DEV ORIGINAL
+Firma exacta: N=17
+WIN=11
+LOSS=6
+WR=64.71%
+
+Elegibles originales D7.9 + D7.14:
+N=14
+WIN=10
+LOSS=4
+WR=71.43%
+
+EJECUCION DEV OFICIAL CON IMPLEMENTACION 9W
+Archivo: backtest_9w30_DEV_IMPLEMENTACION_9W.csv
+SHA256: 7a27999054479db894ed8bc366f528e55bae5e219227433b23d5a8e5205a8030
+
+De las 14 inicialmente D7.9+D7.14:
+- OPERADA_DIRECTA: N=8 | 5W / 3L | WR=62.50%
+- OMITIDA_ACTIVO_ABIERTO_LIVE: N=2 | 2W / 0L
+- CANCELADA_CEREBRO: N=4 | 3W / 1L
+
+Las 4 CANCELADA_CEREBRO avanzaron tras excepcionar D7.9 y fueron bloqueadas
+legitimamente por D7.13C. No se amplió la excepción.
+
+EVIDENCIA HOLDOUT ORIGINAL
+Firma exacta: N=25
+WIN=16
+LOSS=9
+WR=64.00%
+
+Distribucion original:
+- D7.1: 1
+- D7.13C: 9
+- D7.14: 3
+- D7.9: 11
+- PROTOCOLO_NORMAL: 1
+
+EJECUCION HOLDOUT OFICIAL CON IMPLEMENTACION 9W
+Archivo: backtest_9w33_HOLDOUT_IMPLEMENTACION_9W.csv
+SHA256: 531da3cc5503706c6e04e8a2722413a48bee926f86773c06e2b47561ccb5fd24
+
+Universo:
+N=319
+WIN=154
+LOSS=165
+WR=48.28%
+
+Autorizadas:
+N=8
+WIN=5
+LOSS=3
+WR=62.50%
+
+Tras capacidad LIVE:
+- OPERADA_DIRECTA: N=6 | 4W / 2L | WR=66.67%
+- OMITIDA_ACTIVO_ABIERTO_LIVE: N=2 | 1W / 1L
+- CANCELADA_CEREBRO dentro de firma: N=17 | 11W / 6L
+
+INTEGRIDAD DEL CONTRATO EN HOLDOUT
+- Protegidas D7.13C/D7.1 abiertas: 0
+- Operadas directas fuera de la firma exacta: 0
+- CONTRATO_PRESERVADO: True
+
+PRACTICE SMOKE TEST
+Ejecucion oficial: python bot.py
+Cuenta: PRACTICE
+Resultado:
+- Conexion inicial correcta.
+- Bot permanecio en ciclo operativo.
+- Sin Traceback ni error de importacion atribuible a 9W.
+- No se observó una oportunidad LIVE 9W durante esta corrida.
+- Persistieron timeouts get_all_init_v2/cache no preparada ya conocidos.
+- Ese problema de conectividad/cache es previo y no se modifica en esta fase.
+
+CONCLUSION
+La ruta exacta 9W mantiene edge en DEV y HOLDOUT dentro del flujo oficial,
+respeta capacidad LIVE y conserva D7.1/D7.13C. No abre señales fuera de la
+firma congelada ni relaja filtros globales.

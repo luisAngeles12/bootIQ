@@ -1,0 +1,53 @@
+Conectando a IQ Option...
+Conectado correctamente
+Cuenta seleccionada: PRACTICE
+Actualizando OPCODE ligero binary/turbo...
+Total de activos en OPCODE: 631
+OPCODE ligero actualizado correctamente
+Obteniendo balance inicial...
+Balance inicial: 9836.89
+Operaciones pendientes recuperadas: 1
+Resultado real aún no disponible por order_id: CARDANO-OTC 14170308708
+
+Balance: 9836.89 | Neto: 0.0 | Abiertas: 1
+WARNING:root:**warning** get_candles sin respuesta 12 sec | activo: PLTR-OTC
+WARNING:root:**warning** get_candles sin respuesta 12 sec | activo: BIDU-OTC
+Activos compatibles filtrados: 20
+Activos reales analizados:
+BONKUSD-OTC | turbo | filtro: 153 | mercado: TENDENCIA_BAJISTA | calidad: LIMPIO | score mercado: 83 | tendencia: BAJISTA_FUERTE | fuerza: 88.47
+USDSAR-OTC | turbo | filtro: 133 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 73 | tendencia: BAJISTA_FUERTE | fuerza: 79.37
+USDZAR-OTC | turbo | filtro: 124 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 64 | tendencia: ALCISTA_FUERTE | fuerza: 71.82
+COCOA-OTC | turbo | filtro: 124 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 64 | tendencia: ALCISTA_FUERTE | fuerza: 78.35
+SHIBUSD-OTC | turbo | filtro: 120 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 70 | tendencia: ALCISTA_NORMAL | fuerza: 55.03
+GBPCAD-OTC | turbo | filtro: 118 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 68 | tendencia: ALCISTA_NORMAL | fuerza: 69.52
+LUNA-OTC | turbo | filtro: 116 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 66 | tendencia: ALCISTA_NORMAL | fuerza: 61.03
+SEIUSD-OTC | turbo | filtro: 114 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 64 | tendencia: BAJISTA_NORMAL | fuerza: 58.92
+PEPEUSD-OTC | turbo | filtro: 113 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 63 | tendencia: ALCISTA_NORMAL | fuerza: 54.09
+USDMXN-OTC | turbo | filtro: 111 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 61 | tendencia: BAJISTA_NORMAL | fuerza: 50.86
+USDCOP-OTC | turbo | filtro: 111 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 61 | tendencia: ALCISTA_NORMAL | fuerza: 63.06
+USDINR-OTC | turbo | filtro: 111 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 61 | tendencia: ALCISTA_NORMAL | fuerza: 59.04
+WDC-OTC | turbo | filtro: 110 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 60 | tendencia: ALCISTA_NORMAL | fuerza: 60.13
+JPM-OTC | turbo | filtro: 109 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 59 | tendencia: ALCISTA_NORMAL | fuerza: 63.77
+SNAP-OTC | turbo | filtro: 109 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 59 | tendencia: ALCISTA_NORMAL | fuerza: 63.04
+USDDOP-OTC | turbo | filtro: 107 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 57 | tendencia: BAJISTA_NORMAL | fuerza: 52.1
+SMH | turbo | filtro: 106 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 61 | tendencia: ALCISTA_NORMAL | fuerza: 66.33
+TRUMPUSD-OTC | turbo | filtro: 106 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 56 | tendencia: ALCISTA_NORMAL | fuerza: 57.45
+NZDUSD-OTC | turbo | filtro: 105 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 55 | tendencia: BAJISTA_NORMAL | fuerza: 63.85
+JUPUSD-OTC | turbo | filtro: 105 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 55 | tendencia: ALCISTA_NORMAL | fuerza: 50.86
+Activos ignorados/no soportados: 0
+Resultado real aún no disponible por order_id: CARDANO-OTC 14170308708
+
+Balance: 9836.89 | Neto: 0.0 | Abiertas: 1
+RANKING DE SEÑALES:
+SHIBUSD-OTC | call | liquidity sweep alcista | puntaje: 25 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 216
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: SHIBUSD-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: SUCIO 42 | TENDENCIA: INDEFINIDA 34.77 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Resultado real aún no disponible por order_id: CARDANO-OTC 14170308708
+
+Balance: 9836.89 | Neto: 0.0 | Abiertas: 1
+RANKING DE SEÑALES:
+USDMXN-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 62
+CONTEXTO FINAL: USDMXN-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: SUCIO 47 | TENDENCIA: ALCISTA_DEBIL 35.48 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDCOP-OTC | put | liquidity sweep bajista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 212
+CONTEXTO FINAL: USDCOP-OTC put liquidity sweep bajista | MERCADO: RANGO | CALIDAD: SUCIO 48 | TENDENCIA: INDEFINIDA 18.77 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA

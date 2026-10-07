@@ -1,0 +1,48 @@
+BOOTIQ FASE 9W.2 - CANDIDATE LOCK
+
+ESTADO=CANDIDATO_CONGELADO_ANTES_DE_HOLDOUT
+
+OBJETIVO=
+Evaluar una ruta productiva DIRECTA exclusivamente para la firma
+que en DEV pertenece a OPERAR_SOMBRA.
+
+REGLA_EXACTA:
+decision_estadistica_sombra=OPERAR_SOMBRA
+direccion=call
+tipo_setup=CHOCH_ALCISTA
+tipo_mercado=TENDENCIA_ALCISTA
+nivel_probabilidad_principal=CONTEXTO_SETUP
+clave_probabilidad_principal=CONTEXTO_SETUP|CALL|REVERSIÓN_ESTRUCTURAL|CHOCH_ALCISTA|CHOCH_CON_PA_A_FAVOR|TENDENCIA
+
+NO_INCLUIR:
+OPERAR_CON_PROTOCOLO_SOMBRA
+otras firmas OPERAR_SOMBRA
+PUT
+otros setup
+otros mercados
+otras claves principales
+
+DEV_N=17
+DEV_WINS=11
+DEV_LOSSES=6
+DEV_WR=64.705882
+DEV_ACTIVOS_DISTINTOS=8
+DEV_MAX_MISMO_ACTIVO=6
+DEV_CONCENTRACION_MAX_ACTIVO=35.294118
+
+DEV_CSV=backtest_9v8_DEV_ALINEADO_17.csv
+DEV_CSV_SHA256=a42eb5474149907659c7d2f446225bb56e22d94811ed611232ad6011730a7b16
+
+HOLDOUT_LOCK=fase9v6_aligned_holdout_lock_manifest.txt
+HOLDOUT_LOCK_SHA256=04d20c6322643df96773f3230117a112d6f192193eee47f800b70178dc63d694
+
+REGLAS_POST_LOCK:
+1. No modificar esta firma después de observar HOLDOUT.
+2. No ampliar el candidato a todo OPERAR_SOMBRA.
+3. No modificar thresholds.
+4. No habilitar protocolo adicional.
+5. No tocar SUCIO/CAOTICO.
+6. No tocar TOP20 ni MAX_OPERACIONES_ABIERTAS.
+7. HOLDOUT se evalúa una sola vez contra esta regla exacta.
+8. Aun si HOLDOUT generaliza, producción requiere replay de ejecución
+   oficial y evidencia de resultado productivo, no solo resultado hipotético.

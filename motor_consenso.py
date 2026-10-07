@@ -1,3 +1,16 @@
+# ============================================================
+# CONSENSO — MODO DIAGNÓSTICO
+# ============================================================
+# False:
+# - calcula el consenso real;
+# - lo conserva para auditoría;
+# - NO permite que afecte riesgo, protocolo o decisión.
+#
+# True:
+# - comportamiento legacy.
+CONSENSO_OPERATIVO_ACTIVO = False
+
+
 def _lista_desde_pipe(valor):
     if not valor:
         return []
@@ -333,29 +346,95 @@ def calcular_consenso_senal(senal, ctx):
             nivel = "MUY_BAJO"
             ajuste_score = -15
 
+        consenso_diagnostico = round(consenso, 2)
+        nivel_diagnostico = nivel
+        ajuste_diagnostico = ajuste_score
+        razones_diagnostico = " | ".join(razones)
+
+        if CONSENSO_OPERATIVO_ACTIVO:
+            consenso_operativo = consenso_diagnostico
+            nivel_operativo = nivel_diagnostico
+            ajuste_operativo = ajuste_diagnostico
+        else:
+            consenso_operativo = 50.0
+            nivel_operativo = "MEDIO"
+            ajuste_operativo = 0
+
         return {
-            "consenso": round(consenso, 2),
-            "nivel_consenso": nivel,
-            "ajuste_consenso": ajuste_score,
-            "razones_consenso": " | ".join(razones),
+            # Contrato operativo neutralizado.
+            "consenso": consenso_operativo,
+            "nivel_consenso": nivel_operativo,
+            "ajuste_consenso": ajuste_operativo,
+            "razones_consenso": razones_diagnostico,
+
+            # Diagnóstico real conservado.
+            "consenso_diagnostico": consenso_diagnostico,
+            "nivel_consenso_diagnostico": nivel_diagnostico,
+            "ajuste_consenso_diagnostico": ajuste_diagnostico,
+            "razones_consenso_diagnostico": razones_diagnostico,
+
+            "consenso_operativo_activo": CONSENSO_OPERATIVO_ACTIVO,
         }
 
     except Exception as e:
+        error = "error motor consenso: " + str(e)
+
         return {
-            "consenso": 50,
-            "nivel_consenso": "ERROR",
+            # Contrato operativo seguro.
+            "consenso": 50.0,
+            "nivel_consenso": "MEDIO",
             "ajuste_consenso": 0,
-            "razones_consenso": "error motor consenso: " + str(e),
+            "razones_consenso": error,
+
+            # Diagnóstico del fallo.
+            "consenso_diagnostico": 50.0,
+            "nivel_consenso_diagnostico": "ERROR",
+            "ajuste_consenso_diagnostico": 0,
+            "razones_consenso_diagnostico": error,
+
+            "consenso_operativo_activo": CONSENSO_OPERATIVO_ACTIVO,
         }
 
 
 def aplicar_consenso_senal(senal, ctx):
     resultado = calcular_consenso_senal(senal, ctx)
 
-    senal["consenso"] = resultado.get("consenso", 50)
-    senal["nivel_consenso"] = resultado.get("nivel_consenso", "MEDIO")
-    senal["ajuste_consenso"] = resultado.get("ajuste_consenso", 0)
-    senal["razones_consenso"] = resultado.get("razones_consenso", "")
+    # Contrato operativo.
+    senal["consenso"] = resultado.get("consenso", 50.0)
+    senal["nivel_consenso"] = resultado.get(
+        "nivel_consenso",
+        "MEDIO",
+    )
+    senal["ajuste_consenso"] = resultado.get(
+        "ajuste_consenso",
+        0,
+    )
+    senal["razones_consenso"] = resultado.get(
+        "razones_consenso",
+        "",
+    )
+
+    # Diagnóstico real.
+    senal["consenso_diagnostico"] = resultado.get(
+        "consenso_diagnostico",
+        resultado.get("consenso", 50.0),
+    )
+    senal["nivel_consenso_diagnostico"] = resultado.get(
+        "nivel_consenso_diagnostico",
+        resultado.get("nivel_consenso", "MEDIO"),
+    )
+    senal["ajuste_consenso_diagnostico"] = resultado.get(
+        "ajuste_consenso_diagnostico",
+        resultado.get("ajuste_consenso", 0),
+    )
+    senal["razones_consenso_diagnostico"] = resultado.get(
+        "razones_consenso_diagnostico",
+        resultado.get("razones_consenso", ""),
+    )
+    senal["consenso_operativo_activo"] = resultado.get(
+        "consenso_operativo_activo",
+        CONSENSO_OPERATIVO_ACTIVO,
+    )
 
     return senal
 
@@ -408,20 +487,66 @@ def aplicar_consenso_decision(decision_bootiq):
         resultado = calcular_consenso_senal(senal_temp, ctx_temp)
 
         decision_bootiq["consenso"] = {
-            "consenso": resultado.get("consenso", 50),
-            "nivel_consenso": resultado.get("nivel_consenso", "MEDIO"),
-            "ajuste_consenso": resultado.get("ajuste_consenso", 0),
-            "razones_consenso": resultado.get("razones_consenso", ""),
+            # Contrato operativo.
+            "consenso": resultado.get("consenso", 50.0),
+            "nivel_consenso": resultado.get(
+                "nivel_consenso",
+                "MEDIO",
+            ),
+            "ajuste_consenso": resultado.get(
+                "ajuste_consenso",
+                0,
+            ),
+            "razones_consenso": resultado.get(
+                "razones_consenso",
+                "",
+            ),
+
+            # Diagnóstico real.
+            "consenso_diagnostico": resultado.get(
+                "consenso_diagnostico",
+                resultado.get("consenso", 50.0),
+            ),
+            "nivel_consenso_diagnostico": resultado.get(
+                "nivel_consenso_diagnostico",
+                resultado.get("nivel_consenso", "MEDIO"),
+            ),
+            "ajuste_consenso_diagnostico": resultado.get(
+                "ajuste_consenso_diagnostico",
+                resultado.get("ajuste_consenso", 0),
+            ),
+            "razones_consenso_diagnostico": resultado.get(
+                "razones_consenso_diagnostico",
+                resultado.get("razones_consenso", ""),
+            ),
+            "consenso_operativo_activo": resultado.get(
+                "consenso_operativo_activo",
+                CONSENSO_OPERATIVO_ACTIVO,
+            ),
         }
 
         return decision_bootiq
 
     except Exception as e:
+        error = (
+            "error aplicando consenso a DecisionBootIQ: "
+            + str(e)
+        )
+
         decision_bootiq["consenso"] = {
-            "consenso": 50,
-            "nivel_consenso": "ERROR",
+            # Contrato operativo seguro.
+            "consenso": 50.0,
+            "nivel_consenso": "MEDIO",
             "ajuste_consenso": 0,
-            "razones_consenso": "error aplicando consenso a DecisionBootIQ: " + str(e),
+            "razones_consenso": error,
+
+            # Diagnóstico del fallo.
+            "consenso_diagnostico": 50.0,
+            "nivel_consenso_diagnostico": "ERROR",
+            "ajuste_consenso_diagnostico": 0,
+            "razones_consenso_diagnostico": error,
+
+            "consenso_operativo_activo": CONSENSO_OPERATIVO_ACTIVO,
         }
 
         return decision_bootiq

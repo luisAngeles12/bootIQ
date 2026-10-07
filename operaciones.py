@@ -1,19 +1,26 @@
 import time
 import queue
 import threading
+import json
 from datetime import datetime
 
 import estado
-from config import MONTO_BASE, TIEMPO_EXPIRACION
+from config import (
+    MONTO_BASE,
+    TIEMPO_EXPIRACION,
+    CANDLE_TIME,
+    VENTANA_ENTRADA_INICIO,
+    VENTANA_ENTRADA_FIN,
+    HISTORIAL_CSV,
+)
 from historial import (
     guardar_operaciones_pendientes,
     asegurar_historial_csv,
     guardar_historial,
     actualizar_historial_cierre,
-    perdidas_consecutivas_activo,
-    perdidas_consecutivas_patron
 )
 from validaciones_estrategia import registrar_zona_operada
+from motor_aprendizaje_historico import evaluar_salud_prospectiva_fuente
 
 
 def normalizar_resultado(resultado):
@@ -33,7 +40,31 @@ def normalizar_resultado(resultado):
 
     except Exception:
         return None
+# ============================================================
+# PASO 5.5C — AUDITORÍA DE LA ORDEN REAL DEVUELTA POR IQ
+# ============================================================
 
+def obtener_auditoria_orden_async(
+    order_id,
+    timeout=1.2,
+):
+    inicio = time.time()
+
+    while time.time() - inicio < timeout:
+        try:
+            datos = estado.Iq.get_async_order(
+                int(order_id)
+            )
+
+            if datos is not None:
+                return datos
+
+        except Exception:
+            pass
+
+        time.sleep(0.05)
+
+    return None
 
 def abrir_operacion(senal):
     # ==========================================
@@ -77,6 +108,14 @@ def abrir_operacion(senal):
         )
         return False
 
+    # Paridad semántica LIVE ↔ BACKTEST.
+    # Solo trazabilidad; no modifica autorización ni ejecución.
+    estado_operacion = (
+        "OPERADA_PROTOCOLO"
+        if decision_cerebro == "OPERAR_CON_PROTOCOLO"
+        else "OPERADA_DIRECTA"
+    )
+
     activo = str(
         senal.get("activo", "")
     ).strip()
@@ -110,12 +149,118 @@ def abrir_operacion(senal):
             tipo or "VACÍO"
         )
         return False
+        # ============================================================
+    # F5.7-A — PARIDAD TEMPORAL BACKTEST ↔ LIVE
+    # ============================================================
+    #
+    # BACKTEST entra al cierre de la vela de entrada.
+    #
+    # LIVE solo puede enviar la orden inmediatamente después
+    # de que esa misma vela haya cerrado.
+    #
+    # Este bloque NO decide estrategia.
+    # Solo impide ejecutar una autorización que ya quedó vieja.
+    # ============================================================
+
+     # Usar primero el reloj del broker.
+    # La expiración de IQ se calcula contra este reloj,
+    # no contra el reloj local de Windows.
+    try:
+        ahora_paridad = float(
+            estado.Iq.get_server_timestamp()
+        )
+
+        if ahora_paridad <= 0:
+            raise ValueError(
+                "timestamp IQ inválido"
+            )
+
+    except Exception:
+        # Fallback únicamente si IQ no expone temporalmente
+        # el reloj del servidor.
+        ahora_paridad = time.time()
+
+    segundo_paridad = int(
+        ahora_paridad % CANDLE_TIME
+    )
+
+    if not (
+        VENTANA_ENTRADA_INICIO
+        <= segundo_paridad
+        <= VENTANA_ENTRADA_FIN
+    ):
+        print(
+            "OPERACIÓN NO ENVIADA POR PARIDAD TEMPORAL:",
+            activo,
+            "| segundo:",
+            segundo_paridad,
+            "| ventana:",
+            VENTANA_ENTRADA_INICIO,
+            "-",
+            VENTANA_ENTRADA_FIN,
+        )
+        return False
+
+    # La última vela cerrada que LIVE debería estar ejecutando.
+    vela_cerrada_esperada = (
+        int(ahora_paridad // CANDLE_TIME) - 1
+    ) * CANDLE_TIME
+
+    if decision_cerebro == "OPERAR_CON_PROTOCOLO":
+        vela_referencia = senal.get(
+            "protocolo_live_vela_entrada_from"
+        )
+
+        ruta_paridad = "PROTOCOLO"
+
+    else:
+        vela_referencia = senal.get(
+            "vela_senal_from"
+        )
+
+        ruta_paridad = "DIRECTA"
+
+    try:
+        vela_referencia = int(
+            float(vela_referencia)
+        )
+    except (TypeError, ValueError):
+        vela_referencia = 0
+
+    if vela_referencia <= 0:
+        print(
+            "OPERACIÓN NO ENVIADA POR PARIDAD:",
+            activo,
+            "| ruta:",
+            ruta_paridad,
+            "| falta timestamp de vela de entrada",
+        )
+        return False
+
+    if vela_referencia != vela_cerrada_esperada:
+        print(
+            "OPERACIÓN NO ENVIADA POR VELA OBSOLETA:",
+            activo,
+            "| ruta:",
+            ruta_paridad,
+            "| vela señal/confirmación:",
+            vela_referencia,
+            "| última cerrada esperada:",
+            vela_cerrada_esperada,
+            "| segundo:",
+            segundo_paridad,
+        )
+        return False
     from utils import segundo_actual
     segundo_antes = segundo_actual()
     tiempo_antes = time.time()
-    try:
-        balance_antes = estado.Iq.get_balance()
 
+    # No consultar balance en la ruta crítica de envío.
+    # Esta lectura no participa en autorización, monto ni riesgo
+    # y puede bloquear la orden después de haber validado timing.
+    balance_antes = None
+
+    try:
         if tipo in ["turbo", "binary"]:
             check, order_id = estado.Iq.buy(
                 MONTO_BASE,
@@ -137,14 +282,99 @@ def abrir_operacion(senal):
             return False
 
         if not check:
-            print("Operación rechazada:", activo, tipo)
-            estado.cooldown_activos[activo] = time.time()
+            print(
+                "Operación rechazada:",
+                activo,
+                tipo
+            )
+            estado.cooldown_activos[
+                activo
+            ] = time.time()
             return False
-
-        order_id = str(order_id)
-        segundo_despues = segundo_actual()
-        demora_envio = round(time.time() - tiempo_antes, 3)
         
+        
+        # ============================================================
+        # PASO 5.5C — INSTANTE REAL DE RESPUESTA DE IQ
+        # ============================================================
+        
+        segundo_despues = segundo_actual()
+        tiempo_despues = time.time()
+        
+        demora_envio = round(
+            tiempo_despues - tiempo_antes,
+            3
+        )
+        
+        order_id_original = order_id
+        
+        # No bloquear la ruta crítica esperando get_async_order().
+        # IQ ya confirmó la apertura mediante check/order_id.
+        # Esta consulta era únicamente diagnóstica y podía consumir
+        # hasta 1.2 s antes de procesar la siguiente candidata.
+        orden_async_5_5c = None
+        
+        order_id = str(order_id_original)
+        # ============================================================
+        # PASO 5.5C — PERSISTIR RESPUESTA REAL DE IQ
+        # ============================================================
+        
+        if orden_async_5_5c is None:
+            auditoria_orden_iq_json = ""
+        else:
+            try:
+                auditoria_orden_iq_json = json.dumps(
+                    orden_async_5_5c,
+                    ensure_ascii=False,
+                    default=str,
+                )
+            except Exception:
+                auditoria_orden_iq_json = str(
+                    orden_async_5_5c
+                )
+        # ============================================================
+        # PASO 5.5C — MOSTRAR ESTRUCTURA REAL DE LA ORDEN
+        # ============================================================
+        
+        if orden_async_5_5c is None:
+            print(
+                "AUDITORIA 5.5C ORDEN IQ:",
+                activo,
+                "| order_id:",
+                order_id,
+                "| datos: NO_DISPONIBLES",
+            )
+        
+        else:
+            print(
+                "AUDITORIA 5.5C ORDEN IQ:",
+                activo,
+                "| order_id:",
+                order_id,
+                "| tipo dato:",
+                type(
+                    orden_async_5_5c
+                ).__name__,
+            )
+        
+            if isinstance(
+                orden_async_5_5c,
+                dict,
+            ):
+                print(
+                    "AUDITORIA 5.5C CLAVES IQ:",
+                    activo,
+                    "|",
+                    list(
+                        orden_async_5_5c.keys()
+                    ),
+                )
+        
+            print(
+                "AUDITORIA 5.5C DATOS IQ:",
+                activo,
+                "|",
+                orden_async_5_5c,
+            )
         if segundo_despues > 38:
             print(
                 "ADVERTENCIA: operación enviada tarde:",
@@ -159,6 +389,7 @@ def abrir_operacion(senal):
         
         op = {
             "order_id": order_id,
+            "estado_operacion": estado_operacion,
             "activo": activo,
             "tipo": tipo,
             "direccion": direccion,
@@ -166,10 +397,227 @@ def abrir_operacion(senal):
             "patron": patron,
             "rsi": rsi,
             "razon": razon,
+
+            # D8-E8 — CONTEXTO PRE-ENTRADA
+            # Solo telemetria. No participa en decisiones.
+            "prioridad": senal.get("prioridad", ""),
+            "score_final": senal.get("score_final", ""),
+            "consenso": senal.get("consenso", ""),
+            "nivel_consenso": senal.get("nivel_consenso", ""),
+            "calidad": senal.get("calidad", ""),
+
+            "tipo_mercado": senal.get("tipo_mercado", ""),
+            "calidad_mercado": senal.get("calidad_mercado", ""),
+            "score_mercado": senal.get("score_mercado", ""),
+            "estado_tendencia": senal.get("estado_tendencia", ""),
+            "fuerza_tendencia": senal.get("fuerza_tendencia", ""),
+            "direccion_tendencia": senal.get(
+                "direccion_tendencia",
+                "",
+            ),
+
+            "accion_precio": senal.get("accion_precio", ""),
+            "pa_tipo": senal.get("pa_tipo", ""),
+            "pa_direccion": senal.get("pa_direccion", ""),
+            "pa_fuerza": senal.get("pa_fuerza", ""),
+
+            "tipo_setup": senal.get("tipo_setup", ""),
+            "calidad_setup": senal.get("calidad_setup", ""),
+            "modo_entrada_setup": senal.get(
+                "modo_entrada_setup",
+                "",
+            ),
+            "familia_setup": senal.get("familia_setup", ""),
+            "subtipo_setup": senal.get("subtipo_setup", ""),
+            "nivel_setup": senal.get("nivel_setup", ""),
+
+            # D8-E6 — TRAZABILIDAD REAL DEL PROTOCOLO LIVE
+            "protocolo_sugerido": senal.get(
+                "protocolo_sugerido",
+                "",
+            ),
+            "protocolo_live_tipo": senal.get(
+                "tipo_protocolo_live",
+                senal.get(
+                    "protocolo_live_sombra_tipo",
+                    "",
+                ),
+            ),
+            "protocolo_live_estado": senal.get(
+                "protocolo_live_sombra_estado",
+                "",
+            ),
+            "accion_confirmacion_ia": senal.get(
+                "accion_confirmacion_ia",
+                "",
+            ),
+            "protocolo_espera_velas": senal.get(
+                "protocolo_live_sombra_espera",
+                -1,
+            ),
+            "protocolo_espera_timestamp": senal.get(
+                "protocolo_live_espera_timestamp",
+                -1,
+            ),
+            "motivo_confirmacion_protocolo_live": senal.get(
+                "motivo_confirmacion_protocolo_live",
+                "",
+            ),
+            "decision_post_protocolo": senal.get(
+                "decision_post_protocolo",
+                "",
+            ),
+            "probabilidad_post_protocolo": senal.get(
+                "probabilidad_post_protocolo",
+                "",
+            ),
+            "muestra_post_protocolo": senal.get(
+                "muestra_post_protocolo",
+                "",
+            ),
+            "confiabilidad_post_protocolo": senal.get(
+                "confiabilidad_post_protocolo",
+                "",
+            ),
+
+            # C-C2 LIVE — identidad exacta producida por
+            # motor_protocolos. Solo persistencia/auditoría.
+            "auditoria_protocolo_tipo": senal.get(
+                "auditoria_protocolo_tipo",
+                "",
+            ),
+            "auditoria_protocolo_subtipo": senal.get(
+                "auditoria_protocolo_subtipo",
+                "",
+            ),
+            "auditoria_protocolo_familia": senal.get(
+                "auditoria_protocolo_familia",
+                "",
+            ),
+            "auditoria_protocolo_operada": senal.get(
+                "auditoria_protocolo_operada",
+                False,
+            ),
+            "auditoria_protocolo_idx_senal": senal.get(
+                "auditoria_protocolo_idx_senal",
+                -1,
+            ),
+            "auditoria_protocolo_idx_entrada": senal.get(
+                "auditoria_protocolo_idx_entrada",
+                -1,
+            ),
+            "auditoria_protocolo_espera_velas": senal.get(
+                "auditoria_protocolo_espera_velas",
+                -1,
+            ),
+            "auditoria_protocolo_motivo": senal.get(
+                "auditoria_protocolo_motivo",
+                "",
+            ),
+            "auditoria_protocolo_riesgo": senal.get(
+                "auditoria_protocolo_riesgo",
+                "",
+            ),
+            "auditoria_protocolo_nivel_riesgo": senal.get(
+                "auditoria_protocolo_nivel_riesgo",
+                "",
+            ),
+            "auditoria_protocolo_indice_confirmacion": senal.get(
+                "auditoria_protocolo_indice_confirmacion",
+                "",
+            ),
+            "auditoria_protocolo_nivel_confirmacion": senal.get(
+                "auditoria_protocolo_nivel_confirmacion",
+                "",
+            ),
+            "auditoria_protocolo_accion_confirmacion": senal.get(
+                "auditoria_protocolo_accion_confirmacion",
+                "",
+            ),
+            "auditoria_protocolo_tipo_mercado": senal.get(
+                "auditoria_protocolo_tipo_mercado",
+                "",
+            ),
+            "auditoria_protocolo_tendencia": senal.get(
+                "auditoria_protocolo_tendencia",
+                "",
+            ),
+            "auditoria_protocolo_pa_tipo": senal.get(
+                "auditoria_protocolo_pa_tipo",
+                "",
+            ),
+            "auditoria_protocolo_probabilidad": senal.get(
+                "auditoria_protocolo_probabilidad",
+                "",
+            ),
+
             "hora_apertura": time.time(),
+
+            # Capacidad LIVE: una posición TURBO de N minutos
+            # deja de ocupar slot en el límite de vela que IQ
+            # usa como expiration_time, aunque su resultado aún
+            # no haya sido recuperado localmente.
+            "expiracion_iq": (
+                (
+                    int(
+                        ahora_paridad
+                        // CANDLE_TIME
+                    )
+                    + max(
+                        1,
+                        int(
+                            (
+                                (
+                                    TIEMPO_EXPIRACION
+                                    * 60
+                                )
+                                + CANDLE_TIME
+                                - 1
+                            )
+                            // CANDLE_TIME
+                        ),
+                    )
+                )
+                * CANDLE_TIME
+            ),
+
             "balance_antes": balance_antes,
             "segundo_entrada": segundo_despues,
             "demora_envio": demora_envio,
+            # ==========================================
+            # PASO 5.5C — PARIDAD DE EJECUCIÓN
+            # ==========================================
+            
+            "tiempo_envio_inicio": tiempo_antes,
+            "tiempo_respuesta_iq": tiempo_despues,
+            
+            "segundo_antes": segundo_antes,
+            "segundo_entrada": segundo_despues,
+            
+            "vela_confirmacion_from": senal.get(
+                "protocolo_live_vela_entrada_from"
+            ),
+            
+            "precio_confirmacion_close": senal.get(
+                "protocolo_live_vela_entrada_close"
+            ),
+            
+            "precio_confirmacion_open": senal.get(
+                "protocolo_live_vela_entrada_open"
+            ),
+            
+            "precio_confirmacion_high": senal.get(
+                "protocolo_live_vela_entrada_high"
+            ),
+            
+            "precio_confirmacion_low": senal.get(
+                "protocolo_live_vela_entrada_low"
+            ),
+            "tiempo_expiracion": TIEMPO_EXPIRACION,
+
+            "auditoria_orden_iq_json": (
+                auditoria_orden_iq_json
+            ),
         }
         
         estado.operaciones_abiertas.append(op)
@@ -186,26 +634,490 @@ def abrir_operacion(senal):
         except Exception:
             pass
 
-        asegurar_historial_csv()
+        # guardar_historial() asegura y valida el CSV
+        # internamente. Evitamos repetir esa lectura/reescritura
+        # completa antes de cada append.
+
+        # ==================================================
+        # D8-R6C — FUENTES V3 SOLO PARA TELEMETRIA
+        # ==================================================
+
+        fuente_principal_v3 = senal.get(
+            "fuente_probabilidad_principal",
+            {},
+        )
+
+        if not isinstance(
+            fuente_principal_v3,
+            dict,
+        ):
+            fuente_principal_v3 = {}
+
+        fuente_respaldo_v3 = senal.get(
+            "fuente_probabilidad_respaldo",
+            {},
+        )
+
+        if not isinstance(
+            fuente_respaldo_v3,
+            dict,
+        ):
+            fuente_respaldo_v3 = {}
+
+        # ==================================================
+        # D8-R8B — SALUD PROSPECTIVA FUERA DE RUTA CRITICA
+        # ==================================================
+        # Esta medición es exclusivamente shadow y recorría todo
+        # historial_bot.csv después de cada orden aceptada. No puede
+        # bloquear el procesamiento de otra candidata de la misma
+        # ronda. Conservamos el esquema con valores vacíos.
+        salud_fuente_v3 = {
+            "salud_fuente_n": 0,
+            "salud_fuente_wins": 0,
+            "salud_fuente_losses": 0,
+            "salud_fuente_wr": "",
+            "salud_fuente_prob_historica": "",
+            "salud_fuente_delta_pp": "",
+            "salud_fuente_ultimas5_wr": "",
+            "salud_fuente_ultimas10_wr": "",
+        }
 
         guardar_historial({
-            "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "fecha": datetime.now().strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ),
             "estado": "ABIERTA",
             "order_id": order_id,
+            "estado_operacion": estado_operacion,
             "activo": activo,
             "tipo": tipo,
             "direccion": direccion,
-
+        
             "puntaje": puntaje,
             "patron": patron,
             "rsi": rsi,
             "razon": razon,
+        
+            # D8-E8 — CONTEXTO PRE-ENTRADA
+            # Solo telemetria. No participa en decisiones.
+            "prioridad": senal.get("prioridad", ""),
+            "score_final": senal.get("score_final", ""),
+            "consenso": senal.get("consenso", ""),
+            "nivel_consenso": senal.get("nivel_consenso", ""),
+            "calidad": senal.get("calidad", ""),
+
+            "tipo_mercado": senal.get("tipo_mercado", ""),
+            "calidad_mercado": senal.get("calidad_mercado", ""),
+            "score_mercado": senal.get("score_mercado", ""),
+            "estado_tendencia": senal.get("estado_tendencia", ""),
+            "fuerza_tendencia": senal.get("fuerza_tendencia", ""),
+            "direccion_tendencia": senal.get(
+                "direccion_tendencia",
+                "",
+            ),
+
+            "accion_precio": senal.get("accion_precio", ""),
+            "pa_tipo": senal.get("pa_tipo", ""),
+            "pa_direccion": senal.get("pa_direccion", ""),
+            "pa_fuerza": senal.get("pa_fuerza", ""),
+
+            "tipo_setup": senal.get("tipo_setup", ""),
+            "calidad_setup": senal.get("calidad_setup", ""),
+            "modo_entrada_setup": senal.get(
+                "modo_entrada_setup",
+                "",
+            ),
+            "familia_setup": senal.get("familia_setup", ""),
+            "subtipo_setup": senal.get("subtipo_setup", ""),
+            "nivel_setup": senal.get("nivel_setup", ""),
 
             "resultado": "",
+
+            # ==========================================
+            # D7.7C — TRAZABILIDAD DEL CEREBRO
+            # ==========================================
+            # Solo auditoria. No cambia ejecucion.
+
+            "origen_autoridad": senal.get(
+                "origen_autoridad",
+                "SIN_DATOS",
+            ),
+
+            "decision_sombra_origen": senal.get(
+                "decision_sombra_origen",
+                "",
+            ),
+
+            "core4_rescate": senal.get(
+                "core4_rescate",
+                False,
+            ),
+
+            "core4_reglas": senal.get(
+                "core4_reglas",
+                "",
+            ),
+
+            "directa_ruta_validada": senal.get(
+                "directa_ruta_validada",
+                False,
+            ),
+
+            "validacion_mercado_ok": senal.get(
+                "validacion_mercado_ok",
+                "",
+            ),
+
+            "razon_validacion_mercado": senal.get(
+                "razon_validacion_mercado",
+                "",
+            ),
+
+            # ==========================================
+            # D8-E6 — TRAZABILIDAD REAL PROTOCOLO LIVE
+            # Solo auditoría. No cambia ninguna decisión.
+            # ==========================================
+
+            "protocolo_sugerido": senal.get(
+                "protocolo_sugerido",
+                "",
+            ),
+
+            "protocolo_live_tipo": senal.get(
+                "tipo_protocolo_live",
+                senal.get(
+                    "protocolo_live_sombra_tipo",
+                    "",
+                ),
+            ),
+
+            "protocolo_live_estado": senal.get(
+                "protocolo_live_sombra_estado",
+                "",
+            ),
+
+            "accion_confirmacion_ia": senal.get(
+                "accion_confirmacion_ia",
+                "",
+            ),
+
+            "protocolo_espera_velas": senal.get(
+                "protocolo_live_sombra_espera",
+                -1,
+            ),
+
+            "protocolo_espera_timestamp": senal.get(
+                "protocolo_live_espera_timestamp",
+                -1,
+            ),
+
+            "motivo_confirmacion_protocolo_live": senal.get(
+                "motivo_confirmacion_protocolo_live",
+                "",
+            ),
+
+            "decision_post_protocolo": senal.get(
+                "decision_post_protocolo",
+                "",
+            ),
+
+            "probabilidad_post_protocolo": senal.get(
+                "probabilidad_post_protocolo",
+                "",
+            ),
+
+            "muestra_post_protocolo": senal.get(
+                "muestra_post_protocolo",
+                "",
+            ),
+
+            "confiabilidad_post_protocolo": senal.get(
+                "confiabilidad_post_protocolo",
+                "",
+            ),
+
+            # C-C2 LIVE — identidad exacta producida por
+            # motor_protocolos. Solo persistencia/auditoría.
+            "auditoria_protocolo_tipo": senal.get(
+                "auditoria_protocolo_tipo",
+                "",
+            ),
+            "auditoria_protocolo_subtipo": senal.get(
+                "auditoria_protocolo_subtipo",
+                "",
+            ),
+            "auditoria_protocolo_familia": senal.get(
+                "auditoria_protocolo_familia",
+                "",
+            ),
+            "auditoria_protocolo_operada": senal.get(
+                "auditoria_protocolo_operada",
+                False,
+            ),
+            "auditoria_protocolo_idx_senal": senal.get(
+                "auditoria_protocolo_idx_senal",
+                -1,
+            ),
+            "auditoria_protocolo_idx_entrada": senal.get(
+                "auditoria_protocolo_idx_entrada",
+                -1,
+            ),
+            "auditoria_protocolo_espera_velas": senal.get(
+                "auditoria_protocolo_espera_velas",
+                -1,
+            ),
+            "auditoria_protocolo_motivo": senal.get(
+                "auditoria_protocolo_motivo",
+                "",
+            ),
+            "auditoria_protocolo_riesgo": senal.get(
+                "auditoria_protocolo_riesgo",
+                "",
+            ),
+            "auditoria_protocolo_nivel_riesgo": senal.get(
+                "auditoria_protocolo_nivel_riesgo",
+                "",
+            ),
+            "auditoria_protocolo_indice_confirmacion": senal.get(
+                "auditoria_protocolo_indice_confirmacion",
+                "",
+            ),
+            "auditoria_protocolo_nivel_confirmacion": senal.get(
+                "auditoria_protocolo_nivel_confirmacion",
+                "",
+            ),
+            "auditoria_protocolo_accion_confirmacion": senal.get(
+                "auditoria_protocolo_accion_confirmacion",
+                "",
+            ),
+            "auditoria_protocolo_tipo_mercado": senal.get(
+                "auditoria_protocolo_tipo_mercado",
+                "",
+            ),
+            "auditoria_protocolo_tendencia": senal.get(
+                "auditoria_protocolo_tendencia",
+                "",
+            ),
+            "auditoria_protocolo_pa_tipo": senal.get(
+                "auditoria_protocolo_pa_tipo",
+                "",
+            ),
+            "auditoria_protocolo_probabilidad": senal.get(
+                "auditoria_protocolo_probabilidad",
+                "",
+            ),
+
+            # ==========================================
+            # D8-R6C — TRAZABILIDAD V3
+            # Solo auditoria. No cambia ejecucion.
+            # ==========================================
+
+            "probabilidad_v3": senal.get(
+                "probabilidad_v3",
+                senal.get(
+                    "probabilidad_estimada",
+                    fuente_principal_v3.get(
+                        "probabilidad_ajustada",
+                        "",
+                    ),
+                ),
+            ),
+
+            "muestra_probabilidad": senal.get(
+                "muestra_probabilidad",
+                fuente_principal_v3.get(
+                    "total",
+                    "",
+                ),
+            ),
+
+            "wins_probabilidad": senal.get(
+                "wins_probabilidad",
+                fuente_principal_v3.get(
+                    "wins",
+                    "",
+                ),
+            ),
+
+            "losses_probabilidad": senal.get(
+                "losses_probabilidad",
+                fuente_principal_v3.get(
+                    "losses",
+                    "",
+                ),
+            ),
+
+            "confiabilidad_probabilidad": senal.get(
+                "confiabilidad_probabilidad",
+                fuente_principal_v3.get(
+                    "confiabilidad",
+                    "",
+                ),
+            ),
+
+            "nivel_probabilidad_principal": senal.get(
+                "nivel_probabilidad_principal",
+                senal.get(
+                    "directa_nivel_probabilidad",
+                    fuente_principal_v3.get(
+                        "nivel",
+                        "",
+                    ),
+                ),
+            ),
+
+            "clave_probabilidad_principal": senal.get(
+                "clave_probabilidad_principal",
+                senal.get(
+                    "directa_clave_probabilidad",
+                    fuente_principal_v3.get(
+                        "clave",
+                        "",
+                    ),
+                ),
+            ),
+
+            "fuente_probabilidad_principal_json": json.dumps(
+                fuente_principal_v3,
+                ensure_ascii=False,
+                default=str,
+            ),
+
+            "fuente_probabilidad_respaldo_json": json.dumps(
+                fuente_respaldo_v3,
+                ensure_ascii=False,
+                default=str,
+            ),
+
+            # ==========================================
+            # D8-R8B — SALUD PROSPECTIVA SOMBRA
+            # ==========================================
+
+            "salud_fuente_n": salud_fuente_v3.get(
+                "salud_fuente_n",
+                0,
+            ),
+
+            "salud_fuente_wins": salud_fuente_v3.get(
+                "salud_fuente_wins",
+                0,
+            ),
+
+            "salud_fuente_losses": salud_fuente_v3.get(
+                "salud_fuente_losses",
+                0,
+            ),
+
+            "salud_fuente_wr": salud_fuente_v3.get(
+                "salud_fuente_wr",
+                "",
+            ),
+
+            "salud_fuente_prob_historica": salud_fuente_v3.get(
+                "salud_fuente_prob_historica",
+                "",
+            ),
+
+            "salud_fuente_delta_pp": salud_fuente_v3.get(
+                "salud_fuente_delta_pp",
+                "",
+            ),
+
+            "salud_fuente_ultimas5_wr": salud_fuente_v3.get(
+                "salud_fuente_ultimas5_wr",
+                "",
+            ),
+
+            "salud_fuente_ultimas10_wr": salud_fuente_v3.get(
+                "salud_fuente_ultimas10_wr",
+                "",
+            ),
+
+            # ==========================================
+            # PASO 5.5C — PARIDAD DE EJECUCIÓN
+            # ==========================================
+        
+            "paridad_live_estado": senal.get("paridad_live_estado", ""),
+            "paridad_live_resultado_actual": senal.get("paridad_live_resultado_actual", ""),
+            "paridad_live_razon_actual": senal.get("paridad_live_razon_actual", ""),
+            "paridad_live_estado_sombra": senal.get("paridad_live_estado_sombra", ""),
+            "paridad_live_motivo_sombra": senal.get("paridad_live_motivo_sombra", ""),
+
+            "segundo_antes": segundo_antes,
             "segundo_entrada": segundo_despues,
             "demora_envio": demora_envio,
-        })
+        
+            "tiempo_envio_inicio": tiempo_antes,
+            "tiempo_respuesta_iq": tiempo_despues,
+            "tiempo_expiracion": TIEMPO_EXPIRACION,
 
+            # ==========================================
+            # D8-E5 — VELA EXACTA QUE ORIGINO LA SENAL
+            # Solo telemetria. No modifica la decision.
+            # ==========================================
+
+            "vela_senal_from": senal.get(
+                "vela_senal_from"
+            ),
+
+            "precio_senal_open": senal.get(
+                "vela_senal_open"
+            ),
+
+            "precio_senal_close": senal.get(
+                "vela_senal_close"
+            ),
+
+            "precio_senal_high": senal.get(
+                "vela_senal_high"
+            ),
+
+            "precio_senal_low": senal.get(
+                "vela_senal_low"
+            ),
+
+            "vela_confirmacion_from": senal.get(
+                "protocolo_live_vela_entrada_from"
+            ),
+        
+            "precio_confirmacion_open": senal.get(
+                "protocolo_live_vela_entrada_open"
+            ),
+        
+            "precio_confirmacion_close": senal.get(
+                "protocolo_live_vela_entrada_close"
+            ),
+        
+            "precio_confirmacion_high": senal.get(
+                "protocolo_live_vela_entrada_high"
+            ),
+        
+            "precio_confirmacion_low": senal.get(
+                "protocolo_live_vela_entrada_low"
+            ),
+        
+            "auditoria_orden_iq_json": (
+                auditoria_orden_iq_json
+            ),
+        })
+        print(
+            "AUDITORIA EJECUCION 5.5C:",
+            activo,
+            "| vela confirmacion:",
+            senal.get(
+                "protocolo_live_vela_entrada_from"
+            ),
+            "| close confirmacion:",
+            senal.get(
+                "protocolo_live_vela_entrada_close"
+            ),
+            "| segundo antes:",
+            segundo_antes,
+            "| segundo despues:",
+            segundo_despues,
+            "| demora:",
+            demora_envio,
+        )
         print("OPERACIÓN ABIERTA:", activo, tipo, direccion)
         print("ID:", order_id)
         print("Operaciones abiertas:", len(estado.operaciones_abiertas))
@@ -223,64 +1135,322 @@ def abrir_operacion(senal):
         return False
 
 
-def check_win_v3_con_timeout(order_id, timeout=35):
+def check_win_v3_con_timeout(
+    order_id,
+    timeout=2,
+):
     q = queue.Queue()
 
     def worker():
         try:
-            resultado = estado.Iq.check_win_v3(int(order_id), timeout=30)
+            # El timeout interno termina ligeramente
+            # antes que el timeout exterior del hilo.
+            timeout_interno = max(
+                0.5,
+                float(timeout) - 0.25,
+            )
+
+            resultado = estado.Iq.check_win_v3(
+                int(order_id),
+                timeout=timeout_interno,
+            )
+
             q.put(resultado)
+
         except Exception as e:
-            print("check_win_v3 falló:", order_id, e)
+            print(
+                "check_win_v3 falló:",
+                order_id,
+                e,
+            )
             q.put(None)
 
-    hilo = threading.Thread(target=worker)
-    hilo.daemon = True
+    hilo = threading.Thread(
+        target=worker,
+        daemon=True,
+    )
     hilo.start()
 
     try:
-        return q.get(timeout=timeout)
+        return q.get(
+            timeout=timeout
+        )
+
     except queue.Empty:
-        print("check_win_v3 timeout final:", order_id)
+        print(
+            "check_win_v3 timeout final:",
+            order_id,
+        )
         return None
+
+def obtener_resultado_historial_turbo_con_timeout(
+    order_id,
+    timeout=4,
+    limit=100,
+):
+    q = queue.Queue()
+
+    def worker():
+        try:
+            timeout_interno = max(
+                0.5,
+                float(timeout) - 0.25,
+            )
+
+            respuesta = (
+                estado.Iq.get_position_history_v2(
+                    "turbo-option",
+                    limit,
+                    0,
+                    0,
+                    0,
+                    timeout=timeout_interno,
+                )
+            )
+
+            q.put(respuesta)
+
+        except Exception as e:
+            print(
+                "get_position_history_v2 falló:",
+                order_id,
+                e,
+            )
+            q.put(None)
+
+    hilo = threading.Thread(
+        target=worker,
+        daemon=True,
+    )
+    hilo.start()
+
+    try:
+        respuesta = q.get(
+            timeout=timeout
+        )
+
+    except queue.Empty:
+        print(
+            "get_position_history_v2 timeout:",
+            order_id,
+        )
+        return None
+
+    if not respuesta:
+        return None
+
+    if not isinstance(
+        respuesta,
+        tuple,
+    ):
+        return None
+
+    if len(respuesta) < 2:
+        return None
+
+    check, data = respuesta
+
+    if not check:
+        return None
+
+    if not isinstance(
+        data,
+        dict,
+    ):
+        return None
+
+    posiciones = data.get(
+        "positions",
+        [],
+    )
+
+    for posicion in posiciones:
+
+        if not isinstance(
+            posicion,
+            dict,
+        ):
+            continue
+
+        external_id = posicion.get(
+            "external_id"
+        )
+
+        try:
+            coincide = (
+                int(external_id)
+                == int(order_id)
+            )
+
+        except Exception:
+            coincide = (
+                str(external_id)
+                == str(order_id)
+            )
+
+        if not coincide:
+            continue
+
+        if (
+            str(
+                posicion.get(
+                    "status",
+                    "",
+                )
+            ).lower()
+            != "closed"
+        ):
+            continue
+
+        for campo in (
+            "pnl_realized",
+            "pnl_net",
+            "pnl",
+        ):
+            valor = posicion.get(
+                campo
+            )
+
+            if valor is None:
+                continue
+
+            try:
+                resultado = float(
+                    valor
+                )
+
+                print(
+                    "RESULTADO RECUPERADO "
+                    "POR HISTORIAL IQ:",
+                    order_id,
+                    "|",
+                    campo,
+                    "=",
+                    resultado,
+                )
+
+                # Devuelve resultado REAL bruto.
+                # La normalización se hace una sola
+                # vez en obtener_resultado_operacion().
+                return resultado
+
+            except Exception:
+                continue
+
+    return None
 def obtener_resultado_operacion(op):
     try:
         order_id = op["order_id"]
         tipo = op["tipo"]
 
-        tiempo_abierta = time.time() - float(op["hora_apertura"])
-        tiempo_minimo = (TIEMPO_EXPIRACION * 60) + 15
+        tiempo_abierta = (
+            time.time()
+            - float(
+                op["hora_apertura"]
+            )
+        )
+
+        tiempo_minimo = (
+            TIEMPO_EXPIRACION * 60
+        ) + 15
 
         if tiempo_abierta < tiempo_minimo:
             return None
 
-        if tipo in ["turbo", "binary"]:
-            resultado = check_win_v3_con_timeout(order_id, timeout=35)
+        # ================================================
+        # BINARY / TURBO
+        # ================================================
+        if tipo in [
+            "turbo",
+            "binary",
+        ]:
+            # Primera fuente:
+            # resultado normal de IQ / websocket.
+            resultado = (
+                check_win_v3_con_timeout(
+                    order_id,
+                    timeout=2,
+                )
+            )
+
+            # ================================================
+            # R8 TECH — RECUPERACION POST-RECONEXION
+            # ================================================
+            #
+            # BootIQ puede etiquetar la señal como TURBO o BINARY,
+            # pero con expiración de 1 minuto IQ puede persistir
+            # ambas como instrument_type="turbo-option".
+            #
+            # Validado empíricamente con una orden BINARY de BootIQ
+            # recuperada en IQ como turbo-option.
+            #
+            # Si se perdió option-closed después de una
+            # desconexión, consultar el historial persistente
+            # del servidor mediante external_id/order_id.
+            #
+            if (
+                resultado is None
+                and tipo in {
+                    "turbo",
+                    "binary",
+                }
+            ):
+                resultado = (
+                    obtener_resultado_historial_turbo_con_timeout(
+                        order_id,
+                        timeout=4,
+                        limit=100,
+                    )
+                )
 
             if resultado is None:
                 return None
 
-            # Si check_win_v3 devuelve tupla: ("win", 17.4)
-            if isinstance(resultado, tuple):
+            # Compatibilidad por si alguna versión
+            # de check_win_v3 devuelve tupla.
+            if isinstance(
+                resultado,
+                tuple,
+            ):
                 if len(resultado) >= 2:
-                    return normalizar_resultado(resultado[1])
+                    resultado = resultado[1]
+                else:
+                    return None
 
-            # Si devuelve directo: 17.4
-            return normalizar_resultado(resultado)
+            return normalizar_resultado(
+                resultado
+            )
 
+        # ================================================
+        # DIGITAL
+        # ================================================
         if tipo == "digital":
-            for intento in range(1, 11):
-                check, win = estado.Iq.check_win_digital_v2(order_id)
+            for intento in range(
+                1,
+                11,
+            ):
+                check, win = (
+                    estado.Iq.check_win_digital_v2(
+                        order_id
+                    )
+                )
 
                 if check:
-                    return normalizar_resultado(win)
+                    return normalizar_resultado(
+                        win
+                    )
 
                 time.sleep(0.5)
 
             return None
 
     except Exception as e:
-        print("Error obteniendo resultado:", op["activo"], op["tipo"], e)
+        print(
+            "Error obteniendo resultado:",
+            op["activo"],
+            op["tipo"],
+            e,
+        )
 
     return None
 def revisar_operaciones_abiertas():
@@ -308,35 +1478,10 @@ def revisar_operaciones_abiertas():
             )
             bloqueo_activo_aplicado = False
 
-            if resultado < 0:
-            
-                if perdidas_consecutivas_activo(op["activo"], 3):
-            
-                    estado.cooldown_activos[op["activo"]] = (
-                        time.time() + 1800
-                    )
-            
-                    bloqueo_activo_aplicado = True
-            
-                    print(
-                        "ACTIVO BLOQUEADO 30 MIN POR 3 PÉRDIDAS:",
-                        op["activo"]
-                    )
-            
-                if not hasattr(estado, "cooldown_estrategias"):
-                    estado.cooldown_estrategias = {}
-            
-                if perdidas_consecutivas_patron(op["patron"], 3):
-            
-                    estado.cooldown_estrategias[op["patron"]] = (
-                        time.time() + 1800
-                    )
-            
-                    print(
-                        "ESTRATEGIA BLOQUEADA 30 MIN POR 3 PÉRDIDAS:",
-                        op["patron"]
-                    )
-            
+            # Las rachas históricas eran telemetría sin autoridad
+            # y exigían dos lecturas completas adicionales del CSV
+            # por cada LOSS. No se calculan en la ruta de cierre.
+
             print(
                 "OPERACIÓN CERRADA:",
                 op["activo"],
