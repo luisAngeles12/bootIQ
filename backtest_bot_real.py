@@ -40,7 +40,7 @@ from config import (
     TIEMPO_EXPIRACION,
     CANDLE_TIME,
 )
-CARPETA_DATA = "data_backtest_oos4_d75"
+CARPETA_DATA = "data_backtest_9x14_oos_post_9w_alineado_17"
 
 MAX_ACTIVOS_ANALIZAR = 20
 MAX_SENALES_POR_RONDA = None  # legacy desactivado: la capacidad real es MAX_OPERACIONES_ABIERTAS
@@ -76,7 +76,7 @@ elif MODO_EXPERIMENTO == MODO_EXPERIMENTO_VALIDACION:
     SALIDA = "backtest_bootiq_F5_7_D4_2_VALID.csv"
 
 elif MODO_EXPERIMENTO == MODO_EXPERIMENTO_OUT_OF_SAMPLE:
-    SALIDA = "backtest_bootiq_D7_5_OOS4_PRELIMINAR.csv"
+    SALIDA = "backtest_bootiq_9X14_CANONICO.csv"
 
 else:
     raise RuntimeError(
@@ -86,7 +86,7 @@ TOTAL_DATASETS_EXPERIMENTO = 16
 TOTAL_DATASETS_TRAIN = 11
 TOTAL_DATASETS_VALIDACION = 5
 
-BUILD_ID = "BOOTIQ_D7_5_OOS4_PRELIMINAR_2026_09_02"
+BUILD_ID = "BOOTIQ_9X14_CANONICO_POST_9W_ROLLBACK_2026_10_04"
 ACTUALIZAR_APRENDIZAJE = False
 # ============================================================
 # C-C2 — ACTUALIZACIÓN EXCLUSIVA POST-PROTOCOLO
