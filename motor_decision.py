@@ -2831,10 +2831,32 @@ def convertir_decision_v3_a_oficial(
         }
 
     # ========================================================
+    # 9X35-R — V3 COMO SOMBRA, NO COMO AUTORIDAD GENERICA
+    # ========================================================
+    #
+    # Evidencia multiventana:
+    # - JULIO:      15 ops | 10W / 5L  | 66.67%
+    # - AGOSTO:    688 ops | 351W/337L | 51.02%
+    # - SEPTIEMBRE:508 ops | 245W/263L | 48.23%
+    # - TOTAL:    1211 ops | 606W/605L | 50.04%
+    #
+    # Contrato:
+    # - V3 sigue calculando decision_estadistica;
+    # - V3 sigue disponible como selector interno de rutas
+    #   explicitamente validadas (D7.5 / CORE4);
+    # - V3 no autoriza operaciones genericas por si solo.
+    # ========================================================
+
+    AUTORIDAD_GENERICA_V3_HABILITADA = False
+
+    # ========================================================
     # V3 AUTORIZA OPERACIÓN
     # ========================================================
 
-    if decision_estadistica == "OPERAR_SOMBRA":
+    if (
+        AUTORIDAD_GENERICA_V3_HABILITADA
+        and decision_estadistica == "OPERAR_SOMBRA"
+    ):
 
         evidencia_directa_solida = (
             muestra
@@ -3017,7 +3039,8 @@ def convertir_decision_v3_a_oficial(
     # ========================================================
 
     if (
-        decision_estadistica
+        AUTORIDAD_GENERICA_V3_HABILITADA
+        and decision_estadistica
         == "OPERAR_CON_PROTOCOLO_SOMBRA"
         and protocolo_sugerido
         == "protocolo_ruptura_resistencia"
@@ -3168,7 +3191,8 @@ def convertir_decision_v3_a_oficial(
         }
 
     if (
-        decision_estadistica
+        AUTORIDAD_GENERICA_V3_HABILITADA
+        and decision_estadistica
         == "OPERAR_CON_PROTOCOLO_SOMBRA"
     ):
         return {
