@@ -2240,6 +2240,40 @@ def convertir_decision_v3_a_oficial(
         and not core4_r1
     )
 
+    # ========================================================
+    # 9X36-H — R1+R2 NO RESCATA EN BAJISTA_DEBIL
+    # ========================================================
+    #
+    # Evidencia cronologica ejecutada:
+    #
+    # AGOSTO:
+    #   3 casos | 0W / 3L | 0.00%
+    #
+    # SEPTIEMBRE:
+    #   8 casos | 3W / 5L | 37.50%
+    #
+    # Combinado:
+    #   11 casos | 3W / 8L | 27.27%
+    #
+    # Al retirar exclusivamente este contexto:
+    # - R1+R2 retenido: 34 casos | 22W / 12L | 64.71%
+    # - CORE4 agosto:  60.00%
+    # - CORE4 septiembre ejecutado: 61.82%
+    #
+    # Contrato:
+    # - solo aplica cuando R1 y R2 coinciden;
+    # - solo estado_tendencia BAJISTA_DEBIL;
+    # - no modifica R1 solo, R2 solo, R4 ni R6;
+    # - no modifica protocolo, timing ni thresholds.
+    # ========================================================
+
+    core4_invalidacion_r1_r2_bajista_debil = (
+        core4_r1
+        and core4_r2
+        and estado_tendencia_core4
+        == "bajista_debil"
+    )
+
     core4_invalidacion_selectiva = (
         core4_invalidacion_r6_sr
         or core4_invalidacion_r1_vendedor_debil
@@ -2249,6 +2283,7 @@ def convertir_decision_v3_a_oficial(
         or core4_invalidacion_r1_rechazo_vendedor_put_debil
         or core4_invalidacion_r1_r2_envolvente
         or core4_invalidacion_r2_solo
+        or core4_invalidacion_r1_r2_bajista_debil
     )
 
     core4_match = (
