@@ -2274,6 +2274,31 @@ def convertir_decision_v3_a_oficial(
         == "bajista_debil"
     )
 
+    # ========================================================
+    # 9X36-M — R6 SOLO PIERDE AUTORIDAD PRODUCTIVA
+    # ========================================================
+    #
+    # Evidencia historica deduplicada bajo contrato actual:
+    #   12 eventos unicos | 5W / 7L | 41.67%
+    #
+    # Observado en multiples ventanas y estados de tendencia:
+    # - BAJISTA_NORMAL
+    # - BAJISTA_FUERTE
+    # - BAJISTA_DEBIL
+    #
+    # Contrato:
+    # - solo bloquea R6 cuando aparece sin R1/R2/R4;
+    # - no modifica R1, R2, R4 ni combinaciones mixtas;
+    # - no modifica timing, protocolo ni thresholds.
+    # ========================================================
+
+    core4_invalidacion_r6_solo = (
+        core4_r6
+        and not core4_r1
+        and not core4_r2
+        and not core4_r4
+    )
+
     core4_invalidacion_selectiva = (
         core4_invalidacion_r6_sr
         or core4_invalidacion_r1_vendedor_debil
@@ -2284,6 +2309,7 @@ def convertir_decision_v3_a_oficial(
         or core4_invalidacion_r1_r2_envolvente
         or core4_invalidacion_r2_solo
         or core4_invalidacion_r1_r2_bajista_debil
+        or core4_invalidacion_r6_solo
     )
 
     core4_match = (
