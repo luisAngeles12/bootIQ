@@ -2327,9 +2327,52 @@ def convertir_decision_v3_a_oficial(
         }
     )
 
-    core4_directa = (
+    # ========================================================
+    # 9X36-V — R1 SOLO AUTONOMO DEL SELECTOR V3
+    # ========================================================
+    #
+    # Evidencia historica deduplicada para R1_SOLO
+    # estructuralmente valido fuera de NO_OPERAR_SOMBRA:
+    #
+    #   14 eventos unicos | 11W / 3L | 78.57%
+    #
+    # Por mes:
+    # - JULIO:      3 | 2W / 1L | 66.67%
+    # - AGOSTO:    10 | 8W / 2L | 80.00%
+    # - SEPTIEMBRE: 1 | 1W / 0L | 100.00%
+    #
+    # Contrafactual sobre JUL/AGO/SEP principales:
+    #   +7 operaciones | 6W / 1L | 85.71%
+    #   sistema: 65.57% -> 67.65%
+    #
+    # Contrato:
+    # - solo R1 sin R2/R4/R6 puede aceptar
+    #   OPERAR_CON_PROTOCOLO_SOMBRA;
+    # - las combinaciones R1+R2 siguen requiriendo
+    #   NO_OPERAR_SOMBRA;
+    # - no revive autoridad generica V3;
+    # - no modifica protocolo, timing ni thresholds.
+    # ========================================================
+
+    core4_r1_solo = (
+        core4_r1
+        and not core4_r2
+        and not core4_r4
+        and not core4_r6
+    )
+
+    core4_selector_v3_valido = (
         decision_estadistica
         == "NO_OPERAR_SOMBRA"
+        or (
+            core4_r1_solo
+            and decision_estadistica
+            == "OPERAR_CON_PROTOCOLO_SOMBRA"
+        )
+    )
+
+    core4_directa = (
+        core4_selector_v3_valido
         and core4_match
         and core4_mercado_valido
         and not core4_invalidacion_dura
