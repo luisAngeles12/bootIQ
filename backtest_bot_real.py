@@ -206,18 +206,6 @@ def evaluar_estabilidad_dataset(
     if not activo:
         return None, "ACTIVO_VACIO"
 
-    for anterior, siguiente in zip(velas, velas[1:]):
-        delta = siguiente["from"] - anterior["from"]
-
-        if delta != CANDLE_TIME:
-            dataset["error_continuidad_temporal"] = {
-                "from_anterior": anterior["from"],
-                "from_siguiente": siguiente["from"],
-                "delta": delta,
-                "esperado": CANDLE_TIME,
-            }
-            return None, "CONTINUIDAD_TEMPORAL_INVALIDA"
-
     # ========================================================
     # VENTANA DE SELECCION
     # ========================================================
@@ -251,6 +239,45 @@ def evaluar_estabilidad_dataset(
 
         if len(ventana) < 119:
             return None, "VELAS_INSUFICIENTES"
+
+    # ========================================================
+    # 9X37-F — CONTINUIDAD CAUSAL
+    # ========================================================
+    #
+    # Cuando indice_actual existe, solo puede validarse la
+    # continuidad de las velas conocidas en esa ronda.
+    #
+    # Validar todo el archivo completo provocaba que un gap
+    # pasado o futuro, fuera de las 119 velas causales,
+    # excluyera el activo de todas las rondas.
+    #
+    # Sin indice_actual se conserva el contrato histórico
+    # previo y se valida la ventana experimental completa.
+    # ========================================================
+
+    velas_continuidad = (
+        velas
+        if indice_actual is None
+        else ventana
+    )
+
+    for anterior, siguiente in zip(
+        velas_continuidad,
+        velas_continuidad[1:],
+    ):
+        delta = (
+            siguiente["from"]
+            - anterior["from"]
+        )
+
+        if delta != CANDLE_TIME:
+            dataset["error_continuidad_temporal"] = {
+                "from_anterior": anterior["from"],
+                "from_siguiente": siguiente["from"],
+                "delta": delta,
+                "esperado": CANDLE_TIME,
+            }
+            return None, "CONTINUIDAD_TEMPORAL_INVALIDA"
 
     try:
         tipo_mercado, _ = detectar_tipo_mercado(
