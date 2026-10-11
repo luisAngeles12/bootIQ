@@ -4229,6 +4229,13 @@ def ejecutar_backtest(datasets):
             if racha < 181 or indice >= len(velas) - 2:
                 continue
 
+            # La expiracion inmediata exige la siguiente vela real.
+            if (
+                velas[indice + 1]["from"] - vela["from"]
+                != CANDLE_TIME
+            ):
+                continue
+
             timestamp = vela["from"]
             if timestamp in posiciones:
                 raise ValueError("TIMESTAMP_DUPLICADO_BACKTEST")
