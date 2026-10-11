@@ -4206,6 +4206,7 @@ def ejecutar_backtest(datasets):
     """
 
     resultados = []
+    exclusiones_temporales = []
 
     if not datasets:
         print("No hay datasets cargados en data_backtest.")
@@ -4674,6 +4675,36 @@ def ejecutar_backtest(datasets):
                         )
                     )
                     continue
+                # Integridad temporal del historial, sin alterar protocolo.
+                espera_real = (
+                    velas[idx_entrada]["from"] - velas[idx]["from"]
+                )
+                cierre_real = (
+                    velas[idx_entrada + 1]["from"]
+                    - velas[idx_entrada]["from"]
+                )
+                continuidad_valida = (
+                    espera_real == (idx_entrada - idx) * CANDLE_TIME
+                    and cierre_real == CANDLE_TIME
+                )
+
+                if not continuidad_valida:
+                    senal["auditoria_datos_temporales"] = (
+                        "SIN_DATOS_TEMPORALES"
+                    )
+                    exclusiones_temporales.append({
+                        "activo": senal.get("activo", ""),
+                        "idx_senal": idx,
+                        "idx_entrada": idx_entrada,
+                        "fecha_senal": velas[idx]["from"],
+                        "fecha_entrada": velas[idx_entrada]["from"],
+                        "espera_real_segundos": espera_real,
+                        "cierre_real_segundos": cierre_real,
+                        "motivo_protocolo": motivo_ejecucion,
+                        "estado": "SIN_DATOS_TEMPORALES",
+                    })
+                    continue
+
                 # ========================================================
                 # C-C2 — EVALUACIÓN POST-PROTOCOLO EN SOMBRA
                 # ========================================================
@@ -4790,6 +4821,14 @@ def ejecutar_backtest(datasets):
                     decision_bootiq=decision_bootiq,
                 )
             )
+
+    if exclusiones_temporales:
+        print(
+            "AUDITORIA_DATOS_TEMPORALES_EXCLUIDOS:",
+            len(exclusiones_temporales),
+        )
+        for exclusion in exclusiones_temporales[:10]:
+            print("AUDITORIA_EXCLUSION_TEMPORAL:", exclusion)
 
     return aplicar_paridad_capacidad_live(resultados)
 
