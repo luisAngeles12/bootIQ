@@ -661,6 +661,18 @@ def evaluar_estabilidad_activo(
         # 119 velas cerradas.
         candles = candles[-119:]
 
+        # Paridad temporal con BACKTEST: solo velas consecutivas.
+        for anterior, siguiente in zip(candles, candles[1:]):
+            if (
+                int(float(siguiente["from"]))
+                - int(float(anterior["from"]))
+                != CANDLE_TIME
+            ):
+                estado.metricas_ronda[
+                    "scan_continuidad_temporal"
+                ] += 1
+                return None
+
         candles_contexto = []
 
         for c in candles:
