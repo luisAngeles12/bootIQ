@@ -3815,6 +3815,14 @@ def aplicar_paridad_capacidad_live(resultados):
         except (TypeError, ValueError):
             continue
 
+        try:
+            tiempo_senal = int(registro["fecha_senal"])
+            tiempo_entrada = int(registro["fecha"])
+        except (KeyError, TypeError, ValueError):
+            raise ValueError(
+                "Registro sin timestamps validos para paridad LIVE"
+            )
+
         estado_operacion = str(
             registro.get(
                 "estado_operacion",
@@ -3826,23 +3834,23 @@ def aplicar_paridad_capacidad_live(resultados):
         item = (
             orden,
             registro,
-            idx_senal,
-            idx_entrada,
+            tiempo_senal,
+            tiempo_entrada,
             estado_operacion,
         )
 
         nacimientos.setdefault(
-            idx_senal,
+            tiempo_senal,
             [],
         ).append(item)
 
         if (
             estado_operacion
             == "OPERADA_PROTOCOLO"
-            and idx_entrada > idx_senal
+            and tiempo_entrada > tiempo_senal
         ):
             confirmaciones.setdefault(
-                idx_entrada,
+                tiempo_entrada,
                 [],
             ).append(item)
 
@@ -3883,7 +3891,7 @@ def aplicar_paridad_capacidad_live(resultados):
         abiertas = [
             op
             for op in abiertas
-            if op["liberar_idx"] > idx_actual
+            if op["liberar_timestamp"] > idx_actual
         ]
 
         # ====================================================
@@ -3905,8 +3913,8 @@ def aplicar_paridad_capacidad_live(resultados):
         for (
             orden,
             registro,
-            idx_senal,
-            idx_entrada,
+            tiempo_senal,
+            tiempo_entrada,
             estado_operacion,
         ) in pendientes_actuales:
 
@@ -3953,10 +3961,10 @@ def aplicar_paridad_capacidad_live(resultados):
 
             abiertas.append({
                 "activo": activo,
-                "entrada_idx": idx_entrada,
-                "liberar_idx": (
-                    idx_entrada
-                    + rondas_slot
+                "entrada_timestamp": tiempo_entrada,
+                "liberar_timestamp": (
+                    tiempo_entrada
+                    + segundos_slot
                 ),
                 "tipo": "PROTOCOLO",
             })
@@ -3976,9 +3984,9 @@ def aplicar_paridad_capacidad_live(resultados):
                             resultados[orden_pendiente]
                         )
 
-                        idx_confirmacion_pendiente = int(
+                        tiempo_confirmacion_pendiente = int(
                             registro_pendiente.get(
-                                "idx_entrada",
+                                "fecha",
                                 -1,
                             )
                         )
@@ -3999,7 +4007,7 @@ def aplicar_paridad_capacidad_live(resultados):
 
                     if (
                         activo_pendiente == activo
-                        and idx_confirmacion_pendiente
+                        and tiempo_confirmacion_pendiente
                         > idx_actual
                     ):
                         marcar_no_ejecutada(
@@ -4033,8 +4041,8 @@ def aplicar_paridad_capacidad_live(resultados):
         for (
             orden,
             registro,
-            idx_senal,
-            idx_entrada,
+            tiempo_senal,
+            tiempo_entrada,
             estado_operacion,
         ) in senales_actuales:
 
@@ -4091,7 +4099,7 @@ def aplicar_paridad_capacidad_live(resultados):
 
             if estado_operacion == "OPERADA_PROTOCOLO":
 
-                if idx_entrada <= idx_senal:
+                if tiempo_entrada <= tiempo_senal:
                     marcar_no_ejecutada(
                         registro,
                         (
@@ -4118,10 +4126,10 @@ def aplicar_paridad_capacidad_live(resultados):
 
             abiertas.append({
                 "activo": activo,
-                "entrada_idx": idx_entrada,
-                "liberar_idx": (
-                    idx_entrada
-                    + rondas_slot
+                "entrada_timestamp": tiempo_entrada,
+                "liberar_timestamp": (
+                    tiempo_entrada
+                    + segundos_slot
                 ),
                 "tipo": "DIRECTA",
             })
@@ -4146,9 +4154,9 @@ def aplicar_paridad_capacidad_live(resultados):
                             resultados[orden_pendiente]
                         )
 
-                        idx_confirmacion_pendiente = int(
+                        tiempo_confirmacion_pendiente = int(
                             registro_pendiente.get(
-                                "idx_entrada",
+                                "fecha",
                                 -1,
                             )
                         )
@@ -4169,7 +4177,7 @@ def aplicar_paridad_capacidad_live(resultados):
 
                     if (
                         activo_pendiente == activo
-                        and idx_confirmacion_pendiente
+                        and tiempo_confirmacion_pendiente
                         > idx_actual
                     ):
                         marcar_no_ejecutada(
