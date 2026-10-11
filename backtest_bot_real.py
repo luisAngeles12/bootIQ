@@ -475,6 +475,7 @@ def seleccionar_top_datasets(
     limite=20,
     indice_actual=None,
     mostrar=True,
+    indices_por_dataset=None,
 ):
     reset_auditoria_datasets()
 
@@ -482,10 +483,15 @@ def seleccionar_top_datasets(
 
     evaluados = []
 
-    for dataset in datasets:
+    for posicion_dataset, dataset in enumerate(datasets):
+        indice_dataset = (
+            indice_actual
+            if indices_por_dataset is None
+            else indices_por_dataset[posicion_dataset]
+        )
         evaluado, motivo = evaluar_estabilidad_dataset(
             dataset,
-            indice_actual=indice_actual,
+            indice_actual=indice_dataset,
         )
 
         if evaluado is None:
@@ -4205,11 +4211,56 @@ def ejecutar_backtest(datasets):
         print("No hay datasets cargados en data_backtest.")
         return resultados
 
-    max_len = min(len(d["velas"]) for d in datasets)
-    total_rondas = len(range(180, max_len - 2, PASO_RONDA))
+    # Rondas sincronizadas con indices originales por activo.
+    mapas_temporales = []
+    for data in datasets:
+        velas = data["velas"]
+        posiciones = {}
+        racha = 1
+
+        for indice, vela in enumerate(velas):
+            if indice:
+                racha = (
+                    racha + 1
+                    if vela["from"] - velas[indice - 1]["from"] == CANDLE_TIME
+                    else 1
+                )
+
+            if racha < 181 or indice >= len(velas) - 2:
+                continue
+
+            timestamp = vela["from"]
+            if timestamp in posiciones:
+                raise ValueError("TIMESTAMP_DUPLICADO_BACKTEST")
+            posiciones[timestamp] = indice
+
+        mapas_temporales.append(posiciones)
+
+    timestamps_comunes = set.intersection(
+        *(set(mapa) for mapa in mapas_temporales)
+    )
+
+    # PASO_RONDA mantiene una cadencia en minutos de mercado.
+    origen_temporal = min(
+        int(data["velas"][180]["from"]) for data in datasets
+    )
+    timestamps_ronda = [
+        timestamp
+        for timestamp in sorted(timestamps_comunes)
+        if (timestamp - origen_temporal) % (PASO_RONDA * CANDLE_TIME) == 0
+    ]
+
+    total_rondas = len(timestamps_ronda)
     ronda = 0
 
-    for i in range(180, max_len - 2, PASO_RONDA):
+    for timestamp_ronda in timestamps_ronda:
+        indices_ronda = [
+            mapa[timestamp_ronda] for mapa in mapas_temporales
+        ]
+        indice_por_identidad = {
+            id(data): indice
+            for data, indice in zip(datasets, indices_ronda)
+        }
         ronda += 1
     
         if ronda % 25 == 0:
@@ -4225,8 +4276,9 @@ def ejecutar_backtest(datasets):
         datasets_ronda = seleccionar_top_datasets(
             datasets,
             limite=MAX_ACTIVOS_ANALIZAR,
-            indice_actual=i,
+            indice_actual=None,
             mostrar=False,
+            indices_por_dataset=indices_ronda,
         )
     
         senales_ronda = []
@@ -4235,7 +4287,8 @@ def ejecutar_backtest(datasets):
             activo = data["activo"]
             tipo = data["tipo"]
             velas = data["velas"]
-            ventana = velas[i - 180:i + 1]
+            indice_activo = indice_por_identidad[id(data)]
+            ventana = velas[indice_activo - 180:indice_activo + 1]
 
             senal = analizar_activo_con_ventana(activo, ventana)
 
@@ -4247,7 +4300,7 @@ def ejecutar_backtest(datasets):
 
             senal["tipo"] = tipo
             senal["_velas"] = velas
-            senal["_index"] = i
+            senal["_index"] = indice_activo
             senales_ronda.append(senal)
 
         # Ranking único BootIQ V3.
