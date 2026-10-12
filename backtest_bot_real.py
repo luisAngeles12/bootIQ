@@ -24,6 +24,7 @@ import statistics
 
 import estado
 import estrategia
+from estadisticas import activos_bloqueables
 from motor_protocolos import buscar_entrada_confirmada
 import motor_protocolos as motor_protocolos_mod
 from contexto_mercado import detectar_tipo_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
@@ -926,7 +927,7 @@ def reset_estado():
     estado.operaciones_abiertas = []
 
 
-def analizar_activo_con_ventana(activo, ventana):
+def analizar_activo_con_ventana(activo, ventana, activos_bloqueables_ronda=None):
     data = {
         "open": [v["open"] for v in ventana],
         "close": [v["close"] for v in ventana],
@@ -950,7 +951,8 @@ def analizar_activo_con_ventana(activo, ventana):
     try:
         senal = estrategia.analizar_activo(
             activo,
-            modo_backtest_diagnostico=True
+            modo_backtest_diagnostico=True,
+            activos_bloqueables_ronda=activos_bloqueables_ronda,
         )
     finally:
         estrategia.obtener_velas = (
@@ -4316,6 +4318,7 @@ def ejecutar_backtest(datasets):
         )
     
         senales_ronda = []
+        activos_malos_ronda = activos_bloqueables()
     
         for data in datasets_ronda:
             activo = data["activo"]
@@ -4324,7 +4327,11 @@ def ejecutar_backtest(datasets):
             indice_activo = indice_por_identidad[id(data)]
             ventana = velas[indice_activo - 180:indice_activo + 1]
 
-            senal = analizar_activo_con_ventana(activo, ventana)
+            senal = analizar_activo_con_ventana(
+                activo,
+                ventana,
+                activos_bloqueables_ronda=activos_malos_ronda,
+            )
 
             if senal is None:
                 continue
