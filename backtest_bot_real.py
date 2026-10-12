@@ -4252,9 +4252,18 @@ def ejecutar_backtest(datasets):
 
         mapas_temporales.append(posiciones)
 
-    timestamps_comunes = set.intersection(
-        *(set(mapa) for mapa in mapas_temporales)
-    )
+    # Calendario causal: un dataset discontinuo no debe
+    # eliminar la ronda de otros 20 activos temporales validos.
+    timestamps_comunes = {
+        timestamp
+        for timestamp in set.union(
+            *(set(mapa) for mapa in mapas_temporales)
+        )
+        if sum(
+            timestamp in mapa
+            for mapa in mapas_temporales
+        ) >= MAX_ACTIVOS_ANALIZAR
+    }
 
     # PASO_RONDA mantiene una cadencia en minutos de mercado.
     origen_temporal = min(
@@ -4270,12 +4279,21 @@ def ejecutar_backtest(datasets):
     ronda = 0
 
     for timestamp_ronda in timestamps_ronda:
+        datasets_disponibles = [
+            data
+            for data, mapa in zip(datasets, mapas_temporales)
+            if timestamp_ronda in mapa
+        ]
         indices_ronda = [
-            mapa[timestamp_ronda] for mapa in mapas_temporales
+            mapa[timestamp_ronda]
+            for mapa in mapas_temporales
+            if timestamp_ronda in mapa
         ]
         indice_por_identidad = {
             id(data): indice
-            for data, indice in zip(datasets, indices_ronda)
+            for data, indice in zip(
+                datasets_disponibles, indices_ronda
+            )
         }
         ronda += 1
     
@@ -4290,7 +4308,7 @@ def ejecutar_backtest(datasets):
         #
         # No utiliza velas posteriores a la ronda simulada.
         datasets_ronda = seleccionar_top_datasets(
-            datasets,
+            datasets_disponibles,
             limite=MAX_ACTIVOS_ANALIZAR,
             indice_actual=None,
             mostrar=False,
