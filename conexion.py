@@ -41,9 +41,18 @@ def conectar():
 
     try:
         estado.Iq.change_balance(MODO_CUENTA)
+        modo_confirmado = estado.Iq.get_balance_mode()
+        if MODO_CUENTA != "PRACTICE" or modo_confirmado != "PRACTICE":
+            raise RuntimeError(
+                "Cuenta no confirmada como PRACTICE: "
+                + repr(modo_confirmado)
+            )
         print("Cuenta seleccionada:", MODO_CUENTA, flush=True)
     except Exception as e:
         print("No se pudo cambiar el balance:", e, flush=True)
+        raise RuntimeError(
+            "ARRANQUE BLOQUEADO: no se pudo seleccionar la cuenta PRACTICE."
+        ) from e
 
     # IQ necesita un breve margen después del login/cambio
     # de cuenta antes de responder api_option_init_all_v2.
@@ -137,6 +146,12 @@ def reconectar_iq(intentos=3):
                         estado.Iq.change_balance(
                             MODO_CUENTA
                         )
+                        modo_confirmado = estado.Iq.get_balance_mode()
+                        if MODO_CUENTA != "PRACTICE" or modo_confirmado != "PRACTICE":
+                            raise RuntimeError(
+                                "Reconexión bloqueada: cuenta no confirmada "
+                                "como PRACTICE: " + repr(modo_confirmado)
+                            )
                 
                     except Exception as e:
                         print(
