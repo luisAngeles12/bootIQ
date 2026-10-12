@@ -2,6 +2,7 @@ from indicadores import *
 from price_action import *
 from zonas import *
 from mercado import obtener_velas
+from config import CANDLE_TIME
 from motor_setup import (enriquecer_senal_con_setup,clasificar_setup_estrategico)
 
 from motor_candidatos import seleccionar_mejor_candidata_v3
@@ -76,6 +77,12 @@ def leer_contexto_grafico(activo):
     highs = highs[-limite_analisis:]
     lows = lows[-limite_analisis:]
     froms = froms[-limite_analisis:]
+
+    # Paridad temporal BACKTEST/LIVE:
+    # validar solo la ventana causal.
+    for anterior, siguiente in zip(froms, froms[1:]):
+        if int(siguiente) - int(anterior) != CANDLE_TIME:
+            return None
 
     vela_senal_from = int(froms[-1])
 
