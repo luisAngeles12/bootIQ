@@ -21,6 +21,7 @@ from utils import (
 from conexion import conectar, reconectar_iq
 from historial import asegurar_historial_csv, cargar_operaciones_pendientes
 from mercado import (
+    MAX_ACTIVOS_ANALIZAR,
     obtener_activos,
     precargar_velas_activos,
     refrescar_activos_incremental,
@@ -782,6 +783,18 @@ def main():
         activos = obtener_activos(
             solo_cache=True
         )
+
+        # STEP 6: proteger integridad del TOP20 LIVE.
+        # Nunca analizar un universo incompleto.
+        if len(activos) != MAX_ACTIVOS_ANALIZAR:
+            print(
+                "TOP20 LIVE INCOMPLETO | recibidos:",
+                len(activos),
+                "| requeridos:",
+                MAX_ACTIVOS_ANALIZAR,
+            )
+            time.sleep(0.25)
+            continue
 
         estado.metricas_ronda[
             "mercados_analizados"
