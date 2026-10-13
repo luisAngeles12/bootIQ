@@ -1,10 +1,11 @@
+import os
 import unittest
 import time
 from iqoptionapi.stable_api import IQ_Option
 
 # 🔥 pon tus datos directo para probar (IMPORTANTE para debug)
-email = "luisangelestejada@gmail.com"
-password = "R@putim120799"
+email = os.getenv("email")
+password = os.getenv("password")
 
 class TestLogin(unittest.TestCase):
 
