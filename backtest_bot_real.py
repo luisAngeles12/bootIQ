@@ -4201,6 +4201,41 @@ def aplicar_paridad_capacidad_live(resultados):
     return resultados
 
 
+
+def registrar_resultado_protegido(
+    resultados, exclusiones, funcion_registro, **kwargs
+):
+    velas = kwargs["velas"]
+    idx = kwargs["idx"]
+    entrada = kwargs["idx_entrada"]
+    if entrada is None:
+        entrada = idx
+
+    valido = (
+        isinstance(idx, int)
+        and isinstance(entrada, int)
+        and 0 <= idx <= entrada
+        and entrada + 1 < len(velas)
+        and all(
+            velas[i + 1]["from"] - velas[i]["from"]
+            == CANDLE_TIME
+            for i in range(idx, entrada + 1)
+        )
+    )
+
+    if not valido:
+        exclusiones.append({
+            "activo": kwargs["senal"].get("activo", ""),
+            "idx_senal": idx,
+            "idx_entrada": entrada,
+            "estado": "SIN_DATOS_TEMPORALES",
+            "estado_original": kwargs["estado_operacion"],
+        })
+        return False
+
+    resultados.append(funcion_registro(**kwargs))
+    return True
+
 def ejecutar_backtest(datasets):
     """
     Orquestador oficial del backtest BootIQ.
@@ -4237,14 +4272,7 @@ def ejecutar_backtest(datasets):
                     else 1
                 )
 
-            if racha < 181 or indice >= len(velas) - 2:
-                continue
-
-            # La expiracion inmediata exige la siguiente vela real.
-            if (
-                velas[indice + 1]["from"] - vela["from"]
-                != CANDLE_TIME
-            ):
+            if racha < 181:
                 continue
 
             timestamp = vela["from"]
@@ -4446,19 +4474,17 @@ def ejecutar_backtest(datasets):
                 or decision_oficial in {"NO_OPERAR", "ERROR"}
                 or modo_ejecucion == "BLOQUEADA"
             ):
-                resultados.append(
-                    crear_registro_resultado(
-                        senal=senal,
-                        velas=velas,
-                        idx=idx,
-                        idx_entrada=idx,
-                        motivo_ejecucion=(
-                            "CANCELADA_CEREBRO_UNICO_"
-                            + decision_oficial
-                        ),
-                        estado_operacion="CANCELADA_CEREBRO",
-                        decision_bootiq=decision_bootiq,
-                    )
+                registrar_resultado_protegido(
+                    resultados,
+                    exclusiones_temporales,
+                    crear_registro_resultado,
+                    senal=senal,
+                    velas=velas,
+                    idx=idx,
+                    idx_entrada=idx,
+                    motivo_ejecucion='CANCELADA_CEREBRO_UNICO_' + decision_oficial,
+                    estado_operacion='CANCELADA_CEREBRO',
+                    decision_bootiq=decision_bootiq,
                 )
                 continue
 
@@ -4700,31 +4726,34 @@ def ejecutar_backtest(datasets):
                         "recuperacion_sombra_espera_velas"
                     ] = recuperacion_sombra["espera_velas"]
 
-                    resultados.append(
-                        crear_registro_resultado(
-                            senal=senal,
-                            velas=velas,
-                            idx=idx,
-                            idx_entrada=idx,
-                            motivo_ejecucion=motivo_ejecucion,
-                            estado_operacion="CANCELADA_PROTOCOLO",
-                            decision_bootiq=decision_bootiq,
-                        )
+                    registrar_resultado_protegido(
+                        resultados,
+                        exclusiones_temporales,
+                        crear_registro_resultado,
+                        senal=senal,
+                        velas=velas,
+                        idx=idx,
+                        idx_entrada=idx,
+                        motivo_ejecucion=motivo_ejecucion,
+                        estado_operacion='CANCELADA_PROTOCOLO',
+                        decision_bootiq=decision_bootiq,
                     )
                     continue
                 # Integridad temporal del historial, sin alterar protocolo.
-                espera_real = (
-                    velas[idx_entrada]["from"] - velas[idx]["from"]
-                )
-                cierre_real = (
-                    velas[idx_entrada + 1]["from"]
-                    - velas[idx_entrada]["from"]
+                indices_validos = (
+                    isinstance(idx, int)
+                    and isinstance(idx_entrada, int)
+                    and 0 <= idx <= idx_entrada
+                    and idx_entrada + 1 < len(velas)
                 )
                 continuidad_valida = (
-                    espera_real == (idx_entrada - idx) * CANDLE_TIME
-                    and cierre_real == CANDLE_TIME
+                    indices_validos
+                    and all(
+                        velas[i + 1]["from"] - velas[i]["from"]
+                        == CANDLE_TIME
+                        for i in range(idx, idx_entrada + 1)
+                    )
                 )
-
                 if not continuidad_valida:
                     senal["auditoria_datos_temporales"] = (
                         "SIN_DATOS_TEMPORALES"
@@ -4733,10 +4762,27 @@ def ejecutar_backtest(datasets):
                         "activo": senal.get("activo", ""),
                         "idx_senal": idx,
                         "idx_entrada": idx_entrada,
-                        "fecha_senal": velas[idx]["from"],
-                        "fecha_entrada": velas[idx_entrada]["from"],
-                        "espera_real_segundos": espera_real,
-                        "cierre_real_segundos": cierre_real,
+                        "fecha_senal": (
+                            velas[idx]["from"]
+                            if isinstance(idx, int)
+                            and 0 <= idx < len(velas)
+                            else None
+                        ),
+                        "fecha_entrada": (
+                            velas[idx_entrada]["from"]
+                            if isinstance(idx_entrada, int)
+                            and 0 <= idx_entrada < len(velas)
+                            else None
+                        ),
+                        "espera_real_segundos": (
+                            velas[idx_entrada]["from"] - velas[idx]["from"]
+                            if indices_validos else None
+                        ),
+                        "cierre_real_segundos": (
+                            velas[idx_entrada + 1]["from"]
+                            - velas[idx_entrada]["from"]
+                            if indices_validos else None
+                        ),
                         "motivo_protocolo": motivo_ejecucion,
                         "estado": "SIN_DATOS_TEMPORALES",
                     })
@@ -4813,50 +4859,48 @@ def ejecutar_backtest(datasets):
                     "fuente_post_protocolo_respaldo"
                 )
 
-                resultados.append(
-                    crear_registro_resultado(
-                        senal=senal,
-                        velas=velas,
-                        idx=idx,
-                        idx_entrada=idx_entrada,
-                        motivo_ejecucion=motivo_ejecucion,
-                        estado_operacion="OPERADA_PROTOCOLO",
-                        decision_bootiq=decision_bootiq,
-                    )
+                registrar_resultado_protegido(
+                    resultados,
+                    exclusiones_temporales,
+                    crear_registro_resultado,
+                    senal=senal,
+                    velas=velas,
+                    idx=idx,
+                    idx_entrada=idx_entrada,
+                    motivo_ejecucion=motivo_ejecucion,
+                    estado_operacion='OPERADA_PROTOCOLO',
+                    decision_bootiq=decision_bootiq,
                 )
                 continue
 
             # OPERAR directo: no debe pasar por motor_protocolos.py.
             if decision_oficial == "OPERAR":
-                resultados.append(
-                    crear_registro_resultado(
-                        senal=senal,
-                        velas=velas,
-                        idx=idx,
-                        idx_entrada=idx,
-                        motivo_ejecucion=(
-                            "OPERACION_DIRECTA_CEREBRO_UNICO"
-                        ),
-                        estado_operacion="OPERADA_DIRECTA",
-                        decision_bootiq=decision_bootiq,
-                    )
-                )
-                continue
-
-            # Toda salida no reconocida se bloquea.
-            resultados.append(
-                crear_registro_resultado(
+                registrar_resultado_protegido(
+                    resultados,
+                    exclusiones_temporales,
+                    crear_registro_resultado,
                     senal=senal,
                     velas=velas,
                     idx=idx,
                     idx_entrada=idx,
-                    motivo_ejecucion=(
-                        "CANCELADA_SALIDA_CEREBRO_NO_RECONOCIDA_"
-                        + decision_oficial
-                    ),
-                    estado_operacion="CANCELADA_CEREBRO",
+                    motivo_ejecucion='OPERACION_DIRECTA_CEREBRO_UNICO',
+                    estado_operacion='OPERADA_DIRECTA',
                     decision_bootiq=decision_bootiq,
                 )
+                continue
+
+            # Toda salida no reconocida se bloquea.
+            registrar_resultado_protegido(
+                resultados,
+                exclusiones_temporales,
+                crear_registro_resultado,
+                senal=senal,
+                velas=velas,
+                idx=idx,
+                idx_entrada=idx,
+                motivo_ejecucion='CANCELADA_SALIDA_CEREBRO_NO_RECONOCIDA_' + decision_oficial,
+                estado_operacion='CANCELADA_CEREBRO',
+                decision_bootiq=decision_bootiq,
             )
 
     if exclusiones_temporales:
