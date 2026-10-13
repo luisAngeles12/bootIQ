@@ -4316,6 +4316,10 @@ def ejecutar_backtest(datasets):
             mostrar=False,
             indices_por_dataset=indices_ronda,
         )
+
+        # D6-OOS-TOP20: nunca procesar un TOP parcial.
+        if len(datasets_ronda) != MAX_ACTIVOS_ANALIZAR:
+            continue
     
         senales_ronda = []
         activos_malos_ronda = activos_bloqueables()
