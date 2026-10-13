@@ -786,12 +786,43 @@ def main():
 
         # STEP 6: proteger integridad del TOP20 LIVE.
         # Nunca analizar un universo incompleto.
-        if len(activos) != MAX_ACTIVOS_ANALIZAR:
+        if not (0 < len(activos) <= MAX_ACTIVOS_ANALIZAR):
             print(
                 "TOP20 LIVE INCOMPLETO | recibidos:",
                 len(activos),
                 "| requeridos:",
                 MAX_ACTIVOS_ANALIZAR,
+            )
+            time.sleep(0.25)
+            continue
+
+        # ==========================================
+        # D7.6D — TOP OFICIAL CON BUFFERS COMPLETOS
+        # ==========================================
+        # Tras reconectar, el TOP oficial se conserva,
+        # pero sus velas históricas se invalidan.
+        # No iniciar una ronda hasta reconstruir
+        # TODOS sus buffers fuera de ventana.
+        faltantes_buffer_d76d = [
+            item["activo"]
+            for item in activos
+            if len(
+                estado.velas_cache.get(
+                    item["activo"], []
+                )
+            ) < 130
+        ]
+
+        if faltantes_buffer_d76d:
+            print(
+                "D7.6D RONDA OMITIDA — "
+                "TOP SIN BUFFERS COMPLETOS |",
+                "listos:",
+                len(activos) - len(faltantes_buffer_d76d),
+                "/",
+                len(activos),
+                "| faltantes:",
+                faltantes_buffer_d76d,
             )
             time.sleep(0.25)
             continue

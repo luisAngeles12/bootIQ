@@ -1409,7 +1409,7 @@ def refrescar_activos_incremental():
         )
     )
 
-    if len(top_nuevo) >= MAX_ACTIVOS_ANALIZAR:
+    if 0 < len(top_nuevo) <= MAX_ACTIVOS_ANALIZAR:
 
         # ==========================================
         # D7.6D — TOP COMPLETO PENDIENTE DE BUFFER
@@ -2066,7 +2066,7 @@ def obtener_activos(
         :MAX_ACTIVOS_ANALIZAR
     ]
 
-    if len(activos) >= MAX_ACTIVOS_ANALIZAR:
+    if 0 < len(activos) <= MAX_ACTIVOS_ANALIZAR:
         if not cache_previa_d76d:
             # Bootstrap:
             # el TOP ya está calculado, pero todavía

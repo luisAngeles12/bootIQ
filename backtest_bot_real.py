@@ -4292,7 +4292,7 @@ def ejecutar_backtest(datasets):
         if sum(
             timestamp in mapa
             for mapa in mapas_temporales
-        ) >= MAX_ACTIVOS_ANALIZAR
+        ) >= 1
     }
 
     # PASO_RONDA mantiene una cadencia en minutos de mercado.
@@ -4346,7 +4346,7 @@ def ejecutar_backtest(datasets):
         )
 
         # D6-OOS-TOP20: nunca procesar un TOP parcial.
-        if len(datasets_ronda) != MAX_ACTIVOS_ANALIZAR:
+        if not (0 < len(datasets_ronda) <= MAX_ACTIVOS_ANALIZAR):
             continue
     
         senales_ronda = []
