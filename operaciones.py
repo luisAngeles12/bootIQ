@@ -1469,13 +1469,27 @@ def revisar_operaciones_abiertas():
             pendientes.append(op)
             continue
 
-        resultado = obtener_resultado_operacion(op)
+        resultado = op.get("resultado_pendiente_csv")
+        if resultado is None:
+            resultado = obtener_resultado_operacion(op)
 
         if resultado is not None:
-            actualizar_historial_cierre(
+            op["resultado_pendiente_csv"] = resultado
+
+            cierre_persistido = actualizar_historial_cierre(
                 op["order_id"],
                 resultado
             )
+
+            if not cierre_persistido:
+                print(
+                    "D7.7 CIERRE PENDIENTE DE PERSISTENCIA:",
+                    op["activo"],
+                    op["order_id"],
+                )
+                pendientes.append(op)
+                continue
+
             bloqueo_activo_aplicado = False
 
             # Las rachas históricas eran telemetría sin autoridad
