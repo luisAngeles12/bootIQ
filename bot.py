@@ -61,6 +61,14 @@ def main():
     ultima_impresion_estado = 0
     ultima_impresion_resumen = 0
 
+    # D7.6F — control de resumen por vela.
+    ronda_metricas_d76f = None
+    ronda_reportada_d76f = None
+    estado_ronda_d76f = "SIN_RONDA"
+    intento_id_d76f = 0
+    diagnostico_descarte_d76f = None
+    rondas_pendientes_d76f = []
+
     # Controlar la frecuencia real de consultas al broker.
     # El balance se consulta como máximo una vez cada 10 segundos.
     #
@@ -528,6 +536,60 @@ def main():
             <= VENTANA_ENTRADA_FIN
         ):
 
+            # D7.6F — diagnostico del intento previo.
+            if (
+                25 <= segundo <= 40
+                and diagnostico_descarte_d76f is not None
+            ):
+                print(
+                    'D7.6F DESCARTE PREVIO | metricas parciales:',
+                    diagnostico_descarte_d76f,
+                )
+                diagnostico_descarte_d76f = None
+
+            # D7.6F — publicar rondas completadas pendientes.
+            if 25 <= segundo <= 40:
+                for id_pendiente, vela_pendiente, estado_pendiente, metricas_pendientes in rondas_pendientes_d76f:
+                    if (
+                        ronda_reportada_d76f is not None
+                        and id_pendiente <= ronda_reportada_d76f
+                    ):
+                        continue
+                    print(
+                        "D7.6F TELEMETRIA | vela:", vela_pendiente,
+                        "| intento:", id_pendiente,
+                        "| estado:", estado_pendiente,
+                    )
+                    imprimir_resumen_ronda(metricas_pendientes)
+                    ronda_reportada_d76f = id_pendiente
+                    ultima_impresion_resumen = time.time()
+                rondas_pendientes_d76f.clear()
+
+                if (
+                    ronda_metricas_d76f is not None
+                    and ronda_reportada_d76f != intento_id_d76f
+                    and estado_ronda_d76f in (
+                        "COMPLETADA",
+                        "DESCARTADA",
+                        "OMITIDA_PREANALISIS",
+                    )
+                ):
+                    print(
+                        "D7.6F TELEMETRIA | vela:", ronda_metricas_d76f,
+                        "| intento:", intento_id_d76f,
+                        "| estado:", estado_ronda_d76f,
+                    )
+                    if estado_ronda_d76f == "COMPLETADA":
+                        imprimir_resumen_ronda(estado.metricas_ronda)
+                    else:
+                        print(
+                            "D7.6F DESCARTE | metricas parciales "
+                            "excluidas del resumen operativo"
+                        )
+                    ronda_reportada_d76f = intento_id_d76f
+                    ultima_impresion_resumen = time.time()
+
+
             # ==========================================
             # D7.6A — PRECALENTAR CACHE DE ACTIVOS
             # ==========================================
@@ -656,35 +718,8 @@ def main():
                     time.sleep(0.25)
                     continue
 
-            if (
-                time.time()
-                - ultima_impresion_resumen
-                >= 60
-            ):
-                if (
-                    estado.metricas_ronda.get(
-                        "mercados_analizados",
-                        0
-                    ) > 0
-                    or estado.metricas_ronda.get(
-                        "senales_detectadas",
-                        0
-                    ) > 0
-                    or estado.metricas_ronda.get(
-                        "entradas_abiertas",
-                        0
-                    ) > 0
-                    or estado.metricas_ronda.get(
-                        "mercados_abiertos_recorridos",
-                        0
-                    ) > 0
-                ):
-                    imprimir_resumen_ronda()
-
-                ultima_impresion_resumen = (
-                    time.time()
-                )
-
+            if time.time() - ultima_impresion_resumen >= 60:
+                ultima_impresion_resumen = time.time()
                 time.sleep(0.25)
                 continue
 
@@ -770,6 +805,38 @@ def main():
             segundo,
         )
 
+        if (
+            estado_ronda_d76f == "DESCARTADA"
+            and ronda_metricas_d76f == clave_ronda_d76c
+        ):
+            diagnostico_descarte_d76f = {
+                "mercados_analizados": estado.metricas_ronda.get("mercados_analizados", 0),
+                "activos_con_candidatas": estado.metricas_ronda.get("activos_con_candidatas", 0),
+                "candidatas_generadas": estado.metricas_ronda.get("candidatas_generadas", 0),
+                "candidatas_evaluadas_cerebro": estado.metricas_ronda.get("candidatas_evaluadas_cerebro", 0),
+                "candidatas_que_continuan": estado.metricas_ronda.get("candidatas_que_continuan", 0),
+                "cerebro_no_operar": estado.metricas_ronda.get("cerebro_no_operar", 0),
+                "senales_detectadas": estado.metricas_ronda.get("senales_detectadas", 0),
+                "senales_aprobadas": estado.metricas_ronda.get("senales_aprobadas", 0),
+                "entradas_abiertas": estado.metricas_ronda.get("entradas_abiertas", 0),
+            }
+
+
+        # D7.6F — preservar una ronda completada pendiente.
+        if (
+            estado_ronda_d76f == "COMPLETADA"
+            and ronda_reportada_d76f != intento_id_d76f
+        ):
+            rondas_pendientes_d76f.append((
+                intento_id_d76f,
+                ronda_metricas_d76f,
+                "COMPLETADA",
+                estado.metricas_ronda,
+            ))
+
+        intento_id_d76f += 1
+        estado_ronda_d76f = "EN_PROCESO"
+        ronda_metricas_d76f = clave_ronda_d76c
         reiniciar_metricas_ronda()
 
         # ==========================================
@@ -793,6 +860,7 @@ def main():
                 "| requeridos:",
                 MAX_ACTIVOS_ANALIZAR,
             )
+            estado_ronda_d76f = "OMITIDA_PREANALISIS"
             time.sleep(0.25)
             continue
 
@@ -824,6 +892,7 @@ def main():
                 "| faltantes:",
                 faltantes_buffer_d76d,
             )
+            estado_ronda_d76f = "OMITIDA_PREANALISIS"
             time.sleep(0.25)
             continue
 
@@ -1230,6 +1299,7 @@ def main():
                 segundo_actual()
             )
 
+            estado_ronda_d76f = "DESCARTADA"
             print(
                 "D7.6D RONDA DESCARTADA — "
                 "NO SE ORDENA TOP PARCIAL | segundo:",
@@ -1260,6 +1330,7 @@ def main():
             time.sleep(0.25)
             continue
 
+        estado_ronda_d76f = "ANALISIS_VALIDADO"
         print(
             (
                 "BÚSQUEDA COMPLETADA | señales finales:"
@@ -1695,37 +1766,9 @@ def main():
 
             operaciones_desde_resumen_mercado = 0
 
-            if (
-                time.time()
-                - ultima_impresion_resumen
-                >= 60
-            ):
+            # D7.6F — reporte centralizado fuera de ventana.
 
-                if (
-                    estado.metricas_ronda.get(
-                        "mercados_analizados",
-                        0
-                    ) > 0
-                    or estado.metricas_ronda.get(
-                        "senales_detectadas",
-                        0
-                    ) > 0
-                    or estado.metricas_ronda.get(
-                        "entradas_abiertas",
-                        0
-                    ) > 0
-                    or estado.metricas_ronda.get(
-                        "mercados_abiertos_recorridos",
-                        0
-                    ) > 0
-                ):
-
-                    imprimir_resumen_ronda()
-
-                ultima_impresion_resumen = (
-                    time.time()
-                )
-
+        estado_ronda_d76f = "COMPLETADA"
         time.sleep(0.25)
 
 

@@ -220,15 +220,17 @@ def registrar_bloqueo(motivo):
     estado.metricas_ronda["bloqueos"][motivo] += 1
 
 
-def imprimir_resumen_ronda():
+def imprimir_resumen_ronda(metricas=None):
     import estado
+    if metricas is None:
+        metricas = estado.metricas_ronda
 
     print("\n===== RESUMEN DE RONDA =====")
-    mercados = estado.metricas_ronda.get("mercados_analizados", 0)
-    detectadas = estado.metricas_ronda.get("senales_detectadas", 0)
-    aprobadas = estado.metricas_ronda.get("senales_aprobadas", 0)
+    mercados = metricas.get("mercados_analizados", 0)
+    detectadas = metricas.get("senales_detectadas", 0)
+    aprobadas = metricas.get("senales_aprobadas", 0)
 
-    uso_cache = estado.metricas_ronda.get(
+    uso_cache = metricas.get(
         "uso_cache_activos",
         0
     )
@@ -238,7 +240,7 @@ def imprimir_resumen_ronda():
 
         print(
             "Fallback caché por API:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "fallback_cache_api",
                 0
             )
@@ -246,7 +248,7 @@ def imprimir_resumen_ronda():
 
         print(
             "Compatibles disponibles en caché:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "compatibles_antes_top",
                 0
             )
@@ -257,7 +259,7 @@ def imprimir_resumen_ronda():
 
         print(
             "Mercados abiertos recorridos:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "mercados_abiertos_recorridos",
                 0
             )
@@ -265,7 +267,7 @@ def imprimir_resumen_ronda():
 
         print(
             "Duplicados omitidos:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "duplicados_omitidos",
                 0
             )
@@ -273,7 +275,7 @@ def imprimir_resumen_ronda():
 
         print(
             "Descartados inválidos:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "descartados_invalidos",
                 0
             )
@@ -281,7 +283,7 @@ def imprimir_resumen_ronda():
 
         print(
             "Descartados cooldown:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "descartados_cooldown",
                 0
             )
@@ -289,7 +291,7 @@ def imprimir_resumen_ronda():
 
         print(
             "Evaluados por filtro:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "activos_evaluados_filtro",
                 0
             )
@@ -297,7 +299,7 @@ def imprimir_resumen_ronda():
 
         print(
             "Descartados totales evaluar_estabilidad:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "descartados_sin_datos",
                 0
             )
@@ -305,7 +307,7 @@ def imprimir_resumen_ronda():
 
         print(
             "  get_candles None:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "scan_candles_none",
                 0
             )
@@ -313,7 +315,7 @@ def imprimir_resumen_ronda():
 
         print(
             "  Menos de 80 velas:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "scan_velas_insuficientes",
                 0
             )
@@ -321,7 +323,7 @@ def imprimir_resumen_ronda():
 
         print(
             "  Formato -op:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "scan_formato_op",
                 0
             )
@@ -329,7 +331,7 @@ def imprimir_resumen_ronda():
 
         print(
             "  Formato combinado:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "scan_formato_combinado",
                 0
             )
@@ -337,7 +339,7 @@ def imprimir_resumen_ronda():
 
         print(
             "  Calidad no apta:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "scan_calidad",
                 0
             )
@@ -345,7 +347,7 @@ def imprimir_resumen_ronda():
 
         print(
             "  Score diagnóstico <52:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "scan_score",
                 0
             )
@@ -353,7 +355,7 @@ def imprimir_resumen_ronda():
 
         print(
             "  Tendencia indefinida:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "scan_tendencia_indefinida",
                 0
             )
@@ -361,7 +363,7 @@ def imprimir_resumen_ronda():
 
         print(
             "  Tendencia débil:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "scan_tendencia_debil",
                 0
             )
@@ -369,7 +371,7 @@ def imprimir_resumen_ronda():
 
         print(
             "  Rango débil:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "scan_rango_debil",
                 0
             )
@@ -377,7 +379,7 @@ def imprimir_resumen_ronda():
 
         print(
             "  Inválido API:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "scan_invalido_api",
                 0
             )
@@ -385,7 +387,7 @@ def imprimir_resumen_ronda():
 
         print(
             "  Excepción:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "scan_excepcion",
                 0
             )
@@ -393,7 +395,7 @@ def imprimir_resumen_ronda():
 
         print(
             "Descartados por score:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "descartados_score",
                 0
             )
@@ -401,7 +403,7 @@ def imprimir_resumen_ronda():
 
         print(
             "Compatibles antes del TOP:",
-            estado.metricas_ronda.get(
+            metricas.get(
                 "compatibles_antes_top",
                 0
             )
@@ -411,7 +413,7 @@ def imprimir_resumen_ronda():
 
     print(
         "Activos con candidatas:",
-        estado.metricas_ronda.get(
+        metricas.get(
             "activos_con_candidatas",
             0
         )
@@ -419,13 +421,13 @@ def imprimir_resumen_ronda():
 
     print(
         "Candidatas generadas:",
-        estado.metricas_ronda.get(
+        metricas.get(
             "candidatas_generadas",
             0
         )
     )
 
-    familias_generadas = estado.metricas_ronda.get(
+    familias_generadas = metricas.get(
         "familias_generadas",
         {}
     )
@@ -453,7 +455,7 @@ def imprimir_resumen_ronda():
 
     print(
         "Candidatas evaluadas por Cerebro:",
-        estado.metricas_ronda.get(
+        metricas.get(
             "candidatas_evaluadas_cerebro",
             0
         )
@@ -461,7 +463,7 @@ def imprimir_resumen_ronda():
 
     print(
         "Candidatas que continúan:",
-        estado.metricas_ronda.get(
+        metricas.get(
             "candidatas_que_continuan",
             0
         )
@@ -476,7 +478,7 @@ def imprimir_resumen_ronda():
 
     print(
         "Cerebro NO_OPERAR:",
-        estado.metricas_ronda.get(
+        metricas.get(
             "cerebro_no_operar",
             0
         )
@@ -484,7 +486,7 @@ def imprimir_resumen_ronda():
 
     print(
         "Cerebro sin autorización:",
-        estado.metricas_ronda.get(
+        metricas.get(
             "cerebro_sin_autorizacion",
             0
         )
@@ -494,7 +496,7 @@ def imprimir_resumen_ronda():
 
     print(
         "Autorizadas DIRECTA:",
-        estado.metricas_ronda.get(
+        metricas.get(
             "autorizadas_directa",
             0
         )
@@ -502,7 +504,7 @@ def imprimir_resumen_ronda():
 
     print(
         "Autorizadas PROTOCOLO:",
-        estado.metricas_ronda.get(
+        metricas.get(
             "autorizadas_protocolo",
             0
         )
@@ -510,7 +512,7 @@ def imprimir_resumen_ronda():
 
     print(
         "DIRECTAS no ejecutadas:",
-        estado.metricas_ronda.get(
+        metricas.get(
             "directas_no_ejecutadas",
             0
         )
@@ -518,13 +520,13 @@ def imprimir_resumen_ronda():
 
     print(
         "Entradas DIRECTAS abiertas:",
-        estado.metricas_ronda.get(
+        metricas.get(
             "entradas_abiertas",
             0
         )
     )
 
-    bloqueos = estado.metricas_ronda.get("bloqueos", {})
+    bloqueos = metricas.get("bloqueos", {})
 
     if bloqueos:
         print("Bloqueos principales:")
