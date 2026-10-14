@@ -853,7 +853,7 @@ def main():
 
         # STEP 6: proteger integridad del TOP20 LIVE.
         # Nunca analizar un universo incompleto.
-        if not (0 < len(activos) <= MAX_ACTIVOS_ANALIZAR):
+        if len(activos) != MAX_ACTIVOS_ANALIZAR:
             print(
                 "TOP20 LIVE INCOMPLETO | recibidos:",
                 len(activos),
