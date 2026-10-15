@@ -976,15 +976,6 @@ def refrescar_activos_incremental():
 
     if top_pendiente:
 
-        if len(top_pendiente) != MAX_ACTIVOS_ANALIZAR:
-            print(
-                'D7.6D TOP PENDIENTE INCOMPLETO RECHAZADO |',
-                'recibidos:', len(top_pendiente),
-                '| requeridos:', MAX_ACTIVOS_ANALIZAR,
-            )
-            estado.refresh_activos_top_pendiente = []
-            return []
-
         precargar_velas_activos(
             top_pendiente,
             podar_cache=False,
@@ -1418,7 +1409,7 @@ def refrescar_activos_incremental():
         )
     )
 
-    if len(top_nuevo) == MAX_ACTIVOS_ANALIZAR:
+    if 0 < len(top_nuevo) <= MAX_ACTIVOS_ANALIZAR:
 
         # ==========================================
         # D7.6D — TOP COMPLETO PENDIENTE DE BUFFER
@@ -1533,15 +1524,6 @@ def obtener_activos(
         not cache_previa_d76d
         and top_pendiente_bootstrap_d76d
     ):
-        if len(top_pendiente_bootstrap_d76d) != MAX_ACTIVOS_ANALIZAR:
-            print(
-                'D7.6D BOOTSTRAP TOP INCOMPLETO RECHAZADO |',
-                'recibidos:', len(top_pendiente_bootstrap_d76d),
-                '| requeridos:', MAX_ACTIVOS_ANALIZAR,
-            )
-            estado.refresh_activos_top_pendiente = []
-            return []
-
         nombres_pendientes_d76d = {
             item["activo"]
             for item in top_pendiente_bootstrap_d76d
@@ -2084,7 +2066,7 @@ def obtener_activos(
         :MAX_ACTIVOS_ANALIZAR
     ]
 
-    if len(activos) == MAX_ACTIVOS_ANALIZAR:
+    if 0 < len(activos) <= MAX_ACTIVOS_ANALIZAR:
         if not cache_previa_d76d:
             # Bootstrap:
             # el TOP ya está calculado, pero todavía
