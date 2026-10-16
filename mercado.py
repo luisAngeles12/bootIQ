@@ -70,8 +70,43 @@ def _solo_velas_cerradas(candles):
     return cerradas
 
 
+def _buffer_velas_integro(candles):
+    """
+    D9.53 — Valida cantidad y continuidad temporal.
+    No comprueba vigencia; esa validación es independiente.
+    """
+    if not candles or len(candles) < 130:
+        return False
+
+    try:
+        tiempos = [
+            int(float(c["from"]))
+            for c in candles
+        ]
+
+        return all(
+            siguiente - anterior == CANDLE_TIME
+            for anterior, siguiente
+            in zip(tiempos, tiempos[1:])
+        )
+
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return False
+
+
 def _datos_desde_velas(candles):
     if not candles or len(candles) < 130:
+        return None
+
+    # D9.42: impedir que huecos temporales lleguen al análisis.
+    try:
+        timestamps = [int(float(c["from"])) for c in candles]
+        if any(
+            siguiente - anterior != CANDLE_TIME
+            for anterior, siguiente in zip(timestamps, timestamps[1:])
+        ):
+            return None
+    except (KeyError, TypeError, ValueError, OverflowError):
         return None
 
     return {
@@ -192,7 +227,7 @@ def precargar_velas_activos(
             [],
         )
 
-        if len(existentes) >= 130:
+        if _buffer_velas_integro(existentes):
             reutilizados += 1
             continue
 
@@ -219,13 +254,13 @@ def precargar_velas_activos(
                 candles
             )
 
-            if len(cerradas) < 130:
+            buffer_descargado = cerradas[-objetivo_cerradas:]
+
+            if not _buffer_velas_integro(buffer_descargado):
                 errores += 1
                 continue
 
-            estado.velas_cache[activo] = (
-                cerradas[-objetivo_cerradas:]
-            )
+            estado.velas_cache[activo] = buffer_descargado
 
             nuevos += 1
 
@@ -995,12 +1030,12 @@ def refrescar_activos_incremental():
             for activo in sorted(
                 nombres_pendientes
             )
-            if len(
+            if not _buffer_velas_integro(
                 estado.velas_cache.get(
                     activo,
                     [],
                 )
-            ) < 130
+            )
         ]
 
         if faltantes_buffer:
@@ -1536,7 +1571,7 @@ def obtener_activos(
         faltantes_buffer_d76d = [
             activo
             for activo in nombres_pendientes_d76d
-            if len(
+            if not _buffer_velas_integro(
                 getattr(
                     estado,
                     "velas_cache",
@@ -1545,7 +1580,7 @@ def obtener_activos(
                     activo,
                     [],
                 )
-            ) < 130
+            )
         ]
 
         # Solo cuando TODOS tienen buffer se publica.
