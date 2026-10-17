@@ -1,0 +1,27 @@
+BOOTIQ D7.9 — CORE CONGELADO
+========================================
+
+CAMBIO:
+V3 bloquea únicamente CHOCH alcista + ALCISTA_NORMAL + RSI >= 60.
+
+NO MODIFICA:
+- CORE4 R1/R2/R4/R6
+- D7.5
+- protocolo
+- entrada
+- timing/API
+- aprendizaje
+- bloqueo SUCIO/CAOTICO
+
+GLOBAL_SHA256 = 9615f7d2ac1445879618ace26e46d9fa21663ccb404267bcc5489d1983307cb9
+
+e84f13b2faf63dde45dd99fe9b52ea13724cfbcca203436cbd7b444d669803ef  bot.py
+39e6875dd9a0191b6097cc63a3fd90a42b4bdef4579910c210e33e6a1c9d7b88  entrada.py
+0a183d000fb339b960c0d5744c164636e9199fb2fd3cccfb2e3674bdcf066c76  mercado.py
+978b015ae02077d81c7b5cc4edbc6f781559d887c7a8b96c8b23400bcedcb896  iqoptionapi/stable_api.py
+0bb0a9fd27b061f15cbb90aeb6e7900918996a894f7901f388c916610085dc9c  constructor_evidencia.py
+f04ca0fba244a0922fd4b8b4b65d7b54e4eb34d0a63fe0255ae1484fc5a2dba6  motor_decision.py
+cf84608270d9b1a4db9a949749b63df378eac1754b31ec32f53503960c0ae2f3  decision_bootiq.py
+6399e2c943ec35d59efa48a798700f858d1576d70ba3747b79fd4d8a0ff0408b  historial.py
+072d02970c34fc918459bd6c4e0088c80470d413cc3c75cddb78f31f28a08f4d  operaciones.py
+5cc436f2024f5f26c360e8defe40588c6c338c09af0e759869afb177f0077761  estrategia.py

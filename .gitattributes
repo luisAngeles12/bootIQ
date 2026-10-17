@@ -1,0 +1,4 @@
+/backtest_D8_E50_CONTROL_ACTUAL.csv filter=lfs diff=lfs merge=lfs -text
+/backtest_D8_E50_SHADOW_ACTUAL.csv filter=lfs diff=lfs merge=lfs -text
+/backtest_D8_E56_SHADOW_CHOCH_SIN_OVERRIDE_RUPTURA.csv filter=lfs diff=lfs merge=lfs -text
+/backtest_D8_E58_SHADOW_CHOCH_MISMA_CONFIRMACION_ENTRADA_ORIGEN.csv filter=lfs diff=lfs merge=lfs -text

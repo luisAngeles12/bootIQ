@@ -6,13 +6,18 @@ logging.basicConfig(level=logging.DEBUG,format='%(asctime)s %(message)s')
  
 email=os.getenv("email")
 password=os.getenv("password")
+
+@unittest.skipUnless(
+    os.getenv("IQOPTION_ENABLE_PRACTICE_ORDERS") == "1",
+    "set IQOPTION_ENABLE_PRACTICE_ORDERS=1 to place practice orders",
+)
 class TestBinaryOption(unittest.TestCase):
   
     def test_binary_option(self):
         #login
         I_want_money=IQ_Option(email,password)
+        I_want_money.connect()
         I_want_money.change_balance("PRACTICE")
-        I_want_money.reset_practice_balance()
         self.assertEqual(I_want_money.check_connect(), True)
         #start test binary option
         ALL_Asset=I_want_money.get_all_open_time()

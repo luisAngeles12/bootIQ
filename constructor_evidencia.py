@@ -97,7 +97,16 @@ def construir_evidencia_operacion(senal, ctx=None):
 
     if not isinstance(pa_evidencias_raw, list):
         pa_evidencias_raw = []
-    
+    # ========================================================
+    # EVIDENCIAS GENERADAS POR LA ESTRATEGIA
+    # ========================================================
+    estrategia_evidencias_raw = senal.get(
+        "estrategia_evidencias",
+        ctx.get("estrategia_evidencias", []),
+    )
+
+    if not isinstance(estrategia_evidencias_raw, list):
+        estrategia_evidencias_raw = []
     if not isinstance(setup_completo, dict):
         setup_completo = {}
 
@@ -148,6 +157,136 @@ def construir_evidencia_operacion(senal, ctx=None):
         "indice_confirmacion_ia": senal.get("indice_confirmacion_ia", 0),
         "motivo_ejecucion": normalizar(senal.get("motivo_ejecucion")),
         "puntaje": senal.get("puntaje", 0),
+
+        # ====================================================
+        # D7.9 — RSI ESTRUCTURADO PARA CEREBRO
+        # ====================================================
+        # Solo transporta el RSI ya calculado aguas arriba.
+        # No decide ni modifica la señal.
+        "rsi": senal.get(
+            "rsi",
+            ctx.get("rsi", 0)
+        ),
+
+        # D7.12 — transporte técnico para R4.
+        # No decide: conserva la dirección EMA ya calculada
+        # aguas arriba para que el Cerebro pueda auditarla.
+        "ema_bajista": bool(
+            senal.get(
+                "ema_bajista",
+                ctx.get("ema_bajista", False),
+            )
+        ),
+
+        # ====================================================
+        # D7.13 — TRANSPORTE TÉCNICO CHOCH
+        # ====================================================
+        # Solo conserva evidencia ya calculada aguas arriba.
+        # No decide ni bloquea operaciones.
+        "ema_alcista": bool(
+            senal.get(
+                "ema_alcista",
+                ctx.get("ema_alcista", False),
+            )
+        ),
+        "posicion_rango": senal.get(
+            "posicion_rango",
+            ctx.get("posicion_rango", 0.5),
+        ),
+        "rechazo_hist_direccion": normalizar(
+            senal.get(
+                "rechazo_hist_direccion",
+                ctx.get("rechazo_hist_direccion", "NEUTRA"),
+            )
+        ),
+        "impulso_alcista": bool(
+            senal.get(
+                "impulso_alcista",
+                ctx.get("impulso_alcista", False),
+            )
+        ),
+        "rechazo_bajista_real": bool(
+            senal.get(
+                "rechazo_bajista_real",
+                ctx.get("rechazo_bajista_real", False),
+            )
+        ),
+        "cerca_resistencia": bool(
+            senal.get(
+                "cerca_resistencia",
+                ctx.get("cerca_resistencia", False),
+            )
+        ),
+        "br_call": senal.get(
+            "br_call",
+            ctx.get("br_call", 0),
+        ),
+        "vela_climax_alcista": bool(
+            senal.get(
+                "vela_climax_alcista",
+                ctx.get("vela_climax_alcista", False),
+            )
+        ),
+        "direccion_presion": normalizar(
+            senal.get(
+                "direccion_presion",
+                ctx.get("direccion_presion", "NEUTRA"),
+            )
+        ),
+
+        # D7.18 — MICRO PRESION PARA CONTRATO CORE4 R2.
+        # Transporte puro. No decide ni bloquea.
+        "presion_corta": normalizar(
+            senal.get(
+                "presion_corta",
+                ctx.get("presion_corta", "NEUTRA"),
+            )
+        ),
+
+        # D7.18 — confirmaciones originales del pullback CALL.
+        # Se usan nombres propios para no confundir
+        # evidencia["patron"] (estrategia) con ctx["patron"]
+        # (patron de vela numerico).
+        "rechazo_contexto": ctx.get(
+            "rechazo",
+            0,
+        ),
+        "patron_vela_contexto": ctx.get(
+            "patron",
+            0,
+        ),
+
+        # D7.19 — nombre estructurado del patrón de vela.
+        # Transporte puro: no decide ni bloquea.
+        "nombre_patron_vela": normalizar(
+            senal.get(
+                "nombre_patron_vela",
+                ctx.get("nombre_patron", ""),
+            )
+        ),
+
+        "patron_call_ok": bool(
+            ctx.get(
+                "patron_call_ok",
+                False,
+            )
+        ),
+
+        # D7.18 — VELA ORIGEN PARA CONTRATO CORE4 R2.
+        # Transporte puro. No decide ni bloquea.
+        "ultima_open": senal.get(
+            "ultima_open",
+            ctx.get("ultima_open", 0.0),
+        ),
+        "ultima_close": senal.get(
+            "ultima_close",
+            ctx.get("ultima_close", 0.0),
+        ),
+        "fuerza_ultima": senal.get(
+            "fuerza_ultima",
+            ctx.get("fuerza_ultima", 0.0),
+        ),
+
         "prioridad": senal.get("prioridad", 0),
         "score_final": senal.get("score_final", 0),
         "estado_operativo_setup": normalizar(
@@ -175,6 +314,42 @@ def construir_evidencia_operacion(senal, ctx=None):
         "nivel_consenso": normalizar(senal.get("nivel_consenso")),
         "ajuste_consenso": senal.get("ajuste_consenso", 0),
 
+        # ====================================================
+        # D8-E50 — COMPETENCIA CRUDA ENTRE ESTRATEGIAS
+        # ====================================================
+        # Transporte puro.
+        # constructor_evidencia.py NO decide ni bloquea.
+        "competencia_candidatas_crudas": senal.get(
+            "competencia_candidatas_crudas",
+            0,
+        ),
+        "competencia_calls_crudas": senal.get(
+            "competencia_calls_crudas",
+            0,
+        ),
+        "competencia_puts_crudas": senal.get(
+            "competencia_puts_crudas",
+            0,
+        ),
+        "competencia_conflicto": bool(
+            senal.get(
+                "competencia_conflicto",
+                False,
+            )
+        ),
+        "competencia_conflicto_con_mayoria": bool(
+            senal.get(
+                "competencia_conflicto_con_mayoria",
+                False,
+            )
+        ),
+        "competencia_direccion_mayoria": normalizar(
+            senal.get(
+                "competencia_direccion_mayoria",
+                "SIN_CONFLICTO",
+            )
+        ),
+
         "tipo_mercado": normalizar(
             senal.get("tipo_mercado", ctx.get("tipo_mercado"))
         ),
@@ -184,6 +359,62 @@ def construir_evidencia_operacion(senal, ctx=None):
         "score_mercado": senal.get(
             "score_mercado",
             ctx.get("score_mercado", 0)
+        ),
+
+        # ====================================================
+        # D7.7 — VALIDACIONES TECNICAS ESTRUCTURADAS
+        # ====================================================
+        #
+        # constructor_evidencia NO decide.
+        # Solo transporta al Cerebro el resultado exacto
+        # producido previamente por estrategia.py.
+        "validacion_mercado_ok": senal.get(
+            "validacion_mercado_ok",
+            ctx.get("validacion_mercado_ok")
+        ),
+
+        "razon_validacion_mercado": normalizar(
+            senal.get(
+                "razon_validacion_mercado",
+                ctx.get("razon_validacion_mercado")
+            )
+        ),
+
+        # ====================================================
+        # AUTORIDAD / MEMORIA / ZONA — TRANSPORTE PURO
+        # ====================================================
+        # Estos datos ya fueron calculados aguas arriba.
+        # constructor_evidencia no decide sobre ellos:
+        # solamente evita que se pierdan antes de llegar
+        # a motor_decision.py.
+        "memoria_permite": senal.get(
+            "memoria_permite",
+            ctx.get("memoria_permite")
+        ),
+
+        "activo_bloqueable_historico": senal.get(
+            "activo_bloqueable_historico",
+            ctx.get("activo_bloqueable_historico", False)
+        ),
+
+        "razon_zona_sr": normalizar(
+            senal.get(
+                "razon_zona_sr",
+                ctx.get("razon_zona_sr")
+            ),
+            ""
+        ),
+
+        "validacion_accion_precio_ok": senal.get(
+            "validacion_accion_precio_ok",
+            ctx.get("validacion_accion_precio_ok")
+        ),
+
+        "razon_validacion_accion_precio": normalizar(
+            senal.get(
+                "razon_validacion_accion_precio",
+                ctx.get("razon_validacion_accion_precio")
+            )
         ),
 
         "estado_tendencia": normalizar(
@@ -265,10 +496,15 @@ def construir_evidencia_operacion(senal, ctx=None):
             pa_evidencias_raw,
             "price_action"
         ),
-        
+
         "mercado_evidencias": normalizar_lista_evidencias(
             mercado_evidencias_raw,
             "mercado"
+        ),
+
+        "estrategia_evidencias": normalizar_lista_evidencias(
+            estrategia_evidencias_raw,
+            "estrategia"
         ),
     }
 
@@ -281,25 +517,6 @@ def imprimir_evidencia(evidencia):
         print(clave + ":", valor)
 
 
-if __name__ == "__main__":
-    ejemplo_senal = {
-        "activo": "BIDU-OTC",
-        "direccion": "put",
-        "patron": "CHOCH bajista",
-        "puntaje": 22,
-        "prioridad": 4,
-        "score_final": 178,
-        "consenso": 98,
-        "nivel_consenso": "PREMIUM",
-        "tipo_mercado": "TENDENCIA_BAJISTA",
-        "calidad_mercado": "NORMAL",
-        "estado_tendencia": "BAJISTA_FUERTE",
-        "pa_tipo": "IMPULSO_BAJISTA_FUERTE",
-        "pa_direccion": "PUT",
-    }
-
-    evidencia = construir_evidencia_operacion(ejemplo_senal)
-    imprimir_evidencia(evidencia)
 
 def construir_evidencias_mercado(ctx):
     """
@@ -588,3 +805,23 @@ def construir_evidencias_mercado(ctx):
         })
 
     return evidencias
+
+if __name__ == "__main__":
+    ejemplo_senal = {
+        "activo": "BIDU-OTC",
+        "direccion": "put",
+        "patron": "CHOCH bajista",
+        "puntaje": 22,
+        "prioridad": 4,
+        "score_final": 178,
+        "consenso": 98,
+        "nivel_consenso": "PREMIUM",
+        "tipo_mercado": "TENDENCIA_BAJISTA",
+        "calidad_mercado": "NORMAL",
+        "estado_tendencia": "BAJISTA_FUERTE",
+        "pa_tipo": "IMPULSO_BAJISTA_FUERTE",
+        "pa_direccion": "PUT",
+    }
+
+    evidencia = construir_evidencia_operacion(ejemplo_senal)
+    imprimir_evidencia(evidencia)

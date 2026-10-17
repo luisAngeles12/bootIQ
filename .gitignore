@@ -7,3 +7,21 @@ dist/
 venv/
 .idea
 test.py
+# Credenciales privadas BootIQ
+credenciales_local.py
+auditoria_paridad_live.csv
+
+# Artefactos generados BootIQ
+*.log
+*.bak
+*.pre_*
+backtest*.csv
+debug_*.csv
+auditoria_*.txt
+auditoria_*.json
+manifest_*.txt
+fase*.txt
+tmp_*.csv
+data_backtest*/
+!data_backtest_9x14_oos_post_9w_alineado_17/
+!data_backtest_9x14_oos_post_9w_alineado_17/*.csv

@@ -1,11 +1,16 @@
+import os
 import unittest
 import time
 from iqoptionapi.stable_api import IQ_Option
 
 # 🔥 pon tus datos directo para probar (IMPORTANTE para debug)
-email = "luisangelestejada@gmail.com"
-password = "R@putim120799"
+email = os.getenv("email")
+password = os.getenv("password")
 
+@unittest.skipUnless(
+    os.getenv("IQOPTION_ENABLE_LIVE_TESTS") == "1",
+    "set IQOPTION_ENABLE_LIVE_TESTS=1 to run the broker smoke test",
+)
 class TestLogin(unittest.TestCase):
 
     def test_login(self):
@@ -30,8 +35,5 @@ class TestLogin(unittest.TestCase):
 
         I_want_money.change_balance("PRACTICE")
         print("💰 Cambiado a cuenta DEMO")
-
-        I_want_money.reset_practice_balance()
-        print("🔄 Balance reseteado")
 
         print("🎯 LOGIN OK - TODO FUNCIONA")

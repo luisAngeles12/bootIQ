@@ -129,6 +129,25 @@ Archivos actuales:
 
 Fase 4 no debe ser un segundo motor final de bloqueo. Su salida debe alimentar el motor de decisión unificado.
 
+## Conexión y reconexión
+
+Las esperas del ciclo WebSocket deben tener límites explícitos: apertura,
+cierre del hilo lector, respuesta de perfil tras enviar SSID y sincronización
+de tiempo del servidor. Si el socket no se recupera dentro del límite, la
+conexión debe fallar con una razón visible y permitir que el controlador de
+reconexión inicie otro intento, sin dejar hilos antiguos activos.
+
+El escáner no debe iniciarse hasta recibir una inicialización válida con
+activos tanto binary como turbo. Si IQ Option no responde, el arranque conserva
+el proceso y reintenta con espera creciente; no debe sustituir esos datos por
+IDs estáticos o potencialmente obsoletos.
+Un timeout de OPCODE por sí solo no justifica abrir una sesión nueva si el
+WebSocket actual sigue conectado: la reconexión se reserva para una conexión
+que realmente se haya perdido.
+Al vencer initialization-data se reportan el estado del lector WebSocket y
+los nombres de canales recibidos, nunca el contenido de esos mensajes, para
+distinguir un timeout del servidor de un problema de interpretación local.
+
 ---
 
 ### 7. Decisión
@@ -188,3 +207,21 @@ Orden correcto:
 ```bash
 python -m py_compile archivo.py
 python backtest_bot_real.py
+```
+
+## Ventana temporal LIVE
+
+Para velas de un minuto, BootIQ solo puede enviar una orden durante
+los segundos 0 a 30 de la vela de entrada y reserva los últimos dos
+segundos como margen para el envío a IQ. La validación final usa el
+timestamp del servidor IQ y rechaza tanto las entradas fuera de ese
+margen como las señales referidas a una vela ya cerrada. Una señal de
+protocolo puede esperar las confirmaciones previstas por su protocolo,
+pero no puede ejecutar una confirmación pasada en una vela posterior.
+
+La precarga del universo, las consultas de balance, la reconciliación
+de resultados y los reportes se programan fuera de la ventana de
+entrada. El análisis LIVE usa la cache preparada y reserva los últimos
+segundos para validar y enviar órdenes. Esta regla limita el momento de
+entrada; no garantiza una tasa de acierto ni una cantidad determinada
+de operaciones.

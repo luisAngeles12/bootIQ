@@ -3,12 +3,12 @@ import csv
 import os
 
 import estado
-from conexion import conectar
+from conexion import conectar, reconectar_iq
 from config import CANDLE_TIME , CANDLE_NUMBER
 from mercado import obtener_activos
 
-CARPETA_DATA = "data_backtest"
-VELAS_POR_ACTIVO = CANDLE_NUMBER
+CARPETA_DATA = "data_backtest_oos4_d75_raw"
+VELAS_POR_ACTIVO = 500
 MIN_VELAS_VALIDAS = 200
 ESPERA_ENTRE_DESCARGAS = 0.35
 
@@ -42,7 +42,11 @@ def activo_compatible(activo):
 def guardar_velas_csv(tipo, activo, candles):
     os.makedirs(CARPETA_DATA, exist_ok=True)
 
-    nombre_seguro = activo.replace("/", "_")
+    nombre_seguro = (
+        activo
+        .replace("/", "_")
+        .replace(":", "_")
+    )
     ruta = os.path.join(CARPETA_DATA, f"{tipo}_{nombre_seguro}.csv")
 
     candles = sorted(candles, key=lambda x: x["from"])
@@ -143,16 +147,98 @@ def descargar_velas_activo(tipo, activo):
         candles_finales = list(velas_unicas.values())
         candles_finales = sorted(candles_finales, key=lambda x: x["from"])
 
-        if not candles_finales or len(candles_finales) < MIN_VELAS_VALIDAS:
+        if not candles_finales:
             print(
                 "Sin suficientes velas:",
                 tipo,
                 activo,
-                "| recibidas:",
-                len(candles_finales) if candles_finales else 0,
+                "| recibidas: 0",
                 flush=True
             )
             return False
+
+        # STEP 6 — conservar un único segmento temporal continuo real.
+        #
+        # IQ puede devolver huecos dentro de una descarga histórica extensa.
+        # No se rellenan, no se ignoran y no se unen velas a ambos lados
+        # del hueco. Se separa la serie en segmentos estrictamente
+        # consecutivos y se conserva el más largo. En empate se prioriza
+        # el segmento más reciente.
+        segmentos = []
+        segmento_actual = [candles_finales[0]]
+
+        for siguiente in candles_finales[1:]:
+            anterior = segmento_actual[-1]
+            delta = int(siguiente["from"]) - int(anterior["from"])
+
+            if delta == CANDLE_TIME:
+                segmento_actual.append(siguiente)
+            else:
+                segmentos.append(segmento_actual)
+                segmento_actual = [siguiente]
+
+        segmentos.append(segmento_actual)
+
+        candles_finales = max(
+            segmentos,
+            key=lambda segmento: (
+                len(segmento),
+                int(segmento[-1]["from"]),
+            ),
+        )
+
+        print(
+            "Segmento continuo seleccionado:",
+            tipo,
+            activo,
+            "| segmentos:",
+            len(segmentos),
+            "| velas:",
+            len(candles_finales),
+            "| desde:",
+            candles_finales[0]["from"],
+            "| hasta:",
+            candles_finales[-1]["from"],
+            flush=True,
+        )
+
+        if len(candles_finales) < MIN_VELAS_VALIDAS:
+            print(
+                "Sin suficientes velas continuas:",
+                tipo,
+                activo,
+                "| segmento:",
+                len(candles_finales),
+                "| mínimo:",
+                MIN_VELAS_VALIDAS,
+                flush=True,
+            )
+            return False
+
+        # Defensa final antes de persistir: el segmento elegido debe
+        # conservar continuidad exacta de CANDLE_TIME.
+        for anterior, siguiente in zip(
+            candles_finales,
+            candles_finales[1:],
+        ):
+            delta = int(siguiente["from"]) - int(anterior["from"])
+
+            if delta != CANDLE_TIME:
+                print(
+                    "Dataset rechazado por continuidad temporal:",
+                    tipo,
+                    activo,
+                    "| desde:",
+                    anterior["from"],
+                    "| hasta:",
+                    siguiente["from"],
+                    "| delta:",
+                    delta,
+                    "| esperado:",
+                    CANDLE_TIME,
+                    flush=True,
+                )
+                return False
 
         guardar_velas_csv(tipo, activo, candles_finales)
         return True
@@ -172,11 +258,89 @@ def main():
 
     print("4. Obteniendo activos con la lógica REAL del bot...", flush=True)
     activos = obtener_activos()
+
+    if not activos:
+        try:
+            conectado = (
+                estado.Iq is not None
+                and estado.Iq.check_connect()
+            )
+        except Exception:
+            conectado = False
+
+        if not conectado:
+            print(
+                "Escaneo inicial abortado por desconexión. "
+                "Intentando recuperar IQ una vez...",
+                flush=True
+            )
+
+            if reconectar_iq():
+                print(
+                    "Conexión recuperada para repetir escaneo inicial. "
+                    "Esperando estabilización...",
+                    flush=True
+                )
+                time.sleep(3)
+
+                try:
+                    conectado = (
+                        estado.Iq is not None
+                        and estado.Iq.check_connect()
+                    )
+                except Exception:
+                    conectado = False
+
+                if conectado:
+                    activos = obtener_activos()
+
     print("5. Activos seleccionados:", len(activos), flush=True)
 
     descargados = 0
 
     for item in activos:
+        try:
+            conectado = (
+                estado.Iq is not None
+                and estado.Iq.check_connect()
+            )
+        except Exception:
+            conectado = False
+
+        if not conectado:
+            if not reconectar_iq():
+                print(
+                    "No se pudo recuperar conexión antes de descargar:",
+                    item["tipo"],
+                    item["activo"],
+                    flush=True
+                )
+                continue
+
+            print(
+                "Conexión recuperada para descarga histórica. "
+                "Esperando estabilización...",
+                flush=True
+            )
+            time.sleep(3)
+
+            try:
+                conectado = (
+                    estado.Iq is not None
+                    and estado.Iq.check_connect()
+                )
+            except Exception:
+                conectado = False
+
+            if not conectado:
+                print(
+                    "Conexión no disponible tras estabilización:",
+                    item["tipo"],
+                    item["activo"],
+                    flush=True
+                )
+                continue
+
         ok = descargar_velas_activo(
             item["tipo"],
             item["activo"]

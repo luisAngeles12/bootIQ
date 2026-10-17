@@ -1,0 +1,1772 @@
+BUILD: BOOTIQ_BACKTEST_V5_SOMBRA_ESTADISTICA_2026_08_01
+
+===== DATASETS SELECCIONADOS PARA BACKTEST =====
+Modo: FILTRADO
+Total datasets cargados: 19
+Datasets válidos técnicamente: 15
+Compatibles con filtro oficial: 15
+Datasets usados: 15
+CANNABIS-OTC | tipo: turbo | filtro: 160.0 | mercado: TENDENCIA_ALCISTA | calidad: LIMPIO | score mercado: 90.0 | tendencia: ALCISTA_FUERTE | fuerza: 75.05 | compatible: True | exclusión: 
+USNDAQ100-OTC | tipo: turbo | filtro: 147.0 | mercado: TENDENCIA_ALCISTA | calidad: LIMPIO | score mercado: 77.0 | tendencia: ALCISTA_FUERTE | fuerza: 81.35 | compatible: True | exclusión: 
+AUS200-OTC | tipo: turbo | filtro: 127.0 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 67.0 | tendencia: BAJISTA_FUERTE | fuerza: 70.04 | compatible: True | exclusión: 
+SATSUSD-OTC | tipo: turbo | filtro: 127.0 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 67.0 | tendencia: BAJISTA_FUERTE | fuerza: 87.29 | compatible: True | exclusión: 
+EURCAD-OTC | tipo: turbo | filtro: 126.0 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 66.0 | tendencia: BAJISTA_FUERTE | fuerza: 79.7 | compatible: True | exclusión: 
+EURAUD-OTC | tipo: turbo | filtro: 125.0 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 65.0 | tendencia: BAJISTA_FUERTE | fuerza: 70.47 | compatible: True | exclusión: 
+CHFJPY-OTC | tipo: turbo | filtro: 121.0 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 61.0 | tendencia: ALCISTA_FUERTE | fuerza: 74.63 | compatible: True | exclusión: 
+USDNOK-OTC | tipo: turbo | filtro: 121.0 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 71.0 | tendencia: ALCISTA_NORMAL | fuerza: 63.78 | compatible: True | exclusión: 
+NZDCAD-OTC | tipo: turbo | filtro: 120.0 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 70.0 | tendencia: BAJISTA_NORMAL | fuerza: 50.43 | compatible: True | exclusión: 
+CASINOS-OTC | tipo: turbo | filtro: 115.0 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 65.0 | tendencia: BAJISTA_NORMAL | fuerza: 57.86 | compatible: True | exclusión: 
+USDDOP-OTC | tipo: turbo | filtro: 115.0 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 65.0 | tendencia: ALCISTA_NORMAL | fuerza: 55.97 | compatible: True | exclusión: 
+EURUSD-OTC | tipo: turbo | filtro: 114.0 | mercado: TENDENCIA_ALCISTA | calidad: NORMAL | score mercado: 64.0 | tendencia: ALCISTA_NORMAL | fuerza: 59.5 | compatible: True | exclusión: 
+USDMXN-OTC | tipo: turbo | filtro: 110.0 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 60.0 | tendencia: BAJISTA_NORMAL | fuerza: 58.61 | compatible: True | exclusión: 
+NIKE-OTC | tipo: turbo | filtro: 107.0 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 57.0 | tendencia: BAJISTA_NORMAL | fuerza: 50.35 | compatible: True | exclusión: 
+JUPUSD-OTC | tipo: turbo | filtro: 105.0 | mercado: TENDENCIA_BAJISTA | calidad: NORMAL | score mercado: 55.0 | tendencia: BAJISTA_NORMAL | fuerza: 60.9 | compatible: True | exclusión: 
+
+===== AUDITORIA DE DATASETS =====
+Modo ejecutado: FILTRADO
+Datasets cargados: 19
+Válidos técnicamente: 15
+Compatibles con filtro: 15
+Datasets seleccionados: 15
+
+Exclusiones detectadas:
+TENDENCIA_DEBIL_SCORE_MENOR_62 | total: 2
+CALIDAD_MERCADO_NO_COMPATIBLE | total: 1
+TENDENCIA_INDEFINIDA | total: 1
+
+===== SPLIT EXPERIMENTAL AUTOMATICO =====
+Universo: 15
+TRAIN: 11
+VALIDACION: 4
+----------------------------------------
+TRAIN:
+  CANNABIS-OTC
+  USNDAQ100-OTC
+  AUS200-OTC
+  EURCAD-OTC
+  CHFJPY-OTC
+  NZDCAD-OTC
+  CASINOS-OTC
+  USDDOP-OTC
+  EURUSD-OTC
+  NIKE-OTC
+  JUPUSD-OTC
+----------------------------------------
+VALIDACION:
+  SATSUSD-OTC
+  EURAUD-OTC
+  USDNOK-OTC
+  USDMXN-OTC
+========================================
+
+
+===== CONFIGURACION EXPERIMENTO =====
+Modo: VALIDACION
+Universo experimental: 15
+TRAIN reservados: 11
+VALIDACION reservados: 4
+Datasets usados ahora: 4
+====================================
+
+TRAIN:
+ - CANNABIS-OTC
+ - USNDAQ100-OTC
+ - AUS200-OTC
+ - EURCAD-OTC
+ - CHFJPY-OTC
+ - NZDCAD-OTC
+ - CASINOS-OTC
+ - USDDOP-OTC
+ - EURUSD-OTC
+ - NIKE-OTC
+ - JUPUSD-OTC
+
+VALIDACION RESERVADA:
+ - SATSUSD-OTC
+ - EURAUD-OTC
+ - USDNOK-OTC
+ - USDMXN-OTC
+
+Datasets cargados para esta ejecución: 4
+Política ranking: MOTOR_CANDIDATOS_V3 | TOP señales por ronda: 20
+Ejecutando backtest usando analizar_activo() real...
+Progreso: 25 / 2818
+RANKING DE SEÑALES:
+EURAUD-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 107
+CONTEXTO FINAL: EURAUD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 63 | TENDENCIA: BAJISTA_NORMAL 67.85 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 50 / 2818
+RANKING DE SEÑALES:
+EURAUD-OTC | put | reacción vendedora en resistencia | puntaje: 18 | prioridad: 0 | consenso: 50.0 MEDIO | score final: 118
+CONTEXTO FINAL: EURAUD-OTC put reacción vendedora en resistencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 67 | TENDENCIA: BAJISTA_NORMAL 53.56 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 75 / 2818
+Progreso: 100 / 2818
+Ronda: 100 Señales: 0
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | pullback bajista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 116
+CONTEXTO FINAL: SATSUSD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 57 | TENDENCIA: BAJISTA_NORMAL 55.9 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDMXN-OTC | call | liquidity sweep alcista | puntaje: 26 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 218
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: USDMXN-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 57 | TENDENCIA: BAJISTA_NORMAL 67.11 | ACCION: ABSORCION_VENDEDORA
+Progreso: 125 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | put | liquidity sweep bajista | puntaje: 23 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 212
+CONTEXTO FINAL: USDNOK-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 68 | TENDENCIA: ALCISTA_NORMAL 64.13 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | pullback bajista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 116
+CONTEXTO FINAL: SATSUSD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 57 | TENDENCIA: BAJISTA_NORMAL 61.43 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 150 / 2818
+RANKING DE SEÑALES:
+USDMXN-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 62
+CONTEXTO FINAL: USDMXN-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 68 | TENDENCIA: BAJISTA_NORMAL 64.54 | ACCION: ABSORCION_COMPRADORA
+RANKING DE SEÑALES:
+SATSUSD-OTC | call | pullback alcista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 134
+SATSUSD-OTC | call | continuación alcista con tendencia | puntaje: 14 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 73
+CONTEXTO FINAL: SATSUSD-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 56 | TENDENCIA: ALCISTA_NORMAL 64.25 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+CONTEXTO FINAL: SATSUSD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 56 | TENDENCIA: ALCISTA_NORMAL 64.25 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | pullback bajista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 126
+CONTEXTO FINAL: SATSUSD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 63 | TENDENCIA: BAJISTA_NORMAL 66.08 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | pullback bajista a EMA | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 140
+CONTEXTO FINAL: SATSUSD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 56 | TENDENCIA: BAJISTA_FUERTE 70.12 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | CHOCH bajista | puntaje: 24 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 164
+SATSUSD-OTC | put | pullback bajista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 116
+CONTEXTO FINAL: SATSUSD-OTC put CHOCH bajista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 58 | TENDENCIA: BAJISTA_FUERTE 72.41 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+CONTEXTO FINAL: SATSUSD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 58 | TENDENCIA: BAJISTA_FUERTE 72.41 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDMXN-OTC | call | CHOCH alcista | puntaje: 21 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 148
+CONTEXTO FINAL: USDMXN-OTC call CHOCH alcista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 69 | TENDENCIA: ALCISTA_NORMAL 64.54 | ACCION: ABSORCION_VENDEDORA
+RANKING DE SEÑALES:
+USDMXN-OTC | put | CHOCH bajista | puntaje: 24 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 164
+USDMXN-OTC | put | pullback bajista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 116
+CONTEXTO FINAL: USDMXN-OTC put CHOCH bajista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 57 | TENDENCIA: BAJISTA_NORMAL 57.91 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+CONTEXTO FINAL: USDMXN-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 57 | TENDENCIA: BAJISTA_NORMAL 57.91 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDMXN-OTC | put | pullback bajista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 116
+CONTEXTO FINAL: USDMXN-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 55 | TENDENCIA: BAJISTA_NORMAL 50.03 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 175 / 2818
+RANKING DE SEÑALES:
+EURAUD-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 62
+CONTEXTO FINAL: EURAUD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 59 | TENDENCIA: ALCISTA_NORMAL 61.78 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+EURAUD-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: EURAUD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 61 | TENDENCIA: ALCISTA_NORMAL 69.7 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 200 / 2818
+Ronda: 200 Señales: 0
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 107
+CONTEXTO FINAL: SATSUSD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 68 | TENDENCIA: BAJISTA_NORMAL 51.04 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 107
+CONTEXTO FINAL: SATSUSD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 68 | TENDENCIA: BAJISTA_DEBIL 44.76 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 225 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | call | liquidity sweep alcista | puntaje: 23 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 202
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: USDNOK-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 63 | TENDENCIA: BAJISTA_NORMAL 62.03 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 250 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | call | liquidity sweep alcista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 212
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: USDNOK-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 57 | TENDENCIA: BAJISTA_NORMAL 61.19 | ACCION: RECHAZO_COMPRADOR_SOPORTE
+Progreso: 275 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | call | liquidity sweep alcista | puntaje: 25 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 216
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: USDNOK-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 64 | TENDENCIA: BAJISTA_FUERTE 70.47 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: SATSUSD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 56 | TENDENCIA: ALCISTA_NORMAL 59.24 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | call | continuación alcista con tendencia | puntaje: 13 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 68
+CONTEXTO FINAL: SATSUSD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 56 | TENDENCIA: ALCISTA_NORMAL 55.93 | ACCION: RECHAZO_COMPRADOR_SOPORTE
+RANKING DE SEÑALES:
+USDNOK-OTC | put | pullback bajista a EMA | puntaje: 17 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 109
+CONTEXTO FINAL: USDNOK-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 65 | TENDENCIA: BAJISTA_FUERTE 71.25 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 109
+CONTEXTO FINAL: USDNOK-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 69 | TENDENCIA: BAJISTA_NORMAL 69.3 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDNOK-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 69 | TENDENCIA: BAJISTA_FUERTE 70.37 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | pullback bajista a EMA | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 149
+USDNOK-OTC | put | continuación bajista con tendencia | puntaje: 15 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 96
+CONTEXTO FINAL: USDNOK-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 64 | TENDENCIA: BAJISTA_FUERTE 84.36 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+CONTEXTO FINAL: USDNOK-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 64 | TENDENCIA: BAJISTA_FUERTE 84.36 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 97
+USDNOK-OTC | put | continuación bajista con tendencia | puntaje: 13 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 56
+CONTEXTO FINAL: USDNOK-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 69 | TENDENCIA: BAJISTA_NORMAL 69.2 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+CONTEXTO FINAL: USDNOK-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 69 | TENDENCIA: BAJISTA_NORMAL 69.2 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | liquidity sweep bajista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 200
+CONTEXTO FINAL: USDNOK-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 67 | TENDENCIA: ALCISTA_NORMAL 62.53 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 300 / 2818
+Ronda: 300 Señales: 0
+Progreso: 325 / 2818
+RANKING DE SEÑALES:
+USDMXN-OTC | put | liquidity sweep bajista | puntaje: 23 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 212
+CONTEXTO FINAL: USDMXN-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 57 | TENDENCIA: ALCISTA_NORMAL 69.67 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 350 / 2818
+Progreso: 375 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | put | pullback bajista a EMA | puntaje: 21 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 130
+CONTEXTO FINAL: USDNOK-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 58 | TENDENCIA: BAJISTA_NORMAL 57.73 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | reacción vendedora en resistencia | puntaje: 18 | prioridad: 0 | consenso: 50.0 MEDIO | score final: 125
+CONTEXTO FINAL: USDNOK-OTC put reacción vendedora en resistencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 60 | TENDENCIA: BAJISTA_NORMAL 58.96 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | CHOCH bajista | puntaje: 19 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 131
+CONTEXTO FINAL: USDNOK-OTC put CHOCH bajista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 60 | TENDENCIA: BAJISTA_FUERTE 72.07 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | CHOCH bajista | puntaje: 21 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 148
+CONTEXTO FINAL: USDNOK-OTC put CHOCH bajista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 67 | TENDENCIA: BAJISTA_FUERTE 72.38 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 107
+CONTEXTO FINAL: SATSUSD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 63 | TENDENCIA: BAJISTA_NORMAL 58.96 | ACCION: ABSORCION_COMPRADORA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | pullback bajista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 126
+CONTEXTO FINAL: SATSUSD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 56 | TENDENCIA: BAJISTA_NORMAL 61.92 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+EURAUD-OTC | call | CHOCH alcista | puntaje: 26 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 187
+EURAUD-OTC | call | pullback alcista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 124
+CONTEXTO FINAL: EURAUD-OTC call CHOCH alcista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 62 | TENDENCIA: ALCISTA_FUERTE 74.33 | ACCION: ABSORCION_VENDEDORA
+CONTEXTO FINAL: EURAUD-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 62 | TENDENCIA: ALCISTA_FUERTE 74.33 | ACCION: ABSORCION_VENDEDORA
+RANKING DE SEÑALES:
+EURAUD-OTC | call | pullback alcista a EMA | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 138
+CONTEXTO FINAL: EURAUD-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 55 | TENDENCIA: ALCISTA_FUERTE 70.95 | ACCION: ABSORCION_VENDEDORA
+Progreso: 400 / 2818
+RANKING DE SEÑALES:
+USDMXN-OTC | call | liquidity sweep alcista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 190
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: USDMXN-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 67 | TENDENCIA: BAJISTA_NORMAL 67.69 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Ronda: 400 Señales: 1
+RANKING DE SEÑALES:
+USDNOK-OTC | put | liquidity sweep bajista | puntaje: 27 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 220
+CONTEXTO FINAL: USDNOK-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 58 | TENDENCIA: ALCISTA_NORMAL 65.68 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 425 / 2818
+Progreso: 450 / 2818
+RANKING DE SEÑALES:
+USDMXN-OTC | put | CHOCH bajista | puntaje: 21 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 148
+CONTEXTO FINAL: USDMXN-OTC put CHOCH bajista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 55 | TENDENCIA: BAJISTA_NORMAL 69.32 | ACCION: ABSORCION_COMPRADORA
+Progreso: 475 / 2818
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 107
+CONTEXTO FINAL: SATSUSD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 70 | TENDENCIA: BAJISTA_NORMAL 68.38 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 97
+CONTEXTO FINAL: SATSUSD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: LIMPIO 77 | TENDENCIA: BAJISTA_NORMAL 68.9 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDMXN-OTC | call | liquidity sweep alcista | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 196
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: USDMXN-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 64 | TENDENCIA: BAJISTA_FUERTE 70.52 | ACCION: ABSORCION_VENDEDORA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | reacción vendedora en resistencia | puntaje: 18 | prioridad: 0 | consenso: 50.0 MEDIO | score final: 118
+CONTEXTO FINAL: SATSUSD-OTC put reacción vendedora en resistencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 63 | TENDENCIA: ALCISTA_DEBIL 44.49 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDMXN-OTC | put | pullback bajista a EMA | puntaje: 18 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 124
+CONTEXTO FINAL: USDMXN-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 61 | TENDENCIA: BAJISTA_NORMAL 58.42 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 500 / 2818
+Ronda: 500 Señales: 0
+RANKING DE SEÑALES:
+EURAUD-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: EURAUD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 67 | TENDENCIA: ALCISTA_DEBIL 46.41 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 525 / 2818
+RANKING DE SEÑALES:
+EURAUD-OTC | put | liquidity sweep bajista | puntaje: 25 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 216
+CONTEXTO FINAL: EURAUD-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 67 | TENDENCIA: ALCISTA_DEBIL 49.92 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDMXN-OTC | put | liquidity sweep bajista | puntaje: 23 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 212
+CONTEXTO FINAL: USDMXN-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 57 | TENDENCIA: ALCISTA_NORMAL 64.35 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 97
+CONTEXTO FINAL: USDNOK-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 56 | TENDENCIA: BAJISTA_NORMAL 64.42 | ACCION: ABSORCION_COMPRADORA
+RANKING DE SEÑALES:
+EURAUD-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: EURAUD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: LIMPIO 75 | TENDENCIA: ALCISTA_FUERTE 70.31 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+EURAUD-OTC | call | liquidity sweep alcista | puntaje: 28 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 234
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: EURAUD-OTC call liquidity sweep alcista | MERCADO: RANGO | CALIDAD: NORMAL 69 | TENDENCIA: ALCISTA_NORMAL 52.3 | ACCION: RECHAZO_COMPRADOR_SOPORTE
+RANKING DE SEÑALES:
+USDMXN-OTC | call | pullback alcista a EMA | puntaje: 17 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 107
+CONTEXTO FINAL: USDMXN-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 61 | TENDENCIA: ALCISTA_NORMAL 69.32 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+EURAUD-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: EURAUD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 64 | TENDENCIA: ALCISTA_NORMAL 59.9 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 550 / 2818
+Progreso: 575 / 2818
+RANKING DE SEÑALES:
+EURAUD-OTC | put | pullback bajista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 126
+CONTEXTO FINAL: EURAUD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 65 | TENDENCIA: BAJISTA_NORMAL 68.78 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+EURAUD-OTC | put | pullback bajista a EMA | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 140
+CONTEXTO FINAL: EURAUD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 57 | TENDENCIA: BAJISTA_NORMAL 53.05 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+Progreso: 600 / 2818
+Ronda: 600 Señales: 0
+RANKING DE SEÑALES:
+USDMXN-OTC | put | CHOCH bajista | puntaje: 21 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 148
+CONTEXTO FINAL: USDMXN-OTC put CHOCH bajista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: LIMPIO 79 | TENDENCIA: BAJISTA_FUERTE 74.49 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 625 / 2818
+RANKING DE SEÑALES:
+USDMXN-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 97
+CONTEXTO FINAL: USDMXN-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 70 | TENDENCIA: BAJISTA_FUERTE 75.24 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDMXN-OTC | put | CHOCH bajista | puntaje: 21 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 148
+USDMXN-OTC | put | pullback bajista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 116
+CONTEXTO FINAL: USDMXN-OTC put CHOCH bajista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: LIMPIO 77 | TENDENCIA: BAJISTA_FUERTE 82.98 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+CONTEXTO FINAL: USDMXN-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: LIMPIO 77 | TENDENCIA: BAJISTA_FUERTE 82.98 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+EURAUD-OTC | call | liquidity sweep alcista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 212
+EURAUD-OTC | call | reacción compradora en soporte | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 160
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: EURAUD-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 61 | TENDENCIA: BAJISTA_FUERTE 72.14 | ACCION: RECHAZO_COMPRADOR_SOPORTE
+CONTEXTO FINAL: EURAUD-OTC call reacción compradora en soporte | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 61 | TENDENCIA: BAJISTA_FUERTE 72.14 | ACCION: RECHAZO_COMPRADOR_SOPORTE
+Progreso: 650 / 2818
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | CHOCH bajista | puntaje: 19 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 131
+CONTEXTO FINAL: SATSUSD-OTC put CHOCH bajista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 68 | TENDENCIA: BAJISTA_DEBIL 49.78 | ACCION: ABSORCION_COMPRADORA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | liquidity sweep bajista | puntaje: 24 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 214
+CONTEXTO FINAL: USDNOK-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 59 | TENDENCIA: ALCISTA_NORMAL 54.95 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: SATSUSD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 70 | TENDENCIA: BAJISTA_FUERTE 71.64 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | call | liquidity sweep alcista | puntaje: 26 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 230
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: SATSUSD-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 68 | TENDENCIA: BAJISTA_NORMAL 61.01 | ACCION: RECHAZO_COMPRADOR_SOPORTE
+RANKING DE SEÑALES:
+SATSUSD-OTC | call | liquidity sweep alcista | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 186
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: SATSUSD-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 73 | TENDENCIA: BAJISTA_DEBIL 44.27 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 675 / 2818
+Progreso: 700 / 2818
+Ronda: 700 Señales: 0
+RANKING DE SEÑALES:
+USDMXN-OTC | put | liquidity sweep bajista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 200
+CONTEXTO FINAL: USDMXN-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 59 | TENDENCIA: ALCISTA_NORMAL 62.02 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDMXN-OTC | call | liquidity sweep alcista | puntaje: 23 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 212
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: USDMXN-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 63 | TENDENCIA: BAJISTA_NORMAL 69.52 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 725 / 2818
+RANKING DE SEÑALES:
+USDMXN-OTC | call | pullback alcista a EMA | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 150
+CONTEXTO FINAL: USDMXN-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 58 | TENDENCIA: ALCISTA_NORMAL 54.7 | ACCION: RECHAZO_COMPRADOR_SOPORTE
+RANKING DE SEÑALES:
+USDMXN-OTC | call | CHOCH alcista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 169
+USDMXN-OTC | call | reacción compradora en soporte | puntaje: 18 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 153
+CONTEXTO FINAL: USDMXN-OTC call CHOCH alcista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 60 | TENDENCIA: ALCISTA_NORMAL 63.47 | ACCION: CALL_ZONA_NEUTRA
+CONTEXTO FINAL: USDMXN-OTC call reacción compradora en soporte | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 60 | TENDENCIA: ALCISTA_NORMAL 63.47 | ACCION: CALL_ZONA_NEUTRA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | pullback bajista a EMA | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 140
+CONTEXTO FINAL: USDNOK-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 59 | TENDENCIA: BAJISTA_NORMAL 57.7 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+Progreso: 750 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | put | liquidity sweep bajista | puntaje: 23 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 212
+CONTEXTO FINAL: USDNOK-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 66 | TENDENCIA: ALCISTA_NORMAL 63.98 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 775 / 2818
+RANKING DE SEÑALES:
+USDMXN-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDMXN-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 70 | TENDENCIA: ALCISTA_FUERTE 70.34 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDMXN-OTC | call | continuación alcista con tendencia | puntaje: 13 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 56
+CONTEXTO FINAL: USDMXN-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 70 | TENDENCIA: ALCISTA_FUERTE 74.58 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDMXN-OTC | call | liquidity sweep alcista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 200
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: USDMXN-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 66 | TENDENCIA: BAJISTA_DEBIL 49.28 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 800 / 2818
+Ronda: 800 Señales: 0
+Progreso: 825 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | call | liquidity sweep alcista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 200
+USDNOK-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: USDNOK-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 61 | TENDENCIA: BAJISTA_NORMAL 63.86 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+CONTEXTO FINAL: USDNOK-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 61 | TENDENCIA: BAJISTA_NORMAL 63.86 | ACCION: PUT_ZONA_NEUTRA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDNOK-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 61 | TENDENCIA: BAJISTA_NORMAL 55.82 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 850 / 2818
+RANKING DE SEÑALES:
+SATSUSD-OTC | call | liquidity sweep alcista | puntaje: 23 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 212
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: SATSUSD-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 66 | TENDENCIA: BAJISTA_NORMAL 56.35 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 875 / 2818
+RANKING DE SEÑALES:
+EURAUD-OTC | put | CHOCH bajista | puntaje: 19 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 159
+EURAUD-OTC | put | reacción vendedora en resistencia | puntaje: 18 | prioridad: 0 | consenso: 50.0 MEDIO | score final: 134
+CONTEXTO FINAL: EURAUD-OTC put CHOCH bajista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 72 | TENDENCIA: BAJISTA_NORMAL 61.58 | ACCION: ABSORCION_COMPRADORA
+CONTEXTO FINAL: EURAUD-OTC put reacción vendedora en resistencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 72 | TENDENCIA: BAJISTA_NORMAL 61.58 | ACCION: ABSORCION_COMPRADORA
+RANKING DE SEÑALES:
+USDMXN-OTC | call | pullback alcista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 124
+CONTEXTO FINAL: USDMXN-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 63 | TENDENCIA: ALCISTA_NORMAL 62.76 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+EURAUD-OTC | call | liquidity sweep alcista | puntaje: 23 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 212
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: EURAUD-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 71 | TENDENCIA: BAJISTA_NORMAL 60.09 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 62
+CONTEXTO FINAL: USDNOK-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 62 | TENDENCIA: ALCISTA_NORMAL 64.91 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+EURAUD-OTC | call | CHOCH alcista | puntaje: 19 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 131
+CONTEXTO FINAL: EURAUD-OTC call CHOCH alcista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 67 | TENDENCIA: ALCISTA_NORMAL 55.35 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 900 / 2818
+Ronda: 900 Señales: 0
+Progreso: 925 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDNOK-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 62 | TENDENCIA: ALCISTA_NORMAL 62.1 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 950 / 2818
+Progreso: 975 / 2818
+RANKING DE SEÑALES:
+USDMXN-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 109
+CONTEXTO FINAL: USDMXN-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 61 | TENDENCIA: BAJISTA_NORMAL 54.3 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+Progreso: 1000 / 2818
+Ronda: 1000 Señales: 0
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | liquidity sweep bajista | puntaje: 24 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 214
+CONTEXTO FINAL: SATSUSD-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: LIMPIO 75 | TENDENCIA: ALCISTA_NORMAL 63.23 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 1025 / 2818
+Progreso: 1050 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDNOK-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 64 | TENDENCIA: BAJISTA_NORMAL 58.09 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+EURAUD-OTC | call | liquidity sweep alcista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 200
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: EURAUD-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 67 | TENDENCIA: BAJISTA_FUERTE 71.8 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | pullback bajista a EMA | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 130
+USDNOK-OTC | put | continuación bajista con tendencia | puntaje: 15 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 77
+CONTEXTO FINAL: USDNOK-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 59 | TENDENCIA: BAJISTA_NORMAL 56.89 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+CONTEXTO FINAL: USDNOK-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 59 | TENDENCIA: BAJISTA_NORMAL 56.89 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+RANKING DE SEÑALES:
+USDNOK-OTC | call | pullback alcista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 115
+CONTEXTO FINAL: USDNOK-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 71 | TENDENCIA: ALCISTA_NORMAL 65.07 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 1075 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | put | liquidity sweep bajista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 200
+CONTEXTO FINAL: USDNOK-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 62 | TENDENCIA: ALCISTA_NORMAL 58.34 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDMXN-OTC | put | pullback bajista a EMA | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 118
+CONTEXTO FINAL: USDMXN-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 61 | TENDENCIA: BAJISTA_NORMAL 65.52 | ACCION: ABSORCION_COMPRADORA
+RANKING DE SEÑALES:
+USDNOK-OTC | call | pullback alcista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 105
+CONTEXTO FINAL: USDNOK-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 60 | TENDENCIA: ALCISTA_NORMAL 69.64 | ACCION: ABSORCION_VENDEDORA
+RANKING DE SEÑALES:
+USDNOK-OTC | call | pullback alcista a EMA | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 148
+CONTEXTO FINAL: USDNOK-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 55 | TENDENCIA: ALCISTA_NORMAL 57.83 | ACCION: RECHAZO_COMPRADOR_SOPORTE
+RANKING DE SEÑALES:
+EURAUD-OTC | put | CHOCH bajista | puntaje: 19 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 131
+CONTEXTO FINAL: EURAUD-OTC put CHOCH bajista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 66 | TENDENCIA: BAJISTA_FUERTE 81.21 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+EURAUD-OTC | put | CHOCH bajista | puntaje: 21 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 148
+CONTEXTO FINAL: EURAUD-OTC put CHOCH bajista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 66 | TENDENCIA: BAJISTA_FUERTE 78.67 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 1100 / 2818
+Ronda: 1100 Señales: 0
+RANKING DE SEÑALES:
+EURAUD-OTC | put | pullback bajista a EMA | puntaje: 18 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 124
+CONTEXTO FINAL: EURAUD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 56 | TENDENCIA: BAJISTA_NORMAL 56.7 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 1125 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDNOK-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 58 | TENDENCIA: ALCISTA_NORMAL 58.4 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDNOK-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 62 | TENDENCIA: ALCISTA_DEBIL 48.72 | ACCION: ABSORCION_VENDEDORA
+RANKING DE SEÑALES:
+USDNOK-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDNOK-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 62 | TENDENCIA: ALCISTA_NORMAL 54.73 | ACCION: ABSORCION_VENDEDORA
+Progreso: 1150 / 2818
+RANKING DE SEÑALES:
+USDMXN-OTC | put | pullback bajista a EMA | puntaje: 17 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 99
+CONTEXTO FINAL: USDMXN-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 68 | TENDENCIA: BAJISTA_NORMAL 53.35 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 1175 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | put | CHOCH bajista | puntaje: 18 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 139
+CONTEXTO FINAL: USDNOK-OTC put CHOCH bajista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 65 | TENDENCIA: BAJISTA_DEBIL 49.77 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 1200 / 2818
+Ronda: 1200 Señales: 0
+RANKING DE SEÑALES:
+EURAUD-OTC | call | liquidity sweep alcista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 200
+EURAUD-OTC | call | reacción compradora en soporte | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 148
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: EURAUD-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 55 | TENDENCIA: BAJISTA_NORMAL 62.06 | ACCION: ABSORCION_VENDEDORA
+CONTEXTO FINAL: EURAUD-OTC call reacción compradora en soporte | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 55 | TENDENCIA: BAJISTA_NORMAL 62.06 | ACCION: ABSORCION_VENDEDORA
+RANKING DE SEÑALES:
+EURAUD-OTC | put | pullback bajista a EMA | puntaje: 18 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 124
+CONTEXTO FINAL: EURAUD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 62 | TENDENCIA: BAJISTA_NORMAL 58.15 | ACCION: ABSORCION_COMPRADORA
+Progreso: 1225 / 2818
+RANKING DE SEÑALES:
+EURAUD-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 97
+CONTEXTO FINAL: EURAUD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 62 | TENDENCIA: BAJISTA_NORMAL 58.66 | ACCION: ABSORCION_COMPRADORA
+RANKING DE SEÑALES:
+EURAUD-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 97
+EURAUD-OTC | put | continuación bajista con tendencia | puntaje: 13 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 56
+CONTEXTO FINAL: EURAUD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 60 | TENDENCIA: BAJISTA_NORMAL 54.64 | ACCION: ABSORCION_COMPRADORA
+CONTEXTO FINAL: EURAUD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 60 | TENDENCIA: BAJISTA_NORMAL 54.64 | ACCION: ABSORCION_COMPRADORA
+RANKING DE SEÑALES:
+EURAUD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 71
+CONTEXTO FINAL: EURAUD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 62 | TENDENCIA: BAJISTA_NORMAL 60.69 | ACCION: ABSORCION_COMPRADORA
+RANKING DE SEÑALES:
+EURAUD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 64
+CONTEXTO FINAL: EURAUD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 62 | TENDENCIA: BAJISTA_NORMAL 55.03 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+EURAUD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: EURAUD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 62 | TENDENCIA: BAJISTA_NORMAL 61.59 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+EURAUD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: EURAUD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 62 | TENDENCIA: BAJISTA_NORMAL 62.14 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | liquidity sweep bajista | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 196
+CONTEXTO FINAL: SATSUSD-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 59 | TENDENCIA: BAJISTA_NORMAL 56.63 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDMXN-OTC | put | liquidity sweep bajista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 200
+CONTEXTO FINAL: USDMXN-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 61 | TENDENCIA: ALCISTA_FUERTE 72.09 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 107
+CONTEXTO FINAL: SATSUSD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 62 | TENDENCIA: BAJISTA_DEBIL 49.14 | ACCION: ABSORCION_COMPRADORA
+Progreso: 1250 / 2818
+RANKING DE SEÑALES:
+USDMXN-OTC | put | liquidity sweep bajista | puntaje: 23 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 212
+CONTEXTO FINAL: USDMXN-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 56 | TENDENCIA: ALCISTA_NORMAL 53.31 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDMXN-OTC | put | CHOCH bajista | puntaje: 21 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 148
+CONTEXTO FINAL: USDMXN-OTC put CHOCH bajista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 55 | TENDENCIA: BAJISTA_FUERTE 70.38 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDMXN-OTC | put | CHOCH bajista | puntaje: 21 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 148
+CONTEXTO FINAL: USDMXN-OTC put CHOCH bajista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 57 | TENDENCIA: BAJISTA_FUERTE 73.19 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 1275 / 2818
+Progreso: 1300 / 2818
+Ronda: 1300 Señales: 0
+RANKING DE SEÑALES:
+USDMXN-OTC | call | pullback alcista a EMA | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 157
+CONTEXTO FINAL: USDMXN-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 57 | TENDENCIA: ALCISTA_FUERTE 73.87 | ACCION: RECHAZO_COMPRADOR_SOPORTE
+RANKING DE SEÑALES:
+USDMXN-OTC | put | liquidity sweep bajista | puntaje: 23 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 212
+CONTEXTO FINAL: USDMXN-OTC put liquidity sweep bajista | MERCADO: RANGO | CALIDAD: NORMAL 57 | TENDENCIA: ALCISTA_NORMAL 50.24 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 1325 / 2818
+Progreso: 1350 / 2818
+RANKING DE SEÑALES:
+USDMXN-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 97
+CONTEXTO FINAL: USDMXN-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 61 | TENDENCIA: BAJISTA_NORMAL 54.81 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 1375 / 2818
+Progreso: 1400 / 2818
+Ronda: 1400 Señales: 0
+RANKING DE SEÑALES:
+SATSUSD-OTC | call | continuación alcista con tendencia | puntaje: 14 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 63
+CONTEXTO FINAL: SATSUSD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 60 | TENDENCIA: ALCISTA_NORMAL 66.33 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDMXN-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 62
+CONTEXTO FINAL: USDMXN-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 57 | TENDENCIA: BAJISTA_NORMAL 66.6 | ACCION: ABSORCION_COMPRADORA
+RANKING DE SEÑALES:
+USDMXN-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 107
+CONTEXTO FINAL: USDMXN-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 56 | TENDENCIA: BAJISTA_NORMAL 51.7 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 1425 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDNOK-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 58 | TENDENCIA: BAJISTA_NORMAL 61.93 | ACCION: FALSA_RUPTURA_SOPORTE
+RANKING DE SEÑALES:
+EURAUD-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 119
+CONTEXTO FINAL: EURAUD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 58 | TENDENCIA: BAJISTA_NORMAL 56.55 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDNOK-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 56 | TENDENCIA: BAJISTA_NORMAL 55.37 | ACCION: ABSORCION_COMPRADORA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | liquidity sweep bajista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 200
+CONTEXTO FINAL: USDNOK-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 66 | TENDENCIA: BAJISTA_DEBIL 40.7 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 1450 / 2818
+Progreso: 1475 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 97
+CONTEXTO FINAL: USDNOK-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 56 | TENDENCIA: BAJISTA_NORMAL 60.43 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 1500 / 2818
+Ronda: 1500 Señales: 0
+Progreso: 1525 / 2818
+Progreso: 1550 / 2818
+RANKING DE SEÑALES:
+USDMXN-OTC | put | pullback bajista a EMA | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 128
+CONTEXTO FINAL: USDMXN-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 63 | TENDENCIA: BAJISTA_NORMAL 54.09 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 1575 / 2818
+Progreso: 1600 / 2818
+Ronda: 1600 Señales: 0
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: SATSUSD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 55 | TENDENCIA: BAJISTA_NORMAL 63.35 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: SATSUSD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 55 | TENDENCIA: BAJISTA_NORMAL 65.19 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: SATSUSD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 55 | TENDENCIA: BAJISTA_NORMAL 64.36 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 1625 / 2818
+Progreso: 1650 / 2818
+RANKING DE SEÑALES:
+EURAUD-OTC | call | pullback alcista a EMA | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 157
+CONTEXTO FINAL: EURAUD-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 62 | TENDENCIA: ALCISTA_NORMAL 64.94 | ACCION: RECHAZO_COMPRADOR_SOPORTE
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | liquidity sweep bajista | puntaje: 26 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 230
+CONTEXTO FINAL: SATSUSD-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 59 | TENDENCIA: ALCISTA_NORMAL 51.75 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+Progreso: 1675 / 2818
+RANKING DE SEÑALES:
+EURAUD-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 64
+CONTEXTO FINAL: EURAUD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 56 | TENDENCIA: ALCISTA_FUERTE 79.73 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+EURAUD-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: EURAUD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 56 | TENDENCIA: ALCISTA_NORMAL 55.77 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 1700 / 2818
+Ronda: 1700 Señales: 0
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | liquidity sweep bajista | puntaje: 23 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 212
+CONTEXTO FINAL: SATSUSD-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 57 | TENDENCIA: ALCISTA_NORMAL 54.45 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+EURAUD-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: EURAUD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 61 | TENDENCIA: ALCISTA_NORMAL 58.74 | ACCION: ABSORCION_VENDEDORA
+RANKING DE SEÑALES:
+EURAUD-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: EURAUD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 61 | TENDENCIA: ALCISTA_NORMAL 56.08 | ACCION: ABSORCION_VENDEDORA
+RANKING DE SEÑALES:
+SATSUSD-OTC | call | liquidity sweep alcista | puntaje: 23 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 212
+SATSUSD-OTC | call | pullback alcista a EMA | puntaje: 17 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 117
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: SATSUSD-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 66 | TENDENCIA: ALCISTA_DEBIL 39.45 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+CONTEXTO FINAL: SATSUSD-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 66 | TENDENCIA: ALCISTA_DEBIL 39.45 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+EURAUD-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: EURAUD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 61 | TENDENCIA: ALCISTA_NORMAL 53.29 | ACCION: ABSORCION_VENDEDORA
+Progreso: 1725 / 2818
+Progreso: 1750 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | put | reacción vendedora en resistencia | puntaje: 24 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 178
+USDNOK-OTC | put | pullback bajista a EMA | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 140
+CONTEXTO FINAL: USDNOK-OTC put reacción vendedora en resistencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 68 | TENDENCIA: BAJISTA_NORMAL 66.0 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+CONTEXTO FINAL: USDNOK-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 68 | TENDENCIA: BAJISTA_NORMAL 66.0 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | pullback bajista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 126
+CONTEXTO FINAL: USDNOK-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 61 | TENDENCIA: BAJISTA_NORMAL 55.29 | ACCION: PUT_ZONA_NEUTRA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | pullback bajista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 126
+CONTEXTO FINAL: USDNOK-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 65 | TENDENCIA: BAJISTA_NORMAL 58.93 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | liquidity sweep bajista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 200
+CONTEXTO FINAL: USDNOK-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 56 | TENDENCIA: ALCISTA_NORMAL 53.88 | ACCION: ABSORCION_COMPRADORA
+Progreso: 1775 / 2818
+RANKING DE SEÑALES:
+USDMXN-OTC | call | continuación alcista con tendencia | puntaje: 13 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 66
+CONTEXTO FINAL: USDMXN-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 60 | TENDENCIA: ALCISTA_NORMAL 63.2 | ACCION: ABSORCION_VENDEDORA
+RANKING DE SEÑALES:
+EURAUD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: EURAUD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 58 | TENDENCIA: BAJISTA_NORMAL 54.2 | ACCION: ABSORCION_COMPRADORA
+RANKING DE SEÑALES:
+EURAUD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: EURAUD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 65 | TENDENCIA: BAJISTA_NORMAL 55.95 | ACCION: ABSORCION_COMPRADORA
+Progreso: 1800 / 2818
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 97
+CONTEXTO FINAL: SATSUSD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 70 | TENDENCIA: BAJISTA_NORMAL 67.08 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Ronda: 1800 Señales: 1
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 71
+CONTEXTO FINAL: SATSUSD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 72 | TENDENCIA: BAJISTA_FUERTE 75.9 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | pullback bajista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 116
+CONTEXTO FINAL: SATSUSD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 73 | TENDENCIA: BAJISTA_FUERTE 73.09 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | pullback bajista a EMA | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 140
+SATSUSD-OTC | put | continuación bajista con tendencia | puntaje: 15 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 87
+CONTEXTO FINAL: SATSUSD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 62 | TENDENCIA: BAJISTA_FUERTE 71.28 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+CONTEXTO FINAL: SATSUSD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 62 | TENDENCIA: BAJISTA_FUERTE 71.28 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | CHOCH bajista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 150
+USDNOK-OTC | put | pullback bajista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 116
+CONTEXTO FINAL: USDNOK-OTC put CHOCH bajista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 63 | TENDENCIA: BAJISTA_NORMAL 57.63 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+CONTEXTO FINAL: USDNOK-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 63 | TENDENCIA: BAJISTA_NORMAL 57.63 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | CHOCH bajista | puntaje: 19 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 131
+CONTEXTO FINAL: USDNOK-OTC put CHOCH bajista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 70 | TENDENCIA: BAJISTA_NORMAL 56.16 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 1825 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | call | liquidity sweep alcista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 200
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: USDNOK-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 62 | TENDENCIA: BAJISTA_NORMAL 63.11 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 1850 / 2818
+Progreso: 1875 / 2818
+Progreso: 1900 / 2818
+Ronda: 1900 Señales: 0
+RANKING DE SEÑALES:
+USDNOK-OTC | call | CHOCH alcista | puntaje: 19 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 131
+USDNOK-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDNOK-OTC call CHOCH alcista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 66 | TENDENCIA: ALCISTA_FUERTE 80.07 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+CONTEXTO FINAL: USDNOK-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 66 | TENDENCIA: ALCISTA_FUERTE 80.07 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 62
+CONTEXTO FINAL: USDNOK-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 57 | TENDENCIA: ALCISTA_NORMAL 63.5 | ACCION: ABSORCION_VENDEDORA
+Progreso: 1925 / 2818
+RANKING DE SEÑALES:
+SATSUSD-OTC | call | liquidity sweep alcista | puntaje: 23 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 212
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: SATSUSD-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 56 | TENDENCIA: BAJISTA_NORMAL 62.16 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | pullback bajista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 126
+CONTEXTO FINAL: SATSUSD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 67 | TENDENCIA: BAJISTA_NORMAL 50.34 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDMXN-OTC | put | liquidity sweep bajista | puntaje: 23 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 212
+USDMXN-OTC | put | pullback bajista a EMA | puntaje: 17 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 109
+CONTEXTO FINAL: USDMXN-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 56 | TENDENCIA: BAJISTA_NORMAL 53.06 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+CONTEXTO FINAL: USDMXN-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 56 | TENDENCIA: BAJISTA_NORMAL 53.06 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 1950 / 2818
+Progreso: 1975 / 2818
+RANKING DE SEÑALES:
+USDMXN-OTC | put | reacción vendedora en resistencia | puntaje: 18 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 144
+CONTEXTO FINAL: USDMXN-OTC put reacción vendedora en resistencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: LIMPIO 80 | TENDENCIA: BAJISTA_FUERTE 70.32 | ACCION: PUT_ZONA_NEUTRA
+Progreso: 2000 / 2818
+Ronda: 2000 Señales: 0
+RANKING DE SEÑALES:
+SATSUSD-OTC | call | continuación alcista con tendencia | puntaje: 15 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 77
+CONTEXTO FINAL: SATSUSD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 61 | TENDENCIA: ALCISTA_FUERTE 77.24 | ACCION: RECHAZO_COMPRADOR_SOPORTE
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | liquidity sweep bajista | puntaje: 23 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 212
+CONTEXTO FINAL: SATSUSD-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 59 | TENDENCIA: ALCISTA_NORMAL 65.2 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | call | pullback alcista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 117
+SATSUSD-OTC | call | continuación alcista con tendencia | puntaje: 13 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 68
+CONTEXTO FINAL: SATSUSD-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 59 | TENDENCIA: ALCISTA_NORMAL 61.33 | ACCION: RECHAZO_COMPRADOR_SOPORTE
+CONTEXTO FINAL: SATSUSD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 59 | TENDENCIA: ALCISTA_NORMAL 61.33 | ACCION: RECHAZO_COMPRADOR_SOPORTE
+RANKING DE SEÑALES:
+USDMXN-OTC | call | liquidity sweep alcista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 190
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: USDMXN-OTC call liquidity sweep alcista | MERCADO: RANGO | CALIDAD: NORMAL 58 | TENDENCIA: ALCISTA_NORMAL 50.74 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 2025 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | call | CHOCH alcista | puntaje: 21 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 148
+CONTEXTO FINAL: USDNOK-OTC call CHOCH alcista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 68 | TENDENCIA: ALCISTA_NORMAL 56.15 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 2050 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | call | continuación alcista con tendencia | puntaje: 14 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 63
+CONTEXTO FINAL: USDNOK-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 56 | TENDENCIA: ALCISTA_NORMAL 50.42 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 2075 / 2818
+RANKING DE SEÑALES:
+USDMXN-OTC | call | pullback alcista a EMA | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 136
+CONTEXTO FINAL: USDMXN-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 70 | TENDENCIA: ALCISTA_NORMAL 50.38 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | call | liquidity sweep alcista | puntaje: 25 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 216
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: USDNOK-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 57 | TENDENCIA: BAJISTA_NORMAL 68.55 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 62
+CONTEXTO FINAL: USDNOK-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 64 | TENDENCIA: BAJISTA_NORMAL 64.96 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 62
+CONTEXTO FINAL: USDNOK-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 62 | TENDENCIA: BAJISTA_NORMAL 59.89 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 2100 / 2818
+Ronda: 2100 Señales: 0
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: SATSUSD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 57 | TENDENCIA: BAJISTA_NORMAL 66.8 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: SATSUSD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 64 | TENDENCIA: BAJISTA_NORMAL 64.6 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: SATSUSD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 64 | TENDENCIA: BAJISTA_NORMAL 53.59 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 62
+CONTEXTO FINAL: USDNOK-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 66 | TENDENCIA: BAJISTA_NORMAL 66.2 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDNOK-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 64 | TENDENCIA: BAJISTA_NORMAL 64.8 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 2125 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDNOK-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 62 | TENDENCIA: BAJISTA_NORMAL 60.23 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | pullback bajista a EMA | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 140
+CONTEXTO FINAL: USDNOK-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 58 | TENDENCIA: BAJISTA_NORMAL 53.43 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: SATSUSD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 57 | TENDENCIA: BAJISTA_NORMAL 58.69 | ACCION: ABSORCION_COMPRADORA
+RANKING DE SEÑALES:
+EURAUD-OTC | call | pullback alcista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 105
+CONTEXTO FINAL: EURAUD-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 59 | TENDENCIA: ALCISTA_NORMAL 60.12 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDMXN-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 62
+CONTEXTO FINAL: USDMXN-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 55 | TENDENCIA: BAJISTA_NORMAL 68.03 | ACCION: ABSORCION_COMPRADORA
+RANKING DE SEÑALES:
+USDMXN-OTC | put | pullback bajista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 116
+USDMXN-OTC | put | continuación bajista con tendencia | puntaje: 14 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 63
+CONTEXTO FINAL: USDMXN-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 62 | TENDENCIA: BAJISTA_NORMAL 69.32 | ACCION: ABSORCION_COMPRADORA
+CONTEXTO FINAL: USDMXN-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 62 | TENDENCIA: BAJISTA_NORMAL 69.32 | ACCION: ABSORCION_COMPRADORA
+RANKING DE SEÑALES:
+EURAUD-OTC | call | CHOCH alcista | puntaje: 21 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 148
+EURAUD-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: EURAUD-OTC call CHOCH alcista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 57 | TENDENCIA: ALCISTA_NORMAL 64.17 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+CONTEXTO FINAL: EURAUD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 57 | TENDENCIA: ALCISTA_NORMAL 64.17 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 2150 / 2818
+RANKING DE SEÑALES:
+USDMXN-OTC | call | liquidity sweep alcista | puntaje: 24 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 214
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: USDMXN-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 55 | TENDENCIA: BAJISTA_NORMAL 64.29 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | pullback bajista a EMA | puntaje: 17 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 109
+CONTEXTO FINAL: USDNOK-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 74 | TENDENCIA: BAJISTA_NORMAL 55.38 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 107
+CONTEXTO FINAL: USDNOK-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 74 | TENDENCIA: BAJISTA_NORMAL 57.75 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDNOK-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: LIMPIO 85 | TENDENCIA: BAJISTA_NORMAL 68.93 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 64
+CONTEXTO FINAL: USDNOK-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: LIMPIO 78 | TENDENCIA: BAJISTA_NORMAL 62.23 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | pullback bajista a EMA | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 118
+CONTEXTO FINAL: USDNOK-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 69 | TENDENCIA: BAJISTA_NORMAL 62.31 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 2175 / 2818
+Progreso: 2200 / 2818
+Ronda: 2200 Señales: 0
+RANKING DE SEÑALES:
+USDNOK-OTC | call | liquidity sweep alcista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 200
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: USDNOK-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 69 | TENDENCIA: ALCISTA_NORMAL 59.26 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: SATSUSD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: LIMPIO 78 | TENDENCIA: BAJISTA_NORMAL 53.72 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 2225 / 2818
+Progreso: 2250 / 2818
+RANKING DE SEÑALES:
+EURAUD-OTC | put | liquidity sweep bajista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 200
+CONTEXTO FINAL: EURAUD-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 60 | TENDENCIA: ALCISTA_FUERTE 80.86 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 2275 / 2818
+Progreso: 2300 / 2818
+Ronda: 2300 Señales: 0
+RANKING DE SEÑALES:
+EURAUD-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 62
+CONTEXTO FINAL: EURAUD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 60 | TENDENCIA: ALCISTA_NORMAL 67.16 | ACCION: CALL_ZONA_NEUTRA
+Progreso: 2325 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 62
+CONTEXTO FINAL: USDNOK-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 68 | TENDENCIA: ALCISTA_NORMAL 50.57 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 71
+CONTEXTO FINAL: USDNOK-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: LIMPIO 78 | TENDENCIA: ALCISTA_NORMAL 63.3 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | call | continuación alcista con tendencia | puntaje: 13 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 68
+CONTEXTO FINAL: USDNOK-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 71 | TENDENCIA: ALCISTA_NORMAL 54.57 | ACCION: RECHAZO_COMPRADOR_SOPORTE
+Progreso: 2350 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | put | liquidity sweep bajista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 212
+CONTEXTO FINAL: USDNOK-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 71 | TENDENCIA: ALCISTA_NORMAL 61.66 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | liquidity sweep bajista | puntaje: 24 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 214
+CONTEXTO FINAL: USDNOK-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 62 | TENDENCIA: ALCISTA_AGOTADA 58.07 | ACCION: PUT_ZONA_NEUTRA
+RANKING DE SEÑALES:
+USDNOK-OTC | call | continuación alcista con tendencia | puntaje: 14 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 73
+CONTEXTO FINAL: USDNOK-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 72 | TENDENCIA: ALCISTA_FUERTE 74.98 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 62
+CONTEXTO FINAL: SATSUSD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 60 | TENDENCIA: BAJISTA_NORMAL 55.97 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 62
+CONTEXTO FINAL: SATSUSD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 60 | TENDENCIA: BAJISTA_NORMAL 57.81 | ACCION: ABSORCION_COMPRADORA
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 62
+CONTEXTO FINAL: SATSUSD-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 67 | TENDENCIA: BAJISTA_NORMAL 65.57 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 2375 / 2818
+RANKING DE SEÑALES:
+EURAUD-OTC | put | reacción vendedora en resistencia | puntaje: 18 | prioridad: 0 | consenso: 50.0 MEDIO | score final: 116
+CONTEXTO FINAL: EURAUD-OTC put reacción vendedora en resistencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 64 | TENDENCIA: ALCISTA_NORMAL 69.97 | ACCION: PUT_ZONA_NEUTRA
+RANKING DE SEÑALES:
+USDNOK-OTC | call | CHOCH alcista | puntaje: 19 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 131
+CONTEXTO FINAL: USDNOK-OTC call CHOCH alcista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: LIMPIO 76 | TENDENCIA: ALCISTA_DEBIL 45.03 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | liquidity sweep bajista | puntaje: 24 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 226
+CONTEXTO FINAL: USDNOK-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 67 | TENDENCIA: ALCISTA_DEBIL 42.24 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+Progreso: 2400 / 2818
+Ronda: 2400 Señales: 0
+RANKING DE SEÑALES:
+USDMXN-OTC | call | pullback alcista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 105
+CONTEXTO FINAL: USDMXN-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 62 | TENDENCIA: ALCISTA_NORMAL 69.17 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDMXN-OTC | call | pullback alcista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 115
+CONTEXTO FINAL: USDMXN-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 62 | TENDENCIA: ALCISTA_NORMAL 53.6 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 2425 / 2818
+RANKING DE SEÑALES:
+EURAUD-OTC | call | liquidity sweep alcista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 200
+CANDIDATOS BOOTIQ V2: 1
+CONTEXTO FINAL: EURAUD-OTC call liquidity sweep alcista | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 62 | TENDENCIA: BAJISTA_NORMAL 59.58 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 2450 / 2818
+RANKING DE SEÑALES:
+SATSUSD-OTC | call | continuación alcista con tendencia | puntaje: 13 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 56
+CONTEXTO FINAL: SATSUSD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 57 | TENDENCIA: ALCISTA_NORMAL 60.98 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDNOK-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 63 | TENDENCIA: ALCISTA_NORMAL 56.33 | ACCION: ABSORCION_VENDEDORA
+RANKING DE SEÑALES:
+SATSUSD-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: SATSUSD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 59 | TENDENCIA: ALCISTA_NORMAL 66.04 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 62
+CONTEXTO FINAL: SATSUSD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 64 | TENDENCIA: ALCISTA_NORMAL 58.51 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 62
+CONTEXTO FINAL: SATSUSD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 57 | TENDENCIA: ALCISTA_NORMAL 65.14 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+SATSUSD-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: SATSUSD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 61 | TENDENCIA: ALCISTA_NORMAL 51.75 | ACCION: CALL_ZONA_NEUTRA
+RANKING DE SEÑALES:
+SATSUSD-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 62
+CONTEXTO FINAL: SATSUSD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 68 | TENDENCIA: ALCISTA_NORMAL 59.61 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+EURAUD-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 107
+CONTEXTO FINAL: EURAUD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 55 | TENDENCIA: BAJISTA_NORMAL 60.92 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 2475 / 2818
+Progreso: 2500 / 2818
+Ronda: 2500 Señales: 0
+RANKING DE SEÑALES:
+EURAUD-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 107
+CONTEXTO FINAL: EURAUD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 55 | TENDENCIA: BAJISTA_NORMAL 56.99 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+EURAUD-OTC | put | pullback bajista a EMA | puntaje: 17 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 109
+CONTEXTO FINAL: EURAUD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 55 | TENDENCIA: BAJISTA_NORMAL 56.89 | ACCION: FALSA_RUPTURA_SOPORTE
+RANKING DE SEÑALES:
+USDMXN-OTC | put | liquidity sweep bajista | puntaje: 24 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 214
+CONTEXTO FINAL: USDMXN-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 62 | TENDENCIA: ALCISTA_NORMAL 57.16 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 2525 / 2818
+Progreso: 2550 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDNOK-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 57 | TENDENCIA: BAJISTA_NORMAL 65.45 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | continuación bajista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDNOK-OTC put continuación bajista con tendencia | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 55 | TENDENCIA: BAJISTA_NORMAL 53.74 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 2575 / 2818
+Progreso: 2600 / 2818
+Ronda: 2600 Señales: 0
+Progreso: 2625 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | put | pullback bajista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 97
+CONTEXTO FINAL: USDNOK-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 63 | TENDENCIA: BAJISTA_NORMAL 55.39 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+EURAUD-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: EURAUD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 64 | TENDENCIA: ALCISTA_NORMAL 50.61 | ACCION: ABSORCION_VENDEDORA
+RANKING DE SEÑALES:
+EURAUD-OTC | call | CHOCH alcista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 150
+EURAUD-OTC | call | continuación alcista con tendencia | puntaje: 14 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 63
+CONTEXTO FINAL: EURAUD-OTC call CHOCH alcista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 62 | TENDENCIA: ALCISTA_NORMAL 64.2 | ACCION: ABSORCION_VENDEDORA
+CONTEXTO FINAL: EURAUD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 62 | TENDENCIA: ALCISTA_NORMAL 64.2 | ACCION: ABSORCION_VENDEDORA
+RANKING DE SEÑALES:
+USDNOK-OTC | call | reacción compradora en soporte | puntaje: 18 | prioridad: 0 | consenso: 50.0 MEDIO | score final: 118
+CONTEXTO FINAL: USDNOK-OTC call reacción compradora en soporte | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 56 | TENDENCIA: ALCISTA_NORMAL 51.88 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 2650 / 2818
+RANKING DE SEÑALES:
+USDNOK-OTC | call | pullback alcista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 134
+CONTEXTO FINAL: USDNOK-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 60 | TENDENCIA: ALCISTA_NORMAL 66.18 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDNOK-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 62 | TENDENCIA: ALCISTA_NORMAL 63.18 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDNOK-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 60 | TENDENCIA: ALCISTA_NORMAL 50.9 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | call | continuación alcista con tendencia | puntaje: 15 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 77
+CONTEXTO FINAL: USDNOK-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 62 | TENDENCIA: ALCISTA_DEBIL 48.03 | ACCION: RECHAZO_COMPRADOR_SOPORTE
+RANKING DE SEÑALES:
+USDNOK-OTC | call | continuación alcista con tendencia | puntaje: 11 | prioridad: 2 | consenso: 50.0 MEDIO | score final: 52
+CONTEXTO FINAL: USDNOK-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 64 | TENDENCIA: ALCISTA_FUERTE 74.16 | ACCION: CALL_RESISTENCIA_CERCA_SIN_RUPTURA
+Progreso: 2675 / 2818
+RANKING DE SEÑALES:
+SATSUSD-OTC | put | pullback bajista a EMA | puntaje: 14 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 115
+CONTEXTO FINAL: SATSUSD-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 57 | TENDENCIA: BAJISTA_NORMAL 54.66 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+RANKING DE SEÑALES:
+EURAUD-OTC | call | CHOCH alcista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 150
+EURAUD-OTC | call | pullback alcista a EMA | puntaje: 19 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 124
+EURAUD-OTC | call | continuación alcista con tendencia | puntaje: 14 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 63
+CONTEXTO FINAL: EURAUD-OTC call CHOCH alcista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 68 | TENDENCIA: ALCISTA_NORMAL 67.27 | ACCION: ABSORCION_VENDEDORA
+CONTEXTO FINAL: EURAUD-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 68 | TENDENCIA: ALCISTA_NORMAL 67.27 | ACCION: ABSORCION_VENDEDORA
+CONTEXTO FINAL: EURAUD-OTC call continuación alcista con tendencia | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 68 | TENDENCIA: ALCISTA_NORMAL 67.27 | ACCION: ABSORCION_VENDEDORA
+Progreso: 2700 / 2818
+RANKING DE SEÑALES:
+SATSUSD-OTC | call | pullback alcista a EMA | puntaje: 16 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 127
+CONTEXTO FINAL: SATSUSD-OTC call pullback alcista a EMA | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 64 | TENDENCIA: ALCISTA_NORMAL 53.58 | ACCION: RECHAZO_COMPRADOR_SOPORTE
+Ronda: 2700 Señales: 1
+RANKING DE SEÑALES:
+USDMXN-OTC | put | liquidity sweep bajista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 200
+CONTEXTO FINAL: USDMXN-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: LIMPIO 79 | TENDENCIA: ALCISTA_FUERTE 84.53 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+Progreso: 2725 / 2818
+Progreso: 2750 / 2818
+Progreso: 2775 / 2818
+RANKING DE SEÑALES:
+EURAUD-OTC | call | CHOCH alcista | puntaje: 17 | prioridad: 3 | consenso: 50.0 MEDIO | score final: 137
+CONTEXTO FINAL: EURAUD-OTC call CHOCH alcista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 55 | TENDENCIA: ALCISTA_NORMAL 52.03 | ACCION: ABSORCION_VENDEDORA
+RANKING DE SEÑALES:
+EURAUD-OTC | put | liquidity sweep bajista | puntaje: 22 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 200
+CONTEXTO FINAL: EURAUD-OTC put liquidity sweep bajista | MERCADO: TENDENCIA_ALCISTA | CALIDAD: NORMAL 55 | TENDENCIA: ALCISTA_NORMAL 67.65 | ACCION: PUT_SOPORTE_CERCA_SIN_RUPTURA
+RANKING DE SEÑALES:
+USDNOK-OTC | put | pullback bajista a EMA | puntaje: 20 | prioridad: 4 | consenso: 50.0 MEDIO | score final: 149
+CONTEXTO FINAL: USDNOK-OTC put pullback bajista a EMA | MERCADO: TENDENCIA_BAJISTA | CALIDAD: NORMAL 65 | TENDENCIA: BAJISTA_NORMAL 58.62 | ACCION: RECHAZO_VENDEDOR_RESISTENCIA
+Progreso: 2800 / 2818
+Ronda: 2800 Señales: 0
+Aprendizaje histórico congelado: no se sobrescribió durante esta prueba.
+
+===== BACKTEST BOT REAL =====
+Datasets: 4
+Paso ronda: 1
+Total operaciones: 16
+Ganadas: 5
+Perdidas: 11
+Winrate: 31.25 %
+============================
+
+
+===== IMPACTO CEREBRO UNICO =====
+Señales evaluadas: 235
+WIN hipotéticos: 119
+LOSS hipotéticos: 116
+Winrate universo: 50.64%
+----------------------------
+Autorizadas: 26
+WIN autorizadas: 13
+LOSS autorizadas: 13
+Winrate autorizadas: 50.0%
+----------------------------
+Rechazadas: 209
+WIN rechazadas: 106
+LOSS rechazadas: 103
+Winrate rechazadas: 50.72%
+Precisión del bloqueo: 49.28%
+----------------------------
+Operadas directas: 5 | winrate: 20.0%
+Operadas por protocolo: 11 | winrate: 36.36%
+Canceladas por protocolo: 10 | winrate hipotético: 30.0%
+================================
+
+Total señales evaluadas: 235
+Operadas: 16
+Canceladas Cerebro: 209
+Canceladas Protocolo: 10
+
+===== POR ESTADO OPERACION =====
+CANCELADA_CEREBRO | total: 209 | win: 106 | loss: 103 | winrate: 50.72%
+OPERADA_PROTOCOLO | total: 11 | win: 4 | loss: 7 | winrate: 36.36%
+CANCELADA_PROTOCOLO | total: 10 | win: 3 | loss: 7 | winrate: 30.0%
+OPERADA_DIRECTA | total: 5 | win: 1 | loss: 4 | winrate: 20.0%
+
+===== POR ESTRATEGIA =====
+reacción compradora en soporte | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+reacción vendedora en resistencia | total: 6 | win: 4 | loss: 2 | winrate: 66.67%
+liquidity sweep bajista | total: 28 | win: 18 | loss: 10 | winrate: 64.29%
+CHOCH bajista | total: 16 | win: 9 | loss: 7 | winrate: 56.25%
+liquidity sweep alcista | total: 25 | win: 13 | loss: 12 | winrate: 52.0%
+pullback bajista a EMA | total: 48 | win: 24 | loss: 24 | winrate: 50.0%
+continuación alcista con tendencia | total: 43 | win: 21 | loss: 22 | winrate: 48.84%
+CHOCH alcista | total: 11 | win: 5 | loss: 6 | winrate: 45.45%
+continuación bajista con tendencia | total: 42 | win: 19 | loss: 23 | winrate: 45.24%
+pullback alcista a EMA | total: 15 | win: 5 | loss: 10 | winrate: 33.33%
+
+===== POR BASE ESTRATEGIA =====
+MEDIA | total: 235 | win: 119 | loss: 116 | winrate: 50.64%
+
+===== POR ACCION PRECIO =====
+PUT_ZONA_NEUTRA | total: 4 | win: 3 | loss: 1 | winrate: 75.0%
+CALL_ZONA_NEUTRA | total: 3 | win: 2 | loss: 1 | winrate: 66.67%
+PUT_SOPORTE_CERCA_SIN_RUPTURA | total: 96 | win: 53 | loss: 43 | winrate: 55.21%
+RECHAZO_VENDEDOR_RESISTENCIA | total: 17 | win: 9 | loss: 8 | winrate: 52.94%
+RECHAZO_COMPRADOR_SOPORTE | total: 14 | win: 7 | loss: 7 | winrate: 50.0%
+FALSA_RUPTURA_SOPORTE | total: 2 | win: 1 | loss: 1 | winrate: 50.0%
+ABSORCION_VENDEDORA | total: 19 | win: 9 | loss: 10 | winrate: 47.37%
+CALL_RESISTENCIA_CERCA_SIN_RUPTURA | total: 59 | win: 27 | loss: 32 | winrate: 45.76%
+ABSORCION_COMPRADORA | total: 21 | win: 8 | loss: 13 | winrate: 38.1%
+
+===== POR PA PROFESIONAL =====
+RECHAZO_COMPRADOR_CONFIRMADO | total: 3 | win: 2 | loss: 1 | winrate: 66.67%
+RECHAZO_COMPRADOR_HISTORICO | total: 9 | win: 6 | loss: 3 | winrate: 66.67%
+RECHAZO_VENDEDOR_OBSERVADO | total: 6 | win: 4 | loss: 2 | winrate: 66.67%
+IMPULSO_ALCISTA_MEDIO | total: 45 | win: 27 | loss: 18 | winrate: 60.0%
+SIN_CONTEXTO_CLARO | total: 55 | win: 32 | loss: 23 | winrate: 58.18%
+IMPULSO_BAJISTA_FUERTE | total: 11 | win: 6 | loss: 5 | winrate: 54.55%
+IMPULSO_BAJISTA_MEDIO | total: 41 | win: 19 | loss: 22 | winrate: 46.34%
+RECHAZO_VENDEDOR_HISTORICO | total: 9 | win: 4 | loss: 5 | winrate: 44.44%
+IMPULSO_ALCISTA_AGOTANDOSE | total: 7 | win: 3 | loss: 4 | winrate: 42.86%
+RECHAZO_VENDEDOR_CONFIRMADO | total: 5 | win: 2 | loss: 3 | winrate: 40.0%
+IMPULSO_ALCISTA_FUERTE | total: 27 | win: 10 | loss: 17 | winrate: 37.04%
+RECHAZO_COMPRADOR_OBSERVADO | total: 4 | win: 1 | loss: 3 | winrate: 25.0%
+IMPULSO_BAJISTA_AGOTANDOSE | total: 13 | win: 3 | loss: 10 | winrate: 23.08%
+
+===== POR DIRECCION PA =====
+NEUTRA | total: 55 | win: 32 | loss: 23 | winrate: 58.18%
+CALL | total: 95 | win: 49 | loss: 46 | winrate: 51.58%
+PUT | total: 85 | win: 38 | loss: 47 | winrate: 44.71%
+
+===== POR RUPTURA =====
+FALSA_RUPTURA_SOPORTE | total: 5 | win: 3 | loss: 2 | winrate: 60.0%
+SIN_RUPTURA_SOPORTE | total: 135 | win: 71 | loss: 64 | winrate: 52.59%
+FALSA_RUPTURA_RESISTENCIA | total: 4 | win: 2 | loss: 2 | winrate: 50.0%
+SIN_RUPTURA_RESISTENCIA | total: 91 | win: 43 | loss: 48 | winrate: 47.25%
+
+===== POR TIPO SETUP =====
+RECHAZO_BAJISTA | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+SWEEP_BAJISTA | total: 25 | win: 17 | loss: 8 | winrate: 68.0%
+INDEFINIDO | total: 6 | win: 4 | loss: 2 | winrate: 66.67%
+REVERSION_ALCISTA | total: 3 | win: 2 | loss: 1 | winrate: 66.67%
+CHOCH_BAJISTA | total: 16 | win: 9 | loss: 7 | winrate: 56.25%
+SWEEP_ALCISTA | total: 22 | win: 11 | loss: 11 | winrate: 50.0%
+CONTINUACION | total: 148 | win: 69 | loss: 79 | winrate: 46.62%
+CHOCH_ALCISTA | total: 11 | win: 5 | loss: 6 | winrate: 45.45%
+REVERSION_BAJISTA | total: 3 | win: 1 | loss: 2 | winrate: 33.33%
+
+===== POR FAMILIA SETUP =====
+REACCIÓN_ZONA | total: 7 | win: 5 | loss: 2 | winrate: 71.43%
+REVERSIÓN | total: 53 | win: 31 | loss: 22 | winrate: 58.49%
+REVERSIÓN_ESTRUCTURAL | total: 27 | win: 14 | loss: 13 | winrate: 51.85%
+CONTINUACIÓN | total: 148 | win: 69 | loss: 79 | winrate: 46.62%
+
+===== POR SUBTIPO SETUP =====
+CHOCH_TENDENCIA_DEBIL | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+ZONA_RECHAZO_CONFIRMADO | total: 4 | win: 3 | loss: 1 | winrate: 75.0%
+ZONA_GENERICA | total: 3 | win: 2 | loss: 1 | winrate: 66.67%
+SWEEP_RUPTURA_CONFIRMABLE | total: 36 | win: 23 | loss: 13 | winrate: 63.89%
+CHOCH_CON_PA_A_FAVOR | total: 25 | win: 13 | loss: 12 | winrate: 52.0%
+SWEEP_SIMPLE | total: 12 | win: 6 | loss: 6 | winrate: 50.0%
+CONTINUACION_SIMPLE | total: 73 | win: 36 | loss: 37 | winrate: 49.32%
+PULLBACK_GENERICO | total: 63 | win: 29 | loss: 34 | winrate: 46.03%
+SWEEP_CON_RECHAZO_AGOTAMIENTO | total: 5 | win: 2 | loss: 3 | winrate: 40.0%
+CONTINUACION_TENDENCIA_FUERTE | total: 12 | win: 4 | loss: 8 | winrate: 33.33%
+CHOCH_SIMPLE | total: 1 | win: 0 | loss: 1 | winrate: 0.0%
+
+===== POR PROTOCOLO SUGERIDO =====
+PROTOCOLO_REACCION_ZONA | total: 6 | win: 4 | loss: 2 | winrate: 66.67%
+PROTOCOLO_SWEEP | total: 35 | win: 21 | loss: 14 | winrate: 60.0%
+PROTOCOLO_CHOCH | total: 22 | win: 13 | loss: 9 | winrate: 59.09%
+PROTOCOLO_CONTINUACION | total: 58 | win: 28 | loss: 30 | winrate: 48.28%
+PROTOCOLO_PULLBACK | total: 55 | win: 26 | loss: 29 | winrate: 47.27%
+PROTOCOLO_RUPTURA_RESISTENCIA | total: 59 | win: 27 | loss: 32 | winrate: 45.76%
+
+===== POR NIVEL SETUP =====
+MEDIO | total: 235 | win: 119 | loss: 116 | winrate: 50.64%
+
+===== POR ESTADO SETUP =====
+PENDIENTE_CONFIRMACION | total: 235 | win: 119 | loss: 116 | winrate: 50.64%
+
+===== POR CALIDAD SETUP =====
+PREMIUM | total: 36 | win: 23 | loss: 13 | winrate: 63.89%
+DEBIL | total: 50 | win: 25 | loss: 25 | winrate: 50.0%
+BUENA | total: 85 | win: 42 | loss: 43 | winrate: 49.41%
+MEDIA | total: 64 | win: 29 | loss: 35 | winrate: 45.31%
+
+===== POR MODO ENTRADA SETUP =====
+NO_OPERAR | total: 4 | win: 3 | loss: 1 | winrate: 75.0%
+ESPERAR_RUPTURA | total: 76 | win: 40 | loss: 36 | winrate: 52.63%
+DIRECTA | total: 155 | win: 76 | loss: 79 | winrate: 49.03%
+
+===== POR NIVEL RIESGO PROTOCOLO =====
+MUY_BAJO | total: 21 | win: 12 | loss: 9 | winrate: 57.14%
+ | total: 214 | win: 107 | loss: 107 | winrate: 50.0%
+
+===== POR NIVEL CONFIRMACION IA =====
+ALTO | total: 16 | win: 10 | loss: 6 | winrate: 62.5%
+ | total: 214 | win: 107 | loss: 107 | winrate: 50.0%
+MEDIO | total: 5 | win: 2 | loss: 3 | winrate: 40.0%
+
+===== POR ACCION CONFIRMACION IA =====
+ESPERAR_2 | total: 16 | win: 10 | loss: 6 | winrate: 62.5%
+ | total: 214 | win: 107 | loss: 107 | winrate: 50.0%
+ESPERAR_3 | total: 5 | win: 2 | loss: 3 | winrate: 40.0%
+
+===== POR INDICE CONFIRMACION IA =====
+60_74_MEDIO | total: 16 | win: 10 | loss: 6 | winrate: 62.5%
+0_44_MUY_BAJO | total: 214 | win: 107 | loss: 107 | winrate: 50.0%
+45_59_BAJO | total: 5 | win: 2 | loss: 3 | winrate: 40.0%
+
+===== POR SCORE FINAL =====
+216 | total: 3 | win: 3 | loss: 0 | winrate: 100.0%
+68 | total: 3 | win: 3 | loss: 0 | winrate: 100.0%
+130 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+125 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+187 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+138 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+220 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+196 | total: 2 | win: 2 | loss: 0 | winrate: 100.0%
+234 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+230 | total: 2 | win: 2 | loss: 0 | winrate: 100.0%
+169 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+139 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+119 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+128 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+178 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+66 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+226 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+134 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+149 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+109 | total: 5 | win: 4 | loss: 1 | winrate: 80.0%
+
+===== POR NIVEL CONSENSO =====
+MEDIO | total: 235 | win: 119 | loss: 116 | winrate: 50.64%
+
+===== POR DECISION BOOTIQ =====
+OPERAR_CON_PROTOCOLO | total: 21 | win: 12 | loss: 9 | winrate: 57.14%
+NO_OPERAR | total: 209 | win: 106 | loss: 103 | winrate: 50.72%
+OPERAR | total: 5 | win: 1 | loss: 4 | winrate: 20.0%
+
+===== POR CONFIANZA BOOTIQ =====
+48.0 | total: 2 | win: 2 | loss: 0 | winrate: 100.0%
+46.96 | total: 2 | win: 2 | loss: 0 | winrate: 100.0%
+45.76 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+49.14 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+45.91 | total: 4 | win: 4 | loss: 0 | winrate: 100.0%
+49.08 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+47.63 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+43.28 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+49.72 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+47.03 | total: 4 | win: 3 | loss: 1 | winrate: 75.0%
+47.01 | total: 18 | win: 12 | loss: 6 | winrate: 66.67%
+45.82 | total: 3 | win: 2 | loss: 1 | winrate: 66.67%
+50.74 | total: 13 | win: 8 | loss: 5 | winrate: 61.54%
+52.5 | total: 9 | win: 5 | loss: 4 | winrate: 55.56%
+46.26 | total: 47 | win: 24 | loss: 23 | winrate: 51.06%
+47.66 | total: 2 | win: 1 | loss: 1 | winrate: 50.0%
+46.06 | total: 2 | win: 1 | loss: 1 | winrate: 50.0%
+46.1 | total: 6 | win: 3 | loss: 3 | winrate: 50.0%
+44.71 | total: 35 | win: 17 | loss: 18 | winrate: 48.57%
+47.26 | total: 34 | win: 16 | loss: 18 | winrate: 47.06%
+
+===== POR TIPO =====
+turbo | total: 235 | win: 119 | loss: 116 | winrate: 50.64%
+
+===== POR MERCADO =====
+RANGO | total: 3 | win: 3 | loss: 0 | winrate: 100.0%
+TENDENCIA_BAJISTA | total: 134 | win: 67 | loss: 67 | winrate: 50.0%
+TENDENCIA_ALCISTA | total: 98 | win: 49 | loss: 49 | winrate: 50.0%
+
+===== POR CALIDAD MERCADO =====
+NORMAL | total: 223 | win: 114 | loss: 109 | winrate: 51.12%
+LIMPIO | total: 12 | win: 5 | loss: 7 | winrate: 41.67%
+
+===== POR TENDENCIA =====
+ALCISTA_AGOTADA | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+ALCISTA_DEBIL | total: 8 | win: 5 | loss: 3 | winrate: 62.5%
+ALCISTA_FUERTE | total: 14 | win: 8 | loss: 6 | winrate: 57.14%
+BAJISTA_FUERTE | total: 23 | win: 13 | loss: 10 | winrate: 56.52%
+BAJISTA_NORMAL | total: 104 | win: 51 | loss: 53 | winrate: 49.04%
+ALCISTA_NORMAL | total: 78 | win: 38 | loss: 40 | winrate: 48.72%
+BAJISTA_DEBIL | total: 7 | win: 3 | loss: 4 | winrate: 42.86%
+
+===== POR ACTIVO =====
+EURAUD-OTC | total: 52 | win: 29 | loss: 23 | winrate: 55.77%
+USDNOK-OTC | total: 80 | win: 42 | loss: 38 | winrate: 52.5%
+USDMXN-OTC | total: 48 | win: 24 | loss: 24 | winrate: 50.0%
+SATSUSD-OTC | total: 55 | win: 24 | loss: 31 | winrate: 43.64%
+
+===== POR EVIDENCIA PA =====
+RECHAZO_COMPRADOR_HISTORICO | total: 2 | win: 2 | loss: 0 | winrate: 100.0%
+IMPULSO_ALCISTA_MEDIO | RECHAZO_COMPRADOR_OBSERVADO | total: 2 | win: 2 | loss: 0 | winrate: 100.0%
+RECHAZO_COMPRADOR_CONFIRMADO | IMPULSO_ALCISTA_MEDIO | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+RECHAZO_COMPRADOR_CONFIRMADO | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+IMPULSO_ALCISTA_MEDIO | RECHAZO_COMPRADOR_HISTORICO | total: 5 | win: 4 | loss: 1 | winrate: 80.0%
+RECHAZO_VENDEDOR_OBSERVADO | total: 6 | win: 4 | loss: 2 | winrate: 66.67%
+ | total: 55 | win: 32 | loss: 23 | winrate: 58.18%
+IMPULSO_ALCISTA_MEDIO | total: 43 | win: 25 | loss: 18 | winrate: 58.14%
+IMPULSO_BAJISTA_FUERTE | total: 11 | win: 6 | loss: 5 | winrate: 54.55%
+RECHAZO_VENDEDOR_CONFIRMADO | IMPULSO_BAJISTA_MEDIO | total: 2 | win: 1 | loss: 1 | winrate: 50.0%
+IMPULSO_BAJISTA_MEDIO | RECHAZO_VENDEDOR_HISTORICO | total: 8 | win: 4 | loss: 4 | winrate: 50.0%
+RECHAZO_VENDEDOR_CONFIRMADO | total: 2 | win: 1 | loss: 1 | winrate: 50.0%
+IMPULSO_BAJISTA_AGOTANDOSE | RECHAZO_COMPRADOR_OBSERVADO | CONTRADICCION_PA | total: 2 | win: 1 | loss: 1 | winrate: 50.0%
+IMPULSO_BAJISTA_MEDIO | total: 40 | win: 19 | loss: 21 | winrate: 47.5%
+IMPULSO_ALCISTA_AGOTANDOSE | total: 7 | win: 3 | loss: 4 | winrate: 42.86%
+IMPULSO_ALCISTA_FUERTE | total: 27 | win: 10 | loss: 17 | winrate: 37.04%
+RECHAZO_COMPRADOR_OBSERVADO | total: 4 | win: 1 | loss: 3 | winrate: 25.0%
+IMPULSO_BAJISTA_AGOTANDOSE | total: 11 | win: 2 | loss: 9 | winrate: 18.18%
+RECHAZO_VENDEDOR_HISTORICO | total: 1 | win: 0 | loss: 1 | winrate: 0.0%
+RECHAZO_COMPRADOR_CONFIRMADO | IMPULSO_BAJISTA_MEDIO | CONTRADICCION_PA | total: 1 | win: 0 | loss: 1 | winrate: 0.0%
+
+===== POR EVIDENCIA MERCADO =====
+MERCADO_RANGO | MERCADO_NORMAL | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+TENDENCIA_ALCISTA | MERCADO_LIMPIO | SCORE_MERCADO_ALTO | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+MERCADO_RANGO | MERCADO_NORMAL | RANGO_SUCIO | RIESGO_MERCADO_ALTO | total: 2 | win: 2 | loss: 0 | winrate: 100.0%
+TENDENCIA_ALCISTA | MERCADO_LIMPIO | TENDENCIA_LIMPIA | SCORE_MERCADO_ALTO | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+TENDENCIA_ALCISTA | MERCADO_NORMAL | TENDENCIA_AGOTADA | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+TENDENCIA_ALCISTA | MERCADO_LIMPIO | TENDENCIA_FUERTE | TENDENCIA_LIMPIA | SCORE_MERCADO_ALTO | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+TENDENCIA_BAJISTA | MERCADO_NORMAL | TENDENCIA_FUERTE | TENDENCIA_LIMPIA | total: 7 | win: 6 | loss: 1 | winrate: 85.71%
+TENDENCIA_ALCISTA | MERCADO_NORMAL | TENDENCIA_FUERTE | TENDENCIA_LIMPIA | total: 4 | win: 3 | loss: 1 | winrate: 75.0%
+TENDENCIA_BAJISTA | MERCADO_NORMAL | SCORE_MERCADO_ALTO | total: 4 | win: 3 | loss: 1 | winrate: 75.0%
+TENDENCIA_ALCISTA | MERCADO_NORMAL | TENDENCIA_DEBIL | total: 7 | win: 5 | loss: 2 | winrate: 71.43%
+TENDENCIA_BAJISTA | MERCADO_NORMAL | TENDENCIA_FUERTE | total: 9 | win: 6 | loss: 3 | winrate: 66.67%
+TENDENCIA_BAJISTA | MERCADO_NORMAL | TENDENCIA_LIMPIA | SCORE_MERCADO_ALTO | total: 3 | win: 2 | loss: 1 | winrate: 66.67%
+TENDENCIA_BAJISTA | MERCADO_LIMPIO | TENDENCIA_LIMPIA | SCORE_MERCADO_ALTO | total: 3 | win: 2 | loss: 1 | winrate: 66.67%
+TENDENCIA_ALCISTA | MERCADO_NORMAL | TENDENCIA_FUERTE | TENDENCIA_LIMPIA | SCORE_MERCADO_ALTO | total: 3 | win: 2 | loss: 1 | winrate: 66.67%
+TENDENCIA_BAJISTA | MERCADO_NORMAL | TENDENCIA_LIMPIA | total: 18 | win: 9 | loss: 9 | winrate: 50.0%
+TENDENCIA_BAJISTA | MERCADO_NORMAL | TENDENCIA_DEBIL | total: 6 | win: 3 | loss: 3 | winrate: 50.0%
+TENDENCIA_ALCISTA | MERCADO_NORMAL | TENDENCIA_LIMPIA | total: 10 | win: 5 | loss: 5 | winrate: 50.0%
+TENDENCIA_ALCISTA | MERCADO_NORMAL | TENDENCIA_LIMPIA | SCORE_MERCADO_ALTO | total: 2 | win: 1 | loss: 1 | winrate: 50.0%
+TENDENCIA_ALCISTA | MERCADO_NORMAL | SCORE_MERCADO_ALTO | total: 2 | win: 1 | loss: 1 | winrate: 50.0%
+TENDENCIA_BAJISTA | MERCADO_NORMAL | total: 75 | win: 35 | loss: 40 | winrate: 46.67%
+
+===== POR CEREBRO UNICO DECISION =====
+OPERAR_CON_PROTOCOLO | total: 21 | win: 12 | loss: 9 | winrate: 57.14%
+NO_OPERAR | total: 209 | win: 106 | loss: 103 | winrate: 50.72%
+OPERAR | total: 5 | win: 1 | loss: 4 | winrate: 20.0%
+
+===== POR CEREBRO UNICO RIESGO =====
+EXTREMO | total: 31 | win: 19 | loss: 12 | winrate: 61.29%
+BAJO | total: 50 | win: 25 | loss: 25 | winrate: 50.0%
+MEDIO | total: 119 | win: 58 | loss: 61 | winrate: 48.74%
+ALTO | total: 35 | win: 17 | loss: 18 | winrate: 48.57%
+
+===== POR CEREBRO UNICO MODO EJECUCION =====
+PROTOCOLO | total: 21 | win: 12 | loss: 9 | winrate: 57.14%
+BLOQUEADA | total: 209 | win: 106 | loss: 103 | winrate: 50.72%
+DIRECTA | total: 5 | win: 1 | loss: 4 | winrate: 20.0%
+
+===== POR CEREBRO UNICO REQUIERE PROTOCOLO =====
+True | total: 21 | win: 12 | loss: 9 | winrate: 57.14%
+False | total: 214 | win: 107 | loss: 107 | winrate: 50.0%
+
+===== POR AJUSTE PONDERACION =====
+0.0 | total: 235 | win: 119 | loss: 116 | winrate: 50.64%
+
+===== POR CONFIANZA FINAL CEREBRO =====
+48.0 | total: 2 | win: 2 | loss: 0 | winrate: 100.0%
+46.96 | total: 2 | win: 2 | loss: 0 | winrate: 100.0%
+45.76 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+49.14 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+45.91 | total: 4 | win: 4 | loss: 0 | winrate: 100.0%
+49.08 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+47.63 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+43.28 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+49.72 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+47.03 | total: 4 | win: 3 | loss: 1 | winrate: 75.0%
+47.01 | total: 18 | win: 12 | loss: 6 | winrate: 66.67%
+45.82 | total: 3 | win: 2 | loss: 1 | winrate: 66.67%
+50.74 | total: 13 | win: 8 | loss: 5 | winrate: 61.54%
+52.5 | total: 9 | win: 5 | loss: 4 | winrate: 55.56%
+46.26 | total: 47 | win: 24 | loss: 23 | winrate: 51.06%
+47.66 | total: 2 | win: 1 | loss: 1 | winrate: 50.0%
+46.06 | total: 2 | win: 1 | loss: 1 | winrate: 50.0%
+46.1 | total: 6 | win: 3 | loss: 3 | winrate: 50.0%
+44.71 | total: 35 | win: 17 | loss: 18 | winrate: 48.57%
+47.26 | total: 34 | win: 16 | loss: 18 | winrate: 47.06%
+
+===== AUDITORIA POR CONFIANZA BASE =====
+50.0 | total: 235 | win: 119 | loss: 116 | winrate: 50.64%
+
+===== AUDITORIA POR AJUSTE APRENDIZAJE =====
+0.0 | total: 235 | win: 119 | loss: 116 | winrate: 50.64%
+
+===== AUDITORIA POR AJUSTE PRICE ACTION =====
+4.9 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+-7.5 | total: 1 | win: 1 | loss: 0 | winrate: 100.0%
+-4.22 | total: 2 | win: 2 | loss: 0 | winrate: 100.0%
+3.0 | total: 3 | win: 2 | loss: 1 | winrate: 66.67%
+4.0 | total: 3 | win: 2 | loss: 1 | winrate: 66.67%
+3.9 | total: 3 | win: 2 | loss: 1 | winrate: 66.67%
+0.5 | total: 5 | win: 3 | loss: 2 | winrate: 60.0%
+0.0 | total: 55 | win: 32 | loss: 23 | winrate: 58.18%
+-2.0 | total: 52 | win: 29 | loss: 23 | winrate: 55.77%
+-4.0 | total: 2 | win: 1 | loss: 1 | winrate: 50.0%
+0.9 | total: 8 | win: 4 | loss: 4 | winrate: 50.0%
+2.3 | total: 2 | win: 1 | loss: 1 | winrate: 50.0%
+1.8 | total: 56 | win: 25 | loss: 31 | winrate: 44.64%
+4.8 | total: 9 | win: 4 | loss: 5 | winrate: 44.44%
+5.8 | total: 3 | win: 1 | loss: 2 | winrate: 33.33%
+2.8 | total: 27 | win: 9 | loss: 18 | winrate: 33.33%
+-7.1 | total: 1 | win: 0 | loss: 1 | winrate: 0.0%
+4.5 | total: 1 | win: 0 | loss: 1 | winrate: 0.0%
+1.4 | total: 1 | win: 0 | loss: 1 | winrate: 0.0%
+
+===== AUDITORIA POR AJUSTE MERCADO =====
+0.0 | total: 235 | win: 119 | loss: 116 | winrate: 50.64%
+
+===== AUDITORIA POR AJUSTE ESTRATEGIA =====
+0.0 | total: 235 | win: 119 | loss: 116 | winrate: 50.64%
+
+===== AUDITORIA POR AJUSTE EVIDENCIAS =====
+0.0 | total: 235 | win: 119 | loss: 116 | winrate: 50.64%
+
+===== AUDITORIA POR AJUSTE PONDERACION =====
+0.0 | total: 235 | win: 119 | loss: 116 | winrate: 50.64%
+
+===== AUDITORIA CONFIANZA ANTES PONDERACION =====
+50.0 | total: 235 | win: 119 | loss: 116 | winrate: 50.64%
+
+===== AUDITORIA CONFIANZA FINAL =====
+50.0 | total: 235 | win: 119 | loss: 116 | winrate: 50.64%
+
+===== CALIBRACION CONFIANZA BASE =====
+0-39 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+40-44 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+45-49 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+50-54 | total: 235 | win: 119 | loss: 116 | winrate: 50.64%
+55-59 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+60-64 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+65-69 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+70+ | total: 0 | win: 0 | loss: 0 | winrate: 0%
+
+===== CALIBRACION ANTES PONDERACION =====
+0-39 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+40-44 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+45-49 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+50-54 | total: 235 | win: 119 | loss: 116 | winrate: 50.64%
+55-59 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+60-64 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+65-69 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+70+ | total: 0 | win: 0 | loss: 0 | winrate: 0%
+
+===== CALIBRACION CONFIANZA FINAL =====
+0-39 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+40-44 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+45-49 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+50-54 | total: 235 | win: 119 | loss: 116 | winrate: 50.64%
+55-59 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+60-64 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+65-69 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+70+ | total: 0 | win: 0 | loss: 0 | winrate: 0%
+
+===== CALIBRACION PROBABILIDAD ESTIMADA =====
+0-39 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+40-44 | total: 50 | win: 22 | loss: 28 | winrate: 44.0%
+45-49 | total: 159 | win: 84 | loss: 75 | winrate: 52.83%
+50-54 | total: 26 | win: 13 | loss: 13 | winrate: 50.0%
+55-59 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+60-64 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+65-69 | total: 0 | win: 0 | loss: 0 | winrate: 0%
+70+ | total: 0 | win: 0 | loss: 0 | winrate: 0%
+
+===== POR DECISION ESTADISTICA SOMBRA =====
+NO_OPERAR_SOMBRA | total: 209 | win: 106 | loss: 103 | winrate: 50.72%
+OPERAR_CON_PROTOCOLO_SOMBRA | total: 26 | win: 13 | loss: 13 | winrate: 50.0%
+
+===== POR CONFIABILIDAD PROBABILIDAD =====
+BAJA | total: 2 | win: 2 | loss: 0 | winrate: 100.0%
+ALTA | total: 174 | win: 89 | loss: 85 | winrate: 51.15%
+MEDIA | total: 59 | win: 28 | loss: 31 | winrate: 47.46%
+
+===== POR NIVEL PROBABILIDAD PRINCIPAL =====
+FAMILIA_TENDENCIA | total: 3 | win: 3 | loss: 0 | winrate: 100.0%
+PA_DIRECCION | total: 10 | win: 8 | loss: 2 | winrate: 80.0%
+CONTEXTO_SETUP | total: 141 | win: 75 | loss: 66 | winrate: 53.19%
+CONTEXTO_TECNICO | total: 76 | win: 31 | loss: 45 | winrate: 40.79%
+FAMILIA_DIRECCION | total: 5 | win: 2 | loss: 3 | winrate: 40.0%
+
+===== COMPARACIÓN DECISIÓN ACTUAL VS SOMBRA =====
+ACTUAL_SI_SOMBRA_SI | total: 26 | win: 13 | loss: 13 | winrate: 50.0%
+ACTUAL_SI_SOMBRA_NO | total: 0 | win: 0 | loss: 0 | winrate: 0%
+ACTUAL_NO_SOMBRA_SI | total: 0 | win: 0 | loss: 0 | winrate: 0%
+ACTUAL_NO_SOMBRA_NO | total: 209 | win: 106 | loss: 103 | winrate: 50.72%
+----------------------------
+Autorizadas por sombra: 26
+WIN sombra: 13
+LOSS sombra: 13
+Winrate sombra: 50.0%
+=================================================
+
+
+===== AUDITORIA OPERACIONES DIRECTAS — VALIDACION =====
+TOTAL DIRECTAS: 5 | WIN: 1 | LOSS: 4 | WR: 20.0% | activos: 2
+Con auditoría de muestra: 5 / 5
+
+--- POR EVIDENCIA SOLIDA ---
+FALSE | total: 5 | win: 1 | loss: 4 | WR: 20.0% | activos: 2
+
+--- POR CONFIABILIDAD ---
+MEDIA | total: 5 | win: 1 | loss: 4 | WR: 20.0% | activos: 2
+
+--- POR RANGO DE MUESTRA ---
+20-29 | total: 5 | win: 1 | loss: 4 | WR: 20.0% | activos: 2
+
+--- POR NIVEL PROBABILIDAD ---
+CONTEXTO_SETUP | total: 5 | win: 1 | loss: 4 | WR: 20.0% | activos: 2
+
+--- POR RANGO PROBABILIDAD ---
+<55 | total: 5 | win: 1 | loss: 4 | WR: 20.0% | activos: 2
+
+--- POR TIPO SETUP ---
+CHOCH_ALCISTA | total: 5 | win: 1 | loss: 4 | WR: 20.0% | activos: 2
+
+--- POR SUBTIPO SETUP ---
+CHOCH_CON_PA_A_FAVOR | total: 5 | win: 1 | loss: 4 | WR: 20.0% | activos: 2
+
+--- POR MERCADO ---
+TENDENCIA_ALCISTA | total: 5 | win: 1 | loss: 4 | WR: 20.0% | activos: 2
+
+--- POR TENDENCIA ---
+ALCISTA_NORMAL | total: 3 | win: 0 | loss: 3 | WR: 0.0% | activos: 2
+ALCISTA_FUERTE | total: 1 | win: 1 | loss: 0 | WR: 100.0% | activos: 1
+ALCISTA_DEBIL | total: 1 | win: 0 | loss: 1 | WR: 0.0% | activos: 1
+
+--- POR PA ---
+IMPULSO_ALCISTA_FUERTE | total: 5 | win: 1 | loss: 4 | WR: 20.0% | activos: 2
+
+--- NIVEL PROBABILIDAD × CONFIABILIDAD ---
+CONTEXTO_SETUP | MEDIA | total: 5 | win: 1 | loss: 4 | WR: 20.0% | activos: 2
+
+--- RANGO MUESTRA × RANGO PROBABILIDAD ---
+20-29 | <55 | total: 5 | win: 1 | loss: 4 | WR: 20.0% | activos: 2
+
+--- SUBTIPO SETUP × MERCADO ---
+CHOCH_CON_PA_A_FAVOR | TENDENCIA_ALCISTA | total: 5 | win: 1 | loss: 4 | WR: 20.0% | activos: 2
+
+--- CLAVES PRINCIPALES DIRECTAS ---
+CONTEXTO_SETUP|CALL|REVERSIÓN_ESTRUCTURAL|CHOCH_ALCISTA|CHOCH_CON_PA_A_FAVOR|TENDENCIA | total: 5 | win: 1 | loss: 4 | WR: 20.0% | activos: 2
+==============================================
+
+
+===== POR MOTIVO EJECUCION =====
+CANCELADA_CEREBRO_UNICO_NO_OPERAR | total: 209 | win: 106 | loss: 103 | winrate: 50.72%
+PROTOCOLO_CHOCH_PA_FAVOR_RUPTURA_IMPULSO_ESPERA_2 | total: 11 | win: 4 | loss: 7 | winrate: 36.36%
+CANCELADA_CHOCH_PA_FAVOR_SIN_CONFIRMACION | total: 9 | win: 3 | loss: 6 | winrate: 33.33%
+OPERACION_DIRECTA_CEREBRO_UNICO | total: 5 | win: 1 | loss: 4 | winrate: 20.0%
+CANCELADA_CHOCH_SIN_RUPTURA_REAL | total: 1 | win: 0 | loss: 1 | winrate: 0.0%
+
+===== POR ESPERA VELAS =====
+1 | total: 6 | win: 3 | loss: 3 | winrate: 50.0%
+0 | total: 224 | win: 110 | loss: 114 | winrate: 49.11%
+2 | total: 5 | win: 1 | loss: 4 | winrate: 20.0%
+
+===== POR RIESGOS BASE =====
+ZONA_SR_NO_VALIDADA | total: 93 | win: 44 | loss: 49 | winrate: 47.31%
+MERCADO_NO_VALIDADO | total: 85 | win: 41 | loss: 44 | winrate: 48.24%
+ACCION_PRECIO_NO_VALIDADA | total: 42 | win: 18 | loss: 24 | winrate: 42.86%
+VELA_CONTRARIA_RECIENTE | total: 25 | win: 13 | loss: 12 | winrate: 52.0%
+UBICACION_FATIGA_NO_VALIDADA | total: 23 | win: 11 | loss: 12 | winrate: 47.83%
+
+===== POR FORTALEZAS BASE =====
+
+===== POR RIESGOS BASE =====
+ZONA_SR_NO_VALIDADA | total: 93 | win: 44 | loss: 49 | winrate: 47.31%
+MERCADO_NO_VALIDADO | total: 85 | win: 41 | loss: 44 | winrate: 48.24%
+ACCION_PRECIO_NO_VALIDADA | total: 42 | win: 18 | loss: 24 | winrate: 42.86%
+VELA_CONTRARIA_RECIENTE | total: 25 | win: 13 | loss: 12 | winrate: 52.0%
+UBICACION_FATIGA_NO_VALIDADA | total: 23 | win: 11 | loss: 12 | winrate: 47.83%
+
+===== POR FORTALEZAS BASE =====
+
+===== MATRIZ SETUP × RIESGO — VALIDACION =====
+
+--- SETUP_BLOQUEA + RIESGO_BLOQUEA ---
+total: 0 | win: 0 | loss: 0 | winrate: 0% | activos: 0
+
+--- SETUP_BLOQUEA + RIESGO_PASA ---
+total: 0 | win: 0 | loss: 0 | winrate: 0% | activos: 0
+
+--- SETUP_PASA + RIESGO_BLOQUEA ---
+total: 0 | win: 0 | loss: 0 | winrate: 0% | activos: 0
+
+--- SETUP_PASA + RIESGO_PASA ---
+total: 21 | win: 12 | loss: 9 | winrate: 57.14% | activos: 4
+PROTOCOLOS: PROTOCOLO_CHOCH:21
+TIPO SETUP: CHOCH_BAJISTA:15 | CHOCH_ALCISTA:6
+SUBTIPO SETUP: CHOCH_CON_PA_A_FAVOR:20 | CHOCH_SIMPLE:1
+MERCADO: TENDENCIA_BAJISTA:15 | TENDENCIA_ALCISTA:6
+CONFIRMACION: ESPERAR_2:16 | ESPERAR_3:5
+NIVEL RIESGO: MUY_BAJO:21
+
+--- SOLAPAMIENTO ---
+Universo protocolo: 21
+Setup bloquearía: 0
+Riesgo bloquearía: 0
+Ambos bloquearían: 0
+Solo setup: 0
+Solo riesgo: 0
+Ninguno: 21
+==============================================
+
+
+===== C3 BYPASS SOMBRA DE VETOS — VALIDACION =====
+No hay señales alcanzadas por C3.
+============================================
+
+===== C5 RUPTURA RESISTENCIA — TIMING VALIDACION =====
+No hay operaciones RUPTURA_RESISTENCIA.
+==============================================
+
+===== C6 AUDITORIA MOTOR CONFIRMACION — VALIDACION =====
+UNIVERSO PROTOCOLO: 21 | WIN: 7 | LOSS: 14 | WR: 33.33% | activos: 4
+
+--- NIVEL CONFIRMACION GLOBAL ---
+ALTO | total: 16 | win: 5 | loss: 11 | WR: 31.25% | activos: 4
+MEDIO | total: 5 | win: 2 | loss: 3 | WR: 40.0% | activos: 4
+
+--- ACCION CONFIRMACION GLOBAL ---
+ESPERAR_2 | total: 16 | win: 5 | loss: 11 | WR: 31.25% | activos: 4
+ESPERAR_3 | total: 5 | win: 2 | loss: 3 | WR: 40.0% | activos: 4
+
+--- PROTOCOLO × NIVEL CONFIRMACION ---
+CHOCH | ALTO | total: 16 | win: 5 | loss: 11 | WR: 31.25% | activos: 4
+CHOCH | MEDIO | total: 5 | win: 2 | loss: 3 | WR: 40.0% | activos: 4
+
+--- PROTOCOLO × ACCION CONFIRMACION ---
+CHOCH | ESPERAR_2 | total: 16 | win: 5 | loss: 11 | WR: 31.25% | activos: 4
+CHOCH | ESPERAR_3 | total: 5 | win: 2 | loss: 3 | WR: 40.0% | activos: 4
+
+--- PROTOCOLO × NIVEL × ESTADO ---
+CHOCH | ALTO | CANCELADA_PROTOCOLO | total: 8 | win: 3 | loss: 5 | WR: 37.5% | activos: 3
+CHOCH | ALTO | OPERADA_PROTOCOLO | total: 8 | win: 2 | loss: 6 | WR: 25.0% | activos: 3
+CHOCH | MEDIO | OPERADA_PROTOCOLO | total: 3 | win: 2 | loss: 1 | WR: 66.67% | activos: 2
+CHOCH | MEDIO | CANCELADA_PROTOCOLO | total: 2 | win: 0 | loss: 2 | WR: 0.0% | activos: 2
+
+--- INDICE CONFIRMACION POR RANGO ---
+45-59 | total: 5 | win: 2 | loss: 3 | WR: 40.0% | activos: 4
+60-74 | total: 16 | win: 5 | loss: 11 | WR: 31.25% | activos: 4
+
+--- COMPARACION MEDIO VS ALTO ---
+MEDIO | total: 5 | win: 2 | loss: 3 | WR: 40.0% | activos: 4
+ALTO | total: 16 | win: 5 | loss: 11 | WR: 31.25% | activos: 4
+DIFERENCIA MEDIO - ALTO: 8.75 puntos
+==============================================
+
+
+===== C7 CONFIRMACION × ESPERA REAL — VALIDACION =====
+
+--- GLOBAL ACCION × ESPERA REAL ---
+ESPERAR_2 | espera_real: -1 | total: 8 | win: 3 | loss: 5 | WR: 37.5% | activos: 3
+ESPERAR_2 | espera_real: 1 | total: 4 | win: 1 | loss: 3 | WR: 25.0% | activos: 3
+ESPERAR_2 | espera_real: 2 | total: 4 | win: 1 | loss: 3 | WR: 25.0% | activos: 2
+ESPERAR_3 | espera_real: -1 | total: 2 | win: 0 | loss: 2 | WR: 0.0% | activos: 2
+ESPERAR_3 | espera_real: 1 | total: 2 | win: 2 | loss: 0 | WR: 100.0% | activos: 2
+ESPERAR_3 | espera_real: 2 | total: 1 | win: 0 | loss: 1 | WR: 0.0% | activos: 1
+
+--- CUMPLIMIENTO DE LA RECOMENDACION ---
+ESPERAR_2 | SIN_ENTRADA | total: 8 | win: 3 | loss: 5 | WR: 37.5% | activos: 3
+ESPERAR_2 | ANTES_DE_LO_SUGERIDO | total: 4 | win: 1 | loss: 3 | WR: 25.0% | activos: 3
+ESPERAR_2 | EXACTAMENTE_LO_SUGERIDO | total: 4 | win: 1 | loss: 3 | WR: 25.0% | activos: 2
+ESPERAR_3 | ANTES_DE_LO_SUGERIDO | total: 3 | win: 2 | loss: 1 | WR: 66.67% | activos: 2
+ESPERAR_3 | SIN_ENTRADA | total: 2 | win: 0 | loss: 2 | WR: 0.0% | activos: 2
+
+--- PROTOCOLO × ACCION × RELACION ---
+CHOCH | ESPERAR_2 | SIN_ENTRADA | total: 8 | win: 3 | loss: 5 | WR: 37.5% | activos: 3
+CHOCH | ESPERAR_2 | ANTES_DE_LO_SUGERIDO | total: 4 | win: 1 | loss: 3 | WR: 25.0% | activos: 3
+CHOCH | ESPERAR_2 | EXACTAMENTE_LO_SUGERIDO | total: 4 | win: 1 | loss: 3 | WR: 25.0% | activos: 2
+CHOCH | ESPERAR_3 | ANTES_DE_LO_SUGERIDO | total: 3 | win: 2 | loss: 1 | WR: 66.67% | activos: 2
+CHOCH | ESPERAR_3 | SIN_ENTRADA | total: 2 | win: 0 | loss: 2 | WR: 0.0% | activos: 2
+
+--- PROTOCOLO × ACCION × ESPERA EXACTA ---
+CHOCH | ESPERAR_2 | espera: -1 | total: 8 | win: 3 | loss: 5 | WR: 37.5% | activos: 3
+CHOCH | ESPERAR_2 | espera: 1 | total: 4 | win: 1 | loss: 3 | WR: 25.0% | activos: 3
+CHOCH | ESPERAR_2 | espera: 2 | total: 4 | win: 1 | loss: 3 | WR: 25.0% | activos: 2
+CHOCH | ESPERAR_3 | espera: -1 | total: 2 | win: 0 | loss: 2 | WR: 0.0% | activos: 2
+CHOCH | ESPERAR_3 | espera: 1 | total: 2 | win: 2 | loss: 0 | WR: 100.0% | activos: 2
+CHOCH | ESPERAR_3 | espera: 2 | total: 1 | win: 0 | loss: 1 | WR: 0.0% | activos: 1
+
+--- SOLO OPERADAS: ACCION × RELACION ---
+ESPERAR_2 | ANTES_DE_LO_SUGERIDO | total: 4 | win: 1 | loss: 3 | WR: 25.0% | activos: 3
+ESPERAR_2 | EXACTAMENTE_LO_SUGERIDO | total: 4 | win: 1 | loss: 3 | WR: 25.0% | activos: 2
+ESPERAR_3 | ANTES_DE_LO_SUGERIDO | total: 3 | win: 2 | loss: 1 | WR: 66.67% | activos: 2
+
+--- RESUMEN COHERENCIA ---
+Señales con objetivo de espera: 21
+Exactamente: 4 | 19.05%
+Antes: 7 | 33.33%
+Después: 0 | 0.0%
+Sin entrada: 10 | 47.62%
+==============================================
+
+
+===== C8 EVENTO TECNICO DE ENTRADA — VALIDACION =====
+OPERADAS PROTOCOLO: 11 | WIN: 4 | LOSS: 7 | WR: 36.36% | activos: 3
+
+--- EVENTO EXACTO GLOBAL ---
+PROTOCOLO_CHOCH_PA_FAVOR_RUPTURA_IMPULSO_ESPERA_2 | total: 11 | win: 4 | loss: 7 | WR: 36.36% | activos: 3
+
+--- FAMILIA EVENTO GLOBAL ---
+IMPULSO | total: 11 | win: 4 | loss: 7 | WR: 36.36% | activos: 3
+
+--- PROTOCOLO × EVENTO EXACTO ---
+CHOCH | PROTOCOLO_CHOCH_PA_FAVOR_RUPTURA_IMPULSO_ESPERA_2 | total: 11 | win: 4 | loss: 7 | WR: 36.36% | activos: 3
+
+--- PROTOCOLO × EVENTO × TIMING ---
+CHOCH | evento: IMPULSO | timing: ANTES | total: 7 | win: 3 | loss: 4 | WR: 42.86% | activos: 3
+CHOCH | evento: IMPULSO | timing: EXACTA | total: 4 | win: 1 | loss: 3 | WR: 25.0% | activos: 2
+
+--- FOCO RUPTURA_RESISTENCIA ---
+
+--- SOLO ENTRADAS ANTES DE LO SUGERIDO ---
+CHOCH | evento: IMPULSO | accion: ESPERAR_2 | espera_real: 1 | total: 4 | win: 1 | loss: 3 | WR: 25.0% | activos: 3
+CHOCH | evento: IMPULSO | accion: ESPERAR_3 | espera_real: 1 | total: 2 | win: 2 | loss: 0 | WR: 100.0% | activos: 2
+CHOCH | evento: IMPULSO | accion: ESPERAR_3 | espera_real: 2 | total: 1 | win: 0 | loss: 1 | WR: 0.0% | activos: 1
+==============================================
+
+
+===== C-C2 PROBABILIDAD POST-PROTOCOLO — VALIDACION =====
+Operaciones protocolo: 11
+Con aprendizaje post-protocolo: 11
+Sin datos post-protocolo: 0
+
+--- CALIBRACION POST-PROTOCOLO ---
+<45 | total: 0 | win: 0 | loss: 0 | WR: 0% | activos: 0
+45-49 | total: 5 | win: 1 | loss: 4 | WR: 20.0% | activos: 3
+50-54 | total: 6 | win: 3 | loss: 3 | WR: 50.0% | activos: 3
+55-59 | total: 0 | win: 0 | loss: 0 | WR: 0% | activos: 0
+60-64 | total: 0 | win: 0 | loss: 0 | WR: 0% | activos: 0
+65+ | total: 0 | win: 0 | loss: 0 | WR: 0% | activos: 0
+
+--- CONFIABILIDAD POST-PROTOCOLO ---
+BAJA | total: 6 | win: 3 | loss: 3 | WR: 50.0%
+MUY_BAJA | total: 5 | win: 1 | loss: 4 | WR: 20.0%
+
+--- TOP CUANTILES POST-PROTOCOLO ---
+TOP 25% | total: 3 | win: 1 | loss: 2 | WR: 33.33% | prob mínima: 51.06%
+TOP 40% | total: 4 | win: 2 | loss: 2 | WR: 50.0% | prob mínima: 51.06%
+TOP 50% | total: 6 | win: 3 | loss: 3 | WR: 50.0% | prob mínima: 51.06%
+TOP 60% | total: 7 | win: 3 | loss: 4 | WR: 42.86% | prob mínima: 48.58%
+TOP 75% | total: 8 | win: 4 | loss: 4 | WR: 50.0% | prob mínima: 48.58%
+TOP 100% | total: 11 | win: 4 | loss: 7 | WR: 36.36% | prob mínima: 48.58%
+============================================
+
+
+===== C-C2 SOMBRA CUELLO PROTOCOLO — VALIDACION =====
+PROTOCOLO ACTUAL
+Total: 11 | WIN: 4 | LOSS: 7 | WR: 36.36%
+Con datos C-C2: 11 | Sin datos: 0
+
+--- CORTES FIJOS C-C2 (SOLO SOMBRA) ---
+
+Corte probabilidad >= 45.0
+APROBADAS SOMBRA | total: 11 | win: 4 | loss: 7 | WR: 36.36% | activos: 3
+RECHAZADAS SOMBRA | total: 0 | win: 0 | loss: 0 | WR hipotético: 0% | activos: 0
+
+Corte probabilidad >= 50.0
+APROBADAS SOMBRA | total: 6 | win: 3 | loss: 3 | WR: 50.0% | activos: 3
+RECHAZADAS SOMBRA | total: 5 | win: 1 | loss: 4 | WR hipotético: 20.0% | activos: 3
+
+Corte probabilidad >= 52.5
+APROBADAS SOMBRA | total: 0 | win: 0 | loss: 0 | WR: 0% | activos: 0
+RECHAZADAS SOMBRA | total: 11 | win: 4 | loss: 7 | WR hipotético: 36.36% | activos: 3
+
+Corte probabilidad >= 55.0
+APROBADAS SOMBRA | total: 0 | win: 0 | loss: 0 | WR: 0% | activos: 0
+RECHAZADAS SOMBRA | total: 11 | win: 4 | loss: 7 | WR hipotético: 36.36% | activos: 3
+
+--- CONFIABILIDAD C-C2 ---
+BAJA | total: 6 | win: 3 | loss: 3 | WR: 50.0% | activos: 3
+MUY_BAJA | total: 5 | win: 1 | loss: 4 | WR: 20.0% | activos: 3
+===============================================
+
+
+===== C-C2 AUDITORIA GENERALIZACION =====
+Operaciones C-C2 evaluables: 11
+
+--- FUENTE PRINCIPAL TRAIN VS RESULTADO ACTUAL ---
+PROTOCOLO_EVENTO_RIESGO | PROTOCOLO_EVENTO_RIESGO|CHOCH|PROTOCOLO_CHOCH_PA_FAVOR_RUPTURA_IMPULSO_ESPERA_2|MUY_BAJO | train total: 13 | train WR: 53.85% | prob train: 51.06% | valid total: 6 | valid WIN: 3 | valid LOSS: 3 | valid WR: 50.0% | activos: 3
+PROTOCOLO_EVENTO_ESPERA | PROTOCOLO_EVENTO_ESPERA|CHOCH|PROTOCOLO_CHOCH_PA_FAVOR_RUPTURA_IMPULSO_ESPERA_2|2 | train total: 9 | train WR: 44.44% | prob train: 47.76% | valid total: 5 | valid WIN: 1 | valid LOSS: 4 | valid WR: 20.0% | activos: 3
+========================================
+
+
+===== VALIDACION RECUPERACION VETO SETUP =====
+Regla congelada: SWEEP_SIMPLE + TENDENCIA_ALCISTA
+----------------------------------------
+Candidatas encontradas: 0
+Sobreviven protocolo: 0
+WIN recuperadas: 0
+LOSS recuperadas: 0
+Winrate recuperadas: 0%
+----------------------------------------
+BASELINE VALIDACION: 16 operaciones | 5 WIN | 11 LOSS | 31.25%
+SOMBRA + RECUPERACION: 16 operaciones | 5 WIN | 11 LOSS | 31.25%
+============================================
+
+Archivo generado: backtest_bootiq_F5_7_D4_2_TRAIN.csv

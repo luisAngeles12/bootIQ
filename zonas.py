@@ -571,14 +571,25 @@ def resolver_zona_pendiente(
 
 def entrada_pullback(direccion, price, ema21, soporte, resistencia, vol, patron, rechazo):
     cerca_ema = abs(price - ema21) <= vol * 1.2
+
     if direccion == "call":
-        cerca_soporte = abs(price - soporte) <= vol * 1.5
-        if (cerca_ema or cerca_soporte) and (patron == 1 or rechazo == 1):
-            return True
+        return (
+            cerca_ema
+            and (
+                patron == 1
+                or rechazo == 1
+            )
+        )
+
     if direccion == "put":
-        cerca_resistencia = abs(resistencia - price) <= vol * 1.5
-        if (cerca_ema or cerca_resistencia) and (patron == -1 or rechazo == -1):
-            return True
+        return (
+            cerca_ema
+            and (
+                patron == -1
+                or rechazo == -1
+            )
+        )
+
     return False
 
 
@@ -596,7 +607,9 @@ def validar_interaccion_soporte_resistencia(
     tipo_mercado,
     calidad_mercado,
     ruptura_confirmada=False,
-    tipo_ruptura="SIN_DATOS"
+    tipo_ruptura="SIN_DATOS",
+    cerca_soporte=None,
+    cerca_resistencia=None,
 ):
     try:
         precio = closes[-1]
@@ -604,11 +617,13 @@ def validar_interaccion_soporte_resistencia(
         if vol <= 0:
             vol = abs(precio) * 0.0001
 
-        distancia_soporte = abs(precio - soporte)
-        distancia_resistencia = abs(resistencia - precio)
+        if cerca_soporte is None:
+            distancia_soporte = abs(precio - soporte)
+            cerca_soporte = distancia_soporte <= vol * 0.75
 
-        cerca_soporte = distancia_soporte <= vol * 0.75
-        cerca_resistencia = distancia_resistencia <= vol * 0.75
+        if cerca_resistencia is None:
+            distancia_resistencia = abs(resistencia - precio)
+            cerca_resistencia = distancia_resistencia <= vol * 0.75
 
         patron_txt = str(patron).lower()
 
