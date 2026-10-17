@@ -572,10 +572,31 @@ class IQ_Option:
                 respuestas.pop(request_id, None)
 
                 if avisar_timeout:
+                    websocket_thread = getattr(
+                        self.api,
+                        "websocket_thread",
+                        None,
+                    )
+                    websocket_thread_alive = (
+                        websocket_thread.is_alive()
+                        if websocket_thread is not None
+                        else None
+                    )
+                    message_counts = dict(
+                        getattr(
+                            self.api,
+                            "websocket_message_counts",
+                            {},
+                        )
+                    )
                     logging.warning(
-                        "**warning** get_all_init_v2 "
-                        "timeout %.1f sec",
+                        "**warning** get_all_init_v2 timeout %.1f sec | "
+                        "connected: %s | reader_alive: %s | "
+                        "received_channels: %s",
                         timeout,
+                        self.check_connect(),
+                        websocket_thread_alive,
+                        message_counts,
                     )
 
                 return None

@@ -8,7 +8,7 @@ import requests
 import ssl
 import socket
 import atexit
-from collections import deque
+from collections import Counter, deque
 from iqoptionapi.http.login import Login
 from iqoptionapi.http.loginv2 import Loginv2
 from iqoptionapi.http.logout import Logout
@@ -187,6 +187,7 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
         # su propia respuesta para impedir que una respuesta
         # tardía sea consumida por una petición posterior.
         self.api_option_init_all_result_v2_by_request = {}
+        self.websocket_message_counts = Counter()
 
     def prepare_http_url(self, resource):
         """Construct http url from resource url.

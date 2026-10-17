@@ -144,6 +144,9 @@ IDs estáticos o potencialmente obsoletos.
 Un timeout de OPCODE por sí solo no justifica abrir una sesión nueva si el
 WebSocket actual sigue conectado: la reconexión se reserva para una conexión
 que realmente se haya perdido.
+Al vencer initialization-data se reportan el estado del lector WebSocket y
+los nombres de canales recibidos, nunca el contenido de esos mensajes, para
+distinguir un timeout del servidor de un problema de interpretación local.
 
 ---
 

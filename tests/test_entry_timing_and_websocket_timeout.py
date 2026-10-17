@@ -2,12 +2,15 @@ import threading
 import time
 import unittest
 import socket
+import json
+from collections import Counter
 from unittest.mock import Mock, patch
 
 import estado
 from iqoptionapi import global_value
 from iqoptionapi.api import IQOptionAPI
 from iqoptionapi.stable_api import IQ_Option
+from iqoptionapi.ws.client import WebsocketClient
 from operaciones import (
     abrir_operacion,
     revisar_operaciones_abiertas,
@@ -196,6 +199,18 @@ class CandleRequestTimeoutTests(unittest.TestCase):
         websocket_app.close.assert_called_once_with(timeout=0)
         transport.shutdown.assert_called_once_with(socket.SHUT_RDWR)
         transport.close.assert_called_once_with()
+
+    def test_websocket_message_diagnostics_store_channel_name_only(self):
+        api = Mock()
+        api.websocket_message_counts = Counter()
+        client = WebsocketClient.__new__(WebsocketClient)
+        client.api = api
+
+        client.on_message(json.dumps({"name": "diagnostic-channel"}))
+
+        self.assertEqual(api.websocket_message_counts, {
+            "diagnostic-channel": 1,
+        })
 
     def test_websocket_open_timeout_closes_socket_and_returns(self):
         class FakeThread:

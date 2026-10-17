@@ -108,6 +108,11 @@ class WebsocketClient(object):
 
             message = json.loads(str(message))
 
+            if isinstance(message, dict):
+                message_name = message.get("name")
+                if isinstance(message_name, str):
+                    self.api.websocket_message_counts[message_name] += 1
+
 
             technical_indicators(self.api, message, self.api_dict_clean)
             time_sync(self.api, message)
