@@ -33,6 +33,7 @@ class IQ_Option:
         self.password = password
         self.suspend = 0.5
         self.thread = None
+        self.api = None
 
         # Las respuestas históricas de get-candles usan
         # un único candles_data compartido y IQ no devuelve

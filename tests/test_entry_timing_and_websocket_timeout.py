@@ -98,6 +98,33 @@ class EntryTimingTests(unittest.TestCase):
 
 
 class CandleRequestTimeoutTests(unittest.TestCase):
+    def test_first_connect_initializes_api_without_existing_session(self):
+        iq = IQ_Option("test@example.com", "not-a-real-password")
+        api = Mock()
+        api.connect.return_value = (False, "mock-connect-failure")
+        original_balance_id = global_value.balance_id
+
+        try:
+            with patch(
+                "iqoptionapi.stable_api.IQOptionAPI",
+                return_value=api,
+            ) as api_factory:
+                result = iq.connect()
+        finally:
+            global_value.balance_id = original_balance_id
+
+        self.assertEqual(result, (False, "mock-connect-failure"))
+        api_factory.assert_called_once_with(
+            "iqoption.com",
+            "test@example.com",
+            "not-a-real-password",
+        )
+        api.set_session.assert_called_once_with(
+            headers=iq.SESSION_HEADER,
+            cookies=iq.SESSION_COOKIE,
+        )
+        api.connect.assert_called_once_with()
+
     def test_candle_request_does_not_wait_indefinitely_for_lock(self):
         iq = IQ_Option.__new__(IQ_Option)
         iq._candles_lock = threading.Lock()
