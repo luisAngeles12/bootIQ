@@ -31,6 +31,7 @@ fallos_open_time = 0
 # obtener_velas(), evitando descargar 3000 velas por
 # activo dentro de la ventana operativa.
 velas_cache = {}
+fallo_velas_ronda_d76d = False
 
 # Memoria de zonas operadas
 zonas_operadas = {}

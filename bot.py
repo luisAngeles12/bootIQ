@@ -897,12 +897,11 @@ def main():
             continue
 
         # ==========================================
-        # D7.6D — TOP OFICIAL CON BUFFERS COMPLETOS
+        # D7.6D — AISLAR ACTIVOS SIN BUFFER
         # ==========================================
-        # Tras reconectar, el TOP oficial se conserva,
-        # pero sus velas históricas se invalidan.
-        # No iniciar una ronda hasta reconstruir
-        # TODOS sus buffers fuera de ventana.
+        # Un buffer faltante o inválido omite solo ese
+        # activo; los demás pueden analizarse con sus
+        # datos completos, sin aceptar datos parciales.
         faltantes_buffer_d76d = [
             item["activo"]
             for item in activos
@@ -915,14 +914,25 @@ def main():
 
         if faltantes_buffer_d76d:
             print(
-                "D7.6D RONDA OMITIDA — "
-                "TOP SIN BUFFERS COMPLETOS |",
+                "D7.6D ACTIVOS OMITIDOS — "
+                "BUFFER INSUFICIENTE |",
                 "listos:",
                 len(activos) - len(faltantes_buffer_d76d),
                 "/",
                 len(activos),
-                "| faltantes:",
+                "| omitidos:",
                 faltantes_buffer_d76d,
+            )
+            activos = [
+                item
+                for item in activos
+                if item["activo"] not in faltantes_buffer_d76d
+            ]
+
+        if not activos:
+            print(
+                "D7.6D RONDA OMITIDA — "
+                "NINGÚN ACTIVO CON BUFFER COMPLETO"
             )
             estado_ronda_d76f = "OMITIDA_PREANALISIS"
             time.sleep(0.25)
@@ -958,9 +968,9 @@ def main():
         # ==========================================
         inicio_analisis_d76c = time.perf_counter()
 
-        # D7.6D:
-        # ninguna operación puede salir de un universo
-        # parcialmente analizado.
+        # D7.6D: solo los fallos globales de conexión
+        # invalidan la ronda; los fallos de velas locales
+        # quedan aislados en el activo afectado.
         estado.fallo_velas_ronda_d76d = False
         ronda_incompleta_d76d = False
 
@@ -1169,8 +1179,9 @@ def main():
                         "n_cerebro": candidatas_cerebro_d76d,
                     })
 
-                # D7.6D — abortar inmediatamente si falla
-                # la actualización de velas de cualquier activo.
+                # D7.6D — abortar solo si se perdió la
+                # conexión global; un fallo local de velas
+                # ya dejó el buffer del activo invalidado.
                 if getattr(
                     estado,
                     "fallo_velas_ronda_d76d",
@@ -1264,8 +1275,8 @@ def main():
                     + str(e)
                 )
 
-                # D7.6D — cualquier excepción durante el
-                # análisis invalida el universo completo.
+                # Mantener el comportamiento fail-closed ante
+                # excepciones inesperadas del análisis.
                 ronda_incompleta_d76d = True
 
                 print(

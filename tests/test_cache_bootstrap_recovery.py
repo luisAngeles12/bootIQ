@@ -43,6 +43,7 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
                 "refresh_activos_top_pendiente",
                 "refresh_activos_buffer_indice",
                 "fallos_open_time",
+                "fallo_velas_ronda_d76d",
             )
         }
         estado.Iq = FakeIQ({})
@@ -62,6 +63,7 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
         estado.refresh_activos_top_pendiente = []
         estado.refresh_activos_buffer_indice = 0
         estado.fallos_open_time = 0
+        estado.fallo_velas_ronda_d76d = False
 
     def tearDown(self):
         for name, value in self.original_state.items():
@@ -230,6 +232,59 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             buffer[-1]["from"],
             candles[-1]["from"],
         )
+
+    def test_stale_candles_invalidate_only_the_affected_asset_buffer(self):
+        now = int(time.time() // mercado.CANDLE_TIME) * mercado.CANDLE_TIME
+        expected = now - mercado.CANDLE_TIME
+        stale_last = expected - 2 * mercado.CANDLE_TIME
+        start = stale_last - 129 * mercado.CANDLE_TIME
+        buffer = [
+            {
+                "from": start + index * mercado.CANDLE_TIME,
+                "open": 1,
+                "close": 1,
+                "max": 1,
+                "min": 1,
+            }
+            for index in range(130)
+        ]
+        stale_recent = [
+            {
+                "from": stale_last - 3 * mercado.CANDLE_TIME
+                + index * mercado.CANDLE_TIME,
+                "open": 1,
+                "close": 1,
+                "max": 1,
+                "min": 1,
+            }
+            for index in range(4)
+        ]
+
+        class StaleCandlesIQ(FakeIQ):
+            def get_server_timestamp(self):
+                return now
+
+            def get_candles(self, *_args, **_kwargs):
+                return stale_recent
+
+        estado.Iq = StaleCandlesIQ({})
+        estado.velas_cache = {"stale-asset": buffer}
+        estado.fallo_velas_ronda_d76d = False
+
+        self.assertIsNone(mercado.obtener_velas("stale-asset"))
+        self.assertFalse(estado.fallo_velas_ronda_d76d)
+        self.assertNotIn("stale-asset", estado.velas_cache)
+
+    def test_disconnected_iq_still_invalidates_the_round(self):
+        class DisconnectedIQ(FakeIQ):
+            def check_connect(self):
+                return False
+
+        estado.Iq = DisconnectedIQ({})
+        estado.fallo_velas_ronda_d76d = False
+
+        self.assertIsNone(mercado.obtener_velas("asset"))
+        self.assertTrue(estado.fallo_velas_ronda_d76d)
 
     def test_forced_reconnect_rebuilds_an_open_but_unresponsive_session(self):
         class ConnectedIQ:

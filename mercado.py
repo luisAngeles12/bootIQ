@@ -482,7 +482,7 @@ def obtener_velas(activo):
                 len(buffer_actual),
                 flush=True,
             )
-            estado.fallo_velas_ronda_d76d = True
+            estado.velas_cache.pop(activo, None)
             return None
 
         # Usar desde la primera consulta el mismo reloj
@@ -528,7 +528,13 @@ def obtener_velas(activo):
                 "| causa: GET_CANDLES_NONE",
                 flush=True,
             )
-            estado.fallo_velas_ronda_d76d = True
+            estado.velas_cache.pop(activo, None)
+            try:
+                conectado = estado.Iq.check_connect()
+            except Exception:
+                conectado = False
+            if not conectado:
+                estado.fallo_velas_ronda_d76d = True
             return None
 
         recientes_cerradas = (
@@ -580,7 +586,7 @@ def obtener_velas(activo):
                 len(fusionadas),
                 flush=True,
             )
-            estado.fallo_velas_ronda_d76d = True
+            estado.velas_cache.pop(activo, None)
             return None
 
         # ------------------------------------------------
@@ -677,7 +683,7 @@ def obtener_velas(activo):
                 ],
                 flush=True,
             )
-            estado.fallo_velas_ronda_d76d = True
+            estado.velas_cache.pop(activo, None)
             return None
 
         estado.velas_cache[activo] = fusionadas
@@ -688,18 +694,25 @@ def obtener_velas(activo):
 
     except Exception as e:
         texto = str(e).lower()
-
-        # Si falla la construccion de velas de cualquier
-        # activo del TOP, la ronda deja de ser integra.
-        estado.fallo_velas_ronda_d76d = True
-
-        if (
+        error_conexion = (
             "need reconnect" in texto
             or "connection is already closed" in texto
             or "websocket" in texto
             or "connection" in texto
-        ):
+        )
+        try:
+            conectado = (
+                estado.Iq is not None
+                and estado.Iq.check_connect()
+            )
+        except Exception:
+            conectado = False
+
+        if error_conexion or not conectado:
+            estado.fallo_velas_ronda_d76d = True
             return None
+
+        estado.velas_cache.pop(activo, None)
 
         if (
             "not found" in texto
