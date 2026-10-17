@@ -8,6 +8,7 @@ from config import (
     MAX_OPERACIONES_ABIERTAS,
     VENTANA_ENTRADA_INICIO,
     VENTANA_ENTRADA_FIN,
+    MARGEN_ENVIO_IQ_SEGUNDOS,
     CANDLE_TIME
 )
 from utils import (
@@ -49,7 +50,7 @@ def main():
     operaciones_desde_resumen_mercado = 0
 
     # D7.6A — precarga del universo fuera de la ventana
-    # operativa. Evita consumir los segundos 0-10 haciendo
+    # operativa. Evita consumir los segundos 0-30 haciendo
     # el scanner completo.
     ultima_precarga_activos = 0.0
 
@@ -158,14 +159,14 @@ def main():
         # esperando respuestas de IQ.
         #
         # Se ejecuta en ventana de mantenimiento,
-        # lejos de los segundos 0-10 reservados para:
+        # fuera de los segundos 0-30 reservados para:
         #
         # estrategia -> Cerebro -> ranking -> orden.
         #
         if (
-            20
+            40
             <= segundo_loop_d76d
-            <= 24
+            <= 44
         ):
             revisar_operaciones_abiertas()
 
@@ -219,12 +220,12 @@ def main():
         # ==========================================
         #
         # get_balance() puede bloquear hasta 10 s.
-        # Solo se permite entre segundos 20-45,
-        # lejos de la próxima entrada 0-10.
+        # Solo se permite entre segundos 35-45,
+        # lejos de la próxima entrada 0-30.
         segundo_mantenimiento_d76d = segundo_actual()
 
         if (
-            20 <= segundo_mantenimiento_d76d <= 45
+            35 <= segundo_mantenimiento_d76d <= 45
             and ahora
             - ultima_consulta_balance
             >= 10
@@ -336,7 +337,10 @@ def main():
         # ==========================================
         # REPORTE GENERAL DE MERCADOS CADA 5 MIN
         # ==========================================
+        segundo_reporte_mercados = segundo_actual()
         if (
+            45 <= segundo_reporte_mercados <= 49
+            and
             ahora
             - estado.ultimo_reporte_mercados
             >= 300
@@ -418,7 +422,14 @@ def main():
 
         # Imprime balance solo cada 20 segundos
         # para no llenar la terminal.
+        segundo_estado = segundo_actual()
         if (
+            not (
+                VENTANA_ENTRADA_INICIO
+                <= segundo_estado
+                <= VENTANA_ENTRADA_FIN
+            )
+            and
             ahora
             - ultima_impresion_estado
             >= 20
@@ -457,7 +468,7 @@ def main():
         # especialmente usando tee.
         #
         # Nunca permitimos que esa tarea de reporte
-        # robe tiempo a la ventana operativa 0-10.
+        # robe tiempo a la ventana operativa 0-30.
         #
         segundo_estadisticas_d76d = (
             segundo_actual()
@@ -466,9 +477,9 @@ def main():
         if (
             ronda_estadisticas
             >= MOSTRAR_ESTADISTICAS_CADA_RONDAS
-            and 30
+            and 50
             <= segundo_estadisticas_d76d
-            <= 35
+            <= 55
         ):
             inicio_estadisticas_d76d = (
                 time.perf_counter()
@@ -595,11 +606,11 @@ def main():
             # ==========================================
             #
             # El scanner completo se ejecuta FUERA de
-            # la ventana operativa. Así 0-10 queda para:
+            # la ventana operativa. Así 0-30 queda para:
             # estrategia -> Cerebro -> ranking -> orden.
             #
             if (
-                12 <= segundo <= 18
+                32 <= segundo <= 38
                 and time.time()
                 - ultima_precarga_activos
                 >= 45
@@ -745,12 +756,12 @@ def main():
                 continue
 
             # La recuperación de resultados se ejecuta únicamente
-            # en la ventana 20-24 definida arriba.
+            # en la ventana 40-44 definida arriba.
             #
             # La capacidad LIVE ya se calcula por expiracion_iq,
             # así que no necesitamos consultar resultados aquí para
             # liberar slots. Evitamos que una consulta iniciada cerca
-            # de 58-59 s invada la próxima ventana operativa 0-10.
+            # de 58-59 s invada la próxima ventana operativa 0-30.
             time.sleep(0.25)
             continue
 
@@ -759,7 +770,7 @@ def main():
         # ==========================================
         #
         # D7.6A:
-        # dentro de 0-10 nunca iniciamos un scanner
+        # dentro de 0-30 nunca iniciamos un scanner
         # completo. La ronda solo trabaja con una cache
         # previamente preparada.
         # ==========================================
@@ -864,7 +875,7 @@ def main():
         # D7.6D — SOLO CACHE EN VENTANA CRITICA
         # ==========================================
         #
-        # Dentro de 0-10 está prohibido iniciar
+        # Dentro de 0-30 está prohibido iniciar
         # el scanner completo, independientemente
         # de la edad real de la cache.
         #
@@ -979,7 +990,10 @@ def main():
 
             # Reservamos aproximadamente 2 segundos para:
             # ranking -> validación temporal -> envío IQ.
-            if segundo_actual() >= 9:
+            if segundo_actual() >= (
+                VENTANA_ENTRADA_FIN
+                - MARGEN_ENVIO_IQ_SEGUNDOS
+            ):
                 ronda_incompleta_d76d = True
 
                 print(
@@ -1280,7 +1294,10 @@ def main():
         # D7.6D — VALIDACION FINAL DE RONDA
         # ==========================================
 
-        if segundo_actual() >= 9:
+        if segundo_actual() >= (
+            VENTANA_ENTRADA_FIN
+            - MARGEN_ENVIO_IQ_SEGUNDOS
+        ):
             ronda_incompleta_d76d = True
 
         if (

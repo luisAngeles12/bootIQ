@@ -279,13 +279,23 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
         data = json.dumps(dict(name=name,
                                msg=msg, request_id=request_id))
 
-        inicio_espera_mutex = time.time()
+        inicio_espera_mutex = time.monotonic()
 
         while (global_value.ssl_Mutual_exclusion or global_value.ssl_Mutual_exclusion_write) and no_force_send:
-            pass
+            demora_mutex = time.monotonic() - inicio_espera_mutex
+            if demora_mutex >= 0.5:
+                logger.warning(
+                    "**warning** websocket mutex timeout %.3f sec | request: %s",
+                    demora_mutex,
+                    name,
+                )
+                raise TimeoutError(
+                    "websocket send timed out waiting for message processing"
+                )
+            time.sleep(0.01)
 
         demora_espera_mutex = (
-            time.time()
+            time.monotonic()
             - inicio_espera_mutex
         )
 

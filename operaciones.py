@@ -11,6 +11,7 @@ from config import (
     CANDLE_TIME,
     VENTANA_ENTRADA_INICIO,
     VENTANA_ENTRADA_FIN,
+    MARGEN_ENVIO_IQ_SEGUNDOS,
     HISTORIAL_CSV,
 )
 from historial import (
@@ -183,11 +184,15 @@ def abrir_operacion(senal):
     segundo_paridad = int(
         ahora_paridad % CANDLE_TIME
     )
+    ultimo_segundo_envio = (
+        VENTANA_ENTRADA_FIN
+        - MARGEN_ENVIO_IQ_SEGUNDOS
+    )
 
     if not (
         VENTANA_ENTRADA_INICIO
         <= segundo_paridad
-        <= VENTANA_ENTRADA_FIN
+        < ultimo_segundo_envio
     ):
         print(
             "OPERACIÓN NO ENVIADA POR PARIDAD TEMPORAL:",
@@ -197,7 +202,7 @@ def abrir_operacion(senal):
             "| ventana:",
             VENTANA_ENTRADA_INICIO,
             "-",
-            VENTANA_ENTRADA_FIN,
+            ultimo_segundo_envio - 1,
         )
         return False
 
@@ -375,9 +380,13 @@ def abrir_operacion(senal):
                 "|",
                 orden_async_5_5c,
             )
-        if segundo_despues > 38:
+        if segundo_despues > (
+            VENTANA_ENTRADA_FIN
+            - MARGEN_ENVIO_IQ_SEGUNDOS
+        ):
             print(
-                "ADVERTENCIA: operación enviada tarde:",
+                "ADVERTENCIA: respuesta de orden posterior "
+                "al margen de entrada:",
                 activo,
                 "| segundo antes:",
                 segundo_antes,
@@ -1459,8 +1468,9 @@ def revisar_operaciones_abiertas():
         return
 
     pendientes = []
+    consultas_resultado = 0
 
-    for op in estado.operaciones_abiertas:
+    for indice, op in enumerate(estado.operaciones_abiertas):
 
         tiempo_abierta = time.time() - float(op["hora_apertura"])
         tiempo_cierre = (TIEMPO_EXPIRACION * 60) + 10
@@ -1471,7 +1481,15 @@ def revisar_operaciones_abiertas():
 
         resultado = op.get("resultado_pendiente_csv")
         if resultado is None:
+            if consultas_resultado >= 1:
+                pendientes.append(op)
+                pendientes.extend(
+                    estado.operaciones_abiertas[indice + 1:]
+                )
+                break
+
             resultado = obtener_resultado_operacion(op)
+            consultas_resultado += 1
 
         if resultado is not None:
             op["resultado_pendiente_csv"] = resultado

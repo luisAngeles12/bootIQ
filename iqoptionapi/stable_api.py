@@ -1034,14 +1034,36 @@ class IQ_Option:
 
         Regla de seguridad BootIQ:
         - una sola petición histórica de candles a la vez;
-        - si una petición vence su timeout, el websocket se
-          cierra inmediatamente;
+        - la espera por el lock y la respuesta tienen límite;
+        - si una petición enviada vence su timeout, el websocket se
+          invalida para evitar consumir una respuesta tardía;
         - ninguna petición posterior puede consumir una
           respuesta tardía de otro activo;
         - la reconexión sigue perteneciendo a conexion.py.
         """
 
-        with self._candles_lock:
+        try:
+            timeout = max(
+                0.2,
+                float(timeout),
+            )
+        except (TypeError, ValueError):
+            timeout = 12.0
+
+        inicio_solicitud = time.monotonic()
+
+        if not self._candles_lock.acquire(
+            timeout=min(timeout, 1.0)
+        ):
+            logging.warning(
+                "**warning** get_candles "
+                "mutex timeout | activo: %s | timeout: %s",
+                ACTIVES,
+                min(timeout, 1.0),
+            )
+            return None
+
+        try:
 
             if ACTIVES not in OP_code.ACTIVES:
                 print(
@@ -1059,6 +1081,14 @@ class IQ_Option:
                     )
                     return None
             except Exception:
+                return None
+
+            if time.monotonic() - inicio_solicitud >= timeout:
+                logging.warning(
+                    "**warning** get_candles "
+                    "timeout waiting for lock | activo: %s",
+                    ACTIVES,
+                )
                 return None
 
             # Limpiar únicamente antes de enviar ESTA
@@ -1084,14 +1114,6 @@ class IQ_Option:
                 return None
 
             try:
-                timeout = max(
-                    0.2,
-                    float(timeout),
-                )
-            except (TypeError, ValueError):
-                timeout = 12.0
-
-            try:
                 drain_timeout = max(
                     0.0,
                     float(drain_timeout),
@@ -1099,7 +1121,7 @@ class IQ_Option:
             except (TypeError, ValueError):
                 drain_timeout = 0.25
 
-            inicio = time.time()
+            inicio = inicio_solicitud
 
             while (
                 self.api.candles.candles_data
@@ -1118,7 +1140,7 @@ class IQ_Option:
                     return None
 
                 if (
-                    time.time() - inicio
+                    time.monotonic() - inicio
                     >= timeout
                 ):
                     logging.warning(
@@ -1159,13 +1181,13 @@ class IQ_Option:
                     # Damos 0.25 s para recibir y DESCARTAR únicamente
                     # la respuesta pendiente.
                     limite_drenaje = drain_timeout
-                    inicio_drenaje = time.time()
+                    inicio_drenaje = time.monotonic()
 
                     while (
                         self.api.candles.candles_data
                         is None
                         and
-                        time.time() - inicio_drenaje
+                        time.monotonic() - inicio_drenaje
                         < limite_drenaje
                     ):
                         try:
@@ -1181,7 +1203,7 @@ class IQ_Option:
                         is not None
                     ):
                         demora_drenaje = (
-                            time.time()
+                            time.monotonic()
                             - inicio_drenaje
                         )
 
@@ -1319,6 +1341,8 @@ class IQ_Option:
                 return None
 
             return datos_candles
+        finally:
+            self._candles_lock.release()
 
     def start_candles_stream(self, ACTIVE, size, maxdict):
 
@@ -1851,6 +1875,7 @@ class IQ_Option:
     def buy(self, price, ACTIVES, ACTION, expirations):
         self.api.buy_multi_option = {}
         self.api.buy_successful = None
+        self.api.result = None
         # req_id = "buy"
         req_id = str(randint(0, 10000))
         try:
@@ -1859,9 +1884,8 @@ class IQ_Option:
             pass
         self.api.buyv3(
             float(price), OP_code.ACTIVES[ACTIVES], str(ACTION), int(expirations), req_id)
-        start_t = time.time()
+        start_t = time.monotonic()
         id = None
-        self.api.result = None
         while self.api.result == None or id == None:
             try:
                 if "message" in self.api.buy_multi_option[req_id].keys():
@@ -1872,9 +1896,10 @@ class IQ_Option:
                 id = self.api.buy_multi_option[req_id]["id"]
             except:
                 pass
-            if time.time() - start_t >= 5:
+            if time.monotonic() - start_t >= 5:
                 logging.error('**warning** buy late 5 sec')
                 return False, None
+            time.sleep(0.01)
 
         return self.api.result, self.api.buy_multi_option[req_id]["id"]
 
