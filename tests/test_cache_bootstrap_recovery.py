@@ -325,6 +325,42 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             OP_code.ACTIVES.clear()
             OP_code.ACTIVES.update(original_actives)
 
+    def test_opcode_rejects_incomplete_binary_turbo_initialization(self):
+        incomplete_init = {
+            "binary": {
+                "actives": {
+                    "101": {"name": "binary.EURUSD"},
+                },
+            },
+            "turbo": {"actives": {}},
+        }
+        iq = IQ_Option.__new__(IQ_Option)
+        iq.api = object()
+        iq._bootiq_init_v2_bootstrap = {"stale": True}
+        original_actives = dict(OP_code.ACTIVES)
+
+        try:
+            with patch.object(
+                iq,
+                "get_all_init_v2",
+                return_value=incomplete_init,
+            ), patch.object(
+                iq,
+                "_get_all_init_legacy_bounded",
+                return_value=None,
+            ), patch("iqoptionapi.stable_api.time.sleep"):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "sin activos válidos para: turbo",
+                ):
+                    iq.get_ALL_Binary_ACTIVES_OPCODE(timeout=0.2)
+
+            self.assertEqual(OP_code.ACTIVES, original_actives)
+            self.assertIsNone(iq._bootiq_init_v2_bootstrap)
+        finally:
+            OP_code.ACTIVES.clear()
+            OP_code.ACTIVES.update(original_actives)
+
     def test_opcode_startup_retries_once_after_forced_reconnect(self):
         class FakeIQ:
             def __init__(self):
@@ -351,7 +387,38 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
         reconnect.assert_called_once_with(forzar=True)
         self.assertEqual(iq.opcode_attempts, 2)
 
-    def test_opcode_startup_reports_failure_after_reconnect_retry(self):
+    def test_opcode_startup_retries_until_opcode_recovers(self):
+        class FakeIQ:
+            def __init__(self):
+                self.opcode_attempts = 0
+
+            def get_ALL_Binary_ACTIVES_OPCODE(self):
+                self.opcode_attempts += 1
+                if self.opcode_attempts < 3:
+                    raise RuntimeError("initialization unavailable")
+
+            def get_all_ACTIVES_OPCODE(self):
+                return {"EURUSD": 1}
+
+        iq = FakeIQ()
+        estado.Iq = iq
+
+        with patch.object(
+            conexion,
+            "reconectar_iq",
+            return_value=True,
+        ) as reconnect, patch.object(conexion.time, "sleep"):
+            self.assertTrue(
+                conexion.actualizar_activos_opcode(
+                    max_intentos=3,
+                    espera_inicial=0,
+                )
+            )
+
+        self.assertEqual(iq.opcode_attempts, 3)
+        self.assertEqual(reconnect.call_count, 2)
+
+    def test_opcode_startup_can_be_bounded_in_unit_tests(self):
         class FakeIQ:
             def get_ALL_Binary_ACTIVES_OPCODE(self):
                 raise RuntimeError("initialization unavailable")
@@ -363,7 +430,12 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             "reconectar_iq",
             return_value=True,
         ) as reconnect, patch.object(conexion.time, "sleep"):
-            self.assertFalse(conexion.actualizar_activos_opcode())
+            self.assertFalse(
+                conexion.actualizar_activos_opcode(
+                    max_intentos=2,
+                    espera_inicial=0,
+                )
+            )
 
         reconnect.assert_called_once_with(forzar=True)
 

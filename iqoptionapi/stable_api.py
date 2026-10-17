@@ -378,6 +378,7 @@ class IQ_Option:
         """
         init_info = None
         intentos = 3
+        self._bootiq_init_v2_bootstrap = None
 
         for intento in range(
             1,
@@ -412,41 +413,37 @@ class IQ_Option:
                 "api_option_init_all legacy acotado"
             )
 
+        activos_opcode = {}
+        cantidades_por_tipo = {"binary": 0, "turbo": 0}
+        for tipo in ("binary", "turbo"):
+            datos_tipo = init_info.get(tipo, {})
+            actives = datos_tipo.get("actives", {})
+
+            for active_id, active in actives.items():
+                nombre = str(active.get("name", ""))
+                if "." not in nombre:
+                    continue
+
+                nombre = nombre.split(".", 1)[1]
+                activos_opcode[nombre] = int(active_id)
+                cantidades_por_tipo[tipo] += 1
+
+        tipos_sin_activos = [
+            tipo
+            for tipo, cantidad in cantidades_por_tipo.items()
+            if cantidad == 0
+        ]
+        if tipos_sin_activos:
+            raise RuntimeError(
+                "initialization-data sin activos válidos para: "
+                + ", ".join(tipos_sin_activos)
+            )
+
         # La respuesta contiene binary/turbo + estado open/suspended.
         # Guardarla para el primer OPEN_TIME evita otra solicitud
         # inmediata, tanto en la ruta V2 como en el fallback legacy.
         self._bootiq_init_v2_bootstrap = init_info
-
-        for dirr in ("binary", "turbo"):
-            datos_tipo = init_info.get(
-                dirr,
-                {},
-            )
-
-            actives = datos_tipo.get(
-                "actives",
-                {},
-            )
-
-            for active_id, active in actives.items():
-                nombre = str(
-                    active.get(
-                        "name",
-                        "",
-                    )
-                )
-
-                if "." not in nombre:
-                    continue
-
-                nombre = nombre.split(
-                    ".",
-                    1,
-                )[1]
-
-                OP_code.ACTIVES[nombre] = int(
-                    active_id
-                )
+        OP_code.ACTIVES.update(activos_opcode)
 
     # _________________________self.api.get_api_option_init_all() wss______________________
     def get_all_init(self):

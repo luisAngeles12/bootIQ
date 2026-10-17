@@ -7,52 +7,70 @@ import estado
 from config import EMAIL, PASSWORD, MODO_CUENTA
 _lock_reconexion = threading.Lock()
 
-def actualizar_activos_opcode():
-    try:
-        print("Actualizando OPCODE ligero binary/turbo...", flush=True)
+def actualizar_activos_opcode(
+    max_intentos=None,
+    espera_inicial=5.0,
+    espera_maxima=60.0,
+):
+    intento = 0
+    espera = max(0.0, float(espera_inicial))
+    espera_maxima = max(espera, float(espera_maxima))
 
-        # Esta parte actualiza los códigos de binary y turbo
-        # sin llamar forex/crypto/cfd.
-        estado.Iq.get_ALL_Binary_ACTIVES_OPCODE()
-
-    except Exception as e:
-        print("No se pudo actualizar OPCODE ligero:", e, flush=True)
-
-        # A socket can report connected while its initialization-data
-        # channel is stale. Rebuild the PRACTICE session once before
-        # giving up on the initial active-id map.
-        if not reconectar_iq(forzar=True):
-            return False
-
+    while max_intentos is None or intento < max_intentos:
+        intento += 1
         print(
-            "Reintentando OPCODE ligero tras renovar la sesión...",
+            "Actualizando OPCODE ligero binary/turbo "
+            f"(intento {intento})...",
             flush=True,
         )
-        time.sleep(2)
 
         try:
+            # Esta parte actualiza los códigos de binary y turbo
+            # sin llamar forex/crypto/cfd.
             estado.Iq.get_ALL_Binary_ACTIVES_OPCODE()
-        except Exception as retry_error:
+        except Exception as e:
+            print("No se pudo actualizar OPCODE ligero:", e, flush=True)
+
+            if max_intentos is not None and intento >= max_intentos:
+                return False
+
+            if intento > 1 and espera > 0:
+                print(
+                    "Esperando antes de renovar la sesión y reintentar "
+                    f"OPCODE: {espera:.0f} s",
+                    flush=True,
+                )
+                time.sleep(espera)
+                espera = min(max(espera * 2, espera_inicial), espera_maxima)
+
+            if not reconectar_iq(forzar=True):
+                print(
+                    "No se pudo renovar la conexión para reintentar OPCODE.",
+                    flush=True,
+                )
+                continue
+
             print(
-                "No se pudo actualizar OPCODE ligero tras "
-                "reconectar:",
-                retry_error,
+                "Reintentando OPCODE ligero tras renovar la sesión...",
                 flush=True,
             )
-            return False
+            time.sleep(2)
+            continue
 
-    try:
-        activos_opcode = estado.Iq.get_all_ACTIVES_OPCODE()
-        print("Total de activos en OPCODE:", len(activos_opcode), flush=True)
-    except Exception as e:
-        print(
-            "No se pudo consultar el total de activos OPCODE:",
-            e,
-            flush=True,
-        )
+        try:
+            activos_opcode = estado.Iq.get_all_ACTIVES_OPCODE()
+            print("Total de activos en OPCODE:", len(activos_opcode), flush=True)
+        except Exception as e:
+            print(
+                "No se pudo consultar el total de activos OPCODE:",
+                e,
+                flush=True,
+            )
 
-    print("OPCODE ligero actualizado correctamente", flush=True)
-    return True
+        print("OPCODE ligero actualizado correctamente", flush=True)
+        return True
+
+    return False
 def conectar():
     print("Conectando a IQ Option...", flush=True)
 
