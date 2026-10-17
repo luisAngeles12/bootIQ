@@ -6,6 +6,7 @@ import estado
 import mercado
 import iqoptionapi.constants as OP_code
 from iqoptionapi.stable_api import IQ_Option
+from iqoptionapi.ws.received.initialization_data import initialization_data
 
 
 class FakeIQ:
@@ -223,6 +224,51 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             self.assertFalse(conexion.actualizar_activos_opcode())
 
         reconnect.assert_called_once_with(forzar=True)
+
+    def test_initialization_data_without_request_id_completes_single_pending_request(self):
+        payload = {"turbo": {"actives": {}}}
+        api = type("FakeAPI", (), {})()
+        api.api_option_init_all_result_v2_by_request = {
+            "pending-request": None,
+        }
+
+        initialization_data(
+            api,
+            {
+                "name": "initialization-data",
+                "msg": payload,
+            },
+        )
+
+        self.assertEqual(
+            api.api_option_init_all_result_v2_by_request[
+                "pending-request"
+            ],
+            payload,
+        )
+
+    def test_untagged_initialization_data_is_ignored_when_requests_are_ambiguous(self):
+        api = type("FakeAPI", (), {})()
+        api.api_option_init_all_result_v2_by_request = {
+            "request-one": None,
+            "request-two": None,
+        }
+
+        initialization_data(
+            api,
+            {
+                "name": "initialization-data",
+                "msg": {"turbo": {"actives": {}}},
+            },
+        )
+
+        self.assertEqual(
+            api.api_option_init_all_result_v2_by_request,
+            {
+                "request-one": None,
+                "request-two": None,
+            },
+        )
 
 
 if __name__ == "__main__":

@@ -109,7 +109,12 @@ def conectar():
 
     print("Balance inicial:", estado.balance_inicial, flush=True)
 
-    actualizar_activos_opcode()
+    if not actualizar_activos_opcode():
+        raise RuntimeError(
+            "ARRANQUE BLOQUEADO: IQ Option no entregó los "
+            "OPCODE binary/turbo después del reintento de conexión. "
+            "No es seguro iniciar el escáner sin IDs de activos."
+        )
 
     return True
 
