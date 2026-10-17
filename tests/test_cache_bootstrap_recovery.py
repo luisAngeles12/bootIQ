@@ -182,6 +182,48 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             OP_code.ACTIVES.clear()
             OP_code.ACTIVES.update(original_actives)
 
+    def test_opcode_startup_retries_once_after_forced_reconnect(self):
+        class FakeIQ:
+            def __init__(self):
+                self.opcode_attempts = 0
+
+            def get_ALL_Binary_ACTIVES_OPCODE(self):
+                self.opcode_attempts += 1
+                if self.opcode_attempts == 1:
+                    raise RuntimeError("stale initialization channel")
+
+            def get_all_ACTIVES_OPCODE(self):
+                return {"EURUSD": 1}
+
+        iq = FakeIQ()
+        estado.Iq = iq
+
+        with patch.object(
+            conexion,
+            "reconectar_iq",
+            return_value=True,
+        ) as reconnect, patch.object(conexion.time, "sleep"):
+            self.assertTrue(conexion.actualizar_activos_opcode())
+
+        reconnect.assert_called_once_with(forzar=True)
+        self.assertEqual(iq.opcode_attempts, 2)
+
+    def test_opcode_startup_reports_failure_after_reconnect_retry(self):
+        class FakeIQ:
+            def get_ALL_Binary_ACTIVES_OPCODE(self):
+                raise RuntimeError("initialization unavailable")
+
+        estado.Iq = FakeIQ()
+
+        with patch.object(
+            conexion,
+            "reconectar_iq",
+            return_value=True,
+        ) as reconnect, patch.object(conexion.time, "sleep"):
+            self.assertFalse(conexion.actualizar_activos_opcode())
+
+        reconnect.assert_called_once_with(forzar=True)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -15,18 +15,44 @@ def actualizar_activos_opcode():
         # sin llamar forex/crypto/cfd.
         estado.Iq.get_ALL_Binary_ACTIVES_OPCODE()
 
-        try:
-            activos_opcode = estado.Iq.get_all_ACTIVES_OPCODE()
-            print("Total de activos en OPCODE:", len(activos_opcode), flush=True)
-        except Exception:
-            pass
-
-        print("OPCODE ligero actualizado correctamente", flush=True)
-        return True
-
     except Exception as e:
         print("No se pudo actualizar OPCODE ligero:", e, flush=True)
-        return False
+
+        # A socket can report connected while its initialization-data
+        # channel is stale. Rebuild the PRACTICE session once before
+        # giving up on the initial active-id map.
+        if not reconectar_iq(forzar=True):
+            return False
+
+        print(
+            "Reintentando OPCODE ligero tras renovar la sesión...",
+            flush=True,
+        )
+        time.sleep(2)
+
+        try:
+            estado.Iq.get_ALL_Binary_ACTIVES_OPCODE()
+        except Exception as retry_error:
+            print(
+                "No se pudo actualizar OPCODE ligero tras "
+                "reconectar:",
+                retry_error,
+                flush=True,
+            )
+            return False
+
+    try:
+        activos_opcode = estado.Iq.get_all_ACTIVES_OPCODE()
+        print("Total de activos en OPCODE:", len(activos_opcode), flush=True)
+    except Exception as e:
+        print(
+            "No se pudo consultar el total de activos OPCODE:",
+            e,
+            flush=True,
+        )
+
+    print("OPCODE ligero actualizado correctamente", flush=True)
+    return True
 def conectar():
     print("Conectando a IQ Option...", flush=True)
 
