@@ -129,6 +129,14 @@ Archivos actuales:
 
 Fase 4 no debe ser un segundo motor final de bloqueo. Su salida debe alimentar el motor de decisión unificado.
 
+## Conexión y reconexión
+
+Las esperas del ciclo WebSocket deben tener límites explícitos: apertura,
+cierre del hilo lector, respuesta de perfil tras enviar SSID y sincronización
+de tiempo del servidor. Si el socket no se recupera dentro del límite, la
+conexión debe fallar con una razón visible y permitir que el controlador de
+reconexión inicie otro intento, sin dejar hilos antiguos activos.
+
 ---
 
 ### 7. Decisión

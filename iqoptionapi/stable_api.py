@@ -109,10 +109,16 @@ class IQ_Option:
         Mantiene el comportamiento original de la librería,
         pero evita esperas infinitas si balance_id no llega.
         """
-        try:
-            self.api.close()
-        except Exception:
-            pass
+        if self.api is not None:
+            try:
+                if not self.api.close(timeout=2.0):
+                    return False, "WEBSOCKET_CLOSE_TIMEOUT"
+            except Exception as e:
+                logging.error(
+                    "**error** unable to close previous websocket: %s",
+                    e,
+                )
+                return False, str(e)
 
         # La nueva sesión debe obtener su propio balance_id.
         #

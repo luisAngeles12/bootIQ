@@ -138,3 +138,65 @@ class CandleRequestTimeoutTests(unittest.TestCase):
                 )
 
         self.assertLess(time.monotonic() - inicio, 1.5)
+
+    def test_websocket_close_uses_bounded_thread_join(self):
+        api = IQOptionAPI.__new__(IQOptionAPI)
+        api.websocket_client = Mock()
+        api.websocket_thread = Mock()
+        api.websocket_thread.is_alive.return_value = True
+
+        result = api.close(timeout=0.25)
+
+        self.assertFalse(result)
+        api.websocket_client.wss.close.assert_called_once_with()
+        api.websocket_thread.join.assert_called_once_with(timeout=0.25)
+
+    def test_websocket_open_timeout_closes_socket_and_returns(self):
+        class FakeThread:
+            def __init__(self, *args, **kwargs):
+                self.join_timeout = None
+
+            def start(self):
+                pass
+
+            def join(self, timeout=None):
+                self.join_timeout = timeout
+
+        api = IQOptionAPI.__new__(IQOptionAPI)
+        websocket_client = Mock()
+        thread = FakeThread()
+
+        with patch(
+            "iqoptionapi.api.WebsocketClient",
+            return_value=websocket_client,
+        ), patch(
+            "iqoptionapi.api.threading.Thread",
+            return_value=thread,
+        ), patch.object(
+            global_value,
+            "check_websocket_if_connect",
+            None,
+        ), patch.object(
+            global_value,
+            "check_websocket_if_error",
+            False,
+        ), patch.object(
+            global_value,
+            "websocket_error_reason",
+            None,
+        ):
+            result = api.start_websocket(timeout=0.1)
+
+        self.assertEqual(result, (False, "WEBSOCKET_OPEN_TIMEOUT"))
+        websocket_client.wss.close.assert_called_once_with()
+        self.assertEqual(thread.join_timeout, 1.0)
+
+    def test_reconnect_stops_when_previous_websocket_cannot_be_closed(self):
+        iq = IQ_Option.__new__(IQ_Option)
+        iq.api = Mock()
+        iq.api.close.return_value = False
+
+        result = iq.connect()
+
+        self.assertEqual(result, (False, "WEBSOCKET_CLOSE_TIMEOUT"))
+        iq.api.close.assert_called_once_with(timeout=2.0)

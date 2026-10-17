@@ -829,7 +829,7 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
         self.session.cookies.clear_session_cookies()
         requests.utils.add_dict_to_cookiejar(self.session.cookies, cookies)
 
-    def start_websocket(self):
+    def start_websocket(self, timeout=10.0):
         global_value.check_websocket_if_connect = None
         global_value.check_websocket_if_error = False
         global_value.websocket_error_reason = None
@@ -840,7 +840,8 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
                                                  "check_hostname": False, "cert_reqs": ssl.CERT_NONE, "ca_certs": "cacert.pem"}})  # for fix pyinstall error: cafile, capath and cadata cannot be all omitted
         self.websocket_thread.daemon = True
         self.websocket_thread.start()
-        while True:
+        deadline = time.monotonic() + max(0.1, float(timeout))
+        while time.monotonic() < deadline:
             try:
                 if global_value.check_websocket_if_error:
                     return False, global_value.websocket_error_reason
@@ -848,10 +849,24 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
                     return False, "Websocket connection closed."
                 elif global_value.check_websocket_if_connect == 1:
                     return True, None
-            except:
-                pass
+            except Exception as e:
+                return False, str(e)
 
-            pass
+            time.sleep(0.01)
+
+        logging.error(
+            "**error** websocket connect timeout after %.1f sec",
+            max(0.1, float(timeout)),
+        )
+        try:
+            self.websocket.close()
+            self.websocket_thread.join(timeout=1.0)
+        except Exception as e:
+            logging.warning(
+                "**warning** error closing websocket after connect timeout: %s",
+                e,
+            )
+        return False, "WEBSOCKET_OPEN_TIMEOUT"
 
     # @tokensms.setter
     def setTokenSMS(self, response):
@@ -878,11 +893,21 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
             return e
         return response
 
-    def send_ssid(self):
+    def send_ssid(self, timeout=10.0):
         self.profile.msg = None
         self.ssid(global_value.SSID)  # pylint: disable=not-callable
-        while self.profile.msg == None:
-            pass
+        deadline = time.monotonic() + max(0.1, float(timeout))
+        while self.profile.msg is None and time.monotonic() < deadline:
+            if not global_value.check_websocket_if_connect:
+                return False
+            time.sleep(0.01)
+
+        if self.profile.msg is None:
+            logging.error(
+                "**error** websocket timeout waiting for profile after ssid"
+            )
+            return False
+
         if self.profile.msg == False:
             return False
         else:
@@ -893,10 +918,10 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
         global_value.ssl_Mutual_exclusion = False
         global_value.ssl_Mutual_exclusion_write = False
         """Method for connection to IQ Option API."""
-        try:
-            self.close()
-        except:
-            pass
+        if self.websocket_client is not None:
+            if not self.close():
+                return False, "WEBSOCKET_CLOSE_TIMEOUT"
+
         check_websocket, websocket_reason = self.start_websocket()
 
         if check_websocket == False:
@@ -915,8 +940,13 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
                 except:
                     return False, response.text
                 atexit.register(self.logout)
-                self.start_websocket()
-                self.send_ssid()
+                if not self.close():
+                    return False, "WEBSOCKET_CLOSE_TIMEOUT"
+                check_websocket, websocket_reason = self.start_websocket()
+                if not check_websocket:
+                    return False, websocket_reason
+                if not self.send_ssid():
+                    return False, "SSID_PROFILE_TIMEOUT"
 
         # the ssid is None need get ssid
         else:
@@ -927,19 +957,26 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
                 self.close()
                 return False, response.text
             atexit.register(self.logout)
-            self.send_ssid()
+            if not self.send_ssid():
+                return False, "SSID_PROFILE_TIMEOUT"
 
         # set ssis cookie
         requests.utils.add_dict_to_cookiejar(
             self.session.cookies, {"ssid": global_value.SSID})
 
         self.timesync.server_timestamp = None
-        while True:
-            try:
-                if self.timesync.server_timestamp != None:
-                    break
-            except:
-                pass
+        deadline = time.monotonic() + 15.0
+        while (
+            self.timesync.server_timestamp is None
+            and time.monotonic() < deadline
+        ):
+            if not global_value.check_websocket_if_connect:
+                return False, "WEBSOCKET_CLOSED_WAITING_TIME_SYNC"
+            time.sleep(0.01)
+
+        if self.timesync.server_timestamp is None:
+            return False, "TIMEOUT_SERVER_TIMESTAMP"
+
         return True, None
 
     def connect2fa(self, sms_code):
@@ -954,9 +991,31 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
             return False, None
         return True, None
 
-    def close(self):
-        self.websocket.close()
-        self.websocket_thread.join()
+    def close(self, timeout=2.0):
+        websocket_client = self.websocket_client
+        websocket_thread = getattr(
+            self,
+            "websocket_thread",
+            None,
+        )
+
+        if websocket_client is not None:
+            websocket_client.wss.close()
+
+        if (
+            websocket_thread is not None
+            and websocket_thread is not threading.current_thread()
+        ):
+            websocket_thread.join(timeout=max(0.0, float(timeout)))
+            if websocket_thread.is_alive():
+                logging.error(
+                    "**error** websocket thread did not stop "
+                    "within %.1f sec",
+                    timeout,
+                )
+                return False
+
+        return True
 
     def websocket_alive(self):
         return self.websocket_thread.is_alive()
