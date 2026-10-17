@@ -6,6 +6,7 @@ import logging
 import threading
 import requests
 import ssl
+import socket
 import atexit
 from collections import deque
 from iqoptionapi.http.login import Login
@@ -858,14 +859,7 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
             "**error** websocket connect timeout after %.1f sec",
             max(0.1, float(timeout)),
         )
-        try:
-            self.websocket.close()
-            self.websocket_thread.join(timeout=1.0)
-        except Exception as e:
-            logging.warning(
-                "**warning** error closing websocket after connect timeout: %s",
-                e,
-            )
+        self.close(timeout=1.0)
         return False, "WEBSOCKET_OPEN_TIMEOUT"
 
     # @tokensms.setter
@@ -1000,7 +994,33 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
         )
 
         if websocket_client is not None:
-            websocket_client.wss.close()
+            websocket_app = websocket_client.wss
+            core_socket = getattr(websocket_app, "sock", None)
+            transport_socket = getattr(core_socket, "sock", None)
+
+            try:
+                websocket_app.close(timeout=0)
+            except Exception as e:
+                logging.warning(
+                    "**warning** websocket close handshake failed: %s",
+                    e,
+                )
+
+            if transport_socket is not None:
+                try:
+                    transport_socket.shutdown(socket.SHUT_RDWR)
+                except OSError as e:
+                    logging.debug(
+                        "websocket transport shutdown already complete: %s",
+                        e,
+                    )
+                try:
+                    transport_socket.close()
+                except OSError as e:
+                    logging.warning(
+                        "**warning** unable to close websocket transport: %s",
+                        e,
+                    )
 
         if (
             websocket_thread is not None

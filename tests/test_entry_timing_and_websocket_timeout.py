@@ -1,6 +1,7 @@
 import threading
 import time
 import unittest
+import socket
 from unittest.mock import Mock, patch
 
 import estado
@@ -175,8 +176,26 @@ class CandleRequestTimeoutTests(unittest.TestCase):
         result = api.close(timeout=0.25)
 
         self.assertFalse(result)
-        api.websocket_client.wss.close.assert_called_once_with()
+        api.websocket_client.wss.close.assert_called_once_with(timeout=0)
         api.websocket_thread.join.assert_called_once_with(timeout=0.25)
+
+    def test_websocket_close_force_closes_transport_during_handshake(self):
+        api = IQOptionAPI.__new__(IQOptionAPI)
+        transport = Mock()
+        core_socket = Mock()
+        core_socket.connected = False
+        core_socket.sock = transport
+        websocket_app = Mock()
+        websocket_app.sock = core_socket
+        api.websocket_client = Mock(wss=websocket_app)
+        api.websocket_thread = Mock()
+        api.websocket_thread.is_alive.return_value = False
+
+        self.assertTrue(api.close(timeout=0.25))
+
+        websocket_app.close.assert_called_once_with(timeout=0)
+        transport.shutdown.assert_called_once_with(socket.SHUT_RDWR)
+        transport.close.assert_called_once_with()
 
     def test_websocket_open_timeout_closes_socket_and_returns(self):
         class FakeThread:
@@ -188,6 +207,9 @@ class CandleRequestTimeoutTests(unittest.TestCase):
 
             def join(self, timeout=None):
                 self.join_timeout = timeout
+
+            def is_alive(self):
+                return False
 
         api = IQOptionAPI.__new__(IQOptionAPI)
         websocket_client = Mock()
@@ -215,7 +237,7 @@ class CandleRequestTimeoutTests(unittest.TestCase):
             result = api.start_websocket(timeout=0.1)
 
         self.assertEqual(result, (False, "WEBSOCKET_OPEN_TIMEOUT"))
-        websocket_client.wss.close.assert_called_once_with()
+        websocket_client.wss.close.assert_called_once_with(timeout=0)
         self.assertEqual(thread.join_timeout, 1.0)
 
     def test_reconnect_stops_when_previous_websocket_cannot_be_closed(self):

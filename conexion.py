@@ -43,18 +43,31 @@ def actualizar_activos_opcode(
                 time.sleep(espera)
                 espera = min(max(espera * 2, espera_inicial), espera_maxima)
 
-            if not reconectar_iq(forzar=True):
+            try:
+                conexion_activa = bool(estado.Iq.check_connect())
+            except Exception:
+                conexion_activa = False
+
+            if conexion_activa:
                 print(
-                    "No se pudo renovar la conexión para reintentar OPCODE.",
+                    "La conexión sigue activa; se reintentará OPCODE "
+                    "sin abrir otra sesión.",
                     flush=True,
                 )
-                continue
+            else:
+                if not reconectar_iq(forzar=True):
+                    print(
+                        "No se pudo renovar la conexión para reintentar "
+                        "OPCODE.",
+                        flush=True,
+                    )
+                    continue
 
-            print(
-                "Reintentando OPCODE ligero tras renovar la sesión...",
-                flush=True,
-            )
-            time.sleep(2)
+                print(
+                    "Reintentando OPCODE ligero tras renovar la sesión...",
+                    flush=True,
+                )
+                time.sleep(2)
             continue
 
         try:

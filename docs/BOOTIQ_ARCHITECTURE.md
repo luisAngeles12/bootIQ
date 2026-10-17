@@ -141,6 +141,9 @@ El escáner no debe iniciarse hasta recibir una inicialización válida con
 activos tanto binary como turbo. Si IQ Option no responde, el arranque conserva
 el proceso y reintenta con espera creciente; no debe sustituir esos datos por
 IDs estáticos o potencialmente obsoletos.
+Un timeout de OPCODE por sí solo no justifica abrir una sesión nueva si el
+WebSocket actual sigue conectado: la reconexión se reserva para una conexión
+que realmente se haya perdido.
 
 ---
 

@@ -391,6 +391,11 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
         class FakeIQ:
             def __init__(self):
                 self.opcode_attempts = 0
+                self.connection_checks = 0
+
+            def check_connect(self):
+                self.connection_checks += 1
+                return True
 
             def get_ALL_Binary_ACTIVES_OPCODE(self):
                 self.opcode_attempts += 1
@@ -416,7 +421,40 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             )
 
         self.assertEqual(iq.opcode_attempts, 3)
-        self.assertEqual(reconnect.call_count, 2)
+        reconnect.assert_not_called()
+
+    def test_opcode_failure_reconnects_only_if_socket_is_down(self):
+        class FakeIQ:
+            def __init__(self):
+                self.opcode_attempts = 0
+
+            def check_connect(self):
+                return self.opcode_attempts > 1
+
+            def get_ALL_Binary_ACTIVES_OPCODE(self):
+                self.opcode_attempts += 1
+                if self.opcode_attempts == 1:
+                    raise RuntimeError("connection dropped")
+
+            def get_all_ACTIVES_OPCODE(self):
+                return {"EURUSD": 1}
+
+        iq = FakeIQ()
+        estado.Iq = iq
+
+        with patch.object(
+            conexion,
+            "reconectar_iq",
+            return_value=True,
+        ) as reconnect, patch.object(conexion.time, "sleep"):
+            self.assertTrue(
+                conexion.actualizar_activos_opcode(
+                    max_intentos=2,
+                    espera_inicial=0,
+                )
+            )
+
+        reconnect.assert_called_once_with(forzar=True)
 
     def test_opcode_startup_can_be_bounded_in_unit_tests(self):
         class FakeIQ:
