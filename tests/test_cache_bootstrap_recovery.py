@@ -195,6 +195,42 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             2,
         )
 
+    def test_preload_keeps_recent_continuous_candles_after_old_history_gap(self):
+        now = int(time.time() // mercado.CANDLE_TIME) * mercado.CANDLE_TIME
+        start = now - 1001 * mercado.CANDLE_TIME
+        candles = []
+        for index in range(999):
+            gap = mercado.CANDLE_TIME if index < 600 else 2 * mercado.CANDLE_TIME
+            candles.append({
+                "from": start + index * mercado.CANDLE_TIME + gap,
+                "open": 1,
+                "close": 1,
+                "max": 1,
+                "min": 1,
+            })
+
+        class HistoricalIQ(FakeIQ):
+            def get_candles(self, *_args, **_kwargs):
+                return candles
+
+            def get_server_timestamp(self):
+                return now
+
+        estado.Iq = HistoricalIQ({})
+        result = mercado.precargar_velas_activos(
+            ["asset-with-old-gap"],
+        )
+
+        buffer = estado.velas_cache["asset-with-old-gap"]
+        self.assertEqual(result["nuevos"], 1)
+        self.assertEqual(len(candles), 999)
+        self.assertEqual(len(buffer), 399)
+        self.assertTrue(mercado._buffer_velas_integro(buffer))
+        self.assertEqual(
+            buffer[-1]["from"],
+            candles[-1]["from"],
+        )
+
     def test_forced_reconnect_rebuilds_an_open_but_unresponsive_session(self):
         class ConnectedIQ:
             _bootiq_init_v2_bootstrap = {"stale": True}

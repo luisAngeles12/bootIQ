@@ -72,6 +72,40 @@ def _solo_velas_cerradas(candles):
     return cerradas
 
 
+def _tramo_continuo_mas_reciente(candles):
+    if not candles:
+        return []
+
+    por_timestamp = {}
+    for candle in candles:
+        try:
+            timestamp = int(float(candle["from"]))
+        except (KeyError, TypeError, ValueError, OverflowError):
+            continue
+        por_timestamp[timestamp] = candle
+
+    ordenadas = [
+        (timestamp, por_timestamp[timestamp])
+        for timestamp in sorted(por_timestamp)
+    ]
+    if not ordenadas:
+        return []
+
+    inicio_tramo = len(ordenadas) - 1
+    while (
+        inicio_tramo > 0
+        and ordenadas[inicio_tramo][0]
+        - ordenadas[inicio_tramo - 1][0]
+        == CANDLE_TIME
+    ):
+        inicio_tramo -= 1
+
+    return [
+        candle
+        for _, candle in ordenadas[inicio_tramo:]
+    ]
+
+
 def _buffer_velas_integro(candles):
     """
     D9.53 — Valida cantidad y continuidad temporal.
@@ -319,7 +353,12 @@ def precargar_velas_activos(
                 candles
             )
 
-            buffer_descargado = cerradas[-objetivo_cerradas:]
+            tramo_continuo = _tramo_continuo_mas_reciente(
+                cerradas
+            )
+            buffer_descargado = tramo_continuo[
+                -objetivo_cerradas:
+            ]
 
             if not _buffer_velas_integro(buffer_descargado):
                 errores += 1
@@ -334,7 +373,10 @@ def precargar_velas_activos(
                     activo,
                     "| causa: VELAS_INSUFICIENTES_O_DISCONTINUAS",
                     "| velas cerradas:",
-                    cantidad,
+                    len(cerradas),
+                    "| tramo continuo reciente:",
+                    len(tramo_continuo),
+                    "| minimo requerido: 130",
                     flush=True,
                 )
                 procesados += 1
@@ -516,6 +558,9 @@ def obtener_velas(activo):
             por_timestamp[k]
             for k in sorted(por_timestamp)
         ]
+        fusionadas = _tramo_continuo_mas_reciente(
+            fusionadas
+        )
 
         objetivo_cerradas = max(
             130,
@@ -590,7 +635,10 @@ def obtener_velas(activo):
             fusionadas = [
                 por_timestamp[k]
                 for k in sorted(por_timestamp)
-            ][-objetivo_cerradas:]
+            ]
+            fusionadas = _tramo_continuo_mas_reciente(
+                fusionadas
+            )[-objetivo_cerradas:]
 
             ultima_buffer = int(
                 float(fusionadas[-1]["from"])
