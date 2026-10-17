@@ -503,12 +503,7 @@ class IQ_Option:
         except Exception:
             return None
 
-        request_id = (
-            "BOOTIQ_INIT_V2_"
-            + str(time.time_ns())
-            + "_"
-            + str(threading.get_ident())
-        )
+        request_id = str(time.time_ns())
 
         respuestas = getattr(
             self.api,

@@ -577,6 +577,33 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             },
         )
 
+    def test_initialization_data_request_uses_numeric_correlated_id(self):
+        payload = {
+            "binary": {"actives": {"101": {"name": "binary.EURUSD"}}},
+            "turbo": {"actives": {"102": {"name": "turbo.USDJPY"}}},
+        }
+
+        class FakeAPI:
+            def get_api_option_init_all_v2(self, request_id):
+                self.request_id = request_id
+                initialization_data(
+                    self,
+                    {
+                        "name": "initialization-data",
+                        "request_id": request_id,
+                        "msg": payload,
+                    },
+                )
+
+        iq = IQ_Option.__new__(IQ_Option)
+        iq.api = FakeAPI()
+        iq.check_connect = lambda: True
+
+        result = iq.get_all_init_v2(timeout=0.2)
+
+        self.assertTrue(iq.api.request_id.isdigit())
+        self.assertEqual(result, payload)
+
 
 if __name__ == "__main__":
     unittest.main()
