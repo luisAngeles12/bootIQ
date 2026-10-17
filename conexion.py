@@ -217,6 +217,7 @@ def reconectar_iq(intentos=3, forzar=False):
                     estado.velas_cache = {}
                     estado.ultima_actualizacion_activos = 0
                     estado.fallos_open_time = 0
+                    estado.refresh_activos_buffer_indice = 0
 
                     # La instancia IQ_Option se reutiliza al
                     # reconectar. Nunca reutilizar initialization-data

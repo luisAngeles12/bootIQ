@@ -20,9 +20,10 @@ refresh_activos_indice = 0
 refresh_activos_candidatos = []
 refresh_activos_vistos = set()
 refresh_activos_inicio = 0.0
-# TOP nuevo ya calculado, pero todavía NO operable
-# hasta completar sus buffers históricos.
+# Candidatos de un TOP nuevo, ordenados por score; todavía NO
+# operables hasta que haya buffers para completar el TOP.
 refresh_activos_top_pendiente = []
+refresh_activos_buffer_indice = 0
 fallos_open_time = 0
 
 # D7.6C — buffer LIVE de velas cerradas por activo.

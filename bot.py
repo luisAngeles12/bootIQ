@@ -633,10 +633,31 @@ def main():
                         segundo_actual()
                     )
 
+                    ultima_actualizacion_cache = float(
+                        getattr(
+                            estado,
+                            "ultima_actualizacion_activos",
+                            0,
+                        )
+                        or 0
+                    )
+                    estado_cache = (
+                        "SIN_CACHE_PUBLICADA"
+                        if (
+                            not getattr(
+                                estado,
+                                "activos_cache",
+                                [],
+                            )
+                            or ultima_actualizacion_cache <= 0
+                        )
+                        else round(edad_cache, 2)
+                    )
+
                     print(
                         "D7.6A PRECALENTANDO CACHE "
                         "FUERA DE VENTANA | edad:",
-                        round(edad_cache, 2),
+                        estado_cache,
                     )
 
                     # ==========================================
@@ -762,8 +783,8 @@ def main():
         ):
             print(
                 "D7.6A VENTANA OMITIDA — "
-                "CACHE NO PREPARADA | edad:",
-                round(edad_cache, 2),
+                "CACHE NO PREPARADA | "
+                "estado: SIN_CACHE_PUBLICADA",
             )
 
             time.sleep(0.25)

@@ -1,3 +1,4 @@
+import time
 import unittest
 from unittest.mock import patch
 
@@ -40,6 +41,7 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
                 "refresh_activos_vistos",
                 "refresh_activos_inicio",
                 "refresh_activos_top_pendiente",
+                "refresh_activos_buffer_indice",
                 "fallos_open_time",
             )
         }
@@ -58,6 +60,7 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
         estado.refresh_activos_vistos = set()
         estado.refresh_activos_inicio = 0.0
         estado.refresh_activos_top_pendiente = []
+        estado.refresh_activos_buffer_indice = 0
         estado.fallos_open_time = 0
 
     def tearDown(self):
@@ -88,6 +91,109 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
 
         self.assertEqual(estado.fallos_open_time, 0)
         reconnect.assert_not_called()
+
+    def test_pending_top_uses_buffered_candidates_to_fill_ranked_top(self):
+        candidates = [
+            {
+                "activo": f"asset-{index:02}",
+                "score_filtro": 100 - index,
+            }
+            for index in range(21)
+        ]
+        start = (
+            int(time.time() // mercado.CANDLE_TIME)
+            * mercado.CANDLE_TIME
+            - 130 * mercado.CANDLE_TIME
+        )
+        complete_buffer = [
+            {
+                "from": start + index * mercado.CANDLE_TIME,
+                "open": 1,
+                "close": 1,
+                "max": 1,
+                "min": 1,
+            }
+            for index in range(130)
+        ]
+        estado.Iq = FakeIQ({})
+        estado.refresh_activos_top_pendiente = candidates
+        estado.velas_cache = {
+            item["activo"]: list(complete_buffer)
+            for item in candidates[1:]
+        }
+
+        with patch.object(
+            mercado,
+            "precargar_velas_activos",
+        ):
+            activos = mercado.refrescar_activos_incremental()
+
+        self.assertEqual(
+            [item["activo"] for item in activos],
+            [item["activo"] for item in candidates[1:]],
+        )
+        self.assertEqual(
+            len(estado.activos_cache),
+            mercado.MAX_ACTIVOS_ANALIZAR,
+        )
+        self.assertEqual(
+            set(estado.velas_cache),
+            {item["activo"] for item in candidates[1:]},
+        )
+
+    def test_pending_buffer_preload_rotates_after_budget_exhaustion(self):
+        start = (
+            int(time.time() // mercado.CANDLE_TIME)
+            * mercado.CANDLE_TIME
+            - 130 * mercado.CANDLE_TIME
+        )
+        complete_buffer = [
+            {
+                "from": start + index * mercado.CANDLE_TIME,
+                "open": 1,
+                "close": 1,
+                "max": 1,
+                "min": 1,
+            }
+            for index in range(130)
+        ]
+        clock = [0.0]
+        attempted = []
+
+        class SlowIQ(FakeIQ):
+            def get_candles(self, asset, *_args, **_kwargs):
+                attempted.append(asset)
+                clock[0] += 9.0
+                if asset == "asset-01":
+                    return None
+                return complete_buffer
+
+        estado.Iq = SlowIQ({})
+        pending = [
+            {"activo": f"asset-{index:02}"}
+            for index in range(1, 4)
+        ]
+
+        with patch.object(
+            mercado.time,
+            "perf_counter",
+            side_effect=lambda: clock[0],
+        ):
+            mercado.precargar_velas_activos(
+                pending,
+                podar_cache=False,
+            )
+            mercado.precargar_velas_activos(
+                pending,
+                podar_cache=False,
+            )
+
+        self.assertEqual(attempted, ["asset-01", "asset-02"])
+        self.assertIn("asset-02", estado.velas_cache)
+        self.assertEqual(
+            estado.refresh_activos_buffer_indice,
+            2,
+        )
 
     def test_forced_reconnect_rebuilds_an_open_but_unresponsive_session(self):
         class ConnectedIQ:

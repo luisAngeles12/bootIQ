@@ -9,6 +9,7 @@ from contexto_mercado import detectar_tipo_mercado, diagnostico_calidad_mercado,
 MAX_ACTIVOS_ANALIZAR = 20
 MIN_SCORE_ACTIVO = 55
 FALLOS_OPEN_TIME_ANTES_RECONECTAR = 2
+PRESUPUESTO_PRECARGA_D76D = 8.0
 
 
 def _timestamp_servidor_iq():
@@ -95,6 +96,42 @@ def _buffer_velas_integro(candles):
         return False
 
 
+def _seleccionar_top_con_buffers(candidatos):
+    objetivo = min(
+        MAX_ACTIVOS_ANALIZAR,
+        len(candidatos),
+    )
+    listos = [
+        item
+        for item in candidatos
+        if _buffer_velas_integro(
+            estado.velas_cache.get(
+                item["activo"],
+                [],
+            )
+        )
+    ]
+    return objetivo, listos[:objetivo], len(listos)
+
+
+def _publicar_top_con_buffers(top):
+    estado.activos_cache = list(top)
+    nombres_publicados = {
+        item["activo"]
+        for item in top
+    }
+    estado.velas_cache = {
+        activo: velas
+        for activo, velas
+        in estado.velas_cache.items()
+        if activo in nombres_publicados
+    }
+    estado.ultima_actualizacion_activos = time.time()
+    estado.refresh_activos_top_pendiente = []
+    estado.refresh_activos_buffer_indice = 0
+    return list(estado.activos_cache)
+
+
 def _datos_desde_velas(candles):
     if not candles or len(candles) < 130:
         return None
@@ -161,9 +198,8 @@ def precargar_velas_activos(
         }
 
     inicio_precarga = time.perf_counter()
-    presupuesto_precarga_d76d = 8.0
-
-    nombres_actuales = set()
+    nombres_actuales = []
+    activos_vistos = set()
 
     for item in activos:
         try:
@@ -172,8 +208,9 @@ def precargar_velas_activos(
             else:
                 activo = str(item)
 
-            if activo:
-                nombres_actuales.add(activo)
+            if activo and activo not in activos_vistos:
+                nombres_actuales.append(activo)
+                activos_vistos.add(activo)
 
         except Exception:
             pass
@@ -189,19 +226,38 @@ def precargar_velas_activos(
             activo: velas
             for activo, velas
             in estado.velas_cache.items()
-            if activo in nombres_actuales
+            if activo in activos_vistos
         }
 
     nuevos = 0
     reutilizados = 0
     errores = 0
+    procesados = 0
 
     objetivo_cerradas = max(
         130,
         CANDLE_NUMBER - 1,
     )
 
-    for activo in sorted(nombres_actuales):
+    cursor_inicio = 0
+    if not podar_cache and nombres_actuales:
+        cursor_inicio = (
+            int(
+                getattr(
+                    estado,
+                    "refresh_activos_buffer_indice",
+                    0,
+                )
+                or 0
+            )
+            % len(nombres_actuales)
+        )
+        nombres_actuales = (
+            nombres_actuales[cursor_inicio:]
+            + nombres_actuales[:cursor_inicio]
+        )
+
+    for activo in nombres_actuales:
 
         demora_precarga_d76d = (
             time.perf_counter()
@@ -210,7 +266,7 @@ def precargar_velas_activos(
 
         if (
             demora_precarga_d76d
-            >= presupuesto_precarga_d76d
+            >= PRESUPUESTO_PRECARGA_D76D
         ):
             print(
                 "D7.6D BUFFER PRECARGA "
@@ -230,6 +286,7 @@ def precargar_velas_activos(
 
         if _buffer_velas_integro(existentes):
             reutilizados += 1
+            procesados += 1
             continue
 
         try:
@@ -240,7 +297,14 @@ def precargar_velas_activos(
 
             if not conectado:
                 errores += 1
-                continue
+                print(
+                    "D7.6D BUFFER ACTIVO FALLIDO |",
+                    "activo:",
+                    activo,
+                    "| causa: IQ_DESCONECTADO",
+                    flush=True,
+                )
+                break
 
             candles = estado.Iq.get_candles(
                 activo,
@@ -259,14 +323,45 @@ def precargar_velas_activos(
 
             if not _buffer_velas_integro(buffer_descargado):
                 errores += 1
+                cantidad = (
+                    len(buffer_descargado)
+                    if buffer_descargado
+                    else 0
+                )
+                print(
+                    "D7.6D BUFFER ACTIVO FALLIDO |",
+                    "activo:",
+                    activo,
+                    "| causa: VELAS_INSUFICIENTES_O_DISCONTINUAS",
+                    "| velas cerradas:",
+                    cantidad,
+                    flush=True,
+                )
+                procesados += 1
                 continue
 
             estado.velas_cache[activo] = buffer_descargado
 
             nuevos += 1
+            procesados += 1
 
-        except Exception:
+        except Exception as e:
             errores += 1
+            procesados += 1
+            print(
+                "D7.6D BUFFER ACTIVO FALLIDO |",
+                "activo:",
+                activo,
+                "| causa:",
+                type(e).__name__,
+                str(e),
+                flush=True,
+            )
+
+    if not podar_cache and nombres_actuales:
+        estado.refresh_activos_buffer_indice = (
+            cursor_inicio + procesados
+        ) % len(nombres_actuales)
 
     demora = (
         time.perf_counter()
@@ -1020,8 +1115,9 @@ def refrescar_activos_incremental():
     # ==========================================
     #
     # Si el scanner completo ya terminó,
-    # primero terminamos de preparar las velas
-    # históricas del TOP nuevo.
+    # preparamos buffers para los candidatos
+    # ordenados por score y usamos reservas cuando
+    # algún candidato no entrega velas.
     #
     # Mientras tanto, activos_cache sigue siendo
     # el TOP oficial anterior.
@@ -1042,38 +1138,26 @@ def refrescar_activos_incremental():
             podar_cache=False,
         )
 
-        nombres_pendientes = {
-            item["activo"]
-            for item in top_pendiente
-            if (
-                isinstance(item, dict)
-                and item.get("activo")
-            )
-        }
+        (
+            objetivo_top,
+            top_publicable,
+            candidatos_listos,
+        ) = _seleccionar_top_con_buffers(
+            top_pendiente
+        )
 
-        faltantes_buffer = [
-            activo
-            for activo in sorted(
-                nombres_pendientes
-            )
-            if not _buffer_velas_integro(
-                estado.velas_cache.get(
-                    activo,
-                    [],
-                )
-            )
-        ]
-
-        if faltantes_buffer:
+        if len(top_publicable) < objetivo_top:
             print(
                 "D7.6D TOP PENDIENTE BUFFER |",
                 "listos:",
-                len(nombres_pendientes)
-                - len(faltantes_buffer),
+                len(top_publicable),
                 "/",
-                len(nombres_pendientes),
-                "| faltantes:",
-                len(faltantes_buffer),
+                objetivo_top,
+                "| candidatos evaluados:",
+                len(top_pendiente),
+                "| candidatos sin buffer:",
+                len(top_pendiente)
+                - candidatos_listos,
             )
 
             return []
@@ -1085,27 +1169,21 @@ def refrescar_activos_incremental():
         # Solamente ahora el TOP nuevo puede
         # convertirse en el TOP oficial.
         #
-        estado.activos_cache = list(
-            top_pendiente
+        activos_publicados = _publicar_top_con_buffers(
+            top_publicable
         )
-
-        estado.ultima_actualizacion_activos = (
-            time.time()
-        )
-
-        estado.refresh_activos_top_pendiente = []
 
         print(
             "D7.6D TOP NUEVO PUBLICADO CON BUFFER |",
             "top:",
-            len(estado.activos_cache),
+            len(activos_publicados),
+            "| candidatos evaluados:",
+            len(top_pendiente),
             "| buffers:",
-            len(nombres_pendientes),
+            len(top_publicable),
         )
 
-        return list(
-            estado.activos_cache
-        )
+        return activos_publicados
     # ==========================================
     # INICIAR NUEVO CICLO
     # ==========================================
@@ -1483,11 +1561,11 @@ def refrescar_activos_incremental():
         # El universo terminó al 100%, pero todavía
         # NO publicamos el nuevo TOP.
         #
-        # Primero deben existir buffers históricos
-        # suficientes para TODOS sus activos.
+        # Deben existir buffers suficientes para
+        # completar el TOP desde el ranking completo.
         #
         estado.refresh_activos_top_pendiente = list(
-            top_nuevo
+            candidatos
         )
 
         print(
@@ -1498,6 +1576,8 @@ def refrescar_activos_incremental():
             len(candidatos),
             "| top:",
             len(top_nuevo),
+            "| candidatos buffer:",
+            len(candidatos),
             "| ciclo:",
             round(
                 demora_ciclo,
@@ -1589,54 +1669,33 @@ def obtener_activos(
         not cache_previa_d76d
         and top_pendiente_bootstrap_d76d
     ):
-        nombres_pendientes_d76d = {
-            item["activo"]
-            for item in top_pendiente_bootstrap_d76d
-            if (
-                isinstance(item, dict)
-                and item.get("activo")
-            )
-        }
+        (
+            objetivo_top_d76d,
+            top_publicable_d76d,
+            candidatos_listos_d76d,
+        ) = _seleccionar_top_con_buffers(
+            top_pendiente_bootstrap_d76d
+        )
 
-        faltantes_buffer_d76d = [
-            activo
-            for activo in nombres_pendientes_d76d
-            if not _buffer_velas_integro(
-                getattr(
-                    estado,
-                    "velas_cache",
-                    {},
-                ).get(
-                    activo,
-                    [],
+        if len(top_publicable_d76d) == objetivo_top_d76d:
+            activos_publicados_d76d = (
+                _publicar_top_con_buffers(
+                    top_publicable_d76d
                 )
             )
-        ]
-
-        # Solo cuando TODOS tienen buffer se publica.
-        if not faltantes_buffer_d76d:
-            estado.activos_cache = list(
-                top_pendiente_bootstrap_d76d
-            )
-
-            estado.ultima_actualizacion_activos = (
-                time.time()
-            )
-
-            estado.refresh_activos_top_pendiente = []
 
             print(
                 "D7.6D BOOTSTRAP TOP PUBLICADO "
                 "CON BUFFER |",
                 "top:",
-                len(estado.activos_cache),
+                len(activos_publicados_d76d),
+                "| candidatos evaluados:",
+                len(top_pendiente_bootstrap_d76d),
                 "| buffers:",
-                len(nombres_pendientes_d76d),
+                len(top_publicable_d76d),
             )
 
-            return list(
-                estado.activos_cache
-            )
+            return activos_publicados_d76d
 
         # En ventana crítica nunca devolver un TOP
         # todavía incompleto.
@@ -1646,14 +1705,11 @@ def obtener_activos(
         print(
             "D7.6D BOOTSTRAP TOP PENDIENTE BUFFER |",
             "listos:",
-            (
-                len(nombres_pendientes_d76d)
-                - len(faltantes_buffer_d76d)
-            ),
+            candidatos_listos_d76d,
             "/",
-            len(nombres_pendientes_d76d),
-            "| faltantes:",
-            len(faltantes_buffer_d76d),
+            objetivo_top_d76d,
+            "| candidatos evaluados:",
+            len(top_pendiente_bootstrap_d76d),
         )
 
         # Fuera de 0-10 bot.py puede seguir llamando
@@ -2127,6 +2183,7 @@ def obtener_activos(
         "compatibles_antes_top"
     ] = len(activos)
 
+    candidatos_buffer_d76d = list(activos)
     activos = activos[
         :MAX_ACTIVOS_ANALIZAR
     ]
@@ -2137,13 +2194,15 @@ def obtener_activos(
             # el TOP ya está calculado, pero todavía
             # NO es operable hasta completar buffers.
             estado.refresh_activos_top_pendiente = (
-                list(activos)
+                candidatos_buffer_d76d
             )
 
             print(
                 "D7.6D BOOTSTRAP TOP CALCULADO |",
                 "top:",
                 len(activos),
+                "| candidatos buffer:",
+                len(candidatos_buffer_d76d),
                 "| estado: PENDIENTE_BUFFER",
             )
 
