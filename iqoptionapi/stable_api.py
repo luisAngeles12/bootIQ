@@ -297,6 +297,67 @@ class IQ_Option:
         self.instruments_input_to_ACTIVES("forex")
         self.instruments_input_to_ACTIVES("cfd")
 
+    def _get_all_init_legacy_bounded(
+        self,
+        timeout=5.0,
+    ):
+        """Fallback acotado para el canal histórico api_option_init_all."""
+        try:
+            if not self.check_connect():
+                return None
+        except Exception:
+            return None
+
+        self.api.api_option_init_all_result = None
+
+        try:
+            self.api.get_api_option_init_all()
+        except Exception as e:
+            logging.warning(
+                "api_option_init_all legacy request failed: %s",
+                e,
+            )
+            return None
+
+        try:
+            timeout_segundos = max(
+                0.2,
+                float(timeout),
+            )
+        except (TypeError, ValueError):
+            timeout_segundos = 5.0
+
+        limite = time.monotonic() + timeout_segundos
+
+        while time.monotonic() < limite:
+            try:
+                if not self.check_connect():
+                    return None
+            except Exception:
+                return None
+
+            respuesta = self.api.api_option_init_all_result
+            if respuesta is not None:
+                if (
+                    isinstance(respuesta, dict)
+                    and respuesta.get("isSuccessful") is True
+                    and isinstance(respuesta.get("result"), dict)
+                ):
+                    return respuesta["result"]
+
+                logging.warning(
+                    "api_option_init_all legacy returned invalid data"
+                )
+                return None
+
+            time.sleep(0.01)
+
+        logging.warning(
+            "api_option_init_all legacy timeout %.1f sec",
+            timeout_segundos,
+        )
+        return None
+
     def get_ALL_Binary_ACTIVES_OPCODE(
         self,
         timeout=5.0,
@@ -329,14 +390,24 @@ class IQ_Option:
                 time.sleep(1)
 
         if not init_info:
-            raise RuntimeError(
-                "OPCODE binary/turbo no disponible "
-                "tras 3 intentos acotados"
+            logging.warning(
+                "get-initialization-data unavailable; "
+                "trying bounded legacy initialization"
+            )
+            init_info = self._get_all_init_legacy_bounded(
+                timeout=timeout,
             )
 
-        # La misma respuesta contiene binary/turbo + estado
-        # open/suspended. Guardarla para el primer OPEN_TIME
-        # evita una segunda solicitud V2 inmediata.
+        if not init_info:
+            raise RuntimeError(
+                "OPCODE binary/turbo no disponible: "
+                "fallaron initialization-data V2 y "
+                "api_option_init_all legacy acotado"
+            )
+
+        # La respuesta contiene binary/turbo + estado open/suspended.
+        # Guardarla para el primer OPEN_TIME evita otra solicitud
+        # inmediata, tanto en la ruta V2 como en el fallback legacy.
         self._bootiq_init_v2_bootstrap = init_info
 
         for dirr in ("binary", "turbo"):

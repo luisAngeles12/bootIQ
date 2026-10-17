@@ -4,6 +4,8 @@ from unittest.mock import patch
 import conexion
 import estado
 import mercado
+import iqoptionapi.constants as OP_code
+from iqoptionapi.stable_api import IQ_Option
 
 
 class FakeIQ:
@@ -119,6 +121,66 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
         self.assertEqual(estado.ultima_actualizacion_activos, 0)
         self.assertEqual(estado.fallos_open_time, 0)
         self.assertIsNone(iq._bootiq_init_v2_bootstrap)
+
+    def test_opcode_uses_bounded_legacy_initialization_after_v2_failure(self):
+        legacy_response = {
+            "isSuccessful": True,
+            "result": {
+                "binary": {
+                    "actives": {
+                        "101": {
+                            "name": "binary.EURUSD",
+                            "enabled": True,
+                            "is_suspended": False,
+                        },
+                    },
+                },
+                "turbo": {
+                    "actives": {
+                        "102": {
+                            "name": "turbo.USDJPY",
+                            "enabled": True,
+                            "is_suspended": False,
+                        },
+                    },
+                },
+            },
+        }
+
+        class FakeAPI:
+            api_option_init_all_result = None
+
+            def get_api_option_init_all(self):
+                self.api_option_init_all_result = legacy_response
+
+        iq = IQ_Option.__new__(IQ_Option)
+        iq.api = FakeAPI()
+        iq.check_connect = lambda: True
+        iq._bootiq_init_v2_bootstrap = None
+        original_actives = dict(OP_code.ACTIVES)
+
+        try:
+            with patch.object(
+                iq,
+                "get_all_init_v2",
+                return_value=None,
+            ):
+                iq.get_ALL_Binary_ACTIVES_OPCODE(timeout=0.2)
+
+            self.assertEqual(OP_code.ACTIVES["EURUSD"], 101)
+            self.assertEqual(OP_code.ACTIVES["USDJPY"], 102)
+            self.assertEqual(
+                iq._bootiq_init_v2_bootstrap,
+                legacy_response["result"],
+            )
+
+            open_time = iq.get_all_open_time(timeout=0.2)
+            self.assertTrue(open_time["binary"]["EURUSD"]["open"])
+            self.assertTrue(open_time["turbo"]["USDJPY"]["open"])
+            self.assertIsNone(iq._bootiq_init_v2_bootstrap)
+        finally:
+            OP_code.ACTIVES.clear()
+            OP_code.ACTIVES.update(original_actives)
 
 
 if __name__ == "__main__":
