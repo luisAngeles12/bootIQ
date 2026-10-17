@@ -8,6 +8,7 @@ from contexto_mercado import detectar_tipo_mercado, diagnostico_calidad_mercado,
 
 MAX_ACTIVOS_ANALIZAR = 20
 MIN_SCORE_ACTIVO = 55
+FALLOS_OPEN_TIME_ANTES_RECONECTAR = 2
 
 
 def _timestamp_servidor_iq():
@@ -969,6 +970,31 @@ def refrescar_activos_incremental():
 
         estado.refresh_activos_inicio = 0.0
 
+    def recuperar_open_time_sin_respuesta():
+        estado.fallos_open_time = (
+            getattr(estado, "fallos_open_time", 0)
+            + 1
+        )
+
+        if (
+            estado.fallos_open_time
+            < FALLOS_OPEN_TIME_ANTES_RECONECTAR
+        ):
+            return
+
+        estado.fallos_open_time = 0
+        print(
+            "D7.6D OPEN_TIME SIN RESPUESTA "
+            "CONSECUTIVA | FORZANDO RECONECCION IQ",
+            flush=True,
+        )
+        if not reconectar_iq(forzar=True):
+            print(
+                "D7.6D RECONECCION IQ FALLIDA "
+                "TRAS OPEN_TIME SIN RESPUESTA",
+                flush=True,
+            )
+
     # ==========================================
     # CONEXION
     # ==========================================
@@ -1103,6 +1129,7 @@ def refrescar_activos_incremental():
             )
 
             reset_refresh_incremental()
+            recuperar_open_time_sin_respuesta()
 
             return devolver_cache_oficial()
 
@@ -1126,8 +1153,11 @@ def refrescar_activos_incremental():
             )
 
             reset_refresh_incremental()
+            recuperar_open_time_sin_respuesta()
 
             return devolver_cache_oficial()
+
+        estado.fallos_open_time = 0
 
         universo = []
 

@@ -88,7 +88,7 @@ def conectar():
     return True
 
 
-def reconectar_iq(intentos=3):
+def reconectar_iq(intentos=3, forzar=False):
     """
     Punto único de reconexión controlada de BootIQ.
 
@@ -100,14 +100,15 @@ def reconectar_iq(intentos=3):
 
         # Tal vez otra parte ya reconectó mientras
         # esperábamos el lock.
-        try:
-            if (
-                estado.Iq is not None
-                and estado.Iq.check_connect()
-            ):
-                return True
-        except Exception:
-            pass
+        if not forzar:
+            try:
+                if (
+                    estado.Iq is not None
+                    and estado.Iq.check_connect()
+                ):
+                    return True
+            except Exception:
+                pass
 
         if estado.Iq is None:
             print(
@@ -184,6 +185,7 @@ def reconectar_iq(intentos=3):
                     # operativa antes de seguir trabajando normalmente.
                     estado.velas_cache = {}
                     estado.ultima_actualizacion_activos = 0
+                    estado.fallos_open_time = 0
 
                     # La instancia IQ_Option se reutiliza al
                     # reconectar. Nunca reutilizar initialization-data

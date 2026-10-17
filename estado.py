@@ -23,6 +23,7 @@ refresh_activos_inicio = 0.0
 # TOP nuevo ya calculado, pero todavía NO operable
 # hasta completar sus buffers históricos.
 refresh_activos_top_pendiente = []
+fallos_open_time = 0
 
 # D7.6C — buffer LIVE de velas cerradas por activo.
 # Conserva la misma profundidad histórica usada por
