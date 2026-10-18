@@ -80,6 +80,29 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
         reconnect.assert_called_once_with(forzar=True)
         self.assertEqual(estado.fallos_open_time, 0)
 
+    def test_asset_scan_uses_candle_api_timeout_budget(self):
+        class NoCandlesIQ(FakeIQ):
+            def get_candles(self, *_args, **kwargs):
+                self.candle_kwargs = kwargs
+                return None
+
+        estado.Iq = NoCandlesIQ({})
+        estado.metricas_ronda = {"scan_candles_none": 0}
+
+        self.assertIsNone(
+            mercado.evaluar_estabilidad_activo(
+                "asset",
+                "turbo",
+            )
+        )
+        self.assertEqual(
+            estado.Iq.candle_kwargs,
+            {
+                "timeout": mercado.TIMEOUT_CANDLES_SCAN,
+                "drain_timeout": mercado.DRENAJE_CANDLES_SCAN,
+            },
+        )
+
     def test_valid_open_time_response_resets_missing_response_count(self):
         with patch.object(mercado, "reconectar_iq") as reconnect:
             estado.fallos_open_time = 1

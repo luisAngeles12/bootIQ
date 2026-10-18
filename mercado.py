@@ -12,6 +12,8 @@ FALLOS_OPEN_TIME_ANTES_RECONECTAR = 2
 PRESUPUESTO_PRECARGA_D76D = 8.0
 VELAS_CACHE_CERRADAS = 181
 VELAS_CACHE_SOLICITADAS = VELAS_CACHE_CERRADAS + 1
+TIMEOUT_CANDLES_SCAN = 12.0
+DRENAJE_CANDLES_SCAN = 2.0
 
 
 def _timestamp_servidor_iq():
@@ -728,8 +730,8 @@ def obtener_velas(activo):
 def evaluar_estabilidad_activo(
     asset,
     tipo,
-    timeout_candles=0.75,
-    drain_timeout_candles=0.25,
+    timeout_candles=TIMEOUT_CANDLES_SCAN,
+    drain_timeout_candles=DRENAJE_CANDLES_SCAN,
 ):
     """
     Evalúa un activo para el filtro inicial.
@@ -1481,11 +1483,15 @@ def refrescar_activos_incremental():
         # Un activo lento no debe declarar muerto el
         # websocket después de solo 0.25-0.75 s.
         #
-        # Usamos la misma ventana segura que la
-        # precarga LIVE:
-        #   3.0 s respuesta + 1.0 s drenaje.
-        timeout_activo_d76d = 3.0
-        drenaje_activo_d76d = 1.0
+        # Usar el presupuesto acotado predeterminado de
+        # get_candles para no invalidar sesiones lentas
+        # tras solo unos segundos sin respuesta.
+        timeout_activo_d76d = (
+            TIMEOUT_CANDLES_SCAN
+        )
+        drenaje_activo_d76d = (
+            DRENAJE_CANDLES_SCAN
+        )
 
         try:
             evaluado = (
@@ -2158,8 +2164,12 @@ def obtener_activos(
             try:
                 # D7.6D — misma ventana segura usada
                 # por el refresh incremental.
-                timeout_activo_d76d = 3.0
-                drenaje_activo_d76d = 1.0
+                timeout_activo_d76d = (
+                    TIMEOUT_CANDLES_SCAN
+                )
+                drenaje_activo_d76d = (
+                    DRENAJE_CANDLES_SCAN
+                )
 
                 evaluado = (
                     evaluar_estabilidad_activo(
