@@ -1,7 +1,7 @@
 import time
 
 import estado
-from config import CANDLE_TIME, CANDLE_NUMBER, TIPOS_MERCADO
+from config import CANDLE_TIME, TIPOS_MERCADO
 from utils import activo_en_cooldown
 from conexion import reconectar_iq
 from contexto_mercado import detectar_tipo_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
@@ -10,6 +10,8 @@ MAX_ACTIVOS_ANALIZAR = 20
 MIN_SCORE_ACTIVO = 55
 FALLOS_OPEN_TIME_ANTES_RECONECTAR = 2
 PRESUPUESTO_PRECARGA_D76D = 8.0
+VELAS_CACHE_CERRADAS = 181
+VELAS_CACHE_SOLICITADAS = VELAS_CACHE_CERRADAS + 1
 
 
 def _timestamp_servidor_iq():
@@ -111,7 +113,7 @@ def _buffer_velas_integro(candles):
     D9.53 — Valida cantidad y continuidad temporal.
     No comprueba vigencia; esa validación es independiente.
     """
-    if not candles or len(candles) < 130:
+    if not candles or len(candles) < VELAS_CACHE_CERRADAS:
         return False
 
     try:
@@ -167,7 +169,7 @@ def _publicar_top_con_buffers(top):
 
 
 def _datos_desde_velas(candles):
-    if not candles or len(candles) < 130:
+    if not candles or len(candles) < VELAS_CACHE_CERRADAS:
         return None
 
     # D9.42: impedir que huecos temporales lleguen al análisis.
@@ -212,14 +214,9 @@ def precargar_velas_activos(
     """
     D7.6C — carga pesada FUERA de 0-10.
 
-    Cada activo nuevo recibe la misma profundidad que
-    usaba LIVE originalmente:
-
-        CANDLE_NUMBER = 3000 solicitadas
-        -> aproximadamente 2999 cerradas.
-
-    Los activos ya precargados no vuelven a descargar
-    las 3000 velas.
+    Cada activo nuevo recibe las 130 velas cerradas
+    requeridas por el análisis LIVE. Se solicitan 131
+    para cubrir la vela que IQ puede devolver abierta.
     """
     if not hasattr(estado, "velas_cache"):
         estado.velas_cache = {}
@@ -268,10 +265,7 @@ def precargar_velas_activos(
     errores = 0
     procesados = 0
 
-    objetivo_cerradas = max(
-        130,
-        CANDLE_NUMBER - 1,
-    )
+    objetivo_cerradas = VELAS_CACHE_CERRADAS
 
     cursor_inicio = 0
     if not podar_cache and nombres_actuales:
@@ -343,7 +337,7 @@ def precargar_velas_activos(
             candles = estado.Iq.get_candles(
                 activo,
                 CANDLE_TIME,
-                CANDLE_NUMBER,
+                VELAS_CACHE_SOLICITADAS,
                 time.time(),
                 timeout=3.0,
                 drain_timeout=1.0,
@@ -376,7 +370,8 @@ def precargar_velas_activos(
                     len(cerradas),
                     "| tramo continuo reciente:",
                     len(tramo_continuo),
-                    "| minimo requerido: 130",
+                    "| minimo requerido:",
+                    VELAS_CACHE_CERRADAS,
                     flush=True,
                 )
                 procesados += 1
@@ -432,16 +427,16 @@ def obtener_velas(activo):
     """
     D7.6C — LIVE incremental.
 
-    Dentro de la ventana operativa no descarga 3000
-    velas nuevamente.
+    Dentro de la ventana operativa no descarga de nuevo
+    la historia completa del activo.
 
     Usa:
-        buffer histórico de ~2999 cerradas
+        buffer histórico de 181 cerradas
         +
         4 velas recientes de IQ.
 
     Después fusiona por timestamp y vuelve a conservar
-    exactamente la misma profundidad histórica.
+    exactamente las 181 velas cerradas que requiere el análisis.
     """
     try:
         try:
@@ -473,7 +468,7 @@ def obtener_velas(activo):
         # Regla D7.6C:
         # la descarga pesada debe haber ocurrido antes
         # mediante precargar_velas_activos().
-        if len(buffer_actual) < 130:
+        if len(buffer_actual) < VELAS_CACHE_CERRADAS:
             print(
                 "D7.6D FALLO VELAS DETALLE | activo:",
                 activo,
@@ -568,16 +563,13 @@ def obtener_velas(activo):
             fusionadas
         )
 
-        objetivo_cerradas = max(
-            130,
-            CANDLE_NUMBER - 1,
-        )
+        objetivo_cerradas = VELAS_CACHE_CERRADAS
 
         fusionadas = fusionadas[
             -objetivo_cerradas:
         ]
 
-        if len(fusionadas) < 130:
+        if len(fusionadas) < VELAS_CACHE_CERRADAS:
             print(
                 "D7.6D FALLO VELAS DETALLE | activo:",
                 activo,

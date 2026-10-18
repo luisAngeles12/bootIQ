@@ -23,6 +23,7 @@ from conexion import conectar, reconectar_iq
 from historial import asegurar_historial_csv, cargar_operaciones_pendientes
 from mercado import (
     MAX_ACTIVOS_ANALIZAR,
+    VELAS_CACHE_CERRADAS,
     obtener_activos,
     precargar_velas_activos,
     refrescar_activos_incremental,
@@ -909,7 +910,7 @@ def main():
                 estado.velas_cache.get(
                     item["activo"], []
                 )
-            ) < 130
+            ) < VELAS_CACHE_CERRADAS
         ]
 
         if faltantes_buffer_d76d:

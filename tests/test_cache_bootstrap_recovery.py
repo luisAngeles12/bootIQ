@@ -105,7 +105,7 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
         start = (
             int(time.time() // mercado.CANDLE_TIME)
             * mercado.CANDLE_TIME
-            - 130 * mercado.CANDLE_TIME
+            - mercado.VELAS_CACHE_CERRADAS * mercado.CANDLE_TIME
         )
         complete_buffer = [
             {
@@ -115,7 +115,7 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
                 "max": 1,
                 "min": 1,
             }
-            for index in range(130)
+            for index in range(mercado.VELAS_CACHE_CERRADAS)
         ]
         estado.Iq = FakeIQ({})
         estado.refresh_activos_top_pendiente = candidates
@@ -147,7 +147,7 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
         start = (
             int(time.time() // mercado.CANDLE_TIME)
             * mercado.CANDLE_TIME
-            - 130 * mercado.CANDLE_TIME
+            - mercado.VELAS_CACHE_CERRADAS * mercado.CANDLE_TIME
         )
         complete_buffer = [
             {
@@ -157,7 +157,7 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
                 "max": 1,
                 "min": 1,
             }
-            for index in range(130)
+            for index in range(mercado.VELAS_CACHE_CERRADAS)
         ]
         clock = [0.0]
         attempted = []
@@ -212,7 +212,8 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             })
 
         class HistoricalIQ(FakeIQ):
-            def get_candles(self, *_args, **_kwargs):
+            def get_candles(self, _asset, _interval, count, *_args, **_kwargs):
+                self.requested_count = count
                 return candles
 
             def get_server_timestamp(self):
@@ -225,8 +226,12 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
 
         buffer = estado.velas_cache["asset-with-old-gap"]
         self.assertEqual(result["nuevos"], 1)
+        self.assertEqual(
+            estado.Iq.requested_count,
+            mercado.VELAS_CACHE_SOLICITADAS,
+        )
         self.assertEqual(len(candles), 999)
-        self.assertEqual(len(buffer), 399)
+        self.assertEqual(len(buffer), mercado.VELAS_CACHE_CERRADAS)
         self.assertTrue(mercado._buffer_velas_integro(buffer))
         self.assertEqual(
             buffer[-1]["from"],
@@ -237,7 +242,11 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
         now = int(time.time() // mercado.CANDLE_TIME) * mercado.CANDLE_TIME
         expected = now - mercado.CANDLE_TIME
         stale_last = expected - 2 * mercado.CANDLE_TIME
-        start = stale_last - 129 * mercado.CANDLE_TIME
+        start = (
+            stale_last
+            - (mercado.VELAS_CACHE_CERRADAS - 1)
+            * mercado.CANDLE_TIME
+        )
         buffer = [
             {
                 "from": start + index * mercado.CANDLE_TIME,
@@ -246,7 +255,7 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
                 "max": 1,
                 "min": 1,
             }
-            for index in range(130)
+            for index in range(mercado.VELAS_CACHE_CERRADAS)
         ]
         stale_recent = [
             {

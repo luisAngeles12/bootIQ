@@ -27,9 +27,8 @@ refresh_activos_buffer_indice = 0
 fallos_open_time = 0
 
 # D7.6C — buffer LIVE de velas cerradas por activo.
-# Conserva la misma profundidad histórica usada por
-# obtener_velas(), evitando descargar 3000 velas por
-# activo dentro de la ventana operativa.
+# Conserva la ventana causal del análisis LIVE sin
+# descargar 3000 velas por activo.
 velas_cache = {}
 fallo_velas_ronda_d76d = False
 
