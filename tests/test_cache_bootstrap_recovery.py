@@ -586,6 +586,53 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             },
         )
 
+    def test_late_initialization_data_id_completes_single_pending_request(self):
+        payload = {"binary": {"actives": {"101": {"name": "binary.EURUSD"}}}}
+        api = type("FakeAPI", (), {})()
+        api.api_option_init_all_result_v2_by_request = {
+            "current-request": None,
+        }
+
+        initialization_data(
+            api,
+            {
+                "name": "initialization-data",
+                "request_id": "expired-request",
+                "msg": payload,
+            },
+        )
+
+        self.assertEqual(
+            api.api_option_init_all_result_v2_by_request[
+                "current-request"
+            ],
+            payload,
+        )
+
+    def test_late_initialization_data_id_is_ignored_when_requests_are_ambiguous(self):
+        api = type("FakeAPI", (), {})()
+        api.api_option_init_all_result_v2_by_request = {
+            "request-one": None,
+            "request-two": None,
+        }
+
+        initialization_data(
+            api,
+            {
+                "name": "initialization-data",
+                "request_id": "expired-request",
+                "msg": {"turbo": {"actives": {}}},
+            },
+        )
+
+        self.assertEqual(
+            api.api_option_init_all_result_v2_by_request,
+            {
+                "request-one": None,
+                "request-two": None,
+            },
+        )
+
     def test_initialization_data_request_uses_numeric_correlated_id(self):
         payload = {
             "binary": {"actives": {"101": {"name": "binary.EURUSD"}}},

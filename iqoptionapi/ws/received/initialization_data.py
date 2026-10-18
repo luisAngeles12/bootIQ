@@ -21,16 +21,17 @@ def initialization_data(api, message):
     )
 
     if request_id:
-        if (
-            almacenamiento is not None
-            and request_id in almacenamiento
-        ):
-            almacenamiento[request_id] = respuesta
-        return
+        if almacenamiento is None:
+            return
 
-    # Some IQ sessions omit request_id from initialization-data.
-    # Accept an untagged response only when exactly one request is pending;
-    # never guess when concurrent requests make the response ambiguous.
+        if request_id in almacenamiento:
+            almacenamiento[request_id] = respuesta
+            return
+
+    # Some IQ responses arrive after their original wait has expired.
+    # Since the response payload is the same initialization snapshot, accept
+    # a delayed/missing ID only when exactly one request is currently pending.
+    # Never guess when concurrent requests make the response ambiguous.
     if almacenamiento is None:
         return
 
