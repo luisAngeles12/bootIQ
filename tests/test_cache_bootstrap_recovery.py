@@ -220,6 +220,15 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             2,
         )
 
+    def test_scanner_reports_rejection_breakdown_without_changing_thresholds(self):
+        import inspect
+        source = inspect.getsource(mercado.refrescar_activos_incremental)
+        self.assertIn("D9.98 SCAN CAUSAS TOP20", source)
+        self.assertIn('"scan_candles_none"', source)
+        self.assertIn('"scan_continuidad_temporal"', source)
+        self.assertIn('"descartados_score"', source)
+        self.assertIn("MAX_ACTIVOS_ANALIZAR", source)
+
     def test_candle_gap_diagnostics_identify_missing_intervals(self):
         candles = [
             {"from": 60}, {"from": 120}, {"from": 300},
