@@ -262,17 +262,17 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
         self.assertEqual(result["primera"], 60)
         self.assertEqual(result["ultima"], 360)
 
-    def test_live_gate_requires_full_top20_and_does_not_prune_missing_buffers(self):
+    def test_live_gate_accepts_up_to_twenty_with_valid_buffers(self):
         import inspect
         import bot
 
         source = inspect.getsource(bot.main)
         self.assertIn(
-            "if len(activos) != MAX_ACTIVOS_ANALIZAR:",
+            "if not (0 < len(activos) <= MAX_ACTIVOS_ANALIZAR):",
             source,
         )
         self.assertIn(
-            "TOP20 SIN BUFFERS COMPLETOS",
+            "MERCADOS SELECCIONADOS SIN BUFFERS VALIDOS",
             source,
         )
         self.assertNotIn(
@@ -284,7 +284,7 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             source,
         )
 
-    def test_partial_top_cannot_be_published_even_with_complete_buffers(self):
+    def test_fewer_than_twenty_valid_candidates_can_be_selected(self):
         now = int(time.time() // mercado.CANDLE_TIME) * mercado.CANDLE_TIME
         start = now - mercado.VELAS_CACHE_CERRADAS * mercado.CANDLE_TIME
         buffer = [
@@ -305,10 +305,18 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
 
         required, ready, count = mercado._seleccionar_top_con_buffers(candidates)
 
-        self.assertEqual(required, mercado.MAX_ACTIVOS_ANALIZAR)
+        self.assertEqual(required, 14)
         self.assertEqual(count, 14)
         self.assertEqual(len(ready), 14)
-        self.assertLess(len(ready), required)
+        self.assertEqual(len(ready), required)
+
+    def test_top_target_stays_capped_at_twenty(self):
+        candidates = [
+            {"activo": f"asset-{index:02}", "score_filtro": 90}
+            for index in range(24)
+        ]
+        required, _ready, _count = mercado._seleccionar_top_con_buffers(candidates)
+        self.assertEqual(required, mercado.MAX_ACTIVOS_ANALIZAR)
 
     def test_preload_uses_bounded_candle_timeout(self):
         class RecordingIQ(FakeIQ):
