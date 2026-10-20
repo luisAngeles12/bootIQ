@@ -18,11 +18,8 @@ def actualizar_activos_opcode(
 
     while max_intentos is None or intento < max_intentos:
         intento += 1
-        print(
-            "Actualizando OPCODE ligero binary/turbo "
-            f"(intento {intento})...",
-            flush=True,
-        )
+        if intento == 1:
+            print("Preparando catalogo de activos IQ Option...", flush=True)
 
         try:
             # Esta parte actualiza los códigos de binary y turbo
@@ -188,11 +185,6 @@ def reconectar_iq(intentos=3, forzar=False):
         for intento in range(1, intentos + 1):
 
             try:
-                print(
-                    f"Reconexión IQ {intento}/{intentos}...",
-                    flush=True
-                )
-
                 check, reason = estado.Iq.connect()
 
                 try:
