@@ -1,5 +1,7 @@
 """Module for IQ option websocket."""
 
+import logging
+
 
 def initialization_data(api, message):
     if message.get("name") != "initialization-data":
@@ -43,3 +45,16 @@ def initialization_data(api, message):
 
     if len(pendientes) == 1:
         almacenamiento[pendientes[0]] = respuesta
+        return
+
+    # Solo metadatos de diagnóstico, nunca el payload ni credenciales.
+    logging.warning(
+        "initialization-data no correlacionada | "
+        "id_presente: %s | solicitudes_pendientes: %s | "
+        "tipo_payload: %s | claves: %s",
+        bool(request_id),
+        len(pendientes),
+        type(respuesta).__name__,
+        sorted(str(k) for k in respuesta)[:12]
+        if isinstance(respuesta, dict) else [],
+    )
