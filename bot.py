@@ -802,18 +802,23 @@ def main():
             "activos_cache",
             [],
         ):
-            # Log una vez por vela; bloqueo operativo inalterado.
-            bucket_aviso_cache = int(time.time() // CANDLE_TIME)
-            if ultimo_aviso_cache_sin_publicar != bucket_aviso_cache:
+            # Avisar una vez durante el arranque, sin repetir
+            # el mismo bloqueo en cada vela.
+            # La preparacion sigue activa fuera de ventana.
+            if ultimo_aviso_cache_sin_publicar != "PREPARANDO":
                 print(
-                    "D7.6A VENTANA OMITIDA — "
-                    "CACHE NO PREPARADA | "
-                    "estado: SIN_CACHE_PUBLICADA",
+                    "BootIQ preparando mercados y velas; "
+                    "analisis pausado hasta contar con cache valida.",
+                    flush=True,
                 )
-                ultimo_aviso_cache_sin_publicar = bucket_aviso_cache
+                ultimo_aviso_cache_sin_publicar = "PREPARANDO"
 
             time.sleep(0.25)
             continue
+
+        if ultimo_aviso_cache_sin_publicar == "PREPARANDO":
+            print("BootIQ: cache de mercados publicada; iniciando validacion LIVE PRACTICE.", flush=True)
+            ultimo_aviso_cache_sin_publicar = "LISTO"
 
         # ==========================================
         # D7.6C — UNA RONDA POR VELA
