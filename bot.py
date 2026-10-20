@@ -231,6 +231,14 @@ def main():
             and ahora
             - ultima_consulta_balance
             >= 10
+            # Bootstrap sin TOP y sin órdenes abiertas:
+            # ya existe balance inicial; evitar una consulta
+            # redundante que pueda invalidar el websocket y
+            # reiniciar la preparación de velas.
+            and (
+                getattr(estado, "activos_cache", [])
+                or getattr(estado, "operaciones_abiertas", [])
+            )
         ):
             try:
                 inicio_balance_d76d = (
