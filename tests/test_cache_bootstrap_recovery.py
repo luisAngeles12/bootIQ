@@ -220,6 +220,21 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             2,
         )
 
+    def test_startup_messages_do_not_repeat_each_unprepared_candle(self):
+        import inspect
+        import bot
+        source = inspect.getsource(bot.main)
+        self.assertIn('ultimo_aviso_cache_sin_publicar != "PREPARANDO"', source)
+        self.assertIn('analisis pausado hasta contar con cache valida', source)
+        self.assertNotIn("bucket_aviso_cache =", source)
+
+    def test_reconnect_keeps_failures_visible_without_attempt_counter(self):
+        import inspect
+        source = inspect.getsource(conexion.reconectar_iq)
+        self.assertNotIn('f"Reconexión IQ {intento}/{intentos}', source)
+        self.assertIn("Reconexión no confirmada:", source)
+        self.assertIn("IQ Option reconectado correctamente.", source)
+
     def test_scanner_reports_rejection_breakdown_without_changing_thresholds(self):
         import inspect
         source = inspect.getsource(mercado.refrescar_activos_incremental)
