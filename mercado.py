@@ -159,7 +159,7 @@ def _buffer_velas_integro(candles):
 
 
 def _seleccionar_top_con_buffers(candidatos):
-    objetivo = MAX_ACTIVOS_ANALIZAR
+    objetivo = min(MAX_ACTIVOS_ANALIZAR, len(candidatos))
     listos = [
         item
         for item in candidatos
@@ -1667,7 +1667,7 @@ def refrescar_activos_incremental():
         )
     )
 
-    if len(top_nuevo) == MAX_ACTIVOS_ANALIZAR:
+    if top_nuevo:
 
         # ==========================================
         # D7.6D — TOP COMPLETO PENDIENTE DE BUFFER
@@ -1710,7 +1710,7 @@ def refrescar_activos_incremental():
     else:
         print(
             "D7.6D REFRESH INCREMENTAL COMPLETO "
-            "TOP INCOMPLETO |",
+            "SIN CANDIDATOS |",
             "compatibles:",
             len(candidatos),
             "| requeridos:",
