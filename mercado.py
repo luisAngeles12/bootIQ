@@ -1621,6 +1621,29 @@ def refrescar_activos_incremental():
         candidatos
     )
 
+    # Desglose causal del escaneo: no modifica elegibilidad ni scores.
+    # Los contadores son acumulados por metricas_ronda.
+    resumen_descartes_d998 = {
+        nombre: estado.metricas_ronda.get(nombre, 0)
+        for nombre in (
+            "activos_evaluados_filtro",
+            "scan_candles_none",
+            "scan_velas_insuficientes",
+            "scan_continuidad_temporal",
+            "descartados_sin_datos",
+            "descartados_score",
+            "descartados_invalidos",
+            "duplicados_omitidos",
+        )
+    }
+    print(
+        "D9.98 SCAN CAUSAS TOP20 |",
+        "compatibles:", len(candidatos),
+        "| requeridos:", MAX_ACTIVOS_ANALIZAR,
+        "| contadores_ronda:", resumen_descartes_d998,
+        flush=True,
+    )
+
     top_nuevo = candidatos[
         :MAX_ACTIVOS_ANALIZAR
     ]
