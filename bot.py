@@ -27,6 +27,7 @@ from mercado import (
     obtener_activos,
     precargar_velas_activos,
     refrescar_activos_incremental,
+    _buffer_velas_integro,
 )
 from estrategia import analizar_activo
 from entrada import (
@@ -902,13 +903,13 @@ def main():
             solo_cache=True
         )
 
-        # STEP 6: proteger integridad del TOP20 LIVE.
-        # Nunca analizar un universo incompleto.
-        if len(activos) != MAX_ACTIVOS_ANALIZAR:
+        # TOP20 es un maximo, no una cuota minima.
+        # La seleccion debe estar publicada y no superar el limite.
+        if not (0 < len(activos) <= MAX_ACTIVOS_ANALIZAR):
             print(
-                "TOP20 LIVE INCOMPLETO | recibidos:",
+                "LIVE SIN MERCADOS ELEGIBLES O LIMITE EXCEDIDO | recibidos:",
                 len(activos),
-                "| requeridos:",
+                "| maximo:",
                 MAX_ACTIVOS_ANALIZAR,
             )
             estado_ronda_d76f = "OMITIDA_PREANALISIS"
@@ -924,21 +925,21 @@ def main():
         faltantes_buffer_d76d = [
             item["activo"]
             for item in activos
-            if len(
+            if not _buffer_velas_integro(
                 estado.velas_cache.get(
                     item["activo"], []
                 )
-            ) < VELAS_CACHE_CERRADAS
+            )
         ]
 
         if faltantes_buffer_d76d:
             print(
                 "D7.6D RONDA OMITIDA — "
-                "TOP20 SIN BUFFERS COMPLETOS |",
+                "MERCADOS SELECCIONADOS SIN BUFFERS VALIDOS |",
                 "listos:",
                 len(activos) - len(faltantes_buffer_d76d),
                 "/",
-                MAX_ACTIVOS_ANALIZAR,
+                len(activos),
                 "| faltantes:",
                 faltantes_buffer_d76d,
             )
