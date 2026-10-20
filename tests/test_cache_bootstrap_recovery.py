@@ -220,6 +220,32 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             2,
         )
 
+    def test_partial_top_cannot_be_published_even_with_complete_buffers(self):
+        now = int(time.time() // mercado.CANDLE_TIME) * mercado.CANDLE_TIME
+        start = now - mercado.VELAS_CACHE_CERRADAS * mercado.CANDLE_TIME
+        buffer = [
+            {
+                "from": start + i * mercado.CANDLE_TIME,
+                "open": 1, "close": 1, "max": 1, "min": 1,
+            }
+            for i in range(mercado.VELAS_CACHE_CERRADAS)
+        ]
+        candidates = [
+            {"activo": f"asset-{i:02}", "score_filtro": 90}
+            for i in range(14)
+        ]
+        estado.velas_cache = {
+            candidate["activo"]: list(buffer)
+            for candidate in candidates
+        }
+
+        required, ready, count = mercado._seleccionar_top_con_buffers(candidates)
+
+        self.assertEqual(required, mercado.MAX_ACTIVOS_ANALIZAR)
+        self.assertEqual(count, 14)
+        self.assertEqual(len(ready), 14)
+        self.assertLess(len(ready), required)
+
     def test_preload_uses_bounded_candle_timeout(self):
         class RecordingIQ(FakeIQ):
             def get_candles(self, *_args, **kwargs):
