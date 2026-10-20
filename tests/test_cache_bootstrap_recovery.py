@@ -220,6 +220,28 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             2,
         )
 
+    def test_preload_uses_bounded_candle_timeout(self):
+        class RecordingIQ(FakeIQ):
+            def get_candles(self, *_args, **kwargs):
+                self.kwargs = kwargs
+                return None
+
+        estado.Iq = RecordingIQ({})
+        mercado.precargar_velas_activos(
+            ["asset-without-data"],
+            podar_cache=False,
+        )
+
+        self.assertEqual(
+            estado.Iq.kwargs["timeout"],
+            min(6.0, mercado.PRESUPUESTO_PRECARGA_D76D - 1.0),
+        )
+        self.assertEqual(
+            estado.Iq.kwargs["drain_timeout"],
+            1.0,
+        )
+        self.assertNotIn("asset-without-data", estado.velas_cache)
+
     def test_preload_keeps_recent_continuous_candles_after_old_history_gap(self):
         now = int(time.time() // mercado.CANDLE_TIME) * mercado.CANDLE_TIME
         start = now - 1001 * mercado.CANDLE_TIME
