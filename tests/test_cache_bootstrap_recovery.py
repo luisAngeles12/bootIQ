@@ -226,6 +226,12 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
         self.assertIn("D9.98 SCAN CAUSAS TOP20", source)
         self.assertIn('"scan_candles_none"', source)
         self.assertIn('"scan_continuidad_temporal"', source)
+        self.assertIn('"scan_calidad"', source)
+        self.assertIn('"scan_score"', source)
+        self.assertIn('"scan_tendencia_indefinida"', source)
+        self.assertIn('"scan_tendencia_debil"', source)
+        self.assertIn('"scan_rango_debil"', source)
+        self.assertIn('"scan_excepcion"', source)
         self.assertIn('"descartados_score"', source)
         self.assertIn("MAX_ACTIVOS_ANALIZAR", source)
 
