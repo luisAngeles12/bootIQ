@@ -1265,6 +1265,28 @@ def refrescar_activos_incremental():
         )
 
         return activos_publicados
+    # Recuperar primero los buffers del TOP oficial tras reconectar.
+    # Evita pedir OPEN_TIME y volver a escanear todo el universo
+    # mientras la cache publicada sigue sin velas. Nunca publica
+    # datos incompletos; bot.py mantiene su gate de integridad.
+    top_oficial = list(getattr(estado, "activos_cache", []) or [])
+    if top_oficial and any(
+        not _buffer_velas_integro(estado.velas_cache.get(item["activo"], []))
+        for item in top_oficial
+    ):
+        precargar_velas_activos(top_oficial, podar_cache=False)
+        recuperados = sum(
+            _buffer_velas_integro(estado.velas_cache.get(item["activo"], []))
+            for item in top_oficial
+        )
+        print(
+            "D9.98 RECUPERACION CACHE OFICIAL |",
+            "listos:", recuperados,
+            "/", len(top_oficial),
+            flush=True,
+        )
+        return []
+
     # ==========================================
     # INICIAR NUEVO CICLO
     # ==========================================
