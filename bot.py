@@ -899,7 +899,7 @@ def main():
 
         # STEP 6: proteger integridad del TOP20 LIVE.
         # Nunca analizar un universo incompleto.
-        if not (0 < len(activos) <= MAX_ACTIVOS_ANALIZAR):
+        if len(activos) != MAX_ACTIVOS_ANALIZAR:
             print(
                 "TOP20 LIVE INCOMPLETO | recibidos:",
                 len(activos),
@@ -928,25 +928,14 @@ def main():
 
         if faltantes_buffer_d76d:
             print(
-                "D7.6D ACTIVOS OMITIDOS — "
-                "BUFFER INSUFICIENTE |",
+                "D7.6D RONDA OMITIDA — "
+                "TOP20 SIN BUFFERS COMPLETOS |",
                 "listos:",
                 len(activos) - len(faltantes_buffer_d76d),
                 "/",
-                len(activos),
-                "| omitidos:",
+                MAX_ACTIVOS_ANALIZAR,
+                "| faltantes:",
                 faltantes_buffer_d76d,
-            )
-            activos = [
-                item
-                for item in activos
-                if item["activo"] not in faltantes_buffer_d76d
-            ]
-
-        if not activos:
-            print(
-                "D7.6D RONDA OMITIDA — "
-                "NINGÚN ACTIVO CON BUFFER COMPLETO"
             )
             estado_ronda_d76f = "OMITIDA_PREANALISIS"
             time.sleep(0.25)
