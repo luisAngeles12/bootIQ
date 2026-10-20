@@ -367,7 +367,7 @@ class IQ_Option:
 
     def get_ALL_Binary_ACTIVES_OPCODE(
         self,
-        timeout=5.0,
+        timeout=15.0,
     ):
         """
         Actualiza OPCODE para binary/turbo usando la ruta
