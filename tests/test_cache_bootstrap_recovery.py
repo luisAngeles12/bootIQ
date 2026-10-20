@@ -220,6 +220,18 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             2,
         )
 
+    def test_candle_gap_diagnostics_identify_missing_intervals(self):
+        candles = [
+            {"from": 60}, {"from": 120}, {"from": 300},
+            {"from": 360}, {"from": 360},
+        ]
+        result = mercado._diagnosticar_huecos_velas(candles)
+        self.assertEqual(result["unicas"], 4)
+        self.assertEqual(result["huecos"], 1)
+        self.assertEqual(result["saltos_recientes"], [(120, 300, 2)])
+        self.assertEqual(result["primera"], 60)
+        self.assertEqual(result["ultima"], 360)
+
     def test_live_gate_requires_full_top20_and_does_not_prune_missing_buffers(self):
         import inspect
         import bot
