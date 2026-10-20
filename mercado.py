@@ -341,7 +341,10 @@ def precargar_velas_activos(
                 CANDLE_TIME,
                 VELAS_CACHE_SOLICITADAS,
                 time.time(),
-                timeout=3.0,
+                # D9.98: acotar dentro del presupuesto de precarga.
+                # En PRACTICE, 3 s agotaban el plazo y cerraban
+                # el websocket ante respuestas sin drenaje.
+                timeout=min(6.0, PRESUPUESTO_PRECARGA_D76D - 1.0),
                 drain_timeout=1.0,
             )
 
