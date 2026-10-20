@@ -62,6 +62,7 @@ def main():
     ronda_reintento_usado_d76c = None
     ultima_impresion_estado = 0
     ultima_impresion_resumen = 0
+    ultimo_aviso_cache_sin_publicar = None
 
     # D7.6F — control de resumen por vela.
     ronda_metricas_d76f = None
@@ -793,11 +794,15 @@ def main():
             "activos_cache",
             [],
         ):
-            print(
-                "D7.6A VENTANA OMITIDA — "
-                "CACHE NO PREPARADA | "
-                "estado: SIN_CACHE_PUBLICADA",
-            )
+            # Log una vez por vela; bloqueo operativo inalterado.
+            bucket_aviso_cache = int(time.time() // CANDLE_TIME)
+            if ultimo_aviso_cache_sin_publicar != bucket_aviso_cache:
+                print(
+                    "D7.6A VENTANA OMITIDA — "
+                    "CACHE NO PREPARADA | "
+                    "estado: SIN_CACHE_PUBLICADA",
+                )
+                ultimo_aviso_cache_sin_publicar = bucket_aviso_cache
 
             time.sleep(0.25)
             continue
