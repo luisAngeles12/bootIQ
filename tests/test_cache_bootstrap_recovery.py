@@ -80,6 +80,21 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
         reconnect.assert_called_once_with(forzar=True)
         self.assertEqual(estado.fallos_open_time, 0)
 
+    def test_missing_open_time_preserves_healthy_official_top(self):
+        estado.activos_cache = [{"activo": "healthy", "score_filtro": 70}]
+        estado.velas_cache = {
+            "healthy": [
+                {"from": i * mercado.CANDLE_TIME}
+                for i in range(mercado.VELAS_CACHE_CERRADAS)
+            ]
+        }
+        with patch.object(mercado, "reconectar_iq") as reconnect:
+            mercado.refrescar_activos_incremental()
+            mercado.refrescar_activos_incremental()
+        reconnect.assert_not_called()
+        self.assertEqual(estado.fallos_open_time, 0)
+        self.assertEqual(len(estado.velas_cache["healthy"]), mercado.VELAS_CACHE_CERRADAS)
+
     def test_asset_scan_uses_candle_api_timeout_budget(self):
         class NoCandlesIQ(FakeIQ):
             def get_candles(self, *_args, **kwargs):
