@@ -276,9 +276,10 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             source,
         )
         self.assertNotIn(
-            "if not (0 < len(activos) <= MAX_ACTIVOS_ANALIZAR):",
+            "if len(activos) != MAX_ACTIVOS_ANALIZAR:",
             source,
         )
+        self.assertIn("_buffer_velas_integro(", source)
         self.assertNotIn(
             'if item["activo"] not in faltantes_buffer_d76d',
             source,
