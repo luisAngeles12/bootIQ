@@ -220,6 +220,28 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             2,
         )
 
+    def test_live_gate_requires_full_top20_and_does_not_prune_missing_buffers(self):
+        import inspect
+        import bot
+
+        source = inspect.getsource(bot.main)
+        self.assertIn(
+            "if len(activos) != MAX_ACTIVOS_ANALIZAR:",
+            source,
+        )
+        self.assertIn(
+            "TOP20 SIN BUFFERS COMPLETOS",
+            source,
+        )
+        self.assertNotIn(
+            "if not (0 < len(activos) <= MAX_ACTIVOS_ANALIZAR):",
+            source,
+        )
+        self.assertNotIn(
+            'if item["activo"] not in faltantes_buffer_d76d',
+            source,
+        )
+
     def test_partial_top_cannot_be_published_even_with_complete_buffers(self):
         now = int(time.time() // mercado.CANDLE_TIME) * mercado.CANDLE_TIME
         start = now - mercado.VELAS_CACHE_CERRADAS * mercado.CANDLE_TIME
