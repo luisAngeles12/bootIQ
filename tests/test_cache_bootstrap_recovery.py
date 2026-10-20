@@ -220,6 +220,23 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             2,
         )
 
+    def test_reconnect_rebuilds_official_buffers_before_open_time(self):
+        now = int(time.time() // mercado.CANDLE_TIME) * mercado.CANDLE_TIME
+        start = now - mercado.VELAS_CACHE_CERRADAS * mercado.CANDLE_TIME
+        candles = [
+            {"from": start + i * mercado.CANDLE_TIME,
+             "open": 1, "close": 1, "max": 1, "min": 1}
+            for i in range(mercado.VELAS_CACHE_CERRADAS)
+        ]
+        estado.activos_cache = [{"activo": "official-asset", "score_filtro": 90}]
+        estado.velas_cache = {}
+        estado.refresh_activos_top_pendiente = []
+        with patch.object(mercado, "precargar_velas_activos") as preload:
+            result = mercado.refrescar_activos_incremental()
+        self.assertEqual(result, [])
+        preload.assert_called_once_with(estado.activos_cache, podar_cache=False)
+        self.assertFalse(hasattr(estado.Iq, "timeout"))
+
     def test_startup_messages_do_not_repeat_each_unprepared_candle(self):
         import inspect
         import bot
