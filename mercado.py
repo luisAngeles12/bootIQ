@@ -110,6 +110,30 @@ def _tramo_continuo_mas_reciente(candles):
     ]
 
 
+
+def _diagnosticar_huecos_velas(candles):
+    """Resumen acotado; solo tiempos, nunca precios ni datos sensibles."""
+    tiempos = []
+    for candle in candles or []:
+        try:
+            tiempos.append(int(float(candle["from"])))
+        except (KeyError, TypeError, ValueError, OverflowError):
+            continue
+    tiempos = sorted(set(tiempos))
+    huecos = [
+        (anterior, siguiente, (siguiente - anterior) // CANDLE_TIME - 1)
+        for anterior, siguiente in zip(tiempos, tiempos[1:])
+        if siguiente - anterior != CANDLE_TIME
+    ]
+    return {
+        "unicas": len(tiempos),
+        "primera": tiempos[0] if tiempos else None,
+        "ultima": tiempos[-1] if tiempos else None,
+        "huecos": len(huecos),
+        "saltos_recientes": huecos[-3:],
+    }
+
+
 def _buffer_velas_integro(candles):
     """
     D9.53 — Valida cantidad y continuidad temporal.
@@ -374,6 +398,8 @@ def precargar_velas_activos(
                     len(tramo_continuo),
                     "| minimo requerido:",
                     VELAS_CACHE_CERRADAS,
+                    "| diagnostico_huecos:",
+                    _diagnosticar_huecos_velas(cerradas),
                     flush=True,
                 )
                 procesados += 1
