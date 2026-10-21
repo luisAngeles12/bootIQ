@@ -1332,7 +1332,17 @@ def refrescar_activos_incremental():
         not _buffer_velas_integro(estado.velas_cache.get(item["activo"], []))
         for item in top_oficial
     ):
+        # Separar descartes previos: solo interesan los huecos
+        # estructurales confirmados durante esta recuperación.
+        descartados_antes = set(getattr(
+            estado, "refresh_activos_gap_descartados", set()
+        ))
         precargar_velas_activos(top_oficial, podar_cache=False)
+        descartados_despues = set(getattr(
+            estado, "refresh_activos_gap_descartados", set()
+        ))
+        nuevos_huecos = descartados_despues - descartados_antes
+
         recuperados = sum(
             _buffer_velas_integro(estado.velas_cache.get(item["activo"], []))
             for item in top_oficial
@@ -1343,7 +1353,18 @@ def refrescar_activos_incremental():
             "/", len(top_oficial),
             flush=True,
         )
-        return []
+
+        if not nuevos_huecos:
+            return []
+
+        # No publicar un TOP reducido ni utilizar velas discontinuas.
+        # El scanner completo existente reconstruirá el ranking.
+        print(
+            "D9.98 TOP OFICIAL CON HUECOS ESTRUCTURALES |",
+            "activos:", sorted(nuevos_huecos),
+            "| INICIANDO ESCANEO COMPLETO",
+            flush=True,
+        )
 
     # ==========================================
     # INICIAR NUEVO CICLO

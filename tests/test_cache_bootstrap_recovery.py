@@ -358,6 +358,65 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
         preload.assert_called_once_with(estado.activos_cache, podar_cache=False)
         self.assertFalse(hasattr(estado.Iq, "timeout"))
 
+    def test_official_structural_gap_starts_complete_rescan(self):
+        import bot
+        bot.reiniciar_metricas_ronda()
+        step = mercado.CANDLE_TIME
+        now = int(time.time() // step) * step
+        start = now - 182 * step
+
+        healthy = [
+            {"from": start + i * step}
+            for i in range(mercado.VELAS_CACHE_CERRADAS)
+        ]
+        old_segment = [
+            {"from": now - 186 * step + i * step}
+            for i in range(10)
+        ]
+        recent_segment = [
+            {"from": now - 171 * step + i * step}
+            for i in range(171)
+        ]
+        gapped = old_segment + recent_segment
+
+        class GappedOfficialIQ(FakeIQ):
+            def __init__(self):
+                super().__init__({
+                    "turbo": {
+                        "replacement": {"open": True}
+                    }
+                })
+
+            def get_candles(self, asset, *_args, **_kwargs):
+                self.requested = asset
+                return gapped
+
+        estado.Iq = GappedOfficialIQ()
+        estado.activos_cache = [
+            {"activo": f"healthy-{i}", "score_filtro": 100 - i}
+            for i in range(14)
+        ] + [{"activo": "FWONA-OTC", "score_filtro": 80}]
+        estado.velas_cache = {
+            item["activo"]: list(healthy)
+            for item in estado.activos_cache[:14]
+        }
+
+        with patch.object(
+            mercado, "evaluar_estabilidad_activo", return_value=None
+        ):
+            result = mercado.refrescar_activos_incremental()
+
+        # El universo simulado tiene un solo activo y termina
+        # sin candidatos; no debe publicar un TOP parcial.
+        self.assertEqual(len(result), 15)
+        self.assertFalse(estado.refresh_activos_en_progreso)
+        self.assertEqual(estado.Iq.requested, "FWONA-OTC")
+        self.assertEqual(len(estado.activos_cache), 15)
+        self.assertEqual(len(estado.velas_cache), 14)
+        self.assertEqual(
+            estado.metricas_ronda["activos_evaluados_filtro"], 1
+        )
+
     def test_startup_messages_do_not_repeat_each_unprepared_candle(self):
         import inspect
         import bot
