@@ -12,7 +12,7 @@ class Base(object):
         """
         self.api = api
 
-    def send_websocket_request(self, name, msg,request_id=""):
+    def send_websocket_request(self, name, msg,request_id="", no_force_send=True):
         """Send request to IQ Option server websocket.
 
         :param str name: The websocket chanel name.
@@ -22,4 +22,4 @@ class Base(object):
         """
         if request_id == '':
             request_id = int(str(time.time()).split('.')[1])
-        return self.api.send_websocket_request(name, msg,request_id)
+        return self.api.send_websocket_request(name, msg,request_id,no_force_send=no_force_send)
