@@ -11,6 +11,7 @@ from iqoptionapi import global_value
 from iqoptionapi.api import IQOptionAPI
 from iqoptionapi.stable_api import IQ_Option
 from iqoptionapi.ws.client import WebsocketClient
+from iqoptionapi.ws.chanels.heartbeat import Heartbeat
 from operaciones import (
     abrir_operacion,
     revisar_operaciones_abiertas,
@@ -170,6 +171,22 @@ class CandleRequestTimeoutTests(unittest.TestCase):
 
         self.assertLess(time.monotonic() - inicio, 1.5)
 
+
+    def test_heartbeat_forwards_no_force_send(self):
+        api = Mock()
+        api.timesync.server_timestamp = 1234567890
+
+        Heartbeat(api)(1234567890)
+
+        api.send_websocket_request.assert_called_once_with(
+            "heartbeat",
+            {"msg": {
+                "heartbeatTime": 1234567890,
+                "userTime": 1234567890000,
+            }},
+            unittest.mock.ANY,
+            no_force_send=False,
+        )
 
     def test_websocket_send_serializes_concurrent_callers(self):
         api = IQOptionAPI.__new__(IQOptionAPI)
