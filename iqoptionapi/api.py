@@ -165,6 +165,10 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
         self.https_url = "https://{host}/api".format(host=host)
         self.wss_url = "wss://{host}/echo/websocket".format(host=host)
         self.websocket_client = None
+        # Historical candle replies have no reliable request correlation.
+        # Each WebSocket session must own its own response mailbox: a late
+        # callback from a closed session must never fulfill a new request.
+        self.candles = Candles()
         # Serialize writes from the scanner and WebSocket callbacks.
         # Global boolean flags alone cannot atomically claim the writer.
         self._websocket_send_lock = threading.Lock()
