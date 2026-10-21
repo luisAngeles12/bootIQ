@@ -24,6 +24,10 @@ class FakeIQ:
 
 class CacheBootstrapRecoveryTests(unittest.TestCase):
     def setUp(self):
+        self.original_gap_descartados = getattr(
+            estado, "refresh_activos_gap_descartados", None
+        )
+        estado.refresh_activos_gap_descartados = set()
         self.original_state = {
             name: getattr(estado, name)
             for name in (
@@ -68,6 +72,10 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
     def tearDown(self):
         for name, value in self.original_state.items():
             setattr(estado, name, value)
+        if self.original_gap_descartados is None:
+            delattr(estado, "refresh_activos_gap_descartados")
+        else:
+            estado.refresh_activos_gap_descartados = self.original_gap_descartados
 
     def test_reconnects_after_two_consecutive_missing_open_time_responses(self):
         with patch.object(mercado, "reconectar_iq", return_value=True) as reconnect:
@@ -180,6 +188,78 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             set(estado.velas_cache),
             {item["activo"] for item in candidates[1:]},
         )
+
+    def test_structural_history_gap_does_not_block_complete_eligible_top(self):
+        now = int(time.time() // mercado.CANDLE_TIME) * mercado.CANDLE_TIME
+        start = now - 182 * mercado.CANDLE_TIME
+        continuous = [
+            {"from": start + i * mercado.CANDLE_TIME}
+            for i in range(mercado.VELAS_CACHE_CERRADAS)
+        ]
+        # 10 old candles, a session gap, then 171 consecutive candles.
+        old = [
+            {"from": start - 1800 + i * mercado.CANDLE_TIME}
+            for i in range(10)
+        ]
+        gapped = old + continuous[10:]
+
+        class GappedIQ(FakeIQ):
+            def get_candles(self, name, *_args, **_kwargs):
+                if name in ("SQQQ", "IWM"):
+                    return gapped
+                raise AssertionError("Healthy cache should be reused")
+
+        estado.Iq = GappedIQ({})
+        candidates = [
+            {"activo": f"asset-{index}", "score_filtro": 100 - index}
+            for index in range(14)
+        ] + [
+            {"activo": "SQQQ", "score_filtro": 80},
+            {"activo": "IWM", "score_filtro": 79},
+        ]
+        estado.refresh_activos_top_pendiente = candidates
+        estado.velas_cache = {
+            item["activo"]: list(continuous)
+            for item in candidates[:14]
+        }
+
+        result = mercado.refrescar_activos_incremental()
+
+        self.assertEqual(len(result), 14)
+        self.assertEqual(
+            [item["activo"] for item in result],
+            [item["activo"] for item in candidates[:14]],
+        )
+        self.assertEqual(
+            set(estado.velas_cache),
+            {item["activo"] for item in candidates[:14]},
+        )
+        self.assertEqual(estado.refresh_activos_top_pendiente, [])
+
+    def test_transient_candle_failure_does_not_reduce_top_target(self):
+        now = int(time.time() // mercado.CANDLE_TIME) * mercado.CANDLE_TIME
+        start = now - 182 * mercado.CANDLE_TIME
+        candles = [
+            {"from": start + i * mercado.CANDLE_TIME}
+            for i in range(mercado.VELAS_CACHE_CERRADAS)
+        ]
+
+        class MissingIQ(FakeIQ):
+            def get_candles(self, *_args, **_kwargs):
+                return None
+
+        estado.Iq = MissingIQ({})
+        estado.refresh_activos_top_pendiente = [
+            {"activo": "healthy", "score_filtro": 90},
+            {"activo": "missing", "score_filtro": 80},
+        ]
+        estado.velas_cache = {"healthy": candles}
+
+        result = mercado.refrescar_activos_incremental()
+
+        self.assertEqual(result, [])
+        self.assertEqual(estado.activos_cache, [])
+        self.assertEqual(estado.refresh_activos_gap_descartados, set())
 
     def test_pending_buffer_preload_rotates_after_budget_exhaustion(self):
         start = (
