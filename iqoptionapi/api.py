@@ -165,6 +165,9 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
         self.https_url = "https://{host}/api".format(host=host)
         self.wss_url = "wss://{host}/echo/websocket".format(host=host)
         self.websocket_client = None
+        # Serialize writes from the scanner and WebSocket callbacks.
+        # Global boolean flags alone cannot atomically claim the writer.
+        self._websocket_send_lock = threading.Lock()
         self.session = requests.Session()
         self.session.verify = False
         self.session.trust_env = False
@@ -308,26 +311,29 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
                 name,
             )
 
-        global_value.ssl_Mutual_exclusion_write = True
-        inicio_envio_websocket = time.time()
+        # The real lock prevents concurrent writes even if two callers
+        # observe the global boolean flags as False simultaneously.
+        with self._websocket_send_lock:
+            global_value.ssl_Mutual_exclusion_write = True
+            inicio_envio_websocket = time.time()
 
-        try:
-            self.websocket.send(data)
-            logger.debug(data)
-        finally:
-            demora_envio_websocket = (
-                time.time()
-                - inicio_envio_websocket
-            )
-
-            if demora_envio_websocket >= 0.250:
-                logger.warning(
-                    "**warning** websocket send lento %.3f sec | request: %s",
-                    demora_envio_websocket,
-                    name,
+            try:
+                self.websocket.send(data)
+                logger.debug(data)
+            finally:
+                demora_envio_websocket = (
+                    time.time()
+                    - inicio_envio_websocket
                 )
 
-            global_value.ssl_Mutual_exclusion_write = False
+                if demora_envio_websocket >= 0.250:
+                    logger.warning(
+                        "**warning** websocket send lento %.3f sec | request: %s",
+                        demora_envio_websocket,
+                        name,
+                    )
+
+                global_value.ssl_Mutual_exclusion_write = False
 
     @property
     def logout(self):
