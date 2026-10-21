@@ -188,6 +188,28 @@ class CandleRequestTimeoutTests(unittest.TestCase):
             no_force_send=False,
         )
 
+    def test_candle_mailbox_is_isolated_across_reconnections(self):
+        # An old websocket reader may still deliver a late candles frame.
+        # Its response must not appear in the newly connected API.
+        from iqoptionapi.ws.received.candles import candles as receive_candles
+
+        previous_api = IQOptionAPI(
+            "iqoption.com", "test-user", "test-password"
+        )
+        current_api = IQOptionAPI(
+            "iqoption.com", "test-user", "test-password"
+        )
+        self.assertIsNot(previous_api.candles, current_api.candles)
+
+        receive_candles(previous_api, {
+            "name": "candles", "msg": {"candles": [{"from": 123}]}
+        })
+
+        self.assertEqual(
+            previous_api.candles.candles_data, [{"from": 123}]
+        )
+        self.assertIsNone(current_api.candles.candles_data)
+
     def test_websocket_send_serializes_concurrent_callers(self):
         api = IQOptionAPI.__new__(IQOptionAPI)
         api._websocket_send_lock = threading.Lock()
