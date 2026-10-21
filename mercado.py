@@ -395,8 +395,12 @@ def precargar_velas_activos(
                 diagnostico = _diagnosticar_huecos_velas(cerradas)
                 if (
                     not podar_cache
-                    and len(cerradas) >= objetivo_cerradas
-                    and diagnostico["huecos"] > 0
+                    and isinstance(candles, list)
+                    and len(cerradas) > 0
+                    and (
+                        diagnostico["huecos"] > 0
+                        or len(cerradas) < objetivo_cerradas
+                    )
                 ):
                     descartados_gap.add(activo)
                     estado.refresh_activos_gap_descartados = descartados_gap
