@@ -170,6 +170,54 @@ class CandleRequestTimeoutTests(unittest.TestCase):
 
         self.assertLess(time.monotonic() - inicio, 1.5)
 
+
+    def test_websocket_send_serializes_concurrent_callers(self):
+        api = IQOptionAPI.__new__(IQOptionAPI)
+        api._websocket_send_lock = threading.Lock()
+        api.websocket_client = Mock()
+        active = 0
+        peak = 0
+        observations_lock = threading.Lock()
+        errors = []
+        start = threading.Barrier(3)
+
+        def send(_data):
+            nonlocal active, peak
+            with observations_lock:
+                active += 1
+                peak = max(peak, active)
+            time.sleep(0.03)
+            with observations_lock:
+                active -= 1
+
+        api.websocket_client.wss.send.side_effect = send
+
+        def worker():
+            try:
+                start.wait(timeout=2)
+                api.send_websocket_request(
+                    "concurrency-test", {}, no_force_send=False
+                )
+            except Exception as exc:
+                errors.append(exc)
+
+        with patch.object(
+            global_value, "ssl_Mutual_exclusion", False
+        ), patch.object(
+            global_value, "ssl_Mutual_exclusion_write", False
+        ):
+            threads = [threading.Thread(target=worker) for _ in range(2)]
+            for thread in threads:
+                thread.start()
+            start.wait(timeout=2)
+            for thread in threads:
+                thread.join(timeout=2)
+
+        self.assertFalse(errors)
+        self.assertTrue(all(not thread.is_alive() for thread in threads))
+        self.assertEqual(peak, 1)
+        self.assertEqual(api.websocket_client.wss.send.call_count, 2)
+
     def test_websocket_close_uses_bounded_thread_join(self):
         api = IQOptionAPI.__new__(IQOptionAPI)
         api.websocket_client = Mock()
