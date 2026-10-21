@@ -1328,9 +1328,13 @@ def refrescar_activos_incremental():
     # mientras la cache publicada sigue sin velas. Nunca publica
     # datos incompletos; bot.py mantiene su gate de integridad.
     top_oficial = list(getattr(estado, "activos_cache", []) or [])
-    if top_oficial and any(
-        not _buffer_velas_integro(estado.velas_cache.get(item["activo"], []))
-        for item in top_oficial
+    if (
+        not getattr(estado, "refresh_activos_en_progreso", False)
+        and top_oficial
+        and any(
+            not _buffer_velas_integro(estado.velas_cache.get(item["activo"], []))
+            for item in top_oficial
+        )
     ):
         # Separar descartes previos: solo interesan los huecos
         # estructurales confirmados durante esta recuperación.
