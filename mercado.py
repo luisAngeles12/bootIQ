@@ -188,6 +188,7 @@ def _publicar_top_con_buffers(top):
     estado.ultima_actualizacion_activos = time.time()
     estado.refresh_activos_top_pendiente = []
     estado.refresh_activos_buffer_indice = 0
+    estado.refresh_activos_gap_descartados = set()
     return list(estado.activos_cache)
 
 
@@ -252,6 +253,11 @@ def precargar_velas_activos(
         }
 
     inicio_precarga = time.perf_counter()
+    # Solo descartamos del ranking pendiente candidatos cuyo historial
+    # acredita una discontinuidad estructural, nunca fallos de red.
+    descartados_gap = getattr(
+        estado, "refresh_activos_gap_descartados", set()
+    )
     nombres_actuales = []
     activos_vistos = set()
 
@@ -262,7 +268,8 @@ def precargar_velas_activos(
             else:
                 activo = str(item)
 
-            if activo and activo not in activos_vistos:
+            if (activo and activo not in activos_vistos
+                    and (podar_cache or activo not in descartados_gap)):
                 nombres_actuales.append(activo)
                 activos_vistos.add(activo)
 
@@ -381,6 +388,18 @@ def precargar_velas_activos(
             ]
 
             if not _buffer_velas_integro(buffer_descargado):
+                # Un mercado con suficientes velas históricas pero con
+                # un hueco entre sesiones no puede alcanzar el mínimo
+                # continuo hasta que transcurra mucho tiempo. No debe
+                # bloquear el TOP mientras existan otros elegibles.
+                diagnostico = _diagnosticar_huecos_velas(cerradas)
+                if (
+                    not podar_cache
+                    and len(cerradas) >= objetivo_cerradas
+                    and diagnostico["huecos"] > 0
+                ):
+                    descartados_gap.add(activo)
+                    estado.refresh_activos_gap_descartados = descartados_gap
                 errores += 1
                 cantidad = (
                     len(buffer_descargado)
@@ -399,7 +418,7 @@ def precargar_velas_activos(
                     "| minimo requerido:",
                     VELAS_CACHE_CERRADAS,
                     "| diagnostico_huecos:",
-                    _diagnosticar_huecos_velas(cerradas),
+                    diagnostico,
                     flush=True,
                 )
                 procesados += 1
@@ -1232,30 +1251,47 @@ def refrescar_activos_incremental():
 
     if top_pendiente:
 
+        descartados_gap = getattr(
+            estado, "refresh_activos_gap_descartados", set()
+        )
+        elegibles = [
+            item for item in top_pendiente
+            if item["activo"] not in descartados_gap
+        ]
         precargar_velas_activos(
-            top_pendiente,
+            elegibles,
             podar_cache=False,
         )
 
+        # La precarga puede identificar nuevos saltos estructurales.
+        descartados_gap = getattr(
+            estado, "refresh_activos_gap_descartados", set()
+        )
+        elegibles = [
+            item for item in top_pendiente
+            if item["activo"] not in descartados_gap
+        ]
         (
             objetivo_top,
             top_publicable,
             candidatos_listos,
         ) = _seleccionar_top_con_buffers(
-            top_pendiente
+            elegibles
         )
 
-        if len(top_publicable) < objetivo_top:
+        if not objetivo_top or len(top_publicable) < objetivo_top:
             print(
-                "D7.6D TOP PENDIENTE BUFFER |",
+                "D7.6D TOP PENDIENTE BUFFER |"
                 "listos:",
                 len(top_publicable),
                 "/",
                 objetivo_top,
                 "| candidatos evaluados:",
-                len(top_pendiente),
+                len(elegibles),
+                "| descartados por huecos:",
+                len(descartados_gap),
                 "| candidatos sin buffer:",
-                len(top_pendiente)
+                len(elegibles)
                 - candidatos_listos,
             )
 
@@ -1722,6 +1758,7 @@ def refrescar_activos_incremental():
         estado.refresh_activos_top_pendiente = list(
             candidatos
         )
+        estado.refresh_activos_gap_descartados = set()
 
         print(
             "D7.6D REFRESH INCREMENTAL COMPLETO |",
