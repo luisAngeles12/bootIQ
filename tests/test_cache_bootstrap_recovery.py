@@ -78,7 +78,9 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             estado.refresh_activos_gap_descartados = self.original_gap_descartados
 
     def test_reconnects_after_two_consecutive_missing_open_time_responses(self):
-        with patch.object(mercado, "reconectar_iq", return_value=True) as reconnect:
+        # La reconexion forzada queda reservada para transporte realmente caido.
+        with patch.object(estado.Iq, "check_connect", side_effect=[True, True, False]), \
+                patch.object(mercado, "reconectar_iq", return_value=True) as reconnect:
             mercado.refrescar_activos_incremental()
             self.assertEqual(estado.fallos_open_time, 1)
             reconnect.assert_not_called()
