@@ -450,6 +450,31 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
         self.assertEqual(len(estado.activos_cache), 1)
         self.assertEqual(estado.activos_cache[0]["activo"], "gapped-official")
 
+    def test_previously_recorded_official_gap_triggers_rescan(self):
+        import bot
+        bot.reiniciar_metricas_ronda()
+        estado.Iq = FakeIQ({
+            "turbo": {"replacement": {"open": True}}
+        })
+        estado.activos_cache = [
+            {"activo": "gapped-official", "score_filtro": 90}
+        ]
+        estado.velas_cache = {}
+        estado.refresh_activos_gap_descartados = {"gapped-official"}
+        estado.refresh_activos_en_progreso = False
+        estado.refresh_activos_top_pendiente = []
+        with patch.object(
+            mercado, "precargar_velas_activos"
+        ) as preload, patch.object(
+            mercado, "evaluar_estabilidad_activo", return_value=None
+        ) as evaluate:
+            mercado.refrescar_activos_incremental()
+        preload.assert_called_once()
+        evaluate.assert_called_once()
+        self.assertEqual(evaluate.call_args.args[:2], ("replacement", "turbo"))
+        self.assertEqual(len(estado.activos_cache), 1)
+        self.assertEqual(estado.activos_cache[0]["activo"], "gapped-official")
+
     def test_startup_messages_do_not_repeat_each_unprepared_candle(self):
         import inspect
         import bot
