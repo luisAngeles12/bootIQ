@@ -1289,6 +1289,17 @@ def refrescar_activos_incremental():
             item for item in top_pendiente
             if item["activo"] not in descartados_gap
         ]
+        if len(elegibles) < MAX_ACTIVOS_ANALIZAR:
+            estado.refresh_activos_top_pendiente = []
+            estado.refresh_activos_buffer_indice = 0
+            print(
+                "D9.98 CANDIDATOS INSUFICIENTES TRAS HUECOS |"
+                " listos:", len(elegibles),
+                "| minimo:", MAX_ACTIVOS_ANALIZAR,
+                "| REESCANEO SIGUIENTE CICLO", flush=True,
+            )
+            return []
+
         (
             objetivo_top,
             top_publicable,
