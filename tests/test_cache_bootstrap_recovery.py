@@ -140,6 +140,19 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
         self.assertEqual(estado.fallos_open_time, 0)
         reconnect.assert_not_called()
 
+    def test_top_selection_requires_twenty_complete_buffers(self):
+        candidates = [
+            {"activo": f"asset-{i}", "score_filtro": 100 - i}
+            for i in range(16)
+        ]
+        objective, published, ready = mercado._seleccionar_top_con_buffers(candidates)
+        self.assertEqual(objective, mercado.MAX_ACTIVOS_ANALIZAR)
+        self.assertEqual(published, [])
+        self.assertEqual(ready, 0)
+        with self.assertRaises(ValueError):
+            mercado._publicar_top_con_buffers(candidates)
+        self.assertEqual(estado.activos_cache, [])
+
     def test_pending_top_uses_buffered_candidates_to_fill_ranked_top(self):
         candidates = [
             {
