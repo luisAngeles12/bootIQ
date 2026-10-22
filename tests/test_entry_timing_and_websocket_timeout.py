@@ -150,6 +150,35 @@ class CandleRequestTimeoutTests(unittest.TestCase):
         self.assertIsNone(resultado)
         self.assertLess(demora, 1.0)
 
+    def test_candle_response_budget_starts_after_bounded_lock_wait(self):
+        from iqoptionapi import constants as OP_code
+
+        iq = IQ_Option.__new__(IQ_Option)
+        iq._candles_lock = threading.Lock()
+        iq.api = Mock()
+        iq.api.candles.candles_data = None
+        iq.check_connect = lambda: True
+        original = OP_code.ACTIVES.get("EURUSD")
+        OP_code.ACTIVES["EURUSD"] = 1
+
+        def delayed_reply(*_args):
+            # Simulate a completed request after the lock wait.
+            time.sleep(0.08)
+            iq.api.candles.candles_data = [{"from": 123}]
+
+        iq.api.getcandles.side_effect = delayed_reply
+        try:
+            result = iq.get_candles(
+                "EURUSD", 60, 1, time.time(), timeout=0.1,
+            )
+        finally:
+            if original is None:
+                OP_code.ACTIVES.pop("EURUSD", None)
+            else:
+                OP_code.ACTIVES["EURUSD"] = original
+
+        self.assertEqual(result, [{"from": 123}])
+
     def test_websocket_request_times_out_while_reader_holds_mutex(self):
         api = IQOptionAPI.__new__(IQOptionAPI)
         with patch.object(
