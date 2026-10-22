@@ -126,6 +126,17 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             },
         )
 
+    def test_open_time_timeout_does_not_force_reconnect_during_bootstrap(self):
+        estado.Iq = FakeIQ({})
+        estado.activos_cache = []
+        estado.velas_cache = {}
+        estado.fallos_open_time = 0
+        with patch.object(mercado, "reconectar_iq") as reconnect:
+            mercado.refrescar_activos_incremental()
+            mercado.refrescar_activos_incremental()
+        reconnect.assert_not_called()
+        self.assertEqual(estado.fallos_open_time, 0)
+
     def test_valid_open_time_response_resets_missing_response_count(self):
         with patch.object(mercado, "reconectar_iq") as reconnect:
             estado.fallos_open_time = 1
