@@ -153,18 +153,26 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
         self.assertEqual(estado.fallos_open_time, 0)
         reconnect.assert_not_called()
 
-    def test_top_selection_requires_twenty_complete_buffers(self):
-        candidates = [
-            {"activo": f"asset-{i}", "score_filtro": 100 - i}
-            for i in range(16)
+    def test_top_selection_accepts_one_to_twenty_complete_buffers(self):
+        now = int(time.time() // mercado.CANDLE_TIME) * mercado.CANDLE_TIME
+        start = now - mercado.VELAS_CACHE_CERRADAS * mercado.CANDLE_TIME
+        candles = [
+            {"from": start + i * mercado.CANDLE_TIME}
+            for i in range(mercado.VELAS_CACHE_CERRADAS)
         ]
-        objective, published, ready = mercado._seleccionar_top_con_buffers(candidates)
-        self.assertEqual(objective, mercado.MAX_ACTIVOS_ANALIZAR)
-        self.assertEqual(published, [])
-        self.assertEqual(ready, 0)
+        candidates = [{"activo": "solo", "score_filtro": 90}]
+        estado.velas_cache = {"solo": candles}
+        objective, ready, total_ready = mercado._seleccionar_top_con_buffers(candidates)
+        self.assertEqual((objective, len(ready), total_ready), (1, 1, 1))
+        self.assertEqual(len(mercado._publicar_top_con_buffers(ready)), 1)
+
+    def test_incomplete_buffer_is_not_published(self):
+        candidates = [{"activo": "solo", "score_filtro": 90}]
+        estado.velas_cache = {}
+        objective, ready, total_ready = mercado._seleccionar_top_con_buffers(candidates)
+        self.assertEqual((objective, ready, total_ready), (1, [], 0))
         with self.assertRaises(ValueError):
             mercado._publicar_top_con_buffers(candidates)
-        self.assertEqual(estado.activos_cache, [])
 
     def test_pending_top_uses_buffered_candidates_to_fill_ranked_top(self):
         candidates = [
@@ -580,10 +588,9 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
 
         required, ready, count = mercado._seleccionar_top_con_buffers(candidates)
 
-        self.assertEqual(required, mercado.MAX_ACTIVOS_ANALIZAR)
+        self.assertEqual(required, 14)
         self.assertEqual(count, 14)
         self.assertEqual(len(ready), 14)
-        self.assertLess(len(ready), required)
 
     def test_top_target_stays_capped_at_twenty(self):
         candidates = [
