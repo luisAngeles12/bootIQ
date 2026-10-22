@@ -1358,7 +1358,17 @@ def refrescar_activos_incremental():
             flush=True,
         )
 
-        if not nuevos_huecos:
+        # Los descartes estructurales pueden haberse registrado en
+        # una ventana anterior. Si siguen sin buffer, no bloquear el
+        # rescan solo porque no sean descartes NUEVOS.
+        sin_buffer = {
+            item["activo"] for item in top_oficial
+            if not _buffer_velas_integro(
+                estado.velas_cache.get(item["activo"], [])
+            )
+        }
+        huecos_confirmados = sin_buffer & descartados_despues
+        if not nuevos_huecos and not huecos_confirmados:
             return []
 
         # No publicar un TOP reducido ni utilizar velas discontinuas.
