@@ -1194,15 +1194,14 @@ def refrescar_activos_incremental():
             socket_activo = estado.Iq is not None and estado.Iq.check_connect()
         except Exception:
             socket_activo = False
-        top_actual = list(getattr(estado, "activos_cache", []) or [])
-        if socket_activo and top_actual and all(
-            _buffer_velas_integro(estado.velas_cache.get(item["activo"], []))
-            for item in top_actual
-        ):
+        # Un timeout de OPEN_TIME no demuestra que el transporte haya
+        # caido. Tampoco cuando aun no existe TOP oficial (bootstrap).
+        # Evitar destruir una conexion que sigue entregando mensajes;
+        # el siguiente ciclo puede reintentar la consulta auxiliar.
+        if socket_activo:
             print(
                 "D9.98 OPEN_TIME SIN RESPUESTA | "
-                "SESION ACTIVA Y BUFFERS INTEGROS; "
-                "SE CONSERVA TOP OFICIAL",
+                "SESION ACTIVA; SE CONSERVA CONEXION Y CACHE",
                 flush=True,
             )
             return
