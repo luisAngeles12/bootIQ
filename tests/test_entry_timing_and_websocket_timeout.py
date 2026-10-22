@@ -161,10 +161,20 @@ class CandleRequestTimeoutTests(unittest.TestCase):
         original = OP_code.ACTIVES.get("EURUSD")
         OP_code.ACTIVES["EURUSD"] = 1
 
+        reply_thread = None
+
         def delayed_reply(*_args):
-            # Simulate a completed request after the lock wait.
+            nonlocal reply_thread
+            # Dispatch takes time, then the broker replies within its
+            # own receive budget (but beyond the old combined budget).
             time.sleep(0.08)
-            iq.api.candles.candles_data = [{"from": 123}]
+
+            def receive():
+                time.sleep(0.06)
+                iq.api.candles.candles_data = [{"from": 123}]
+
+            reply_thread = threading.Thread(target=receive)
+            reply_thread.start()
 
         iq.api.getcandles.side_effect = delayed_reply
         try:
@@ -172,6 +182,8 @@ class CandleRequestTimeoutTests(unittest.TestCase):
                 "EURUSD", 60, 1, time.time(), timeout=0.1,
             )
         finally:
+            if reply_thread is not None:
+                reply_thread.join(timeout=1.0)
             if original is None:
                 OP_code.ACTIVES.pop("EURUSD", None)
             else:
