@@ -1141,7 +1141,10 @@ class IQ_Option:
             except (TypeError, ValueError):
                 drain_timeout = 0.25
 
-            inicio = inicio_solicitud
+            # El presupuesto de respuesta empieza despues del envio.
+            # La espera por el mutex ya tiene su propio limite y
+            # no debe reducir artificialmente la espera del broker.
+            inicio = time.monotonic()
 
             while (
                 self.api.candles.candles_data
