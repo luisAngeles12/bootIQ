@@ -159,7 +159,8 @@ def _buffer_velas_integro(candles):
 
 
 def _seleccionar_top_con_buffers(candidatos):
-    objetivo = min(MAX_ACTIVOS_ANALIZAR, len(candidatos))
+    # TOP oficial completo: no disminuir el objetivo por falta de candidatos.
+    objetivo = MAX_ACTIVOS_ANALIZAR
     listos = [
         item
         for item in candidatos
@@ -174,6 +175,11 @@ def _seleccionar_top_con_buffers(candidatos):
 
 
 def _publicar_top_con_buffers(top):
+    if len(top) != MAX_ACTIVOS_ANALIZAR or any(
+        not _buffer_velas_integro(estado.velas_cache.get(item["activo"], []))
+        for item in top
+    ):
+        raise ValueError("TOP_INCOMPLETO_O_BUFFER_INVALIDO")
     estado.activos_cache = list(top)
     nombres_publicados = {
         item["activo"]
@@ -1253,6 +1259,14 @@ def refrescar_activos_incremental():
         or []
     )
 
+    if top_pendiente and len(top_pendiente) < MAX_ACTIVOS_ANALIZAR:
+        # No congelar ciclos futuros con un ranking incapaz de formar TOP20.
+        # Conservar TOP oficial anterior hasta contar con reemplazo completo.
+        estado.refresh_activos_top_pendiente = []
+        estado.refresh_activos_buffer_indice = 0
+        top_pendiente = []
+        print("D9.98 TOP INSUFICIENTE | REESCANEO PENDIENTE", flush=True)
+
     if top_pendiente:
 
         descartados_gap = getattr(
@@ -1895,6 +1909,16 @@ def obtener_activos(
         )
         or []
     )
+
+    if (
+        not cache_previa_d76d
+        and top_pendiente_bootstrap_d76d
+        and len(top_pendiente_bootstrap_d76d) < MAX_ACTIVOS_ANALIZAR
+        and not solo_cache
+    ):
+        estado.refresh_activos_top_pendiente = []
+        estado.refresh_activos_buffer_indice = 0
+        top_pendiente_bootstrap_d76d = []
 
     if (
         not cache_previa_d76d
