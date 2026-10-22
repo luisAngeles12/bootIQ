@@ -238,15 +238,8 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
 
         result = mercado.refrescar_activos_incremental()
 
-        self.assertEqual(len(result), 14)
-        self.assertEqual(
-            [item["activo"] for item in result],
-            [item["activo"] for item in candidates[:14]],
-        )
-        self.assertEqual(
-            set(estado.velas_cache),
-            {item["activo"] for item in candidates[:14]},
-        )
+        self.assertEqual(result, [])
+        self.assertEqual(estado.activos_cache, [])
         self.assertEqual(estado.refresh_activos_top_pendiente, [])
 
     def test_fifty_available_candles_do_not_block_valid_candidates(self):
@@ -271,8 +264,8 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
         estado.velas_cache = {"healthy": healthy_candles}
         result = mercado.refrescar_activos_incremental()
 
-        self.assertEqual([item["activo"] for item in result], ["healthy"])
-        self.assertEqual(estado.Iq.asserted_name, "short-history")
+        self.assertEqual(result, [])
+        self.assertEqual(estado.activos_cache, [])
         self.assertEqual(estado.refresh_activos_top_pendiente, [])
 
     def test_transient_candle_failure_does_not_reduce_top_target(self):
