@@ -567,10 +567,10 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
 
         required, ready, count = mercado._seleccionar_top_con_buffers(candidates)
 
-        self.assertEqual(required, 14)
+        self.assertEqual(required, mercado.MAX_ACTIVOS_ANALIZAR)
         self.assertEqual(count, 14)
         self.assertEqual(len(ready), 14)
-        self.assertEqual(len(ready), required)
+        self.assertLess(len(ready), required)
 
     def test_top_target_stays_capped_at_twenty(self):
         candidates = [
