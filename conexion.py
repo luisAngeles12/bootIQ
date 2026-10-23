@@ -183,6 +183,7 @@ def reconectar_iq(intentos=3, forzar=False):
         )
 
         for intento in range(1, intentos + 1):
+            razon_fallo = ""
 
             try:
                 check, reason = estado.Iq.connect()
@@ -257,6 +258,7 @@ def reconectar_iq(intentos=3, forzar=False):
                     # Ya tenemos los códigos cargados.
                     return True
 
+                razon_fallo = str(reason)
                 print(
                     "Reconexión no confirmada:",
                     reason,
@@ -264,13 +266,24 @@ def reconectar_iq(intentos=3, forzar=False):
                 )
 
             except Exception as e:
+                razon_fallo = str(e)
                 print(
                     "Error durante reconexión IQ:",
                     e,
                     flush=True
                 )
 
-            time.sleep(2)
+            if intento < intentos:
+                # Evitar reintentos en rafaga ante fallos DNS o WebSocket.
+                red_inestable = any(
+                    codigo in razon_fallo.lower()
+                    for codigo in (
+                        "getaddrinfo", "nameresolutionerror",
+                        "websocket_open_timeout", "winerror 10060",
+                    )
+                )
+                espera = min(8, 2 ** intento) if red_inestable else 2
+                time.sleep(espera)
 
         print(
             "IQ Option continúa desconectado.",
