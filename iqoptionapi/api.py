@@ -943,7 +943,7 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
                 try:
                     global_value.SSID = response.cookies["ssid"]
                 except:
-                    return False, response.text
+                    return False, str(response) if isinstance(response, Exception) else getattr(response, "text", "SSID_RESPONSE_INVALID")
                 atexit.register(self.logout)
                 if not self.close():
                     return False, "WEBSOCKET_CLOSE_TIMEOUT"
@@ -960,7 +960,7 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
                 global_value.SSID = response.cookies["ssid"]
             except:
                 self.close()
-                return False, response.text
+                return False, str(response) if isinstance(response, Exception) else getattr(response, "text", "SSID_RESPONSE_INVALID")
             atexit.register(self.logout)
             if not self.send_ssid():
                 return False, "SSID_PROFILE_TIMEOUT"
