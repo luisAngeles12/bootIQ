@@ -5,6 +5,7 @@ from auditoria_historial_contextual import (
     agrupar_cierres_por_contexto,
     diagnosticos_historicos,
     agrupar_cierres_por_diagnostico,
+    agrupar_cierres_por_ruta_y_ubicacion,
 )
 
 
@@ -63,6 +64,20 @@ class HistorialContextualTests(unittest.TestCase):
         ])
         self.assertEqual(len(grupos), 3)
         self.assertTrue(all(x["losses"] == 1 and x["wins"] == 0 for x in grupos))
+
+    def test_no_mezcla_rutas_r1_r6_en_soporte(self):
+        razon = "ACCION PRECIO: acción precio: PUT con soporte cerca; decisión delegada a zonas, RUPTURA: sin ruptura confirmada de soporte"
+        base = {"estado": "CERRADA", "razon": razon}
+        grupos = agrupar_cierres_por_ruta_y_ubicacion([
+            {**base, "core4_reglas": "R1_INDEFINIDO_PREMIUM", "resultado": "-25"},
+            {**base, "core4_reglas": "R6_CONT_BAJISTA_IMPULSO_FUERTE", "resultado": "20"},
+            {**base, "core4_reglas": "R6_CONT_BAJISTA_IMPULSO_FUERTE", "resultado": "-25"},
+        ])
+        self.assertEqual(len(grupos), 2)
+        por_regla = {g["reglas"]: g for g in grupos}
+        self.assertEqual(por_regla["R1_INDEFINIDO_PREMIUM"]["losses"], 1)
+        self.assertEqual(por_regla["R6_CONT_BAJISTA_IMPULSO_FUERTE"]["total"], 2)
+        self.assertTrue(all(g["ubicacion"] == "PUT_SOPORTE_CERCA" for g in grupos))
 
 
 if __name__ == "__main__":
