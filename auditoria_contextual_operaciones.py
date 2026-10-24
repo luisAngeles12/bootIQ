@@ -75,6 +75,52 @@ def _resultado_contextual(fila, clase):
     return _resultado(fila.get(campo)), campo
 
 
+def auditar_integridad_contextual(filas):
+    """Cuenta cobertura y exclusiones antes de publicar cualquier WR por contexto.
+
+    No inventa etiquetas ausentes ni elimina registros duplicados: un mismo
+    instante puede producir señales diferentes. Solo audita los datos recibidos.
+    """
+    total = 0
+    validos = 0
+    sin_resultado = 0
+    sin_estrategia = 0
+    sin_mercado = 0
+    sin_tendencia = 0
+    sin_precio = 0
+    por_clase = defaultdict(int)
+    for fila in filas:
+        total += 1
+        if not isinstance(fila, dict):
+            sin_resultado += 1
+            continue
+        clase = _clase_senal(fila)
+        por_clase[clase] += 1
+        resultado, _ = _resultado_contextual(fila, clase)
+        if resultado is None:
+            sin_resultado += 1
+            continue
+        validos += 1
+        if not _texto(fila.get("patron")):
+            sin_estrategia += 1
+        if not _texto(fila.get("tipo_mercado")):
+            sin_mercado += 1
+        if not _texto(fila.get("estado_tendencia")):
+            sin_tendencia += 1
+        if not _texto(fila.get("accion_precio")):
+            sin_precio += 1
+    return {
+        "total": total,
+        "con_resultado_valido": validos,
+        "sin_resultado_valido": sin_resultado,
+        "sin_estrategia": sin_estrategia,
+        "sin_mercado": sin_mercado,
+        "sin_tendencia": sin_tendencia,
+        "sin_accion_precio": sin_precio,
+        "por_clase": dict(sorted(por_clase.items())),
+    }
+
+
 def agrupar_factores_estrategia(filas, minimo=10):
     """Cruza estrategia con mercado, PA y RSI, sin optimizar reglas in-sample.
 
@@ -183,6 +229,16 @@ def agrupar_senales_por_contexto(filas, minimo=1):
 
 def imprimir_reporte_contextual(filas, minimo=10, limite=25):
     """Imprime evidencia descriptiva, sin umbrales ni recomendaciones de veto."""
+    integridad = auditar_integridad_contextual(filas)
+    print("\n===== INTEGRIDAD DEL UNIVERSO CONTEXTUAL =====")
+    print("Total:", integridad["total"], "| Resultados válidos:", integridad["con_resultado_valido"])
+    print("Sin resultado:", integridad["sin_resultado_valido"], "| Clases:", integridad["por_clase"])
+    print(
+        "Entre evaluables, falta estrategia:", integridad["sin_estrategia"],
+        "| mercado:", integridad["sin_mercado"],
+        "| tendencia:", integridad["sin_tendencia"],
+        "| PA:", integridad["sin_accion_precio"],
+    )
     reporte = agrupar_senales_por_contexto(filas, minimo=minimo)
     print("\n===== AUDITORIA CONTEXTUAL SOMBRA / EJECUCION =====")
     print("Entradas ejecutadas en simulación: RESULTADO; canceladas: HIPOTETICO.")
