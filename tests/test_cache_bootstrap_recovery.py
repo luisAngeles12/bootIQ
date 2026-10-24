@@ -555,14 +555,18 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             source,
         )
         self.assertIn(
-            "MERCADOS SELECCIONADOS SIN BUFFERS VALIDOS",
+            "activos, faltantes_buffer_d76d = _filtrar_activos_con_buffer(activos)",
+            source,
+        )
+        self.assertIn(
+            "D9.98 ACTIVOS SIN BUFFER EXCLUIDOS DE RONDA",
             source,
         )
         self.assertNotIn(
             "if len(activos) != MAX_ACTIVOS_ANALIZAR:",
             source,
         )
-        self.assertIn("_buffer_velas_integro(", source)
+        self.assertIn("if not activos:", source)
         self.assertNotIn(
             'if item["activo"] not in faltantes_buffer_d76d',
             source,
