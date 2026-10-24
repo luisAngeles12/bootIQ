@@ -1,6 +1,6 @@
 import unittest
 
-from monitor_pausas_contextuales import evaluar_contextos_cerrados, registrar_cierre_sombra
+from monitor_pausas_contextuales import evaluar_contextos_cerrados, registrar_cierre_sombra, resumen_cierre_sombra
 
 
 class MonitorPausasTests(unittest.TestCase):
@@ -52,6 +52,9 @@ class MonitorPausasTests(unittest.TestCase):
         self.assertFalse(registrar_cierre_sombra(registro, op, float("nan"), max_por_contexto=2))
         self.assertFalse(registrar_cierre_sombra(registro, {**op, "tipo_mercado": ""}, -25))
         self.assertEqual(len(registro), 1)
+        resumen = resumen_cierre_sombra(registro, op)
+        self.assertEqual((resumen["n"], resumen["wins"], resumen["losses"], resumen["neto"]), (2, 1, 1, -5))
+        self.assertTrue(resumen["solo_observacion"])
 
 
 if __name__ == "__main__":
