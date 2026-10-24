@@ -3372,7 +3372,7 @@ def convertir_decision_v3_a_oficial(
         "directa_motivos_tecnicos": [],
 
         "motivo": (
-            "V3 estadístico no autorizó operación. "
+            ("V3_SOMBRA_FAVORABLE_SIN_AUTORIDAD_GENERICA: clasificación estadística favorable, pero autoridad genérica deshabilitada. " if not AUTORIDAD_GENERICA_V3_HABILITADA and decision_estadistica in {"OPERAR_SOMBRA", "OPERAR_CON_PROTOCOLO_SOMBRA"} else "V3 estadístico no autorizó operación. ")
             + motivo_estadistico
         ).strip(),
     }
