@@ -8,16 +8,16 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v2
 
       - name: Setup Python
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v6
         with:
           python-version: 3.9
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         id: cache-it
         with:
           path: |
@@ -33,6 +33,17 @@ jobs:
       - name: Install dependencies
         if: steps.cache-it.outputs.cache-hit != 'true'
         run: pipenv install --deploy --dev
+
+      - name: Audit contextual tests (no broker, no REAL)
+        run: |
+          pipenv run python -m unittest \
+            tests.test_cierre_monitor_sombra \
+            tests.test_monitor_pausas_contextuales \
+            tests.test_auditoria_vetos_cerebro \
+            tests.test_auditoria_contextual_operaciones \
+            tests.test_auditoria_historial_contextual \
+            tests.test_core4_selective_diagnostic \
+            tests.test_v3_authority_diagnostic
 
 #       - run: pipenv run pylint iqoptionapi
 #       - run: pipenv run isort --recursive --diff .

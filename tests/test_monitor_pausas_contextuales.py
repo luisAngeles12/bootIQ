@@ -1,0 +1,61 @@
+import unittest
+
+from monitor_pausas_contextuales import evaluar_contextos_cerrados, registrar_cierre_sombra, resumen_cierre_sombra
+
+
+class MonitorPausasTests(unittest.TestCase):
+    def test_no_aplica_pausas_y_no_mezcla_contextos(self):
+        base = {"estado": "CERRADA", "patron": "CHOCH", "direccion": "PUT", "tipo_mercado": "TENDENCIA_BAJISTA"}
+        filas = [
+            {**base, "fecha": 1, "resultado": -25},
+            {**base, "fecha": 2, "resultado": -25},
+            {**base, "fecha": 3, "resultado": 20},
+            {**base, "fecha": 4, "tipo_mercado": "RANGO", "resultado": 20},
+            {**base, "fecha": 5, "estado": "ABIERTA", "resultado": -500},
+            {**base, "fecha": 6, "resultado": "NaN"},
+        ]
+        reporte, descartes = evaluar_contextos_cerrados(filas, ventana=3, muestra_minima=3)
+        por_mercado = {r["mercado"]: r for r in reporte}
+        self.assertEqual(por_mercado["TENDENCIA_BAJISTA"]["neto"], -30)
+        self.assertEqual(por_mercado["TENDENCIA_BAJISTA"]["estado_observacion"], "REVISAR_PERDIDAS_CONTEXTUALES")
+        self.assertEqual(por_mercado["RANGO"]["estado_observacion"], "MUESTRA_INSUFICIENTE")
+        self.assertTrue(all(not r["pausa_aplicada"] for r in reporte))
+        self.assertEqual(descartes, {"no_cerrada": 1, "resultado_invalido": 1})
+
+    def test_restringe_la_ventana_y_no_usa_hipoteticos(self):
+        base = {"estado": "CERRADA", "patron": "REACCION", "direccion": "CALL", "tipo_mercado": "RANGO"}
+        filas = [
+            {**base, "fecha": 1, "resultado": -25},
+            {**base, "fecha": 2, "resultado": 20},
+            {**base, "fecha": 3, "resultado": 20, "resultado_hipotetico": "LOSS"},
+        ]
+        reporte, _ = evaluar_contextos_cerrados(filas, ventana=2, muestra_minima=2)
+        self.assertEqual((reporte[0]["muestra"], reporte[0]["neto"]), (2, 40))
+        self.assertEqual(reporte[0]["estado_observacion"], "SIN_PERDIDA_NETA_EN_VENTANA")
+
+    def test_acepta_fechas_textuales_del_historial_live(self):
+        base = {"estado": "CERRADA", "patron": "CHOCH", "direccion": "CALL", "tipo_mercado": "TENDENCIA_ALCISTA"}
+        reporte, descartes = evaluar_contextos_cerrados([
+            {**base, "fecha": "2026-09-15 15:55:06", "resultado": -25},
+            {**base, "fecha": "2026-09-15 15:56:06", "resultado": 20},
+        ], ventana=2, muestra_minima=2)
+        self.assertEqual((reporte[0]["muestra"], reporte[0]["neto"]), (2, -5))
+        self.assertEqual(descartes, {})
+
+    def test_registro_post_cierre_sombra_acotado_no_veta(self):
+        registro = {}
+        op = {"patron": "CHOCH", "tipo_mercado": "TENDENCIA_ALCISTA", "direccion": "CALL"}
+        self.assertTrue(registrar_cierre_sombra(registro, op, -25, max_por_contexto=2))
+        self.assertTrue(registrar_cierre_sombra(registro, op, 20, max_por_contexto=2))
+        self.assertTrue(registrar_cierre_sombra(registro, op, -25, max_por_contexto=2))
+        self.assertEqual(list(registro[("CHOCH", "TENDENCIA_ALCISTA", "CALL")]), [20, -25])
+        self.assertFalse(registrar_cierre_sombra(registro, op, float("nan"), max_por_contexto=2))
+        self.assertFalse(registrar_cierre_sombra(registro, {**op, "tipo_mercado": ""}, -25))
+        self.assertEqual(len(registro), 1)
+        resumen = resumen_cierre_sombra(registro, op)
+        self.assertEqual((resumen["n"], resumen["wins"], resumen["losses"], resumen["neto"]), (2, 1, 1, -5))
+        self.assertTrue(resumen["solo_observacion"])
+
+
+if __name__ == "__main__":
+    unittest.main()
