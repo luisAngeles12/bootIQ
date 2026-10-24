@@ -572,6 +572,7 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
             "core4_reglas_previas",
             "core4_invalidacion_dura_previa",
             "core4_invalidacion_selectiva_previa",
+            "core4_motivos_selectivos_previos",
             "core4_mercado_valido_previo",
             "core4_elegible_estructural_previo",
             "core4_elegible_rescate_previo",
@@ -580,7 +581,10 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         for campo in campos_core4_previos:
             senal[campo] = resultado_oficial_detalle.get(
                 campo,
-                "" if campo == "core4_reglas_previas" else False,
+                "" if campo in {
+                    "core4_reglas_previas",
+                    "core4_motivos_selectivos_previos",
+                } else False,
             )
 
         # =====================================================
