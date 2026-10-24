@@ -2312,6 +2312,25 @@ def convertir_decision_v3_a_oficial(
         or core4_invalidacion_r6_solo
     )
 
+    # Auditoría causal: preservar cada invalidación que realmente
+    # se activó, sin alterar la condición selectiva anterior.
+    core4_motivos_selectivos_previos = "|".join(
+        nombre
+        for nombre, activo in (
+            ("R6_SOPORTE_SIN_RUPTURA", core4_invalidacion_r6_sr),
+            ("R1_VENDEDOR_DEBIL", core4_invalidacion_r1_vendedor_debil),
+            ("R1_ZONA_GENERICA", core4_invalidacion_r1_zona_generica),
+            ("R1_MERCADO_RANGO", core4_invalidacion_r1_mercado_rango),
+            ("R1_CONTRADICCION_PA", core4_invalidacion_r1_contradiccion_pa),
+            ("R1_RECHAZO_VENDEDOR_PUT_DEBIL", core4_invalidacion_r1_rechazo_vendedor_put_debil),
+            ("R1_R2_ENVOLVENTE", core4_invalidacion_r1_r2_envolvente),
+            ("R2_SOLO", core4_invalidacion_r2_solo),
+            ("R1_R2_BAJISTA_DEBIL", core4_invalidacion_r1_r2_bajista_debil),
+            ("R6_SOLO", core4_invalidacion_r6_solo),
+        )
+        if activo
+    )
+
     core4_match = (
         core4_r1
         or core4_r2
@@ -2436,6 +2455,7 @@ def convertir_decision_v3_a_oficial(
         "core4_invalidacion_selectiva_previa": bool(
             core4_invalidacion_selectiva
         ),
+        "core4_motivos_selectivos_previos": core4_motivos_selectivos_previos,
         "core4_mercado_valido_previo": bool(
             core4_mercado_valido
         ),
