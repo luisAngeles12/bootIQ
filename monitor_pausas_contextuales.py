@@ -4,7 +4,7 @@ Nunca escribe cooldowns, no consulta al bróker y no veta operaciones.
 Solo considera operaciones efectivamente cerradas con resultado monetario.
 """
 
-from collections import defaultdict
+from collections import defaultdict, deque
 from datetime import datetime, timezone
 from math import isfinite
 
@@ -82,3 +82,30 @@ def evaluar_contextos_cerrados(filas, *, ventana, muestra_minima):
             "pausa_aplicada": False,
         })
     return sorted(reporte, key=lambda x: (x["neto"], -x["muestra"])), dict(descartes)
+
+
+def registrar_cierre_sombra(registro, operacion, resultado, *, max_por_contexto=100):
+    """Actualiza telemetría acotada tras un cierre persistido.
+
+    No consulta disco, no crea bloqueos y no modifica la operación original.
+    El llamador es responsable de invocarla una sola vez por cierre confirmado.
+    """
+    if not isinstance(registro, dict) or not isinstance(operacion, dict):
+        return False
+    if not isinstance(max_por_contexto, int) or max_por_contexto < 1:
+        return False
+    clave = tuple(str(operacion.get(k) or "").strip().upper() for k in ("patron", "tipo_mercado", "direccion"))
+    if not all(clave):
+        return False
+    try:
+        pnl = float(resultado)
+    except (TypeError, ValueError):
+        return False
+    if not isfinite(pnl) or pnl == 0:
+        return False
+    serie = registro.get(clave)
+    if not isinstance(serie, deque) or serie.maxlen != max_por_contexto:
+        serie = deque(serie or (), maxlen=max_por_contexto)
+        registro[clave] = serie
+    serie.append(pnl)
+    return True
