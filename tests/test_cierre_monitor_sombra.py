@@ -5,7 +5,7 @@ import types
 import unittest
 from pathlib import Path
 
-from monitor_pausas_contextuales import registrar_cierre_sombra
+from monitor_pausas_contextuales import registrar_cierre_sombra, resumen_cierre_sombra
 
 
 def preparar_revisor(*, persistir, registrar=registrar_cierre_sombra):
@@ -25,6 +25,7 @@ def preparar_revisor(*, persistir, registrar=registrar_cierre_sombra):
         "obtener_resultado_operacion": lambda op: None,
         "actualizar_historial_cierre": persistir,
         "registrar_cierre_sombra": registrar,
+        "resumen_cierre_sombra": resumen_cierre_sombra,
         "guardar_operaciones_pendientes": lambda: guardados.append(True),
     }
     exec(compilado, ambiente)
