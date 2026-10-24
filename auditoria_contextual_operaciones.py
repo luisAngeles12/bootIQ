@@ -48,13 +48,31 @@ def _limite_inferior_wilson(wins, total, z=1.96):
 
 
 def _clase_senal(fila):
+    estado = _texto(fila.get("estado_operacion"))
     decision = _texto(fila.get("cerebro_unico_decision"))
     motivo = _texto(fila.get("motivo_ejecucion"))
-    if decision == "NO_OPERAR" or motivo.startswith("CANCELADA_"):
-        return "CANCELADA_HIPOTETICA"
-    if motivo == "OPERACION_DIRECTA_CEREBRO_UNICO":
+    if estado == "OPERADA_DIRECTA":
         return "DIRECTA_SIMULADA"
+    if estado == "OPERADA_PROTOCOLO":
+        return "PROTOCOLO_SIMULADO"
+    if estado.startswith("CANCELADA_") or decision == "NO_OPERAR" or motivo.startswith("CANCELADA_"):
+        return "CANCELADA_HIPOTETICA"
     return "OTRA_SENAL_EVALUADA"
+
+
+def _resultado_contextual(fila, clase):
+    """Usa resultado ejecutado en las entradas, hipotético en descartes.
+
+    Es especialmente importante para protocolos: su entrada puede ocurrir
+    varias velas después de la señal y diferir de resultado_hipotetico.
+    Si falta el campo correspondiente, no inventamos ni sustituimos el dato.
+    """
+    campo = (
+        "resultado"
+        if clase in {"DIRECTA_SIMULADA", "PROTOCOLO_SIMULADO"}
+        else "resultado_hipotetico"
+    )
+    return _resultado(fila.get(campo)), campo
 
 
 def agrupar_factores_estrategia(filas, minimo=10):
@@ -75,11 +93,12 @@ def agrupar_factores_estrategia(filas, minimo=10):
     for fila in filas:
         if not isinstance(fila, dict):
             continue
-        resultado = _resultado(fila.get("resultado_hipotetico"))
+        clase = _clase_senal(fila)
+        resultado, _ = _resultado_contextual(fila, clase)
         if resultado is None:
             continue
         base = (
-            _clase_senal(fila),
+            clase,
             _texto(fila.get("patron")) or "SIN_PATRON",
             _texto(fila.get("direccion")) or "SIN_DIRECCION",
         )
@@ -96,7 +115,12 @@ def agrupar_factores_estrategia(filas, minimo=10):
             "clase": clase, "patron": patron, "direccion": direccion,
             "dimension": dimension, "valor": valor, "total": total,
             "wins": conteo["wins"], "losses": conteo["losses"],
-            "wr_hipotetico": round(100 * conteo["wins"] / total, 2),
+            "wr_contextual": round(100 * conteo["wins"] / total, 2),
+            "fuente_resultado": (
+                "resultado"
+                if clase in {"DIRECTA_SIMULADA", "PROTOCOLO_SIMULADO"}
+                else "resultado_hipotetico"
+            ),
             "limite_inferior_wilson": _limite_inferior_wilson(conteo["wins"], total),
         })
     return sorted(salida, key=lambda x: (-x["total"], x["clase"], x["patron"], x["dimension"]))
@@ -116,7 +140,7 @@ def agrupar_senales_por_contexto(filas, minimo=1):
 
         clase = _clase_senal(fila)
 
-        resultado = _resultado(fila.get("resultado_hipotetico"))
+        resultado, _ = _resultado_contextual(fila, clase)
         if resultado is None:
             continue
 
@@ -143,7 +167,12 @@ def agrupar_senales_por_contexto(filas, minimo=1):
             "total": total,
             "wins": conteo["wins"],
             "losses": conteo["losses"],
-            "wr_hipotetico": round(100 * conteo["wins"] / total, 2),
+            "wr_contextual": round(100 * conteo["wins"] / total, 2),
+            "fuente_resultado": (
+                "resultado"
+                if clave[0] in {"DIRECTA_SIMULADA", "PROTOCOLO_SIMULADO"}
+                else "resultado_hipotetico"
+            ),
         })
 
     return sorted(
@@ -156,7 +185,7 @@ def imprimir_reporte_contextual(filas, minimo=10, limite=25):
     """Imprime evidencia descriptiva, sin umbrales ni recomendaciones de veto."""
     reporte = agrupar_senales_por_contexto(filas, minimo=minimo)
     print("\n===== AUDITORIA CONTEXTUAL SOMBRA / EJECUCION =====")
-    print("Resultados de canceladas y protocolos no confirmados son HIPOTETICOS.")
+    print("Entradas ejecutadas en simulación: RESULTADO; canceladas: HIPOTETICO.")
     print("No inferir ventaja productiva ni modificar reglas desde este reporte.")
     print("Grupos con muestra >=", minimo, "| mostrados:", min(limite, len(reporte)))
     for fila in reporte[:limite]:
@@ -164,16 +193,18 @@ def imprimir_reporte_contextual(filas, minimo=10, limite=25):
             fila["clase"], "|", fila["patron"], "|", fila["direccion"],
             "|", fila["mercado"], "|", fila["tendencia"],
             "| n:", fila["total"], "| W:", fila["wins"],
-            "| L:", fila["losses"], "| WR hipotético:", fila["wr_hipotetico"],
+            "| L:", fila["losses"], "| WR:", fila["wr_contextual"],
+            "| fuente:", fila["fuente_resultado"],
         )
     print("\n===== FACTORES POR ESTRATEGIA (ANALISIS EXPLORATORIO) =====")
     print("RSI en rangos descriptivos; Wilson 95% no es garantía futura.")
-    print("Canceladas y no ejecutadas: resultados HIPOTETICOS; sin efecto operativo.")
+    print("Canceladas/no ejecutadas: HIPOTETICOS; operadas: RESULTADO de entrada.")
     for fila in agrupar_factores_estrategia(filas, minimo=minimo)[:limite]:
         print(
             fila["clase"], "|", fila["patron"], "|", fila["direccion"],
             "|", fila["dimension"], "=", fila["valor"],
             "| n:", fila["total"], "| W:", fila["wins"],
-            "| L:", fila["losses"], "| WR hipotético:", fila["wr_hipotetico"],
+            "| L:", fila["losses"], "| WR:", fila["wr_contextual"],
+            "| fuente:", fila["fuente_resultado"],
             "| Wilson inferior:", fila["limite_inferior_wilson"],
         )
