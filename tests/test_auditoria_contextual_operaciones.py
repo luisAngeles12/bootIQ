@@ -3,6 +3,7 @@ import unittest
 from auditoria_contextual_operaciones import (
     agrupar_senales_por_contexto,
     agrupar_factores_estrategia,
+    auditar_integridad_contextual,
 )
 
 
@@ -91,6 +92,17 @@ class AuditoriaContextualTests(unittest.TestCase):
     def test_no_sustituye_resultado_ausente_por_hipotetico(self):
         filas = [{"estado_operacion": "OPERADA_PROTOCOLO", "resultado": "", "resultado_hipotetico": "WIN"}]
         self.assertEqual(agrupar_senales_por_contexto(filas), [])
+
+    def test_integridad_informa_perdidas_de_cobertura_sin_imputar(self):
+        filas = [
+            {"estado_operacion": "OPERADA_PROTOCOLO", "resultado": "", "resultado_hipotetico": "WIN"},
+            {"estado_operacion": "CANCELADA_CEREBRO", "resultado_hipotetico": "LOSS", "patron": "CHOCH", "tipo_mercado": "RANGO"},
+            {"estado_operacion": "OPERADA_DIRECTA", "resultado": "WIN", "patron": "CHOCH", "tipo_mercado": "RANGO", "estado_tendencia": "ALCISTA_NORMAL", "accion_precio": "RECHAZO"},
+        ]
+        resultado = auditar_integridad_contextual(filas)
+        self.assertEqual((resultado["total"], resultado["con_resultado_valido"], resultado["sin_resultado_valido"]), (3, 2, 1))
+        self.assertEqual((resultado["sin_mercado"], resultado["sin_tendencia"], resultado["sin_accion_precio"]), (0, 1, 1))
+        self.assertEqual(resultado["por_clase"]["PROTOCOLO_SIMULADO"], 1)
 
 
 if __name__ == "__main__":
