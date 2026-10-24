@@ -21,6 +21,61 @@ PATRONES = {
     "estado_tendencia": re.compile(r"\bTENDENCIA AVANZADA:\s*([A-Z_]+)\b", re.I),
 }
 
+ETIQUETAS_DIAGNOSTICO = {
+    "VALIDACION_MERCADO": "VALIDACIÓN MERCADO:",
+    "ACCION_PRECIO": "ACCION PRECIO:",
+    "ZONA_SR": "ZONA SR:",
+}
+
+
+def diagnosticos_historicos(fila):
+    """Extrae motivos literales entre secciones, no interpreta señales futuras."""
+    texto = str(fila.get("razon") or "")
+    etiquetas = tuple(ETIQUETAS_DIAGNOSTICO.values()) + ("RUPTURA:",)
+    salida = {}
+    for nombre, etiqueta in ETIQUETAS_DIAGNOSTICO.items():
+        inicio = texto.find(etiqueta)
+        if inicio < 0:
+            salida[nombre] = "SIN_DATOS"
+            continue
+        comienzo = inicio + len(etiqueta)
+        finales = [texto.find(", " + otra, comienzo) for otra in etiquetas if otra != etiqueta]
+        finales = [indice for indice in finales if indice >= 0]
+        fin = min(finales) if finales else len(texto)
+        salida[nombre] = texto[comienzo:fin].strip() or "SIN_DATOS"
+    return salida
+
+
+def agrupar_cierres_por_diagnostico(filas, minimo=1):
+    """Analiza argumentos técnicos almacenados en cierres, sin generar vetos."""
+    grupos = defaultdict(lambda: {"wins": 0, "losses": 0, "pnl": 0.0})
+    for fila in filas:
+        if not isinstance(fila, dict) or str(fila.get("estado") or "").upper() != "CERRADA":
+            continue
+        try:
+            pnl = float(fila.get("resultado"))
+        except (TypeError, ValueError):
+            continue
+        if pnl == 0:
+            continue
+        motivos = diagnosticos_historicos(fila)
+        for dimension, valor in motivos.items():
+            clave = (dimension, valor)
+            dato = grupos[clave]
+            dato["wins" if pnl > 0 else "losses"] += 1
+            dato["pnl"] += pnl
+    salida = []
+    for (dimension, valor), dato in grupos.items():
+        n = dato["wins"] + dato["losses"]
+        if n >= minimo:
+            salida.append({
+                "dimension": dimension, "valor": valor, "total": n,
+                "wins": dato["wins"], "losses": dato["losses"],
+                "wr": round(100 * dato["wins"] / n, 2),
+                "pnl": round(dato["pnl"], 2),
+            })
+    return sorted(salida, key=lambda x: (-x["total"], x["dimension"], x["valor"]))
+
 
 def contexto_historico(fila):
     """Prioriza campos estructurados; fallback literal y auditable al texto."""
@@ -93,6 +148,13 @@ def imprimir_informe_historial(ruta="historial_bot.csv", minimo=1):
             "| n:", g["total"], "| W:", g["wins"], "| L:", g["losses"],
             "| WR:", g["wr"], "| PNL:", g["pnl"],
             "| contexto desde texto:", g["contexto_recuperado_texto"],
+        )
+    print("===== DIAGNOSTICOS TECNICOS PRE-ENTRADA DE LOS CIERRES =====")
+    for d in agrupar_cierres_por_diagnostico(filas, minimo=max(3, minimo)):
+        print(
+            d["dimension"], "|", d["valor"],
+            "| n:", d["total"], "| W:", d["wins"],
+            "| L:", d["losses"], "| PNL:", d["pnl"],
         )
 
 
