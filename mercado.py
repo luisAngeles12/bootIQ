@@ -1,75 +1,918 @@
 import time
 
 import estado
-from config import CANDLE_TIME, CANDLE_NUMBER, TIPOS_MERCADO
+from config import CANDLE_TIME, TIPOS_MERCADO
 from utils import activo_en_cooldown
 from conexion import reconectar_iq
 from contexto_mercado import detectar_tipo_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
 
 MAX_ACTIVOS_ANALIZAR = 20
 MIN_SCORE_ACTIVO = 55
+FALLOS_OPEN_TIME_ANTES_RECONECTAR = 2
+PRESUPUESTO_PRECARGA_D76D = 8.0
+VELAS_CACHE_CERRADAS = 181
+VELAS_CACHE_SOLICITADAS = VELAS_CACHE_CERRADAS + 1
+TIMEOUT_CANDLES_SCAN = 12.0
+DRENAJE_CANDLES_SCAN = 2.0
+
+
+def _timestamp_servidor_iq():
+    """
+    Timestamp de referencia para decidir qué velas
+    están realmente cerradas.
+    """
+    try:
+        ts = estado.Iq.get_server_timestamp()
+        ts = float(ts)
+
+        # Protección por si alguna versión devuelve ms.
+        if ts > 10_000_000_000:
+            ts /= 1000.0
+
+        return ts
+
+    except Exception:
+        return time.time()
+
+
+def _solo_velas_cerradas(candles):
+    """
+    Conserva únicamente periodos realmente cerrados.
+
+    D7.6C:
+    no dependemos de borrar ciegamente candles[-1].
+    La vela cuyo 'from' coincide con el periodo actual
+    todavía está abierta y se excluye.
+    """
+    if not candles:
+        return []
+
+    ahora = _timestamp_servidor_iq()
+
+    inicio_vela_actual = (
+        int(ahora // CANDLE_TIME)
+        * CANDLE_TIME
+    )
+
+    cerradas = []
+
+    for c in candles:
+        try:
+            desde = int(float(c["from"]))
+
+            if desde >= inicio_vela_actual:
+                continue
+
+            cerradas.append(c)
+
+        except Exception:
+            continue
+
+    cerradas = sorted(
+        cerradas,
+        key=lambda x: int(float(x["from"]))
+    )
+
+    return cerradas
+
+
+def _tramo_continuo_mas_reciente(candles):
+    if not candles:
+        return []
+
+    por_timestamp = {}
+    for candle in candles:
+        try:
+            timestamp = int(float(candle["from"]))
+        except (KeyError, TypeError, ValueError, OverflowError):
+            continue
+        por_timestamp[timestamp] = candle
+
+    ordenadas = [
+        (timestamp, por_timestamp[timestamp])
+        for timestamp in sorted(por_timestamp)
+    ]
+    if not ordenadas:
+        return []
+
+    inicio_tramo = len(ordenadas) - 1
+    while (
+        inicio_tramo > 0
+        and ordenadas[inicio_tramo][0]
+        - ordenadas[inicio_tramo - 1][0]
+        == CANDLE_TIME
+    ):
+        inicio_tramo -= 1
+
+    return [
+        candle
+        for _, candle in ordenadas[inicio_tramo:]
+    ]
+
+
+
+def _diagnosticar_huecos_velas(candles):
+    """Resumen acotado; solo tiempos, nunca precios ni datos sensibles."""
+    tiempos = []
+    for candle in candles or []:
+        try:
+            tiempos.append(int(float(candle["from"])))
+        except (KeyError, TypeError, ValueError, OverflowError):
+            continue
+    tiempos = sorted(set(tiempos))
+    huecos = [
+        (anterior, siguiente, (siguiente - anterior) // CANDLE_TIME - 1)
+        for anterior, siguiente in zip(tiempos, tiempos[1:])
+        if siguiente - anterior != CANDLE_TIME
+    ]
+    return {
+        "unicas": len(tiempos),
+        "primera": tiempos[0] if tiempos else None,
+        "ultima": tiempos[-1] if tiempos else None,
+        "huecos": len(huecos),
+        "saltos_recientes": huecos[-3:],
+    }
+
+
+def _buffer_velas_integro(candles):
+    """
+    D9.53 — Valida cantidad y continuidad temporal.
+    No comprueba vigencia; esa validación es independiente.
+    """
+    if not candles or len(candles) < VELAS_CACHE_CERRADAS:
+        return False
+
+    try:
+        tiempos = [
+            int(float(c["from"]))
+            for c in candles
+        ]
+
+        return all(
+            siguiente - anterior == CANDLE_TIME
+            for anterior, siguiente
+            in zip(tiempos, tiempos[1:])
+        )
+
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return False
+
+
+def _seleccionar_top_con_buffers(candidatos):
+    # 20 es el maximo, no un minimo: operar con 1..20 candidatos validos.
+    objetivo = min(MAX_ACTIVOS_ANALIZAR, len(candidatos))
+    listos = [
+        item
+        for item in candidatos
+        if _buffer_velas_integro(
+            estado.velas_cache.get(
+                item["activo"],
+                [],
+            )
+        )
+    ]
+    return objetivo, listos[:objetivo], len(listos)
+
+
+def _publicar_top_con_buffers(top):
+    if not (0 < len(top) <= MAX_ACTIVOS_ANALIZAR) or any(
+        not _buffer_velas_integro(estado.velas_cache.get(item["activo"], []))
+        for item in top
+    ):
+        raise ValueError("TOP_INCOMPLETO_O_BUFFER_INVALIDO")
+    estado.activos_cache = list(top)
+    nombres_publicados = {
+        item["activo"]
+        for item in top
+    }
+    estado.velas_cache = {
+        activo: velas
+        for activo, velas
+        in estado.velas_cache.items()
+        if activo in nombres_publicados
+    }
+    estado.ultima_actualizacion_activos = time.time()
+    estado.refresh_activos_top_pendiente = []
+    estado.refresh_activos_buffer_indice = 0
+    estado.refresh_activos_gap_descartados = set()
+    return list(estado.activos_cache)
+
+
+def _datos_desde_velas(candles):
+    if not candles or len(candles) < VELAS_CACHE_CERRADAS:
+        return None
+
+    # D9.42: impedir que huecos temporales lleguen al análisis.
+    try:
+        timestamps = [int(float(c["from"])) for c in candles]
+        if any(
+            siguiente - anterior != CANDLE_TIME
+            for anterior, siguiente in zip(timestamps, timestamps[1:])
+        ):
+            return None
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return None
+
+    return {
+        "from": [
+            int(float(c["from"]))
+            for c in candles
+        ],
+        "open": [
+            float(c["open"])
+            for c in candles
+        ],
+        "close": [
+            float(c["close"])
+            for c in candles
+        ],
+        "high": [
+            float(c["max"])
+            for c in candles
+        ],
+        "low": [
+            float(c["min"])
+            for c in candles
+        ],
+    }
+
+
+def precargar_velas_activos(
+    activos,
+    podar_cache=True,
+):
+    """
+    D7.6C — carga pesada FUERA de 0-10.
+
+    Cada activo nuevo recibe las 130 velas cerradas
+    requeridas por el análisis LIVE. Se solicitan 131
+    para cubrir la vela que IQ puede devolver abierta.
+    """
+    if not hasattr(estado, "velas_cache"):
+        estado.velas_cache = {}
+
+    if not activos:
+        return {
+            "nuevos": 0,
+            "reutilizados": 0,
+            "errores": 0,
+        }
+
+    inicio_precarga = time.perf_counter()
+    # Solo descartamos del ranking pendiente candidatos cuyo historial
+    # acredita una discontinuidad estructural, nunca fallos de red.
+    descartados_gap = getattr(
+        estado, "refresh_activos_gap_descartados", set()
+    )
+    nombres_actuales = []
+    activos_vistos = set()
+
+    for item in activos:
+        try:
+            if isinstance(item, dict):
+                activo = item.get("activo")
+            else:
+                activo = str(item)
+
+            if (activo and activo not in activos_vistos
+                    and (podar_cache or activo not in descartados_gap)):
+                nombres_actuales.append(activo)
+                activos_vistos.add(activo)
+
+        except Exception:
+            pass
+
+    # Evitar crecimiento indefinido del buffer
+    # únicamente cuando trabajamos con el TOP
+    # oficialmente publicado.
+    #
+    # Durante la preparación de un TOP pendiente
+    # conservamos también los buffers del TOP actual.
+    if podar_cache:
+        estado.velas_cache = {
+            activo: velas
+            for activo, velas
+            in estado.velas_cache.items()
+            if activo in activos_vistos
+        }
+
+    nuevos = 0
+    reutilizados = 0
+    errores = 0
+    procesados = 0
+
+    objetivo_cerradas = VELAS_CACHE_CERRADAS
+
+    cursor_inicio = 0
+    if not podar_cache and nombres_actuales:
+        cursor_inicio = (
+            int(
+                getattr(
+                    estado,
+                    "refresh_activos_buffer_indice",
+                    0,
+                )
+                or 0
+            )
+            % len(nombres_actuales)
+        )
+        nombres_actuales = (
+            nombres_actuales[cursor_inicio:]
+            + nombres_actuales[:cursor_inicio]
+        )
+
+    for activo in nombres_actuales:
+
+        demora_precarga_d76d = (
+            time.perf_counter()
+            - inicio_precarga
+        )
+
+        if (
+            demora_precarga_d76d
+            >= PRESUPUESTO_PRECARGA_D76D
+        ):
+            print(
+                "D7.6D BUFFER PRECARGA "
+                "INTERRUMPIDA POR PRESUPUESTO |",
+                "demora:",
+                round(
+                    demora_precarga_d76d,
+                    3,
+                ),
+            )
+            break
+
+        existentes = estado.velas_cache.get(
+            activo,
+            [],
+        )
+
+        if _buffer_velas_integro(existentes):
+            reutilizados += 1
+            procesados += 1
+            continue
+
+        try:
+            conectado = (
+                estado.Iq is not None
+                and estado.Iq.check_connect()
+            )
+
+            if not conectado:
+                errores += 1
+                print(
+                    "D7.6D BUFFER ACTIVO FALLIDO |",
+                    "activo:",
+                    activo,
+                    "| causa: IQ_DESCONECTADO",
+                    flush=True,
+                )
+                break
+
+            candles = estado.Iq.get_candles(
+                activo,
+                CANDLE_TIME,
+                VELAS_CACHE_SOLICITADAS,
+                time.time(),
+                # D9.98: acotar dentro del presupuesto de precarga.
+                # En PRACTICE, 3 s agotaban el plazo y cerraban
+                # el websocket ante respuestas sin drenaje.
+                timeout=min(6.0, PRESUPUESTO_PRECARGA_D76D - 1.0),
+                drain_timeout=1.0,
+            )
+
+            cerradas = _solo_velas_cerradas(
+                candles
+            )
+
+            tramo_continuo = _tramo_continuo_mas_reciente(
+                cerradas
+            )
+            buffer_descargado = tramo_continuo[
+                -objetivo_cerradas:
+            ]
+
+            if not _buffer_velas_integro(buffer_descargado):
+                # Un mercado con suficientes velas históricas pero con
+                # un hueco entre sesiones no puede alcanzar el mínimo
+                # continuo hasta que transcurra mucho tiempo. No debe
+                # bloquear el TOP mientras existan otros elegibles.
+                diagnostico = _diagnosticar_huecos_velas(cerradas)
+                if (
+                    not podar_cache
+                    and isinstance(candles, list)
+                    and len(cerradas) > 0
+                    and (
+                        diagnostico["huecos"] > 0
+                        or len(cerradas) < objetivo_cerradas
+                    )
+                ):
+                    descartados_gap.add(activo)
+                    estado.refresh_activos_gap_descartados = descartados_gap
+                errores += 1
+                cantidad = (
+                    len(buffer_descargado)
+                    if buffer_descargado
+                    else 0
+                )
+                print(
+                    "D7.6D BUFFER ACTIVO FALLIDO |",
+                    "activo:",
+                    activo,
+                    "| causa: VELAS_INSUFICIENTES_O_DISCONTINUAS",
+                    "| velas cerradas:",
+                    len(cerradas),
+                    "| tramo continuo reciente:",
+                    len(tramo_continuo),
+                    "| minimo requerido:",
+                    VELAS_CACHE_CERRADAS,
+                    "| diagnostico_huecos:",
+                    diagnostico,
+                    flush=True,
+                )
+                procesados += 1
+                continue
+
+            estado.velas_cache[activo] = buffer_descargado
+
+            nuevos += 1
+            procesados += 1
+
+        except Exception as e:
+            errores += 1
+            procesados += 1
+            print(
+                "D7.6D BUFFER ACTIVO FALLIDO |",
+                "activo:",
+                activo,
+                "| causa:",
+                type(e).__name__,
+                str(e),
+                flush=True,
+            )
+
+    if not podar_cache and nombres_actuales:
+        estado.refresh_activos_buffer_indice = (
+            cursor_inicio + procesados
+        ) % len(nombres_actuales)
+
+    demora = (
+        time.perf_counter()
+        - inicio_precarga
+    )
+
+    print(
+        "D7.6C BUFFER VELAS PRECALENTADO |",
+        "nuevos:", nuevos,
+        "| reutilizados:", reutilizados,
+        "| errores:", errores,
+        "| activos buffer:",
+        len(estado.velas_cache),
+        "| segundos:",
+        round(demora, 3),
+    )
+
+    return {
+        "nuevos": nuevos,
+        "reutilizados": reutilizados,
+        "errores": errores,
+    }
 
 
 def obtener_velas(activo):
-    
-    
+    """
+    D7.6C — LIVE incremental.
+
+    Dentro de la ventana operativa no descarga de nuevo
+    la historia completa del activo.
+
+    Usa:
+        buffer histórico de 181 cerradas
+        +
+        4 velas recientes de IQ.
+
+    Después fusiona por timestamp y vuelve a conservar
+    exactamente las 181 velas cerradas que requiere el análisis.
+    """
     try:
-        if not estado.Iq.check_connect():
-            reconectar_iq()
+        try:
+            conectado = (
+                estado.Iq is not None
+                and estado.Iq.check_connect()
+            )
+        except Exception:
+            conectado = False
+
+        if not conectado:
+            print(
+                "D7.6D FALLO VELAS DETALLE | activo:",
+                activo,
+                "| causa: SIN_CONEXION",
+                flush=True,
+            )
+            estado.fallo_velas_ronda_d76d = True
             return None
 
-        candles = estado.Iq.get_candles(
+        if not hasattr(estado, "velas_cache"):
+            estado.velas_cache = {}
+
+        buffer_actual = estado.velas_cache.get(
             activo,
-            CANDLE_TIME,
-            CANDLE_NUMBER,
-            time.time()
+            [],
         )
 
-        if not candles or len(candles) < 130:
+        # Regla D7.6C:
+        # la descarga pesada debe haber ocurrido antes
+        # mediante precargar_velas_activos().
+        if len(buffer_actual) < VELAS_CACHE_CERRADAS:
+            print(
+                "D7.6D FALLO VELAS DETALLE | activo:",
+                activo,
+                "| causa: BUFFER_INSUFICIENTE",
+                "| buffer:",
+                len(buffer_actual),
+                flush=True,
+            )
+            estado.velas_cache.pop(activo, None)
             return None
 
-        candles = sorted(candles, key=lambda x: x["from"])
-        candles = candles[:-1]
+        # Usar desde la primera consulta el mismo reloj
+        # oficial de IQ que después valida la última vela cerrada.
+        # Evita una llamada adicional provocada únicamente por
+        # desfase entre el reloj local de Windows y el broker.
+        ahora = _timestamp_servidor_iq()
 
-        return {
-            "open": [float(c["open"]) for c in candles],
-            "close": [float(c["close"]) for c in candles],
-            "high": [float(c["max"]) for c in candles],
-            "low": [float(c["min"]) for c in candles],
-        }
+        inicio_get_candles_d76d = (
+            time.perf_counter()
+        )
+
+        try:
+            recientes = estado.Iq.get_candles(
+                activo,
+                CANDLE_TIME,
+                4,
+                ahora,
+                timeout=3.0,
+                drain_timeout=1.0,
+            )
+
+        finally:
+            demora_get_candles_d76d = (
+                time.perf_counter()
+                - inicio_get_candles_d76d
+            )
+
+            if not hasattr(
+                estado,
+                "telemetria_get_candles_d76d",
+            ):
+                estado.telemetria_get_candles_d76d = {}
+
+            estado.telemetria_get_candles_d76d[
+                activo
+            ] = demora_get_candles_d76d
+
+        if recientes is None:
+            print(
+                "D7.6D FALLO VELAS DETALLE | activo:",
+                activo,
+                "| causa: GET_CANDLES_NONE",
+                flush=True,
+            )
+            estado.velas_cache.pop(activo, None)
+            try:
+                conectado = estado.Iq.check_connect()
+            except Exception:
+                conectado = False
+            if not conectado:
+                estado.fallo_velas_ronda_d76d = True
+            return None
+
+        recientes_cerradas = (
+            _solo_velas_cerradas(recientes)
+        )
+
+        # Fusionar sin duplicar timestamps.
+        por_timestamp = {}
+
+        for c in buffer_actual:
+            try:
+                por_timestamp[
+                    int(float(c["from"]))
+                ] = c
+            except Exception:
+                continue
+
+        for c in recientes_cerradas:
+            try:
+                por_timestamp[
+                    int(float(c["from"]))
+                ] = c
+            except Exception:
+                continue
+
+        fusionadas = [
+            por_timestamp[k]
+            for k in sorted(por_timestamp)
+        ]
+        fusionadas = _tramo_continuo_mas_reciente(
+            fusionadas
+        )
+
+        objetivo_cerradas = VELAS_CACHE_CERRADAS
+
+        fusionadas = fusionadas[
+            -objetivo_cerradas:
+        ]
+
+        if len(fusionadas) < VELAS_CACHE_CERRADAS:
+            print(
+                "D7.6D FALLO VELAS DETALLE | activo:",
+                activo,
+                "| causa: FUSION_INSUFICIENTE",
+                "| velas:",
+                len(fusionadas),
+                flush=True,
+            )
+            estado.velas_cache.pop(activo, None)
+            return None
+
+        # ------------------------------------------------
+        # PARIDAD TEMPORAL
+        # ------------------------------------------------
+        # Reutilizamos el timestamp IQ que originó la consulta.
+        inicio_actual = (
+            int(ahora // CANDLE_TIME)
+            * CANDLE_TIME
+        )
+
+        ultima_esperada = (
+            inicio_actual
+            - CANDLE_TIME
+        )
+
+        ultima_buffer = int(
+            float(
+                fusionadas[-1]["from"]
+            )
+        )
+
+        # D7.6D:
+        # si IQ respondió con velas recientes pero atrasadas,
+        # hacer UN único reintento usando el reloj del servidor
+        # IQ como endtime. Nunca aceptar el bloque viejo.
+        if ultima_buffer < ultima_esperada:
+            try:
+                recientes_retry = estado.Iq.get_candles(
+                    activo,
+                    CANDLE_TIME,
+                    4,
+                    ahora,
+                    timeout=3.0,
+                    drain_timeout=1.0,
+                )
+            except Exception:
+                recientes_retry = None
+
+            recientes_retry_cerradas = (
+                _solo_velas_cerradas(recientes_retry)
+            )
+
+            for c in recientes_retry_cerradas:
+                try:
+                    por_timestamp[
+                        int(float(c["from"]))
+                    ] = c
+                except Exception:
+                    continue
+
+            fusionadas = [
+                por_timestamp[k]
+                for k in sorted(por_timestamp)
+            ]
+            fusionadas = _tramo_continuo_mas_reciente(
+                fusionadas
+            )[-objetivo_cerradas:]
+
+            ultima_buffer = int(
+                float(fusionadas[-1]["from"])
+            )
+
+            print(
+                "D7.6D RETRY VELAS RECIENTES | activo:",
+                activo,
+                "| ultima_retry:",
+                ultima_buffer,
+                "| esperada:",
+                ultima_esperada,
+                flush=True,
+            )
+
+        # Nunca analizar una vela vieja como si fuese
+        # la última cerrada. Tampoco aceptar una vela futura.
+        if ultima_buffer != ultima_esperada:
+            print(
+                "D7.6D FALLO VELAS DETALLE | activo:",
+                activo,
+                "| causa: DESFASE_ULTIMA_CERRADA",
+                "| ultima_buffer:",
+                ultima_buffer,
+                "| esperada:",
+                ultima_esperada,
+                "| delta:",
+                ultima_buffer - ultima_esperada,
+                "| ahora_iq:",
+                round(ahora, 3),
+                "| recientes:",
+                [
+                    int(float(c["from"]))
+                    for c in recientes_cerradas[-4:]
+                    if "from" in c
+                ],
+                flush=True,
+            )
+            estado.velas_cache.pop(activo, None)
+            return None
+
+        estado.velas_cache[activo] = fusionadas
+
+        return _datos_desde_velas(
+            fusionadas
+        )
 
     except Exception as e:
         texto = str(e).lower()
-
-        if (
+        error_conexion = (
             "need reconnect" in texto
             or "connection is already closed" in texto
             or "websocket" in texto
+            or "connection" in texto
+        )
+        try:
+            conectado = (
+                estado.Iq is not None
+                and estado.Iq.check_connect()
+            )
+        except Exception:
+            conectado = False
+
+        if error_conexion or not conectado:
+            estado.fallo_velas_ronda_d76d = True
+            return None
+
+        estado.velas_cache.pop(activo, None)
+
+        if (
+            "not found" in texto
+            or "consts" in texto
         ):
-            reconectar_iq()
-            return None
+            estado.activos_invalidos.add(
+                activo
+            )
 
-        if "not found" in texto or "consts" in texto:
-            estado.activos_invalidos.add(activo)
-            return None
-
+        print(
+            "D7.6D FALLO VELAS DETALLE | activo:",
+            activo,
+            "| causa: EXCEPCION_OBTENER_VELAS",
+            "| detalle:",
+            str(e),
+            flush=True,
+        )
         return None
 
 
-def evaluar_estabilidad_activo(asset, tipo):
+def evaluar_estabilidad_activo(
+    asset,
+    tipo,
+    timeout_candles=TIMEOUT_CANDLES_SCAN,
+    drain_timeout_candles=DRENAJE_CANDLES_SCAN,
+):
+    """
+    Evalúa un activo para el filtro inicial.
+
+    Si el websocket se pierde durante el scanner:
+    - lanza ConnectionError;
+    - obtener_activos() aborta toda la ronda;
+    - bot.py recupera el control y reconecta.
+
+    NO cambia:
+    - filtros;
+    - scores;
+    - tendencia;
+    - calidad;
+    - ranking de activos.
+    """
+
     try:
+        # ------------------------------------------
+        # DESCARTES DETERMINISTAS ANTES DE IQ
+        # ------------------------------------------
+        # Estos formatos nunca son elegibles.
+        # No consumir get_candles() para rechazarlos
+        # después ni arriesgar un timeout innecesario.
+        if "-op" in asset:
+            estado.metricas_ronda[
+                "scan_formato_op"
+            ] += 1
+            return None
+
+        if "/" in asset:
+            estado.metricas_ronda[
+                "scan_formato_combinado"
+            ] += 1
+            return None
+
+        # ------------------------------------------
+        # CONEXIÓN ANTES DE PEDIR VELAS
+        # ------------------------------------------
+        try:
+            conectado = (
+                estado.Iq is not None
+                and estado.Iq.check_connect()
+            )
+        except Exception:
+            conectado = False
+
+        if not conectado:
+            raise ConnectionError(
+                "IQ_DESCONECTADO_DURANTE_SCAN"
+            )
+
         candles = estado.Iq.get_candles(
             asset,
             CANDLE_TIME,
             120,
-            time.time()
+            time.time(),
+            timeout=timeout_candles,
+            drain_timeout=drain_timeout_candles,
         )
 
-        if not candles or len(candles) < 80:
+        # get_candles puede devolver None tanto por un
+        # timeout puntual como por una desconexión.
+        # Solo abortamos todo el scanner si realmente
+        # el websocket quedó desconectado.
+        if candles is None:
+            try:
+                conectado = (
+                    estado.Iq is not None
+                    and estado.Iq.check_connect()
+                )
+            except Exception:
+                conectado = False
+
+            if not conectado:
+                # D7.20:
+                # La petición de candles YA fue intentada.
+                # Si esa petición dejó la sesión desconectada,
+                # el scanner no debe volver al mismo activo
+                # después de reconectar.
+                raise ConnectionError(
+                    "IQ_DESCONECTADO_TRAS_GET_CANDLES_SCAN"
+                )
+
+            # Timeout/dato no disponible, pero websocket vivo.
+            estado.metricas_ronda[
+                "scan_candles_none"
+            ] += 1
+
             return None
 
-        candles = sorted(candles, key=lambda x: x["from"])
-        candles = candles[:-1]
+        if len(candles) < 80:
+            estado.metricas_ronda[
+                "scan_velas_insuficientes"
+            ] += 1
+            return None
+
+        # ==========================================
+        # PARIDAD SCANNER/LIVE
+        # ==========================================
+        # No eliminar candles[-1] a ciegas.
+        # Usamos la misma autoridad temporal que LIVE
+        # para identificar velas realmente cerradas.
+        candles = _solo_velas_cerradas(candles)
+
+        if len(candles) < 80:
+            estado.metricas_ronda[
+                "scan_velas_insuficientes"
+            ] += 1
+            return None
+
+        # El scanner/backtest historico trabaja con
+        # 119 velas cerradas.
+        candles = candles[-119:]
+
+        # Paridad temporal con BACKTEST: solo velas consecutivas.
+        for anterior, siguiente in zip(candles, candles[1:]):
+            if (
+                int(float(siguiente["from"]))
+                - int(float(anterior["from"]))
+                != CANDLE_TIME
+            ):
+                estado.metricas_ronda[
+                    "scan_continuidad_temporal"
+                ] += 1
+                return None
 
         candles_contexto = []
 
@@ -82,57 +925,98 @@ def evaluar_estabilidad_activo(asset, tipo):
                 "min": float(c["min"])
             })
 
-        tipo_mercado, razon_mercado = detectar_tipo_mercado(candles_contexto)
-        diagnostico = diagnostico_calidad_mercado(candles_contexto)
-        tendencia = diagnostico_tendencia_avanzada(candles_contexto)
+        tipo_mercado, razon_mercado = (
+            detectar_tipo_mercado(
+                candles_contexto
+            )
+        )
 
-        calidad = diagnostico.get("calidad", "SIN_DATOS")
-        score = diagnostico.get("score", 0)
+        diagnostico = (
+            diagnostico_calidad_mercado(
+                candles_contexto
+            )
+        )
 
-        estado_tendencia = tendencia.get("estado_tendencia", "INDEFINIDA")
-        fuerza_tendencia = tendencia.get("fuerza_tendencia", 0)
+        tendencia = (
+            diagnostico_tendencia_avanzada(
+                candles_contexto
+            )
+        )
+
+        calidad = diagnostico.get(
+            "calidad",
+            "SIN_DATOS"
+        )
+
+        score = diagnostico.get(
+            "score",
+            0
+        )
+
+        estado_tendencia = tendencia.get(
+            "estado_tendencia",
+            "INDEFINIDA"
+        )
+
+        fuerza_tendencia = tendencia.get(
+            "fuerza_tendencia",
+            0
+        )
 
         # =========================
         # FILTRO DURO DE ACTIVOS
         # =========================
 
-        # Evitar activos tipo -op por ahora.
-        # En tu reporte muchos -op entran pero no son los más estables.
-        if "-op" in asset:
-            return None
-
-        # Evitar activos combinados tipo TESLA/FORD, GOOGLE/MSFT, etc.
-        if "/" in asset:
-            return None
-
         # Solo trabajar mercados limpios o normales.
-        if calidad not in ["LIMPIO", "NORMAL"]:
+        if calidad not in [
+            "LIMPIO",
+            "NORMAL"
+        ]:
+            estado.metricas_ronda[
+                "scan_calidad"
+            ] += 1
             return None
 
-        # Score mínimo real del diagnóstico de mercado.
+        # Score mínimo real del diagnóstico.
         if score < 52:
+            estado.metricas_ronda[
+                "scan_score"
+            ] += 1
             return None
 
         # Evitar mercados sin dirección clara.
         if estado_tendencia == "INDEFINIDA":
+            estado.metricas_ronda[
+                "scan_tendencia_indefinida"
+            ] += 1
             return None
 
-        # Evitar tendencias débiles.
-        if "DEBIL" in estado_tendencia and score < 62:
-           return None
-        # Evitar agotamiento como filtro inicial.
-        # Si está agotada, puede servir para contra tendencia,
-        # pero no para elegir los mejores activos base.
-        # if "AGOTADA" in estado_tendencia:
-        #     return None
+        # Evitar tendencias débiles solo cuando
+        # el score también es insuficiente.
+        if (
+            "DEBIL" in estado_tendencia
+            and score < 62
+        ):
+            estado.metricas_ronda[
+                "scan_tendencia_debil"
+            ] += 1
+            return None
 
         # Evitar rangos sin tendencia fuerte/normal.
-        if tipo_mercado == "RANGO" and "FUERTE" not in estado_tendencia and "NORMAL" not in estado_tendencia:
+        if (
+            tipo_mercado == "RANGO"
+            and "FUERTE" not in estado_tendencia
+            and "NORMAL" not in estado_tendencia
+        ):
+            estado.metricas_ronda[
+                "scan_rango_debil"
+            ] += 1
             return None
 
         # =========================
         # SCORE FINAL DE SELECCIÓN
         # =========================
+
         score_filtro = score
 
         if calidad == "LIMPIO":
@@ -147,7 +1031,10 @@ def evaluar_estabilidad_activo(asset, tipo):
         if "NORMAL" in estado_tendencia:
             score_filtro += 15
 
-        if tipo_mercado in ["TENDENCIA_ALCISTA", "TENDENCIA_BAJISTA"]:
+        if tipo_mercado in [
+            "TENDENCIA_ALCISTA",
+            "TENDENCIA_BAJISTA"
+        ]:
             score_filtro += 15
 
         if tipo_mercado == "RANGO":
@@ -168,6 +1055,12 @@ def evaluar_estabilidad_activo(asset, tipo):
             "fuerza_tendencia": fuerza_tendencia
         }
 
+    except ConnectionError:
+        # MUY IMPORTANTE:
+        # no convertir la desconexión en "activo malo".
+        # Se propaga para abortar obtener_activos().
+        raise
+
     except Exception as e:
         texto = str(e).lower()
 
@@ -175,103 +1068,1455 @@ def evaluar_estabilidad_activo(asset, tipo):
             "need reconnect" in texto
             or "connection is already closed" in texto
             or "websocket" in texto
+            or "connection" in texto
         ):
-            reconectar_iq()
+            raise ConnectionError(
+                "IQ_DESCONECTADO_DURANTE_SCAN"
+            ) from e
+
+        if (
+            "not found" in texto
+            or "consts" in texto
+        ):
+            estado.activos_invalidos.add(
+                asset
+            )
+
+            estado.metricas_ronda[
+                "scan_invalido_api"
+            ] += 1
+
             return None
 
-        if "not found" in texto or "consts" in texto:
-            estado.activos_invalidos.add(asset)
-            return None
+        estado.metricas_ronda[
+            "scan_excepcion"
+        ] += 1
 
         return None
+def refrescar_activos_incremental():
+    """
+    D7.6D — refresh incremental del universo de activos.
 
-def obtener_activos():
-    # Usar caché reciente, pero siempre limitado y limpio.
-    if time.time() - estado.ultima_actualizacion_activos < 300 and estado.activos_cache:
+    Regla:
+    - la cache oficial sigue operando;
+    - cada ventana de mantenimiento procesa una parte;
+    - nunca se publica un TOP parcial;
+    - solo al terminar TODO el universo se ordena y
+      reemplaza estado.activos_cache de forma atomica.
+    """
+
+    presupuesto_refresh_d76d = 12.0
+
+    inicio_ventana_d76d = (
+        time.perf_counter()
+    )
+
+    cache_previa = list(
+        getattr(
+            estado,
+            "activos_cache",
+            [],
+        )
+        or []
+    )
+
+    # Sin cache oficial estamos en BOOTSTRAP.
+    # El mismo scanner incremental construye el
+    # primer universo sin publicar resultados parciales.
+
+    def devolver_cache_oficial():
+        cache_filtrada = [
+            item
+            for item in cache_previa
+            if (
+                item["activo"]
+                not in estado.activos_invalidos
+                and not activo_en_cooldown(
+                    item["activo"]
+                )
+            )
+        ]
+
+        cache_filtrada = sorted(
+            cache_filtrada,
+            key=lambda x: x.get(
+                "score_filtro",
+                0,
+            ),
+            reverse=True,
+        )
+
+        estado.metricas_ronda[
+            "uso_cache_activos"
+        ] = 1
+
+        estado.metricas_ronda[
+            "compatibles_antes_top"
+        ] = len(
+            cache_filtrada
+        )
+
+        return cache_filtrada[
+            :MAX_ACTIVOS_ANALIZAR
+        ]
+
+    def reset_refresh_incremental():
+        estado.refresh_activos_en_progreso = (
+            False
+        )
+
+        estado.refresh_activos_universo = []
+
+        estado.refresh_activos_indice = 0
+
+        estado.refresh_activos_candidatos = []
+
+        estado.refresh_activos_vistos = set()
+
+        estado.refresh_activos_inicio = 0.0
+
+    def recuperar_open_time_sin_respuesta():
+        estado.fallos_open_time = (
+            getattr(estado, "fallos_open_time", 0)
+            + 1
+        )
+
+        if (
+            estado.fallos_open_time
+            < FALLOS_OPEN_TIME_ANTES_RECONECTAR
+        ):
+            return
+
+        estado.fallos_open_time = 0
+        # OPEN_TIME puede fallar aun con websocket y velas sanas.
+        # No destruir los buffers oficiales por una sola API auxiliar.
+        try:
+            socket_activo = estado.Iq is not None and estado.Iq.check_connect()
+        except Exception:
+            socket_activo = False
+        # Un timeout de OPEN_TIME no demuestra que el transporte haya
+        # caido. Tampoco cuando aun no existe TOP oficial (bootstrap).
+        # Evitar destruir una conexion que sigue entregando mensajes;
+        # el siguiente ciclo puede reintentar la consulta auxiliar.
+        if socket_activo:
+            print(
+                "D9.98 OPEN_TIME SIN RESPUESTA | "
+                "SESION ACTIVA; SE CONSERVA CONEXION Y CACHE",
+                flush=True,
+            )
+            return
+        print(
+            "D7.6D OPEN_TIME SIN RESPUESTA "
+            "CONSECUTIVA | FORZANDO RECONECCION IQ",
+            flush=True,
+        )
+        if not reconectar_iq(forzar=True):
+            print(
+                "D7.6D RECONECCION IQ FALLIDA "
+                "TRAS OPEN_TIME SIN RESPUESTA",
+                flush=True,
+            )
+
+    # ==========================================
+    # CONEXION
+    # ==========================================
+    try:
+        conectado = (
+            estado.Iq is not None
+            and estado.Iq.check_connect()
+        )
+    except Exception:
+        conectado = False
+
+    if not conectado:
+        print(
+            "D7.6D REFRESH INCREMENTAL "
+            "PAUSADO POR DESCONEXION | "
+            "SE CONSERVA PROGRESO",
+            flush=True,
+        )
+
+        return []
+    # ==========================================
+    # D7.6D — TOP PENDIENTE DE BUFFER
+    # ==========================================
+    #
+    # Si el scanner completo ya terminó,
+    # preparamos buffers para los candidatos
+    # ordenados por score y usamos reservas cuando
+    # algún candidato no entrega velas.
+    #
+    # Mientras tanto, activos_cache sigue siendo
+    # el TOP oficial anterior.
+    #
+    top_pendiente = list(
+        getattr(
+            estado,
+            "refresh_activos_top_pendiente",
+            [],
+        )
+        or []
+    )
+
+    if top_pendiente:
+
+        descartados_gap = getattr(
+            estado, "refresh_activos_gap_descartados", set()
+        )
+        elegibles = [
+            item for item in top_pendiente
+            if item["activo"] not in descartados_gap
+        ]
+        precargar_velas_activos(
+            elegibles,
+            podar_cache=False,
+        )
+
+        # La precarga puede identificar nuevos saltos estructurales.
+        descartados_gap = getattr(
+            estado, "refresh_activos_gap_descartados", set()
+        )
+        elegibles = [
+            item for item in top_pendiente
+            if item["activo"] not in descartados_gap
+        ]
+        if not elegibles:
+            estado.refresh_activos_top_pendiente = []
+            estado.refresh_activos_buffer_indice = 0
+            return []
+
+        (
+            objetivo_top,
+            top_publicable,
+            candidatos_listos,
+        ) = _seleccionar_top_con_buffers(
+            elegibles
+        )
+
+        if not objetivo_top or len(top_publicable) < objetivo_top:
+            print(
+                "D7.6D TOP PENDIENTE BUFFER |"
+                "listos:",
+                len(top_publicable),
+                "/",
+                objetivo_top,
+                "| candidatos evaluados:",
+                len(elegibles),
+                "| descartados por huecos:",
+                len(descartados_gap),
+                "| candidatos sin buffer:",
+                len(elegibles)
+                - candidatos_listos,
+            )
+
+            return []
+
+        # ==========================================
+        # PUBLICACION ATOMICA REAL
+        # ==========================================
+        #
+        # Solamente ahora el TOP nuevo puede
+        # convertirse en el TOP oficial.
+        #
+        activos_publicados = _publicar_top_con_buffers(
+            top_publicable
+        )
+
+        print(
+            "D7.6D TOP NUEVO PUBLICADO CON BUFFER |",
+            "top:",
+            len(activos_publicados),
+            "| candidatos evaluados:",
+            len(top_pendiente),
+            "| buffers:",
+            len(top_publicable),
+        )
+
+        return activos_publicados
+    # Recuperar primero los buffers del TOP oficial tras reconectar.
+    # Evita pedir OPEN_TIME y volver a escanear todo el universo
+    # mientras la cache publicada sigue sin velas. Nunca publica
+    # datos incompletos; bot.py mantiene su gate de integridad.
+    top_oficial = list(getattr(estado, "activos_cache", []) or [])
+    if (
+        not getattr(estado, "refresh_activos_en_progreso", False)
+        and top_oficial
+        and any(
+            not _buffer_velas_integro(estado.velas_cache.get(item["activo"], []))
+            for item in top_oficial
+        )
+    ):
+        # Separar descartes previos: solo interesan los huecos
+        # estructurales confirmados durante esta recuperación.
+        descartados_antes = set(getattr(
+            estado, "refresh_activos_gap_descartados", set()
+        ))
+        precargar_velas_activos(top_oficial, podar_cache=False)
+        descartados_despues = set(getattr(
+            estado, "refresh_activos_gap_descartados", set()
+        ))
+        nuevos_huecos = descartados_despues - descartados_antes
+
+        recuperados = sum(
+            _buffer_velas_integro(estado.velas_cache.get(item["activo"], []))
+            for item in top_oficial
+        )
+        print(
+            "D9.98 RECUPERACION CACHE OFICIAL |",
+            "listos:", recuperados,
+            "/", len(top_oficial),
+            flush=True,
+        )
+
+        # Los descartes estructurales pueden haberse registrado en
+        # una ventana anterior. Si siguen sin buffer, no bloquear el
+        # rescan solo porque no sean descartes NUEVOS.
+        sin_buffer = {
+            item["activo"] for item in top_oficial
+            if not _buffer_velas_integro(
+                estado.velas_cache.get(item["activo"], [])
+            )
+        }
+        huecos_confirmados = sin_buffer & descartados_despues
+        if not nuevos_huecos and not huecos_confirmados:
+            return []
+
+        # No publicar un TOP reducido ni utilizar velas discontinuas.
+        # El scanner completo existente reconstruirá el ranking.
+        print(
+            "D9.98 TOP OFICIAL CON HUECOS ESTRUCTURALES |",
+            "activos:", sorted(nuevos_huecos),
+            "| INICIANDO ESCANEO COMPLETO",
+            flush=True,
+        )
+
+    # ==========================================
+    # INICIAR NUEVO CICLO
+    # ==========================================
+    if not getattr(
+        estado,
+        "refresh_activos_en_progreso",
+        False,
+    ):
+        try:
+            abiertos = (
+                estado.Iq.get_all_open_time(
+                    timeout=5.0
+                )
+            )
+
+        except Exception as e:
+            print(
+                "D7.6D REFRESH INCREMENTAL "
+                "OPEN_TIME FALLIDO |",
+                e,
+            )
+
+            reset_refresh_incremental()
+            recuperar_open_time_sin_respuesta()
+
+            return devolver_cache_oficial()
+
+        try:
+            conectado = (
+                estado.Iq is not None
+                and estado.Iq.check_connect()
+            )
+        except Exception:
+            conectado = False
+
+        if not conectado:
+            reset_refresh_incremental()
+            return []
+
+        if not abiertos:
+            print(
+                "D7.6D REFRESH INCREMENTAL "
+                "SIN OPEN_TIME | "
+                "SE CONSERVA CACHE OFICIAL"
+            )
+
+            reset_refresh_incremental()
+            recuperar_open_time_sin_respuesta()
+
+            return devolver_cache_oficial()
+
+        estado.fallos_open_time = 0
+
+        universo = []
+
+        # IMPORTANTE:
+        # no hacemos deduplicacion aqui.
+        #
+        # obtener_activos() originalmente solo agrega
+        # un activo a 'vistos' cuando supera el filtro.
+        # Preservamos exactamente ese comportamiento.
+        for tipo in TIPOS_MERCADO:
+
+            mercados = abiertos.get(
+                tipo,
+                {},
+            )
+
+            for asset, info in mercados.items():
+
+                if not info.get(
+                    "open",
+                    False,
+                ):
+                    continue
+
+                universo.append({
+                    "activo": asset,
+                    "tipo": tipo,
+                })
+
+        if not universo:
+            print(
+                "D7.6D REFRESH INCREMENTAL "
+                "UNIVERSO VACIO | "
+                "SE CONSERVA CACHE OFICIAL"
+            )
+
+            reset_refresh_incremental()
+
+            return devolver_cache_oficial()
+
+        estado.refresh_activos_universo = (
+            universo
+        )
+
+        estado.refresh_activos_indice = 0
+
+        estado.refresh_activos_candidatos = []
+
+        estado.refresh_activos_vistos = set()
+
+        estado.refresh_activos_inicio = (
+            time.time()
+        )
+
+        estado.refresh_activos_en_progreso = (
+            True
+        )
+
+        print(
+            "D7.6D REFRESH INCREMENTAL INICIADO |",
+            "universo:",
+            len(universo),
+        )
+
+    # ==========================================
+    # CONTINUAR CICLO EXISTENTE
+    # ==========================================
+    universo = (
+        estado.refresh_activos_universo
+    )
+
+    total_universo = len(
+        universo
+    )
+
+    while (
+        estado.refresh_activos_indice
+        < total_universo
+    ):
+        demora = (
+            time.perf_counter()
+            - inicio_ventana_d76d
+        )
+
+        restante = (
+            presupuesto_refresh_d76d
+            - demora
+        )
+
+        # Dejamos margen para devolver el control
+        # antes de consumir la vela siguiente.
+        if restante <= 4.05:
+            print(
+                "D7.6D REFRESH INCREMENTAL PAUSADO |",
+                "indice:",
+                estado.refresh_activos_indice,
+                "/",
+                total_universo,
+                "| candidatos:",
+                len(
+                    estado.refresh_activos_candidatos
+                ),
+                "| demora:",
+                round(
+                    demora,
+                    3,
+                ),
+            )
+
+            return devolver_cache_oficial()
+
+        item = universo[
+            estado.refresh_activos_indice
+        ]
+
+        # Marcamos esta posicion como procesada.
+        estado.refresh_activos_indice += 1
+
+        asset = item[
+            "activo"
+        ]
+
+        tipo = item[
+            "tipo"
+        ]
+
+        # ------------------------------------------
+        # CONEXION ENTRE ACTIVOS
+        # ------------------------------------------
+        try:
+            conectado = (
+                estado.Iq is not None
+                and estado.Iq.check_connect()
+            )
+        except Exception:
+            conectado = False
+
+        if not conectado:
+            estado.refresh_activos_indice = max(
+                0,
+                estado.refresh_activos_indice - 1,
+            )
+
+            print(
+                "D7.6D REFRESH INCREMENTAL "
+                "PAUSADO DURANTE SCAN |",
+                "reintento_indice:",
+                estado.refresh_activos_indice,
+                "/",
+                total_universo,
+                "| progreso conservado",
+            )
+
+            return []
+
+        estado.metricas_ronda[
+            "mercados_abiertos_recorridos"
+        ] += 1
+
+        # MISMA LOGICA DE 'vistos'
+        # que obtener_activos().
+        if (
+            asset
+            in estado.refresh_activos_vistos
+        ):
+            estado.metricas_ronda[
+                "duplicados_omitidos"
+            ] += 1
+            continue
+
+        if (
+            asset
+            in estado.activos_invalidos
+        ):
+            estado.metricas_ronda[
+                "descartados_invalidos"
+            ] += 1
+            continue
+
+        # El cooldown es transitorio (20 s) y se aplica
+        # al consumir el TOP en la ventana 0-10. No debe
+        # congelarse dentro de una caché que puede vivir
+        # varios minutos.
+        estado.metricas_ronda[
+            "activos_evaluados_filtro"
+        ] += 1
+        # D7.6D — separar presupuesto del scanner
+        # de la salud de la conexión.
+        #
+        # Un activo lento no debe declarar muerto el
+        # websocket después de solo 0.25-0.75 s.
+        #
+        # Usar el presupuesto acotado predeterminado de
+        # get_candles para no invalidar sesiones lentas
+        # tras solo unos segundos sin respuesta.
+        timeout_activo_d76d = (
+            TIMEOUT_CANDLES_SCAN
+        )
+        drenaje_activo_d76d = (
+            DRENAJE_CANDLES_SCAN
+        )
+
+        try:
+            evaluado = (
+                evaluar_estabilidad_activo(
+                    asset,
+                    tipo,
+                    timeout_candles=(
+                        timeout_activo_d76d
+                    ),
+                    drain_timeout_candles=(
+                        drenaje_activo_d76d
+                    ),
+                )
+            )
+
+        except ConnectionError as e:
+            causa_conexion = str(e)
+
+            # D7.20:
+            # Si la conexión ya estaba caída ANTES de pedir
+            # candles, esta posición todavía no fue realmente
+            # procesada y debe reintentarse.
+            #
+            # Si get_candles YA fue intentado y esa petición
+            # dejó la sesión desconectada, mantener el índice
+            # avanzado evita que el mismo activo vuelva a
+            # derribar la sesión inmediatamente tras reconectar.
+            if (
+                causa_conexion
+                != "IQ_DESCONECTADO_TRAS_GET_CANDLES_SCAN"
+            ):
+                estado.refresh_activos_indice = max(
+                    0,
+                    estado.refresh_activos_indice - 1,
+                )
+                accion_indice = "REINTENTAR_MISMO_ACTIVO"
+            else:
+                accion_indice = "CONTINUAR_SIGUIENTE_ACTIVO"
+
+            print(
+                "D7.6D REFRESH INCREMENTAL "
+                "PAUSADO POR CONEXION |",
+                asset,
+                "| indice:",
+                estado.refresh_activos_indice,
+                "| accion:",
+                accion_indice,
+                "| causa:",
+                causa_conexion,
+                "| progreso conservado",
+            )
+
+            return []
+
+        if evaluado is None:
+            estado.metricas_ronda[
+                "descartados_sin_datos"
+            ] += 1
+            continue
+
+        if (
+            evaluado.get(
+                "score_filtro",
+                0,
+            )
+            < MIN_SCORE_ACTIVO
+        ):
+            estado.metricas_ronda[
+                "descartados_score"
+            ] += 1
+            continue
+
+        estado.refresh_activos_candidatos.append(
+            evaluado
+        )
+        # Igual que el scanner original:
+        # solo entra en vistos si fue aceptado.
+        estado.refresh_activos_vistos.add(
+            asset
+        )
+
+    # ==========================================
+    # UNIVERSO COMPLETO
+    # ==========================================
+    candidatos = list(
+        estado.refresh_activos_candidatos
+    )
+
+    candidatos = sorted(
+        candidatos,
+        key=lambda x: x.get(
+            "score_filtro",
+            0,
+        ),
+        reverse=True,
+    )
+
+    estado.metricas_ronda[
+        "compatibles_antes_top"
+    ] = len(
+        candidatos
+    )
+
+    # Desglose causal del escaneo: no modifica elegibilidad ni scores.
+    # Los contadores son acumulados por metricas_ronda.
+    resumen_descartes_d998 = {
+        nombre: estado.metricas_ronda.get(nombre, 0)
+        for nombre in (
+            "activos_evaluados_filtro",
+            "scan_candles_none",
+            "scan_velas_insuficientes",
+            "scan_continuidad_temporal",
+            "scan_calidad",
+            "scan_score",
+            "scan_tendencia_indefinida",
+            "scan_tendencia_debil",
+            "scan_rango_debil",
+            "scan_invalido_api",
+            "scan_excepcion",
+            "descartados_sin_datos",
+            "descartados_score",
+            "descartados_invalidos",
+            "duplicados_omitidos",
+        )
+    }
+    print(
+        "D9.98 SCAN CAUSAS TOP20 |",
+        "compatibles:", len(candidatos),
+        "| requeridos:", MAX_ACTIVOS_ANALIZAR,
+        "| contadores_ronda:", resumen_descartes_d998,
+        flush=True,
+    )
+
+    top_nuevo = candidatos[
+        :MAX_ACTIVOS_ANALIZAR
+    ]
+
+    demora_ciclo = (
+        time.time()
+        - float(
+            getattr(
+                estado,
+                "refresh_activos_inicio",
+                time.time(),
+            )
+            or time.time()
+        )
+    )
+
+    if top_nuevo:
+
+        # ==========================================
+        # D7.6D — TOP COMPLETO PENDIENTE DE BUFFER
+        # ==========================================
+        #
+        # El universo terminó al 100%, pero todavía
+        # NO publicamos el nuevo TOP.
+        #
+        # Deben existir buffers suficientes para
+        # completar el TOP desde el ranking completo.
+        #
+        estado.refresh_activos_top_pendiente = list(
+            candidatos
+        )
+        estado.refresh_activos_gap_descartados = set()
+
+        print(
+            "D7.6D REFRESH INCREMENTAL COMPLETO |",
+            "universo:",
+            total_universo,
+            "| compatibles:",
+            len(candidatos),
+            "| top:",
+            len(top_nuevo),
+            "| candidatos buffer:",
+            len(candidatos),
+            "| ciclo:",
+            round(
+                demora_ciclo,
+                2,
+            ),
+            "s",
+            "| estado: PENDIENTE_BUFFER",
+        )
+
+        # No devolvemos todavía el TOP nuevo.
+        # activos_cache continúa siendo el TOP
+        # oficial anterior.
+        resultado = []
+
+    else:
+        print(
+            "D7.6D REFRESH INCREMENTAL COMPLETO "
+            "SIN CANDIDATOS |",
+            "compatibles:",
+            len(candidatos),
+            "| requeridos:",
+            MAX_ACTIVOS_ANALIZAR,
+            "| SE CONSERVA CACHE OFICIAL",
+        )
+
+        resultado = devolver_cache_oficial()
+
+    reset_refresh_incremental()
+
+    return resultado
+
+def obtener_activos(
+    solo_cache=False,
+):
+    """
+    Obtiene y ordena los mejores activos.
+
+    Cambio de infraestructura:
+    si IQ se desconecta durante la actualización,
+    se aborta la ronda y se devuelve [] para que
+    bot.py vuelva al inicio del while y reconecte.
+
+    La selección y los scores permanecen iguales.
+    """
+    # ==========================================
+    # D7.6D — PRESUPUESTO TOTAL DEL SCANNER
+    # ==========================================
+    #
+    # Un refresh completo nunca puede apropiarse
+    # de una vela completa.
+    #
+    # Si el presupuesto se agota:
+    # - NO usamos universo parcial;
+    # - NO actualizamos activos_cache;
+    # - reutilizamos la última cache completa.
+    #
+    inicio_scan_d76d = (
+        time.perf_counter()
+    )
+
+    cache_previa_d76d = list(
+        getattr(
+            estado,
+            "activos_cache",
+            [],
+        )
+        or []
+    )
+    # ==========================================
+    # D7.6D — BOOTSTRAP TOP PENDIENTE DE BUFFER
+    # ==========================================
+    #
+    # Si el scanner inicial ya calculó un TOP pero
+    # todavía no existe cache oficial, NO repetimos
+    # el scanner completo.
+    #
+    # Continuamos preparando exactamente ese TOP
+    # hasta que todos sus activos tengan >=130 velas.
+    top_pendiente_bootstrap_d76d = list(
+        getattr(
+            estado,
+            "refresh_activos_top_pendiente",
+            [],
+        )
+        or []
+    )
+
+    if (
+        not cache_previa_d76d
+        and top_pendiente_bootstrap_d76d
+    ):
+        (
+            objetivo_top_d76d,
+            top_publicable_d76d,
+            candidatos_listos_d76d,
+        ) = _seleccionar_top_con_buffers(
+            top_pendiente_bootstrap_d76d
+        )
+
+        if len(top_publicable_d76d) == objetivo_top_d76d:
+            activos_publicados_d76d = (
+                _publicar_top_con_buffers(
+                    top_publicable_d76d
+                )
+            )
+
+            print(
+                "D7.6D BOOTSTRAP TOP PUBLICADO "
+                "CON BUFFER |",
+                "top:",
+                len(activos_publicados_d76d),
+                "| candidatos evaluados:",
+                len(top_pendiente_bootstrap_d76d),
+                "| buffers:",
+                len(top_publicable_d76d),
+            )
+
+            return activos_publicados_d76d
+
+        # En ventana crítica nunca devolver un TOP
+        # todavía incompleto.
+        if solo_cache:
+            return []
+
+        print(
+            "D7.6D BOOTSTRAP TOP PENDIENTE BUFFER |",
+            "listos:",
+            candidatos_listos_d76d,
+            "/",
+            objetivo_top_d76d,
+            "| candidatos evaluados:",
+            len(top_pendiente_bootstrap_d76d),
+        )
+
+        # Fuera de 0-10 bot.py puede seguir llamando
+        # precargar_velas_activos() sobre este mismo TOP.
+        return list(
+            top_pendiente_bootstrap_d76d
+        )
+    # ==========================================
+    # D7.6D — BOOTSTRAP VS REFRESH
+    # ==========================================
+    #
+    # Sin cache previa BootIQ todavía no puede
+    # operar, por lo que permitimos más tiempo
+    # únicamente para construir el primer
+    # universo COMPLETO.
+    #
+    # Una vez existe cache:
+    # cualquier refresh vuelve al presupuesto
+    # estricto de 12 segundos.
+    #
+    if cache_previa_d76d:
+        presupuesto_scan_d76d = 12.0
+    else:
+        presupuesto_scan_d76d = 60.0
+
+    def fallback_cache_scan_d76d(
+        motivo
+    ):
+        print(
+            "D7.6D SCANNER ABORTADO |",
+            motivo,
+            "| modo:",
+            (
+                "REFRESH"
+                if cache_previa_d76d
+                else "BOOTSTRAP"
+            ),
+            "| demora:",
+            round(
+                time.perf_counter()
+                - inicio_scan_d76d,
+                3,
+            ),
+            "| cache previa:",
+            len(cache_previa_d76d),
+        )
+
+        estado.metricas_ronda[
+            "uso_cache_activos"
+        ] = 1
+
+        estado.metricas_ronda[
+            "fallback_cache_api"
+        ] = 1
+
+        cache_filtrada = [
+            item
+            for item
+            in cache_previa_d76d
+            if (
+                item["activo"]
+                not in estado.activos_invalidos
+                and not activo_en_cooldown(
+                    item["activo"]
+                )
+            )
+        ]
+
+        cache_filtrada = sorted(
+            cache_filtrada,
+            key=lambda x: x.get(
+                "score_filtro",
+                0,
+            ),
+            reverse=True,
+        )
+
+        estado.metricas_ronda[
+            "compatibles_antes_top"
+        ] = len(
+            cache_filtrada
+        )
+
+        return cache_filtrada[
+            :MAX_ACTIVOS_ANALIZAR
+        ]
+    # ==========================================
+    # NO ESCANEAR CON WEBSOCKET CAÍDO
+    # ==========================================
+    try:
+        conectado = (
+            estado.Iq is not None
+            and estado.Iq.check_connect()
+        )
+    except Exception:
+        conectado = False
+
+    if not conectado:
+        print(
+            "ESCANEO DE ACTIVOS ABORTADO: "
+            "IQ Option está desconectado.",
+            flush=True
+        )
+        return []
+
+    # ==========================================
+    # CACHÉ RECIENTE
+    # ==========================================
+    if (
+        estado.activos_cache
+        and (
+            solo_cache
+            or (
+                time.time()
+                - estado.ultima_actualizacion_activos
+                < 120
+            )
+        )
+    ):
+        estado.metricas_ronda[
+            "uso_cache_activos"
+        ] = 1
+
         activos_cache_filtrados = [
-            item for item in estado.activos_cache
-            if item["activo"] not in estado.activos_invalidos
-            and not activo_en_cooldown(item["activo"])
+            item
+            for item in estado.activos_cache
+            if (
+                item["activo"]
+                not in estado.activos_invalidos
+                and not activo_en_cooldown(
+                    item["activo"]
+                )
+            )
         ]
 
         activos_cache_filtrados = sorted(
             activos_cache_filtrados,
-            key=lambda x: x.get("score_filtro", 0),
+            key=lambda x: x.get(
+                "score_filtro",
+                0
+            ),
             reverse=True
         )
 
-        return activos_cache_filtrados[:MAX_ACTIVOS_ANALIZAR]
+        estado.metricas_ronda[
+            "compatibles_antes_top"
+        ] = len(activos_cache_filtrados)
 
+        return activos_cache_filtrados[
+            :MAX_ACTIVOS_ANALIZAR
+        ]
+    # ==========================================
+    # D7.6D — MODO SOLO CACHE
+    # ==========================================
+    #
+    # Usado exclusivamente por la ventana
+    # operativa 0-10.
+    #
+    # Si no existe cache, jamás iniciar scanner
+    # desde la ventana crítica.
+    #
+    if solo_cache:
+        return []
     activos = []
     vistos = set()
 
+    # ==========================================
+    # MERCADOS ABIERTOS
+    # ==========================================
     try:
-        abiertos = estado.Iq.get_all_open_time()
-    except Exception as e:
-        print("Error obteniendo mercados abiertos:", e)
-        return estado.activos_cache[:MAX_ACTIVOS_ANALIZAR]
+        abiertos = (
+            estado.Iq.get_all_open_time(
+                timeout=5.0
+            )
+        )
 
+        # D7.6D — recuperación acotada solamente
+        # durante cold-start.
+        #
+        # Si ya existe cache oficial, no hacemos
+        # un segundo bloqueo de hasta 5 segundos:
+        # se conserva la cache y el refresh podrá
+        # intentarse posteriormente.
+        binary_open_d76d = (
+            abiertos.get("binary", {})
+            if abiertos
+            else {}
+        )
+
+        turbo_open_d76d = (
+            abiertos.get("turbo", {})
+            if abiertos
+            else {}
+        )
+
+        open_time_util_d76d = bool(
+            binary_open_d76d
+            or turbo_open_d76d
+        )
+
+        if (
+            not open_time_util_d76d
+            and not getattr(
+                estado,
+                "activos_cache",
+                [],
+            )
+        ):
+            print(
+                "D7.6D BOOTSTRAP OPEN_TIME "
+                "REINTENTO | timeout: 5.0s"
+            )
+
+            time.sleep(0.20)
+
+            abiertos = (
+                estado.Iq.get_all_open_time(
+                    timeout=5.0
+                )
+            )
+
+    except Exception as e:
+        print(
+            "Error obteniendo mercados abiertos:",
+            e
+        )
+
+        try:
+            conectado = (
+                estado.Iq is not None
+                and estado.Iq.check_connect()
+            )
+        except Exception:
+            conectado = False
+
+        if not conectado:
+            print(
+                "ESCANEO ABORTADO POR "
+                "DESCONEXIÓN DE IQ OPTION.",
+                flush=True
+            )
+            return []
+
+        # Si la conexión sigue viva pero la consulta
+        # puntual falló, conservar la caché conocida.
+        estado.metricas_ronda[
+            "uso_cache_activos"
+        ] = 1
+
+        estado.metricas_ronda[
+            "fallback_cache_api"
+        ] = 1
+
+        estado.metricas_ronda[
+            "compatibles_antes_top"
+        ] = len(estado.activos_cache)
+
+        return estado.activos_cache[
+            :MAX_ACTIVOS_ANALIZAR
+        ]
+
+    demora_scan_d76d = (
+        time.perf_counter()
+        - inicio_scan_d76d
+    )
+
+    if (
+        demora_scan_d76d
+        >= presupuesto_scan_d76d
+    ):
+        return fallback_cache_scan_d76d(
+            "PRESUPUESTO AGOTADO "
+            "EN OPEN_TIME"
+        )
+    # get_all_open_time puede devolver estructura vacía
+    # después de un timeout. Primero confirmar que la
+    # conexión siga realmente viva.
+    try:
+        conectado = (
+            estado.Iq is not None
+            and estado.Iq.check_connect()
+        )
+    except Exception:
+        conectado = False
+
+    if not conectado:
+        print(
+            "ESCANEO ABORTADO: conexión perdida "
+            "al consultar mercados abiertos.",
+            flush=True
+        )
+        return []
+
+    if not abiertos:
+        estado.metricas_ronda[
+            "uso_cache_activos"
+        ] = 1
+
+        estado.metricas_ronda[
+            "fallback_cache_api"
+        ] = 1
+
+        estado.metricas_ronda[
+            "compatibles_antes_top"
+        ] = len(estado.activos_cache)
+
+        return estado.activos_cache[
+            :MAX_ACTIVOS_ANALIZAR
+        ]
+
+    # ==========================================
+    # EVALUAR ACTIVOS
+    # ==========================================
     for tipo in TIPOS_MERCADO:
-        mercados = abiertos.get(tipo, {})
+
+        mercados = abiertos.get(
+            tipo,
+            {}
+        )
 
         for asset, info in mercados.items():
-            if not info.get("open", False):
+
+            # ==========================================
+            # D7.6D — PRESUPUESTO ANTES DE CADA ACTIVO
+            # ==========================================
+            demora_scan_d76d = (
+                time.perf_counter()
+                - inicio_scan_d76d
+            )
+
+            restante_scan_d76d = (
+                presupuesto_scan_d76d
+                - demora_scan_d76d
+            )
+
+            if restante_scan_d76d <= 4.05:
+                return fallback_cache_scan_d76d(
+                    "PRESUPUESTO TOTAL AGOTADO"
+                )
+
+            # Si el websocket murió entre dos activos,
+            # cortar inmediatamente. No llamar
+            # get_candles decenas de veces desconectado.
+            try:
+                conectado = (
+                    estado.Iq is not None
+                    and estado.Iq.check_connect()
+                )
+            except Exception:
+                conectado = False
+
+            if not conectado:
+                print(
+                    "ESCANEO ABORTADO DURANTE FILTRO "
+                    "DE ACTIVOS: conexión IQ perdida.",
+                    flush=True
+                )
+                return []
+
+            if not info.get(
+                "open",
+                False
+            ):
                 continue
+
+            estado.metricas_ronda[
+                "mercados_abiertos_recorridos"
+            ] += 1
 
             if asset in vistos:
+                estado.metricas_ronda[
+                    "duplicados_omitidos"
+                ] += 1
                 continue
 
-            if asset in estado.activos_invalidos:
+            if (
+                asset
+                in estado.activos_invalidos
+            ):
+                estado.metricas_ronda[
+                    "descartados_invalidos"
+                ] += 1
                 continue
 
-            if activo_en_cooldown(asset):
-                continue
+            # El cooldown es transitorio (20 s) y se aplica
+            # al consumir el TOP en la ventana 0-10. No debe
+            # congelarse dentro de una caché que puede vivir
+            # varios minutos.
+            estado.metricas_ronda[
+                "activos_evaluados_filtro"
+            ] += 1
 
-            evaluado = evaluar_estabilidad_activo(asset, tipo)
+            try:
+                # D7.6D — misma ventana segura usada
+                # por el refresh incremental.
+                timeout_activo_d76d = (
+                    TIMEOUT_CANDLES_SCAN
+                )
+                drenaje_activo_d76d = (
+                    DRENAJE_CANDLES_SCAN
+                )
+
+                evaluado = (
+                    evaluar_estabilidad_activo(
+                        asset,
+                        tipo,
+                        timeout_candles=(
+                            timeout_activo_d76d
+                        ),
+                        drain_timeout_candles=(
+                            drenaje_activo_d76d
+                        ),
+                    )
+                )
+
+            except ConnectionError:
+                print(
+                    "ESCANEO ABORTADO DURANTE "
+                    "get_candles: conexión IQ perdida.",
+                    flush=True
+                )
+                return []
 
             if evaluado is None:
+                estado.metricas_ronda[
+                    "descartados_sin_datos"
+                ] += 1
                 continue
 
-            if evaluado.get("score_filtro", 0) < MIN_SCORE_ACTIVO:
+            if (
+                evaluado.get(
+                    "score_filtro",
+                    0
+                )
+                < MIN_SCORE_ACTIVO
+            ):
+                estado.metricas_ronda[
+                    "descartados_score"
+                ] += 1
                 continue
 
-            activos.append(evaluado)
-            vistos.add(asset)
+            activos.append(
+                evaluado
+            )
 
+            vistos.add(
+                asset
+            )
+    demora_scan_d76d = (
+        time.perf_counter()
+        - inicio_scan_d76d
+    )
+
+    if (
+        demora_scan_d76d
+        >= presupuesto_scan_d76d
+    ):
+        return fallback_cache_scan_d76d(
+            "PRESUPUESTO AGOTADO "
+            "AL FINAL DEL SCANNER"
+        )
+    # ==========================================
+    # MISMO RANKING / MISMO TOP 20
+    # ==========================================
     activos = sorted(
         activos,
-        key=lambda x: x.get("score_filtro", 0),
+        key=lambda x: x.get(
+            "score_filtro",
+            0
+        ),
         reverse=True
     )
 
-    activos = activos[:MAX_ACTIVOS_ANALIZAR]
+    estado.metricas_ronda[
+        "compatibles_antes_top"
+    ] = len(activos)
 
-    if activos:
-        estado.activos_cache = activos
-        estado.ultima_actualizacion_activos = time.time()
+    candidatos_buffer_d76d = list(activos)
+    activos = activos[
+        :MAX_ACTIVOS_ANALIZAR
+    ]
 
-    print("Activos compatibles filtrados:", len(activos))
-    print("Activos reales analizados:")
+    if 0 < len(activos) <= MAX_ACTIVOS_ANALIZAR:
+        if not cache_previa_d76d:
+            # Bootstrap:
+            # el TOP ya está calculado, pero todavía
+            # NO es operable hasta completar buffers.
+            estado.refresh_activos_top_pendiente = (
+                candidatos_buffer_d76d
+            )
+
+            print(
+                "D7.6D BOOTSTRAP TOP CALCULADO |",
+                "top:",
+                len(activos),
+                "| candidatos buffer:",
+                len(candidatos_buffer_d76d),
+                "| estado: PENDIENTE_BUFFER",
+            )
+
+        else:
+            # Mantener comportamiento existente aquí.
+            estado.activos_cache = list(
+                activos
+            )
+
+            estado.ultima_actualizacion_activos = (
+                time.time()
+            )
+    print(
+        "Activos compatibles filtrados:",
+        len(activos)
+    )
+
+    print(
+        "Activos reales analizados:"
+    )
 
     for item in activos:
         print(
             item["activo"],
             "|",
-            item.get("tipo", "N/A"),
+            item.get(
+                "tipo",
+                "N/A"
+            ),
             "| filtro:",
-            item.get("score_filtro", 0),
+            item.get(
+                "score_filtro",
+                0
+            ),
             "| mercado:",
-            item.get("tipo_mercado", "N/A"),
+            item.get(
+                "tipo_mercado",
+                "N/A"
+            ),
             "| calidad:",
-            item.get("calidad_mercado", "N/A"),
+            item.get(
+                "calidad_mercado",
+                "N/A"
+            ),
             "| score mercado:",
-            item.get("score_mercado", 0),
+            item.get(
+                "score_mercado",
+                0
+            ),
             "| tendencia:",
-            item.get("estado_tendencia", "N/A"),
+            item.get(
+                "estado_tendencia",
+                "N/A"
+            ),
             "| fuerza:",
-            round(item.get("fuerza_tendencia", 0), 2)
+            round(
+                item.get(
+                    "fuerza_tendencia",
+                    0
+                ),
+                2
+            )
         )
 
-    print("Activos ignorados/no soportados:", len(estado.activos_invalidos))
+    print(
+        "Activos ignorados/no soportados:",
+        len(
+            estado.activos_invalidos
+        )
+    )
 
     return activos

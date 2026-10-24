@@ -7,13 +7,18 @@ logging.basicConfig(level=logging.DEBUG,format='%(asctime)s %(message)s')
  
 email=os.getenv("email")
 password=os.getenv("password")
+
+@unittest.skipUnless(
+    os.getenv("IQOPTION_ENABLE_LIVE_TESTS") == "1",
+    "set IQOPTION_ENABLE_LIVE_TESTS=1 to run the broker smoke test",
+)
 class TestCandle(unittest.TestCase):
   
     def test_Candle(self):
         #login
         I_want_money=IQ_Option(email,password)
+        I_want_money.connect()
         I_want_money.change_balance("PRACTICE")
-        I_want_money.reset_practice_balance()
         self.assertEqual(I_want_money.check_connect(), True)
         #start test binary option
         ALL_Asset=I_want_money.get_all_open_time()
@@ -28,4 +33,3 @@ class TestCandle(unittest.TestCase):
         I_want_money.start_candles_stream(ACTIVES,size,10)
         I_want_money.get_realtime_candles(ACTIVES,size)
         I_want_money.stop_candles_stream(ACTIVES,size)
-

@@ -1,3 +1,23 @@
+# confirmacion_entrada.py
+
+# ============================================================
+# CONFIRMACIÓN DE ENTRADA — MODO DIAGNÓSTICO
+# ============================================================
+# False:
+# - calcula el índice técnico completo;
+# - conserva nivel, motivos, vela y microestructura;
+# - NO usa ese índice para CANCELAR o ESPERAR operativamente;
+# - entrada.py conserva la responsabilidad de validar el punto
+#   real de entrada y la microestructura final.
+#
+# True:
+# - restaura temporalmente el comportamiento anterior:
+#   >= 66 ENTRAR
+#   47-65 ESPERAR
+#   < 47 CANCELAR
+CONFIRMACION_ENTRADA_OPERATIVA = False
+
+
 def _txt(v):
     return str(v or "").lower().strip()
 
@@ -7,6 +27,7 @@ def _num(v, defecto=0):
         return float(v)
     except Exception:
         return defecto
+
 
 def _limitar(valor, minimo=0, maximo=100):
     return max(minimo, min(maximo, valor))
@@ -21,7 +42,6 @@ def _analizar_vela_actual(candles):
     c = float(actual["close"])
     h = float(actual["max"])
     l = float(actual["min"])
-
     ac = float(anterior["close"])
     ah = float(anterior["max"])
     al = float(anterior["min"])
@@ -77,14 +97,16 @@ def _analizar_microestructura(candles):
 
         cuerpo = abs(c - o)
 
-        velas.append({
-            "alcista": c > o,
-            "bajista": c < o,
-            "fuerza": cuerpo / rango,
-            "cuerpo": cuerpo,
-            "mecha_sup": h - max(o, c),
-            "mecha_inf": min(o, c) - l,
-        })
+        velas.append(
+            {
+                "alcista": c > o,
+                "bajista": c < o,
+                "fuerza": cuerpo / rango,
+                "cuerpo": cuerpo,
+                "mecha_sup": h - max(o, c),
+                "mecha_inf": min(o, c) - l,
+            }
+        )
 
     if len(velas) < 3:
         return {
@@ -94,9 +116,16 @@ def _analizar_microestructura(candles):
             "fuerza_promedio": 0,
         }
 
-    alcistas = sum(1 for v in velas if v["alcista"])
-    bajistas = sum(1 for v in velas if v["bajista"])
-    fuerza_promedio = sum(v["fuerza"] for v in velas) / len(velas)
+    alcistas = sum(
+        1 for v in velas if v["alcista"]
+    )
+    bajistas = sum(
+        1 for v in velas if v["bajista"]
+    )
+    fuerza_promedio = (
+        sum(v["fuerza"] for v in velas)
+        / len(velas)
+    )
 
     return {
         "ok": True,
@@ -107,19 +136,88 @@ def _analizar_microestructura(candles):
     }
 
 
-def evaluar_confirmacion_entrada(senal, candles, segundo=None):
+def _clasificar_indice_diagnostico(indice):
+    """
+    Conserva exactamente la clasificación histórica del índice,
+    pero solo como diagnóstico cuando la confirmación operativa
+    está desactivada.
+    """
+
+    if indice >= 66:
+        return "ENTRAR", "ALTO"
+
+    if indice >= 47:
+        return "ESPERAR", "MEDIO"
+
+    return "CANCELAR", "BAJO"
+
+
+def _salida_final(
+    indice,
+    motivos,
+    vela,
+    micro,
+):
+    """
+    Separa explícitamente:
+    - diagnóstico real;
+    - contrato operativo.
+
+    Con CONFIRMACION_ENTRADA_OPERATIVA=False, una señal válida no
+    vuelve a ser cancelada/esperada por este índice intermedio.
+    """
+
+    accion_diagnostico, nivel_diagnostico = (
+        _clasificar_indice_diagnostico(indice)
+    )
+
+    if CONFIRMACION_ENTRADA_OPERATIVA:
+        accion_operativa = accion_diagnostico
+        nivel_operativo = nivel_diagnostico
+    else:
+        # Neutral: permite que entrada.py haga las validaciones
+        # concretas posteriores.
+        accion_operativa = "ENTRAR"
+        nivel_operativo = "NEUTRAL"
+
+    return {
+        # Contrato operativo.
+        "accion": accion_operativa,
+        "indice": indice,
+        "nivel": nivel_operativo,
+        "motivos": motivos,
+        "vela": vela,
+        "micro": micro,
+
+        # Diagnóstico real preservado.
+        "accion_diagnostico": accion_diagnostico,
+        "nivel_diagnostico": nivel_diagnostico,
+        "indice_diagnostico": indice,
+        "confirmacion_entrada_operativa": (
+            CONFIRMACION_ENTRADA_OPERATIVA
+        ),
+    }
+
+
+def evaluar_confirmacion_entrada(
+    senal,
+    candles,
+    segundo=None,
+):
     """
     Confirmador técnico de entrada BootIQ.
-    
+
     No decide la estrategia.
     No cambia la dirección.
     No reevalúa la decisión del Cerebro Único.
     No abre operaciones ni guarda pendientes.
-    
-    Solo determina si el momento actual permite:
-    - ENTRAR
-    - ESPERAR
-    - CANCELAR el protocolo
+
+    Con CONFIRMACION_ENTRADA_OPERATIVA=False:
+    - calcula el mismo diagnóstico técnico histórico;
+    - no cancela ni posterga por score;
+    - entrada.py conserva las validaciones concretas finales.
+
+    Las validaciones duras de integridad de datos se mantienen.
     """
 
     if not candles or len(candles) < 4:
@@ -127,55 +225,101 @@ def evaluar_confirmacion_entrada(senal, candles, segundo=None):
             "accion": "ESPERAR",
             "indice": 0,
             "nivel": "SIN_DATOS",
-            "motivos": ["Velas insuficientes."]
+            "motivos": ["Velas insuficientes."],
+            "accion_diagnostico": "ESPERAR",
+            "nivel_diagnostico": "SIN_DATOS",
+            "indice_diagnostico": 0,
+            "confirmacion_entrada_operativa": (
+                CONFIRMACION_ENTRADA_OPERATIVA
+            ),
         }
 
-    direccion = _txt(senal.get("direccion"))
+    direccion = _txt(
+        senal.get("direccion")
+    )
+
+    # Dirección inválida es un error estructural del contrato,
+    # no una opinión de calidad. Se conserva la cancelación.
     if direccion not in ["call", "put"]:
         return {
             "accion": "CANCELAR",
             "indice": 0,
             "nivel": "SIN_DATOS",
-            "motivos": ["Dirección inválida para confirmar entrada."]
+            "motivos": [
+                "Dirección inválida para confirmar entrada."
+            ],
+            "accion_diagnostico": "CANCELAR",
+            "nivel_diagnostico": "SIN_DATOS",
+            "indice_diagnostico": 0,
+            "confirmacion_entrada_operativa": (
+                CONFIRMACION_ENTRADA_OPERATIVA
+            ),
         }
-    patron = _txt(senal.get("patron"))
-    accion_precio = _txt(senal.get("accion_precio"))
-    tipo_setup = _txt(senal.get("tipo_setup"))
-    subtipo_setup = _txt(senal.get("subtipo_setup"))
-    
-    ruptura_confirmada = bool(
-        senal.get("ruptura_confirmada", False)
+
+    patron = _txt(
+        senal.get("patron")
     )
-    
-    entrada_confirmada = bool(
-        senal.get("entrada_confirmada", False)
+    accion_precio = _txt(
+        senal.get("accion_precio")
+    )
+    tipo_setup = _txt(
+        senal.get("tipo_setup")
+    )
+    subtipo_setup = _txt(
+        senal.get("subtipo_setup")
     )
 
-    vela = _analizar_vela_actual(candles)
-    micro = _analizar_microestructura(candles)
+    ruptura_confirmada = bool(
+        senal.get(
+            "ruptura_confirmada",
+            False,
+        )
+    )
+
+    entrada_confirmada = bool(
+        senal.get(
+            "entrada_confirmada",
+            False,
+        )
+    )
+
+    vela = _analizar_vela_actual(
+        candles
+    )
+    micro = _analizar_microestructura(
+        candles
+    )
 
     if vela is None:
         return {
             "accion": "ESPERAR",
             "indice": 0,
             "nivel": "SIN_DATOS",
-            "motivos": ["Rango inválido."]
+            "motivos": ["Rango inválido."],
+            "accion_diagnostico": "ESPERAR",
+            "nivel_diagnostico": "SIN_DATOS",
+            "indice_diagnostico": 0,
+            "confirmacion_entrada_operativa": (
+                CONFIRMACION_ENTRADA_OPERATIVA
+            ),
         }
 
     indice = 50
     motivos = []
 
-
-    # =========================
+    # ========================================================
     # CONFIRMACIÓN POR VELA
-    # =========================
+    # ========================================================
     if vela["fuerza"] < 0.06:
         indice -= 10
-        motivos.append("Vela débil o indecisa.")
+        motivos.append(
+            "Vela débil o indecisa."
+        )
 
     if direccion == "call":
         rechazo = (
-            vela["mecha_inf"] >= vela["cuerpo"] * 1.2
+            vela["mecha_inf"]
+            >= vela["cuerpo"] * 1.2
             and vela["posicion"] >= 0.38
             and vela["fuerza"] >= 0.12
         )
@@ -193,27 +337,45 @@ def evaluar_confirmacion_entrada(senal, candles, segundo=None):
 
         if rechazo:
             indice += 12
-            motivos.append("CALL con rechazo comprador.")
+            motivos.append(
+                "CALL con rechazo comprador."
+            )
 
         if recuperacion:
             indice += 8
-            motivos.append("CALL con recuperación.")
+            motivos.append(
+                "CALL con recuperación."
+            )
 
         if ruptura:
             indice += 8
-            motivos.append("CALL con ruptura controlada.")
+            motivos.append(
+                "CALL con ruptura controlada."
+            )
 
-        if vela["cerca_high"] and vela["fuerza"] >= 0.75:
+        if (
+            vela["cerca_high"]
+            and vela["fuerza"] >= 0.75
+        ):
             indice -= 10
-            motivos.append("CALL tarde cerca del máximo.")
+            motivos.append(
+                "CALL tarde cerca del máximo."
+            )
 
-        if vela["mecha_sup"] >= vela["cuerpo"] * 3.0 and vela["fuerza"] < 0.30:
+        if (
+            vela["mecha_sup"]
+            >= vela["cuerpo"] * 3.0
+            and vela["fuerza"] < 0.30
+        ):
             indice -= 10
-            motivos.append("Absorción vendedora contra CALL.")
+            motivos.append(
+                "Absorción vendedora contra CALL."
+            )
 
     elif direccion == "put":
         rechazo = (
-            vela["mecha_sup"] >= vela["cuerpo"] * 1.2
+            vela["mecha_sup"]
+            >= vela["cuerpo"] * 1.2
             and vela["posicion"] <= 0.62
             and vela["fuerza"] >= 0.12
         )
@@ -231,119 +393,197 @@ def evaluar_confirmacion_entrada(senal, candles, segundo=None):
 
         if rechazo:
             indice += 12
-            motivos.append("PUT con rechazo vendedor.")
+            motivos.append(
+                "PUT con rechazo vendedor."
+            )
 
         if recuperacion:
             indice += 8
-            motivos.append("PUT con recuperación bajista.")
+            motivos.append(
+                "PUT con recuperación bajista."
+            )
 
         if ruptura:
             indice += 8
-            motivos.append("PUT con ruptura controlada.")
+            motivos.append(
+                "PUT con ruptura controlada."
+            )
 
-        if vela["cerca_low"] and vela["fuerza"] >= 0.75:
+        if (
+            vela["cerca_low"]
+            and vela["fuerza"] >= 0.75
+        ):
             indice -= 10
-            motivos.append("PUT tarde cerca del mínimo.")
+            motivos.append(
+                "PUT tarde cerca del mínimo."
+            )
 
-        if vela["mecha_inf"] >= vela["cuerpo"] * 3.0 and vela["fuerza"] < 0.30:
+        if (
+            vela["mecha_inf"]
+            >= vela["cuerpo"] * 3.0
+            and vela["fuerza"] < 0.30
+        ):
             indice -= 10
-            motivos.append("Absorción compradora contra PUT.")
+            motivos.append(
+                "Absorción compradora contra PUT."
+            )
 
-    # =========================
+    # ========================================================
     # MICROESTRUCTURA
-    # =========================
+    # ========================================================
     if micro["ok"]:
         if direccion == "call":
-            if micro["alcistas"] >= 2 and micro["fuerza_promedio"] >= 0.20:
+            if (
+                micro["alcistas"] >= 2
+                and micro["fuerza_promedio"] >= 0.20
+            ):
                 indice += 7
-                motivos.append("Microestructura CALL válida.")
+                motivos.append(
+                    "Microestructura CALL válida."
+                )
             else:
                 indice -= 4
-                motivos.append("Microestructura CALL débil.")
+                motivos.append(
+                    "Microestructura CALL débil."
+                )
 
         if direccion == "put":
-            if micro["bajistas"] >= 2 and micro["fuerza_promedio"] >= 0.20:
+            if (
+                micro["bajistas"] >= 2
+                and micro["fuerza_promedio"] >= 0.20
+            ):
                 indice += 7
-                motivos.append("Microestructura PUT válida.")
+                motivos.append(
+                    "Microestructura PUT válida."
+                )
             else:
                 indice -= 4
-                motivos.append("Microestructura PUT débil.")
-
+                motivos.append(
+                    "Microestructura PUT débil."
+                )
     else:
         indice -= 4
-        motivos.append("Microestructura insuficiente.")
+        motivos.append(
+            "Microestructura insuficiente."
+        )
 
-    # =========================
+    # ========================================================
     # ZONAS / RUPTURAS
-    # =========================
-    if "resistencia_cerca_sin_ruptura" in accion_precio and direccion == "call":
-        if ruptura_confirmada or entrada_confirmada:
+    # ========================================================
+    if (
+        "resistencia_cerca_sin_ruptura"
+        in accion_precio
+        and direccion == "call"
+    ):
+        if (
+            ruptura_confirmada
+            or entrada_confirmada
+        ):
             indice += 6
-            motivos.append("CALL cerca de resistencia con confirmación.")
+            motivos.append(
+                "CALL cerca de resistencia con confirmación."
+            )
         else:
             indice -= 6
-            motivos.append("CALL cerca de resistencia sin ruptura.")
+            motivos.append(
+                "CALL cerca de resistencia sin ruptura."
+            )
 
-    if "soporte_cerca_sin_ruptura" in accion_precio and direccion == "put":
-        if ruptura_confirmada or entrada_confirmada:
+    if (
+        "soporte_cerca_sin_ruptura"
+        in accion_precio
+        and direccion == "put"
+    ):
+        if (
+            ruptura_confirmada
+            or entrada_confirmada
+        ):
             indice += 6
-            motivos.append("PUT cerca de soporte con confirmación.")
+            motivos.append(
+                "PUT cerca de soporte con confirmación."
+            )
         else:
             indice -= 6
-            motivos.append("PUT cerca de soporte sin ruptura.")
+            motivos.append(
+                "PUT cerca de soporte sin ruptura."
+            )
 
-    if "sweep" in patron or "sweep" in tipo_setup:
-        if "rechazo" in accion_precio or ruptura_confirmada or entrada_confirmada:
-            indice += 4
-            motivos.append("Sweep con confirmación de zona.")
-        else:
-            indice -= 3
-            motivos.append("Sweep sin confirmación clara.")
-
-    if "pullback" in patron or "pullback" in subtipo_setup:
-        if micro["ok"] and (
-            (direccion == "call" and micro["alcistas"] >= 2)
-            or (direccion == "put" and micro["bajistas"] >= 2)
+    if (
+        "sweep" in patron
+        or "sweep" in tipo_setup
+    ):
+        if (
+            "rechazo" in accion_precio
+            or ruptura_confirmada
+            or entrada_confirmada
         ):
             indice += 4
-            motivos.append("Pullback con microestructura a favor.")
+            motivos.append(
+                "Sweep con confirmación de zona."
+            )
+        else:
+            indice -= 3
+            motivos.append(
+                "Sweep sin confirmación clara."
+            )
+
+    if (
+        "pullback" in patron
+        or "pullback" in subtipo_setup
+    ):
+        if (
+            micro["ok"]
+            and (
+                (
+                    direccion == "call"
+                    and micro["alcistas"] >= 2
+                )
+                or (
+                    direccion == "put"
+                    and micro["bajistas"] >= 2
+                )
+            )
+        ):
+            indice += 4
+            motivos.append(
+                "Pullback con microestructura a favor."
+            )
         else:
             indice -= 4
-            motivos.append("Pullback sin microestructura suficiente.")
+            motivos.append(
+                "Pullback sin microestructura suficiente."
+            )
 
-    # =========================
+    # ========================================================
     # TIMING
-    # =========================
+    # ========================================================
     if segundo is not None:
         if segundo < 4:
             indice -= 6
-            motivos.append("Entrada muy temprana en vela.")
+            motivos.append(
+                "Entrada muy temprana en vela."
+            )
 
         elif 5 <= segundo <= 32:
             indice += 4
-            motivos.append("Timing dentro de ventana útil.")
+            motivos.append(
+                "Timing dentro de ventana útil."
+            )
 
         elif segundo > 40:
             indice -= 12
-            motivos.append("Entrada tardía.")
+            motivos.append(
+                "Entrada tardía."
+            )
 
-    indice = round(_limitar(indice), 2)
+    indice = round(
+        _limitar(indice),
+        2,
+    )
 
-    if indice >=66:
-        accion = "ENTRAR"
-        nivel = "ALTO"
-    elif indice >= 47:
-        accion = "ESPERAR"
-        nivel = "MEDIO"
-    else:
-        accion = "CANCELAR"
-        nivel = "BAJO"
-
-    return {
-        "accion": accion,
-        "indice": indice,
-        "nivel": nivel,
-        "motivos": motivos,
-        "vela": vela,
-        "micro": micro,
-    }
+    return _salida_final(
+        indice=indice,
+        motivos=motivos,
+        vela=vela,
+        micro=micro,
+    )

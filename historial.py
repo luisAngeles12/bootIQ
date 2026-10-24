@@ -5,13 +5,186 @@ import estado
 from config import HISTORIAL_CSV, OPERACIONES_PENDIENTES_JSON
 
 def columnas_historial():
-    return ["fecha", "estado", "order_id", "activo", "tipo", "direccion", "puntaje", "patron", "rsi", "resultado", "razon"]
+    return [
+        "fecha",
+        "estado",
+        "order_id",
+        "activo",
+        "tipo",
+        "direccion",
+        "puntaje",
+        "patron",
+        "rsi",
+        "resultado",
+        "razon",
 
+        # PASO 5.5C — PARIDAD DE EJECUCIÓN
+        "paridad_live_estado",
+        "paridad_live_resultado_actual",
+        "paridad_live_razon_actual",
+        "paridad_live_estado_sombra",
+        "paridad_live_motivo_sombra",
+        "segundo_antes",
+        "segundo_entrada",
+        "demora_envio",
+        "tiempo_envio_inicio",
+        "tiempo_respuesta_iq",
+        "tiempo_expiracion",
 
-COLUMNAS_HISTORIAL = ["fecha", "estado", "order_id", "activo", "tipo", "direccion", "puntaje", "patron", "rsi", "resultado", "razon"]
+        # D8-E5 — VELA EXACTA QUE ORIGINO LA SENAL
+        "vela_senal_from",
+        "precio_senal_open",
+        "precio_senal_close",
+        "precio_senal_high",
+        "precio_senal_low",
+
+        "vela_confirmacion_from",
+        "precio_confirmacion_open",
+        "precio_confirmacion_close",
+        "precio_confirmacion_high",
+        "precio_confirmacion_low",
+
+        "auditoria_orden_iq_json",
+    ]
+
+COLUMNAS_HISTORIAL = [
+    "fecha",
+    "estado",
+    "order_id",
+    "estado_operacion",
+    "activo",
+    "tipo",
+    "direccion",
+    "puntaje",
+    "patron",
+    "rsi",
+    "resultado",
+    "razon",
+
+    # D8-E8 — CONTEXTO PRE-ENTRADA
+    "prioridad",
+    "score_final",
+    "consenso",
+    "nivel_consenso",
+    "calidad",
+    "tipo_mercado",
+    "calidad_mercado",
+    "score_mercado",
+    "estado_tendencia",
+    "fuerza_tendencia",
+    "direccion_tendencia",
+    "accion_precio",
+    "pa_tipo",
+    "pa_direccion",
+    "pa_fuerza",
+    "tipo_setup",
+    "calidad_setup",
+    "modo_entrada_setup",
+    "familia_setup",
+    "subtipo_setup",
+    "nivel_setup",
+
+    # D7.7C — TRAZABILIDAD DE AUTORIDAD
+    "origen_autoridad",
+    "decision_sombra_origen",
+    "core4_rescate",
+    "core4_reglas",
+    "directa_ruta_validada",
+    "validacion_mercado_ok",
+    "razon_validacion_mercado",
+
+    # D8-E6 — TRAZABILIDAD REAL DEL PROTOCOLO LIVE
+    # Solo auditoría. No modifica decisión ni ejecución.
+    "protocolo_sugerido",
+    "protocolo_live_tipo",
+    "protocolo_live_estado",
+    "accion_confirmacion_ia",
+    "protocolo_espera_velas",
+    "protocolo_espera_timestamp",
+    "motivo_confirmacion_protocolo_live",
+    "decision_post_protocolo",
+    "probabilidad_post_protocolo",
+    "muestra_post_protocolo",
+    "confiabilidad_post_protocolo",
+
+    # C-C2 LIVE — identidad exacta producida por motor_protocolos.
+    # Solo persistencia/auditoría.
+    "auditoria_protocolo_tipo",
+    "auditoria_protocolo_subtipo",
+    "auditoria_protocolo_familia",
+    "auditoria_protocolo_operada",
+    "auditoria_protocolo_idx_senal",
+    "auditoria_protocolo_idx_entrada",
+    "auditoria_protocolo_espera_velas",
+    "auditoria_protocolo_motivo",
+    "auditoria_protocolo_riesgo",
+    "auditoria_protocolo_nivel_riesgo",
+    "auditoria_protocolo_indice_confirmacion",
+    "auditoria_protocolo_nivel_confirmacion",
+    "auditoria_protocolo_accion_confirmacion",
+    "auditoria_protocolo_tipo_mercado",
+    "auditoria_protocolo_tendencia",
+    "auditoria_protocolo_pa_tipo",
+    "auditoria_protocolo_probabilidad",
+
+    # D8-R6C — TRAZABILIDAD V3
+    "probabilidad_v3",
+    "muestra_probabilidad",
+    "wins_probabilidad",
+    "losses_probabilidad",
+    "confiabilidad_probabilidad",
+    "nivel_probabilidad_principal",
+    "clave_probabilidad_principal",
+    "fuente_probabilidad_principal_json",
+    "fuente_probabilidad_respaldo_json",
+
+    # D8-R8B — SALUD PROSPECTIVA SOMBRA
+    "salud_fuente_n",
+    "salud_fuente_wins",
+    "salud_fuente_losses",
+    "salud_fuente_wr",
+    "salud_fuente_prob_historica",
+    "salud_fuente_delta_pp",
+    "salud_fuente_ultimas5_wr",
+    "salud_fuente_ultimas10_wr",
+
+    # PASO 5.5C — PARIDAD DE EJECUCIÓN
+    "paridad_live_estado",
+    "paridad_live_resultado_actual",
+    "paridad_live_razon_actual",
+    "paridad_live_estado_sombra",
+    "paridad_live_motivo_sombra",
+    "segundo_antes",
+    "segundo_entrada",
+    "demora_envio",
+    "tiempo_envio_inicio",
+    "tiempo_respuesta_iq",
+    "tiempo_expiracion",
+    # D8-E5 — VELA EXACTA QUE ORIGINO LA SENAL
+    "vela_senal_from",
+    "precio_senal_open",
+    "precio_senal_close",
+    "precio_senal_high",
+    "precio_senal_low",
+    "vela_confirmacion_from",
+    "precio_confirmacion_open",
+    "precio_confirmacion_close",
+    "precio_confirmacion_high",
+    "precio_confirmacion_low",
+
+    "auditoria_orden_iq_json",
+]
 
 def guardar_historial(data):
-    asegurar_historial_csv()
+    # El esquema se valida al arrancar bot.py. En la ruta crítica
+    # de una apertura evitamos releer y reescribir todo el CSV en
+    # cada append. Conservamos protección si el archivo desaparece
+    # o queda vacío durante la sesión.
+    if (
+        not os.path.exists(HISTORIAL_CSV)
+        or os.path.getsize(HISTORIAL_CSV) == 0
+    ):
+        asegurar_historial_csv()
 
     ruta = os.path.abspath(HISTORIAL_CSV)
     print("Guardando historial en:", ruta)
@@ -73,7 +246,11 @@ def asegurar_historial_csv():
 
 
 def actualizar_historial_cierre(order_id, resultado):
-    asegurar_historial_csv()
+    if (
+        not os.path.exists(HISTORIAL_CSV)
+        or os.path.getsize(HISTORIAL_CSV) == 0
+    ):
+        asegurar_historial_csv()
 
     try:
         df = pd.read_csv(HISTORIAL_CSV, encoding="utf-8-sig")
