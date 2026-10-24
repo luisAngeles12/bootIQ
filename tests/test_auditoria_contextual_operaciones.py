@@ -20,7 +20,8 @@ class AuditoriaContextualTests(unittest.TestCase):
              "resultado_hipotetico": "WIN"},
             {**comunes, "cerebro_unico_decision": "OPERAR",
              "motivo_ejecucion": "OPERACION_DIRECTA_CEREBRO_UNICO",
-             "resultado_hipotetico": "LOSS"},
+             "estado_operacion": "OPERADA_DIRECTA", "resultado": "LOSS",
+             "resultado_hipotetico": "WIN"},
             {**comunes, "cerebro_unico_decision": "OPERAR_CON_PROTOCOLO",
              "motivo_ejecucion": "SOMBRA_RUPTURA_RESISTENCIA_NO_CONFIRMADA",
              "resultado_hipotetico": "WIN"},
@@ -54,14 +55,14 @@ class AuditoriaContextualTests(unittest.TestCase):
         filas = [
             {**comunes, "cerebro_unico_decision": "NO_OPERAR", "resultado_hipotetico": "WIN"},
             {**comunes, "cerebro_unico_decision": "NO_OPERAR", "resultado_hipotetico": "LOSS"},
-            {**comunes, "cerebro_unico_decision": "OPERAR", "motivo_ejecucion": "OPERACION_DIRECTA_CEREBRO_UNICO", "resultado_hipotetico": "LOSS"},
+            {**comunes, "cerebro_unico_decision": "OPERAR", "motivo_ejecucion": "OPERACION_DIRECTA_CEREBRO_UNICO", "estado_operacion": "OPERADA_DIRECTA", "resultado": "LOSS", "resultado_hipotetico": "WIN"},
         ]
         grupos = agrupar_factores_estrategia(filas, minimo=1)
         rsi_cancelado = [g for g in grupos if g["dimension"] == "RSI" and g["clase"] == "CANCELADA_HIPOTETICA"]
         self.assertEqual(len(rsi_cancelado), 1)
         self.assertEqual(rsi_cancelado[0]["valor"], "RSI_45_55")
         self.assertEqual((rsi_cancelado[0]["total"], rsi_cancelado[0]["wins"]), (2, 1))
-        self.assertEqual(rsi_cancelado[0]["wr_hipotetico"], 50.0)
+        self.assertEqual(rsi_cancelado[0]["wr_contextual"], 50.0)
         self.assertLess(rsi_cancelado[0]["limite_inferior_wilson"], 50.0)
         directas = [g for g in grupos if g["dimension"] == "ACCION_PRECIO" and g["clase"] == "DIRECTA_SIMULADA"]
         self.assertEqual((len(directas), directas[0]["losses"]), (1, 1))
@@ -71,6 +72,25 @@ class AuditoriaContextualTests(unittest.TestCase):
         self.assertEqual(agrupar_factores_estrategia(filas, minimo=2), [])
         grupos = agrupar_factores_estrategia(filas, minimo=1)
         self.assertIn("RSI_SIN_DATOS", [g["valor"] for g in grupos])
+
+    def test_protocolo_ejecutado_usa_resultado_de_su_entrada(self):
+        comunes = {
+            "patron": "breakout retest alcista", "direccion": "call",
+            "tipo_mercado": "TENDENCIA_ALCISTA", "estado_tendencia": "ALCISTA_NORMAL",
+        }
+        filas = [
+            {**comunes, "estado_operacion": "OPERADA_PROTOCOLO", "resultado": "LOSS", "resultado_hipotetico": "WIN"},
+            {**comunes, "estado_operacion": "CANCELADA_PROTOCOLO", "resultado": "LOSS", "resultado_hipotetico": "WIN"},
+        ]
+        grupos = {x["clase"]: x for x in agrupar_senales_por_contexto(filas)}
+        self.assertEqual(grupos["PROTOCOLO_SIMULADO"]["losses"], 1)
+        self.assertEqual(grupos["PROTOCOLO_SIMULADO"]["fuente_resultado"], "resultado")
+        self.assertEqual(grupos["CANCELADA_HIPOTETICA"]["wins"], 1)
+        self.assertEqual(grupos["CANCELADA_HIPOTETICA"]["fuente_resultado"], "resultado_hipotetico")
+
+    def test_no_sustituye_resultado_ausente_por_hipotetico(self):
+        filas = [{"estado_operacion": "OPERADA_PROTOCOLO", "resultado": "", "resultado_hipotetico": "WIN"}]
+        self.assertEqual(agrupar_senales_por_contexto(filas), [])
 
 
 if __name__ == "__main__":
