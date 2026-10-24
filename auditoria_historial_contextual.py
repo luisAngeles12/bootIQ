@@ -77,6 +77,41 @@ def agrupar_cierres_por_diagnostico(filas, minimo=1):
     return sorted(salida, key=lambda x: (-x["total"], x["dimension"], x["valor"]))
 
 
+def agrupar_cierres_por_ruta_y_ubicacion(filas, minimo=1):
+    """Separa reglas CORE4 y advertencia de soporte PUT, sin mezclar rutas."""
+    grupos = defaultdict(lambda: {"wins": 0, "losses": 0, "pnl": 0.0})
+    for fila in filas:
+        if not isinstance(fila, dict) or str(fila.get("estado") or "").upper() != "CERRADA":
+            continue
+        try:
+            pnl = float(fila.get("resultado"))
+        except (TypeError, ValueError):
+            continue
+        if pnl == 0:
+            continue
+        razones = diagnosticos_historicos(fila)
+        ubicacion = (
+            "PUT_SOPORTE_CERCA"
+            if "PUT con soporte cerca" in razones["ACCION_PRECIO"]
+            else "OTRA_ACCION_PRECIO"
+        )
+        reglas = str(fila.get("core4_reglas") or "SIN_CORE4").strip().upper()
+        clave = (reglas, ubicacion)
+        dato = grupos[clave]
+        dato["wins" if pnl > 0 else "losses"] += 1
+        dato["pnl"] += pnl
+    salida = []
+    for (reglas, ubicacion), dato in grupos.items():
+        n = dato["wins"] + dato["losses"]
+        if n >= minimo:
+            salida.append({
+                "reglas": reglas, "ubicacion": ubicacion, "total": n,
+                "wins": dato["wins"], "losses": dato["losses"],
+                "pnl": round(dato["pnl"], 2),
+            })
+    return sorted(salida, key=lambda x: (-x["total"], x["reglas"], x["ubicacion"]))
+
+
 def contexto_historico(fila):
     """Prioriza campos estructurados; fallback literal y auditable al texto."""
     razon = str(fila.get("razon") or "")
@@ -153,6 +188,13 @@ def imprimir_informe_historial(ruta="historial_bot.csv", minimo=1):
     for d in agrupar_cierres_por_diagnostico(filas, minimo=max(3, minimo)):
         print(
             d["dimension"], "|", d["valor"],
+            "| n:", d["total"], "| W:", d["wins"],
+            "| L:", d["losses"], "| PNL:", d["pnl"],
+        )
+    print("===== RUTAS CORE4 / UBICACION (HISTORICO ANTERIOR) =====")
+    for d in agrupar_cierres_por_ruta_y_ubicacion(filas, minimo=max(3, minimo)):
+        print(
+            d["reglas"], "|", d["ubicacion"],
             "| n:", d["total"], "| W:", d["wins"],
             "| L:", d["losses"], "| PNL:", d["pnl"],
         )
