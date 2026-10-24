@@ -33,6 +33,15 @@ class MonitorPausasTests(unittest.TestCase):
         self.assertEqual((reporte[0]["muestra"], reporte[0]["neto"]), (2, 40))
         self.assertEqual(reporte[0]["estado_observacion"], "SIN_PERDIDA_NETA_EN_VENTANA")
 
+    def test_acepta_fechas_textuales_del_historial_live(self):
+        base = {"estado": "CERRADA", "patron": "CHOCH", "direccion": "CALL", "tipo_mercado": "TENDENCIA_ALCISTA"}
+        reporte, descartes = evaluar_contextos_cerrados([
+            {**base, "fecha": "2026-09-15 15:55:06", "resultado": -25},
+            {**base, "fecha": "2026-09-15 15:56:06", "resultado": 20},
+        ], ventana=2, muestra_minima=2)
+        self.assertEqual((reporte[0]["muestra"], reporte[0]["neto"]), (2, -5))
+        self.assertEqual(descartes, {})
+
 
 if __name__ == "__main__":
     unittest.main()
