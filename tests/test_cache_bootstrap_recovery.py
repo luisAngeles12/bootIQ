@@ -1016,7 +1016,7 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             },
         )
 
-    def test_late_initialization_data_id_completes_single_pending_request(self):
+    def test_late_initialization_data_id_does_not_complete_new_request(self):
         payload = {"binary": {"actives": {"101": {"name": "binary.EURUSD"}}}}
         api = type("FakeAPI", (), {})()
         api.api_option_init_all_result_v2_by_request = {
@@ -1032,12 +1032,7 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             },
         )
 
-        self.assertEqual(
-            api.api_option_init_all_result_v2_by_request[
-                "current-request"
-            ],
-            payload,
-        )
+        self.assertIsNone(api.api_option_init_all_result_v2_by_request["current-request"])
 
     def test_late_initialization_data_id_is_ignored_when_requests_are_ambiguous(self):
         api = type("FakeAPI", (), {})()

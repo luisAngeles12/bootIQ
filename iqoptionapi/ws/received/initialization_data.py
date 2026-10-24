@@ -37,6 +37,10 @@ def initialization_data(api, message):
     if almacenamiento is None:
         return
 
+    if request_id:
+        logging.warning("initialization-data de solicitud vencida | solicitudes_pendientes: %s", sum(v is None for v in almacenamiento.values()))
+        return
+
     pendientes = [
         pendiente_id
         for pendiente_id, resultado in almacenamiento.items()
