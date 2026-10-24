@@ -22,10 +22,25 @@ class AuditoriaAutoridadCerebroTests(unittest.TestCase):
         self.assertEqual(conteos["canceladas_riesgo_BAJO"], 1)
         self.assertEqual(conteos["core4_invalidacion_dura"], 1)
         self.assertEqual(conteos["core4_invalidacion_selectiva"], 1)
+        self.assertEqual(conteos["core4_match_invalidado"], 1)
         self.assertEqual(conteos["veto_selectivo_R2_SOLO"], 1)
         self.assertEqual(conteos["sombra_favorable_rechazada"], 1)
         self.assertEqual(conteos.get("core4_rescate", 0), 0)
         self.assertEqual(resultados[("BAJO", "WIN")], 1)
+
+    def test_particion_core4_sin_match_invalidado_y_elegible_cancelado(self):
+        filas = [
+            {"estado_operacion": "CANCELADA_CEREBRO", "core4_match_previo": False},
+            {"estado_operacion": "CANCELADA_CEREBRO", "core4_match_previo": True,
+             "core4_invalidacion_selectiva_previa": True},
+            {"estado_operacion": "CANCELADA_CEREBRO", "core4_match_previo": True,
+             "core4_elegible_estructural_previo": True},
+        ]
+        conteos, _ = resumir_autoridad(filas)
+        self.assertEqual(conteos["core4_sin_match"], 1)
+        self.assertEqual(conteos["core4_match_invalidado"], 1)
+        self.assertEqual(conteos["core4_match_elegible"], 1)
+        self.assertEqual(conteos["core4_elegible_cancelada"], 1)
 
     def test_no_inventa_resultado_hipotetico_ni_clasifica_operada_cancelada(self):
         filas = [{"estado_operacion": "OPERADA_DIRECTA", "resultado": "WIN", "core4_rescate": True},
