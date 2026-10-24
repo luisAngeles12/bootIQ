@@ -3,6 +3,8 @@ import unittest
 from auditoria_historial_contextual import (
     contexto_historico,
     agrupar_cierres_por_contexto,
+    diagnosticos_historicos,
+    agrupar_cierres_por_diagnostico,
 )
 
 
@@ -42,6 +44,25 @@ class HistorialContextualTests(unittest.TestCase):
         self.assertEqual((len(grupos), descartadas), (1, 2))
         self.assertEqual((grupos[0]["wins"], grupos[0]["losses"], grupos[0]["pnl"]), (1, 1, -5.0))
         self.assertEqual(agrupar_cierres_por_contexto(filas, minimo=3)[0], [])
+
+    def test_extrae_motivos_sin_confundir_secciones(self):
+        razon = (
+            "MERCADO: TENDENCIA_BAJISTA, "
+            "VALIDACIÓN MERCADO: PUT permitido a favor de tendencia bajista, "
+            "ZONA SR: zona válida, "
+            "ACCION PRECIO: acción precio: PUT con soporte cerca; decisión delegada a zonas, "
+            "RUPTURA: sin ruptura confirmada de soporte"
+        )
+        motivos = diagnosticos_historicos({"razon": razon})
+        self.assertEqual(motivos["VALIDACION_MERCADO"], "PUT permitido a favor de tendencia bajista")
+        self.assertEqual(motivos["ZONA_SR"], "zona válida")
+        self.assertEqual(motivos["ACCION_PRECIO"], "acción precio: PUT con soporte cerca; decisión delegada a zonas")
+        grupos = agrupar_cierres_por_diagnostico([
+            {"estado": "CERRADA", "resultado": "-25", "razon": razon},
+            {"estado": "ABIERTA", "resultado": "100", "razon": razon},
+        ])
+        self.assertEqual(len(grupos), 3)
+        self.assertTrue(all(x["losses"] == 1 and x["wins"] == 0 for x in grupos))
 
 
 if __name__ == "__main__":
