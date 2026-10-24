@@ -40,6 +40,19 @@ def resumir_autoridad(filas):
 
         if _verdadero(fila.get("core4_match_previo")):
             conteos["core4_match"] += 1
+            # Partición excluyente: permite distinguir ausencia de regla,
+            # invalidación técnica y discrepancia de elegibilidad.
+            invalida_dura = _verdadero(fila.get("core4_invalidacion_dura_previa"))
+            invalida_selectiva = _verdadero(fila.get("core4_invalidacion_selectiva_previa"))
+            elegible = _verdadero(fila.get("core4_elegible_estructural_previo"))
+            if invalida_dura or invalida_selectiva:
+                conteos["core4_match_invalidado"] += 1
+            elif elegible:
+                conteos["core4_match_elegible"] += 1
+                if cancelada:
+                    conteos["core4_elegible_cancelada"] += 1
+            else:
+                conteos["core4_match_no_elegible_sin_veto"] += 1
             if _verdadero(fila.get("core4_invalidacion_dura_previa")):
                 conteos["core4_invalidacion_dura"] += 1
             if _verdadero(fila.get("core4_invalidacion_selectiva_previa")):
@@ -51,6 +64,9 @@ def resumir_autoridad(filas):
             motivos = str(fila.get("core4_motivos_selectivos_previos") or "")
             for motivo in {m.strip() for m in motivos.split("|") if m.strip()}:
                 conteos[f"veto_selectivo_{motivo}"] += 1
+
+        else:
+            conteos["core4_sin_match"] += 1
 
         if _verdadero(fila.get("core4_rescate")):
             conteos["core4_rescate"] += 1
