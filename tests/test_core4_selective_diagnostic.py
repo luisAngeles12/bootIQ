@@ -59,5 +59,54 @@ class Core4SelectiveDiagnosticTests(unittest.TestCase):
         self.assertEqual(diagnostico["core4_motivos_selectivos_previos"], "")
 
 
+    def test_r1_solo_protocol_shadow_is_reported_eligible(self):
+        evidencia = {
+            "direccion": "CALL",
+            "calidad_mercado": "NORMAL",
+            "tipo_mercado": "TENDENCIA_ALCISTA",
+            "modo_entrada_setup": "DIRECTA",
+            "tipo_setup": "INDEFINIDO",
+            "calidad_setup": "PREMIUM",
+        }
+        resultado = convertir_decision_v3_a_oficial(
+            {
+                "decision": "OPERAR_CON_PROTOCOLO_SOMBRA",
+                "motivo": "Prueba R1 autonoma",
+                "muestra": 30,
+                "confiabilidad": "ALTA",
+            },
+            evidencia,
+        )
+        diagnostico = evidencia["_core4_diagnostico_previo"]
+        self.assertIs(diagnostico["core4_elegible_estructural_previo"], True)
+        self.assertIs(diagnostico["core4_elegible_rescate_previo"], True)
+        self.assertIs(resultado["core4_rescate"], True)
+        self.assertEqual(resultado["origen_autoridad"], "D6_6_CORE4_OOS")
+
+    def test_r1_r6_combination_is_not_relabelled_eligible(self):
+        evidencia = {
+            "direccion": "PUT",
+            "calidad_mercado": "NORMAL",
+            "tipo_mercado": "TENDENCIA_BAJISTA",
+            "modo_entrada_setup": "DIRECTA",
+            "tipo_setup": "INDEFINIDO",
+            "calidad_setup": "PREMIUM",
+            "patron": "CONTINUACION BAJISTA CON TENDENCIA",
+            "pa_tipo": "IMPULSO_BAJISTA_FUERTE",
+        }
+        resultado = convertir_decision_v3_a_oficial(
+            {
+                "decision": "OPERAR_CON_PROTOCOLO_SOMBRA",
+                "motivo": "Prueba R1 combinado",
+                "muestra": 30,
+                "confiabilidad": "ALTA",
+            },
+            evidencia,
+        )
+        diagnostico = evidencia["_core4_diagnostico_previo"]
+        self.assertIs(diagnostico["core4_elegible_rescate_previo"], False)
+        self.assertIs(resultado.get("core4_rescate", False), False)
+
+
 if __name__ == "__main__":
     unittest.main()
