@@ -43,7 +43,9 @@ jobs:
             tests.test_auditoria_contextual_operaciones \
             tests.test_auditoria_historial_contextual \
             tests.test_core4_selective_diagnostic \
-            tests.test_v3_authority_diagnostic
+            tests.test_v3_authority_diagnostic \
+            tests.test_auditoria_autoridad_cerebro \
+            tests.test_riesgo_base_provisional
 
 #       - run: pipenv run pylint iqoptionapi
 #       - run: pipenv run isort --recursive --diff .
