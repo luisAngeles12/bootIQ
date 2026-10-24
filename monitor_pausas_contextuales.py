@@ -5,6 +5,7 @@ Solo considera operaciones efectivamente cerradas con resultado monetario.
 """
 
 from collections import defaultdict
+from datetime import datetime, timezone
 from math import isfinite
 
 
@@ -12,6 +13,15 @@ def _fecha(valor):
     try:
         return float(valor)
     except (TypeError, ValueError):
+        pass
+    if not isinstance(valor, str):
+        return None
+    try:
+        fecha = datetime.fromisoformat(valor.strip().replace("Z", "+00:00"))
+        if fecha.tzinfo is None:
+            fecha = fecha.replace(tzinfo=timezone.utc)
+        return fecha.timestamp()
+    except (ValueError, OverflowError, OSError):
         return None
 
 
