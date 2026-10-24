@@ -42,6 +42,18 @@ from estadisticas import (
 )
 
 
+def _filtrar_activos_con_buffer(activos):
+    """Devuelve solo mercados con 181 velas cerradas continuas."""
+    validos = []
+    faltantes = []
+    for item in activos:
+        if _buffer_velas_integro(estado.velas_cache.get(item["activo"], [])):
+            validos.append(item)
+        else:
+            faltantes.append(item["activo"])
+    return validos, faltantes
+
+
 def main():
 
     conectar()
@@ -922,27 +934,18 @@ def main():
         # Un buffer faltante o inválido omite solo ese
         # activo; los demás pueden analizarse con sus
         # datos completos, sin aceptar datos parciales.
-        faltantes_buffer_d76d = [
-            item["activo"]
-            for item in activos
-            if not _buffer_velas_integro(
-                estado.velas_cache.get(
-                    item["activo"], []
-                )
-            )
-        ]
+        activos, faltantes_buffer_d76d = _filtrar_activos_con_buffer(activos)
 
         if faltantes_buffer_d76d:
             print(
-                "D7.6D RONDA OMITIDA — "
-                "MERCADOS SELECCIONADOS SIN BUFFERS VALIDOS |",
-                "listos:",
-                len(activos) - len(faltantes_buffer_d76d),
-                "/",
-                len(activos),
-                "| faltantes:",
-                faltantes_buffer_d76d,
+                "D9.98 ACTIVOS SIN BUFFER EXCLUIDOS DE RONDA |",
+                "listos:", len(activos),
+                "| excluidos:", faltantes_buffer_d76d,
+                flush=True,
             )
+
+        if not activos:
+            print("D9.98 RONDA OMITIDA | SIN BUFFERS VALIDOS", flush=True)
             estado_ronda_d76f = "OMITIDA_PREANALISIS"
             time.sleep(0.25)
             continue
