@@ -1,6 +1,6 @@
 import unittest
 
-from monitor_pausas_contextuales import evaluar_contextos_cerrados
+from monitor_pausas_contextuales import evaluar_contextos_cerrados, registrar_cierre_sombra
 
 
 class MonitorPausasTests(unittest.TestCase):
@@ -41,6 +41,17 @@ class MonitorPausasTests(unittest.TestCase):
         ], ventana=2, muestra_minima=2)
         self.assertEqual((reporte[0]["muestra"], reporte[0]["neto"]), (2, -5))
         self.assertEqual(descartes, {})
+
+    def test_registro_post_cierre_sombra_acotado_no_veta(self):
+        registro = {}
+        op = {"patron": "CHOCH", "tipo_mercado": "TENDENCIA_ALCISTA", "direccion": "CALL"}
+        self.assertTrue(registrar_cierre_sombra(registro, op, -25, max_por_contexto=2))
+        self.assertTrue(registrar_cierre_sombra(registro, op, 20, max_por_contexto=2))
+        self.assertTrue(registrar_cierre_sombra(registro, op, -25, max_por_contexto=2))
+        self.assertEqual(list(registro[("CHOCH", "TENDENCIA_ALCISTA", "CALL")]), [20, -25])
+        self.assertFalse(registrar_cierre_sombra(registro, op, float("nan"), max_por_contexto=2))
+        self.assertFalse(registrar_cierre_sombra(registro, {**op, "tipo_mercado": ""}, -25))
+        self.assertEqual(len(registro), 1)
 
 
 if __name__ == "__main__":
