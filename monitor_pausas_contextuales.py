@@ -109,3 +109,21 @@ def registrar_cierre_sombra(registro, operacion, resultado, *, max_por_contexto=
         registro[clave] = serie
     serie.append(pnl)
     return True
+
+
+def resumen_cierre_sombra(registro, operacion):
+    """Devuelve un resumen descriptivo; jamás una autorización o veto."""
+    if not isinstance(registro, dict) or not isinstance(operacion, dict):
+        return None
+    clave = tuple(str(operacion.get(k) or "").strip().upper() for k in ("patron", "tipo_mercado", "direccion"))
+    serie = registro.get(clave)
+    if not isinstance(serie, deque) or not serie:
+        return None
+    n = len(serie)
+    wins = sum(valor > 0 for valor in serie)
+    return {
+        "estrategia": clave[0], "mercado": clave[1], "direccion": clave[2],
+        "n": n, "wins": wins, "losses": n - wins,
+        "neto": round(sum(serie), 2), "wr": round(100 * wins / n, 2),
+        "solo_observacion": True,
+    }
