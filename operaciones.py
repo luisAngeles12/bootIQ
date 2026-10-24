@@ -22,7 +22,7 @@ from historial import (
 )
 from validaciones_estrategia import registrar_zona_operada
 from motor_aprendizaje_historico import evaluar_salud_prospectiva_fuente
-from monitor_pausas_contextuales import registrar_cierre_sombra
+from monitor_pausas_contextuales import registrar_cierre_sombra, resumen_cierre_sombra
 
 
 def normalizar_resultado(resultado):
@@ -1515,11 +1515,21 @@ def revisar_operaciones_abiertas():
             try:
                 if not hasattr(estado, "cierres_contextuales_sombra"):
                     estado.cierres_contextuales_sombra = {}
-                registrar_cierre_sombra(
+                observado = registrar_cierre_sombra(
                     estado.cierres_contextuales_sombra,
                     op,
                     resultado,
                 )
+                if observado:
+                    resumen = resumen_cierre_sombra(estado.cierres_contextuales_sombra, op)
+                    if resumen:
+                        print(
+                            "MONITOR_CONTEXTO_SOMBRA:", resumen["estrategia"],
+                            "|", resumen["mercado"], "|", resumen["direccion"],
+                            "| n:", resumen["n"], "| W:", resumen["wins"],
+                            "| L:", resumen["losses"], "| neto:", resumen["neto"],
+                            "| SIN_VETO_AUTOMATICO",
+                        )
             except Exception as error:
                 print("AUDITORIA_CIERRE_CONTEXTUAL_NO_DISPONIBLE:", error)
 
