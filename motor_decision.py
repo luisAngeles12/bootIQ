@@ -2462,9 +2462,11 @@ def convertir_decision_v3_a_oficial(
         "core4_elegible_estructural_previo": bool(
             core4_elegible_estructural_previo
         ),
+        # Debe reflejar el mismo selector usado por core4_directa:
+        # R1_SOLO tambien admite OPERAR_CON_PROTOCOLO_SOMBRA.
+        # Diagnostico solamente; no modifica autorizaciones.
         "core4_elegible_rescate_previo": bool(
-            decision_estadistica
-            == "NO_OPERAR_SOMBRA"
+            core4_selector_v3_valido
             and core4_elegible_estructural_previo
         ),
     }
