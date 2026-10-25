@@ -61,7 +61,7 @@ class WalkForwardTests(unittest.TestCase):
         )
         self.assertEqual(len(salida), 1)
         self.assertEqual(salida[0]["n"], 1)
-        self.assertEqual(salida[0]["con_historia"], 0)
+        self.assertEqual(salida[0]["con_historia"], 1)
 
 
 if __name__ == "__main__":
