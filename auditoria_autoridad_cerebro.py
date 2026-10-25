@@ -38,7 +38,11 @@ def resumir_autoridad(filas):
         else:
             conteos["no_canceladas"] += 1
 
-        if _verdadero(fila.get("core4_match_previo")):
+        # Ausencia de telemetria no equivale a ausencia de match.
+        match_crudo = fila.get("core4_match_previo")
+        if match_crudo is None or str(match_crudo).strip() == "":
+            conteos["core4_sin_telemetria"] += 1
+        elif _verdadero(match_crudo):
             conteos["core4_match"] += 1
             # Partición excluyente: permite distinguir ausencia de regla,
             # invalidación técnica y discrepancia de elegibilidad.
