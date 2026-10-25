@@ -10,6 +10,8 @@ import csv
 from collections import defaultdict
 from datetime import datetime, timezone
 
+from motor_aprendizaje_historico import PRIOR_WINRATE
+
 
 def _fuente(valor):
     if isinstance(valor, dict):
@@ -35,6 +37,9 @@ def resumir_generalizacion_fuentes(filas):
         "n": 0, "wins_hipoteticos": 0, "suma_prob": 0.0,
         "activos": set(), "minutos": set(), "dias": set(),
         "total_memoria": None, "winrate_memoria": None,
+        "brier_modelo": 0.0, "brier_prior": 0.0,
+        "brier_principal": 0.0, "n_principal": 0,
+        "brier_respaldo": 0.0, "n_respaldo": 0,
     })
     descartadas = 0
 
@@ -53,6 +58,9 @@ def resumir_generalizacion_fuentes(filas):
         grupo["n"] += 1
         grupo["wins_hipoteticos"] += int(resultado == "WIN")
         grupo["suma_prob"] += prob
+        objetivo = int(resultado == "WIN")
+        grupo["brier_modelo"] += (prob / 100.0 - objetivo) ** 2
+        grupo["brier_prior"] += (PRIOR_WINRATE / 100.0 - objetivo) ** 2
 
         activo = str(fila.get("activo") or "").strip().upper()
         if activo:
@@ -70,6 +78,15 @@ def resumir_generalizacion_fuentes(filas):
             grupo["dias"].add(dia)
 
         fuente = _fuente(fila.get("fuente_probabilidad_principal"))
+        prob_principal = _numero(fuente.get("probabilidad_ajustada"))
+        if prob_principal is not None and 0 <= prob_principal <= 100:
+            grupo["brier_principal"] += (prob_principal / 100.0 - objetivo) ** 2
+            grupo["n_principal"] += 1
+        respaldo = _fuente(fila.get("fuente_probabilidad_respaldo"))
+        prob_respaldo = _numero(respaldo.get("probabilidad_ajustada"))
+        if prob_respaldo is not None and 0 <= prob_respaldo <= 100:
+            grupo["brier_respaldo"] += (prob_respaldo / 100.0 - objetivo) ** 2
+            grupo["n_respaldo"] += 1
         if fuente and grupo["total_memoria"] is None:
             total = _numero(fuente.get("total"))
             wr = _numero(fuente.get("winrate"))
@@ -89,6 +106,18 @@ def resumir_generalizacion_fuentes(filas):
             "pred_promedio": round(pred, 2),
             "winrate_hipotetico": round(observado, 2),
             "brecha_pp": round(observado - pred, 2),
+            "brier_modelo": round(datos["brier_modelo"] / n, 5),
+            "brier_prior": round(datos["brier_prior"] / n, 5),
+            "brier_principal": (
+                round(datos["brier_principal"] / datos["n_principal"], 5)
+                if datos["n_principal"] else None
+            ),
+            "brier_respaldo": (
+                round(datos["brier_respaldo"] / datos["n_respaldo"], 5)
+                if datos["n_respaldo"] else None
+            ),
+            "n_principal": datos["n_principal"],
+            "n_respaldo": datos["n_respaldo"],
             "muestra_memoria": datos["total_memoria"],
             "winrate_memoria": datos["winrate_memoria"],
             "activos_distintos": len(datos["activos"]),
@@ -111,6 +140,10 @@ def imprimir_generalizacion_fuentes(filas, limite=25):
             "| PRED:", dato["pred_promedio"],
             "| WR_HIP:", dato["winrate_hipotetico"],
             "| BRECHA_PP:", dato["brecha_pp"],
+            "| BRIER_MODELO:", dato["brier_modelo"],
+            "| BRIER_PRINCIPAL:", dato["brier_principal"],
+            "| BRIER_RESPALDO:", dato["brier_respaldo"],
+            "| BRIER_PRIOR:", dato["brier_prior"],
             "| ACTIVOS:", dato["activos_distintos"],
             "| MINUTOS:", dato["minutos_distintos"],
             "| DIAS:", dato["dias_distintos"],
