@@ -108,5 +108,27 @@ class Core4SelectiveDiagnosticTests(unittest.TestCase):
         self.assertIs(resultado.get("core4_rescate", False), False)
 
 
+    def test_r1_never_overrides_market_or_direct_entry_guards(self):
+        escenarios = (
+            ("MERCADO_SUCIO", {"calidad_mercado": "SUCIO"}),
+            ("MERCADO_CAOTICO", {"calidad_mercado": "CAOTICO"}),
+            ("ENTRADA_NO_DIRECTA", {"modo_entrada_setup": "PROTOCOLO"}),
+            ("MEMORIA_VETA", {"memoria_permite": False}),
+            ("ACTIVO_VETADO", {"activo_bloqueable_historico": True}),
+        )
+        for nombre, campos in escenarios:
+            with self.subTest(escenario=nombre):
+                resultado, diagnostico = self.evaluar(
+                    tipo_setup="INDEFINIDO",
+                    calidad_setup="PREMIUM",
+                    **campos,
+                )
+                self.assertEqual(resultado["decision"], "NO_OPERAR")
+                self.assertIs(resultado["operar"], False)
+                self.assertIs(diagnostico["core4_elegible_rescate_previo"], False)
+                self.assertIs(resultado.get("core4_rescate", False), False)
+
+
+
 if __name__ == "__main__":
     unittest.main()
