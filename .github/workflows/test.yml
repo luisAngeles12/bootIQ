@@ -60,7 +60,13 @@ jobs:
             tests.test_reconnection_backoff \
             tests.test_entry_timing_and_websocket_timeout \
             tests.test_cache_bootstrap_recovery \
-            tests.test_heartbeat_forwarding
+            tests.test_heartbeat_forwarding \
+            tests.test_auditoria_causas_cancelacion \
+            tests.test_auditoria_factores_cerebro \
+            tests.test_auditoria_calidad_frecuencia_cerebro \
+            tests.test_auditoria_rutas_core4_frecuencia \
+            tests.test_auditoria_evidencia_core4_multiventana \
+            tests.test_auditoria_transferencia_estrategias_multiventana
 
 #       - run: pipenv run pylint iqoptionapi
 #       - run: pipenv run isort --recursive --diff .
