@@ -47,7 +47,8 @@ jobs:
             tests.test_auditoria_autoridad_cerebro \
             tests.test_riesgo_base_provisional \
             tests.test_auditoria_diversidad_temporal \
-            tests.test_auditoria_cobertura_estabilidad
+            tests.test_auditoria_cobertura_estabilidad \
+            tests.test_auditoria_calibracion_sombra
 
 #       - run: pipenv run pylint iqoptionapi
 #       - run: pipenv run isort --recursive --diff .
