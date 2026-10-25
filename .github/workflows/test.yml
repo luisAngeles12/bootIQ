@@ -34,7 +34,10 @@ jobs:
         if: steps.cache-it.outputs.cache-hit != 'true'
         run: pipenv install --deploy --dev
 
-      - name: Install offline backtest dependencies for OOS replay\n        run: pipenv run pip install "pandas>=1.5,<3" "numpy>=1.23,<2"\n\n      - name: Audit contextual tests (no broker, no REAL)
+      - name: Install offline backtest dependencies for OOS replay
+        run: pipenv run pip install "pandas>=1.5,<3" "numpy>=1.23,<2"
+
+      - name: Audit contextual tests (no broker, no REAL)
         run: |
           pipenv run python -m unittest \
             tests.test_cierre_monitor_sombra \
