@@ -37,7 +37,7 @@ def resumir_generalizacion_fuentes(filas):
         "n": 0, "wins_hipoteticos": 0, "suma_prob": 0.0,
         "activos": set(), "minutos": set(), "dias": set(),
         "resultado_por_activo": defaultdict(lambda: [0, 0]),
-        "resultado_por_dia": defaultdict(lambda: [0, 0]),
+        "resultado_por_dia": defaultdict(lambda: [0, 0, 0.0, 0.0, 0.0]),
         "total_memoria": None, "winrate_memoria": None,
         "brier_modelo": 0.0, "brier_prior": 0.0,
         "brier_principal": 0.0, "n_principal": 0,
@@ -82,6 +82,11 @@ def resumir_generalizacion_fuentes(filas):
             grupo["dias"].add(dia)
             grupo["resultado_por_dia"][dia][0] += 1
             grupo["resultado_por_dia"][dia][1] += objetivo
+            grupo["resultado_por_dia"][dia][2] += prob
+            grupo["resultado_por_dia"][dia][3] += (prob / 100.0 - objetivo) ** 2
+            grupo["resultado_por_dia"][dia][4] += (
+                PRIOR_WINRATE / 100.0 - objetivo
+            ) ** 2
 
         fuente = _fuente(fila.get("fuente_probabilidad_principal"))
         prob_principal = _numero(fuente.get("probabilidad_ajustada"))
@@ -139,8 +144,17 @@ def resumir_generalizacion_fuentes(filas):
             "loo_activo_wr_min": round(min(loo), 2) if loo else None,
             "loo_activo_wr_max": round(max(loo), 2) if loo else None,
             "resultados_por_dia": {
-                dia: {"n": total, "wins_hipoteticos": w}
-                for dia, (total, w) in sorted(datos["resultado_por_dia"].items())
+                dia: {
+                    "n": total,
+                    "wins_hipoteticos": w,
+                    "probabilidad_promedio": round(p / total, 2),
+                    "winrate_hipotetico": round(100 * w / total, 2),
+                    "brier_modelo": round(brier / total, 5),
+                    "brier_prior": round(brier_prior / total, 5),
+                }
+                for dia, (total, w, p, brier, brier_prior) in sorted(
+                    datos["resultado_por_dia"].items()
+                )
             },
             "minutos_distintos": len(datos["minutos"]),
             "dias_distintos": len(datos["dias"]),
