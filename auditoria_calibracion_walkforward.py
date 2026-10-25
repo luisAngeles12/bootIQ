@@ -20,8 +20,6 @@ def comparar_calibracion_walkforward(filas, horizontes=(3, 14, 60),
         if not isinstance(fila, dict):
             descartadas += 1
             continue
-        if solo_operar and fila.get("decision_estadistica_sombra") != "OPERAR_SOMBRA":
-            continue
         y = str(fila.get("resultado_hipotetico") or "").upper()
         clave = str(fila.get("clave_probabilidad_principal") or "").strip()
         try:
@@ -35,7 +33,9 @@ def comparar_calibracion_walkforward(filas, horizontes=(3, 14, 60),
         if y not in ("WIN", "LOSS") or not clave or not 0.0 <= p <= 1.0:
             descartadas += 1
             continue
-        por_dia[dia][clave].append((int(y == "WIN"), p))
+        por_dia[dia][clave].append((
+            int(y == "WIN"), p, str(fila.get("decision_estadistica_sombra") or "")
+        ))
 
     dias = sorted(por_dia)
     resultados = []
@@ -52,11 +52,13 @@ def comparar_calibracion_walkforward(filas, horizontes=(3, 14, 60),
                     pasadas = [
                         y for anterior in dias
                         if 0 < (dia - anterior).days <= horizonte
-                        for y, _ in por_dia[anterior].get(clave, [])
+                        for y, _, _ in por_dia[anterior].get(clave, [])
                     ]
                     muestra = len(pasadas)
                     wins_previos = sum(pasadas)
-                    for y, p in senales:
+                    for y, p, decision in senales:
+                        if solo_operar and decision != "OPERAR_SOMBRA":
+                            continue
                         nueva = (
                             (fuerza * p + wins_previos) / (fuerza + muestra)
                             if muestra else p
