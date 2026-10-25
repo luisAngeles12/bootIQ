@@ -130,5 +130,34 @@ class Core4SelectiveDiagnosticTests(unittest.TestCase):
 
 
 
+    def test_r1_r2_requiere_ruptura_y_no_se_convierte_en_directa(self):
+        evidencia = {
+            "direccion": "CALL",
+            "calidad_mercado": "NORMAL",
+            "tipo_mercado": "TENDENCIA_ALCISTA",
+            "modo_entrada_setup": "DIRECTA",
+            "tipo_setup": "INDEFINIDO",
+            "calidad_setup": "PREMIUM",
+            "pa_tipo": "RECHAZO_COMPRADOR_CONFIRMADO",
+            "protocolo_sugerido": "PROTOCOLO_RUPTURA_RESISTENCIA",
+        }
+        resultado = convertir_decision_v3_a_oficial(
+            {
+                "decision": "NO_OPERAR_SOMBRA",
+                "motivo": "caso R1+R2 con resistencia",
+                "muestra": 30,
+                "confiabilidad": "ALTA",
+            },
+            evidencia,
+        )
+        diag = evidencia["_core4_diagnostico_previo"]
+        self.assertIs(diag["core4_elegible_rescate_previo"], True)
+        self.assertIs(resultado["core4_rescate"], True)
+        self.assertEqual(resultado["decision"], "OPERAR_CON_PROTOCOLO")
+        self.assertIs(resultado["requiere_protocolo"], True)
+        self.assertEqual(resultado["modo_ejecucion"], "PROTOCOLO")
+
+
+
 if __name__ == "__main__":
     unittest.main()
