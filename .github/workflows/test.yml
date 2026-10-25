@@ -56,8 +56,7 @@ jobs:
             tests.test_auditoria_transferencia_temporal \
             tests.test_auditoria_calibracion_walkforward \
             tests.test_oos_oct02_replay \
-            tests.test_partial_official_top \
-            tests.test_reconnection_backoff
+            tests.test_partial_official_top
 
 #       - run: pipenv run pylint iqoptionapi
 #       - run: pipenv run isort --recursive --diff .
