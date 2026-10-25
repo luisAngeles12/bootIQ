@@ -65,7 +65,8 @@ jobs:
             tests.test_auditoria_factores_cerebro \
             tests.test_auditoria_calidad_frecuencia_cerebro \
             tests.test_auditoria_rutas_core4_frecuencia \
-            tests.test_auditoria_evidencia_core4_multiventana
+            tests.test_auditoria_evidencia_core4_multiventana \
+            tests.test_auditoria_transferencia_estrategias_multiventana
 
 #       - run: pipenv run pylint iqoptionapi
 #       - run: pipenv run isort --recursive --diff .
