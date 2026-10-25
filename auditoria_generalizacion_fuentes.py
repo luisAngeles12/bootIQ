@@ -36,6 +36,8 @@ def resumir_generalizacion_fuentes(filas):
     grupos = defaultdict(lambda: {
         "n": 0, "wins_hipoteticos": 0, "suma_prob": 0.0,
         "activos": set(), "minutos": set(), "dias": set(),
+        "resultado_por_activo": defaultdict(lambda: [0, 0]),
+        "resultado_por_dia": defaultdict(lambda: [0, 0]),
         "total_memoria": None, "winrate_memoria": None,
         "brier_modelo": 0.0, "brier_prior": 0.0,
         "brier_principal": 0.0, "n_principal": 0,
@@ -65,6 +67,8 @@ def resumir_generalizacion_fuentes(filas):
         activo = str(fila.get("activo") or "").strip().upper()
         if activo:
             grupo["activos"].add(activo)
+            grupo["resultado_por_activo"][activo][0] += 1
+            grupo["resultado_por_activo"][activo][1] += objetivo
 
         fecha_senal = fila.get("fecha_senal")
         try:
@@ -76,6 +80,8 @@ def resumir_generalizacion_fuentes(filas):
         else:
             grupo["minutos"].add(minuto)
             grupo["dias"].add(dia)
+            grupo["resultado_por_dia"][dia][0] += 1
+            grupo["resultado_por_dia"][dia][1] += objetivo
 
         fuente = _fuente(fila.get("fuente_probabilidad_principal"))
         prob_principal = _numero(fuente.get("probabilidad_ajustada"))
@@ -98,6 +104,11 @@ def resumir_generalizacion_fuentes(filas):
         n = datos["n"]
         pred = datos["suma_prob"] / n
         observado = 100 * datos["wins_hipoteticos"] / n
+        por_activo = list(datos["resultado_por_activo"].values())
+        loo = [
+            100.0 * (datos["wins_hipoteticos"] - w) / (n - total)
+            for total, w in por_activo if total < n
+        ]
         resumen.append({
             "clave": clave,
             "n": n,
@@ -121,6 +132,16 @@ def resumir_generalizacion_fuentes(filas):
             "muestra_memoria": datos["total_memoria"],
             "winrate_memoria": datos["winrate_memoria"],
             "activos_distintos": len(datos["activos"]),
+            "activos_minimo_5": sum(total >= 5 for total, _ in por_activo),
+            "activos_bajo_probabilidad": sum(
+                100.0 * w / total < pred for total, w in por_activo
+            ),
+            "loo_activo_wr_min": round(min(loo), 2) if loo else None,
+            "loo_activo_wr_max": round(max(loo), 2) if loo else None,
+            "resultados_por_dia": {
+                dia: {"n": total, "wins_hipoteticos": w}
+                for dia, (total, w) in sorted(datos["resultado_por_dia"].items())
+            },
             "minutos_distintos": len(datos["minutos"]),
             "dias_distintos": len(datos["dias"]),
         })
@@ -145,6 +166,11 @@ def imprimir_generalizacion_fuentes(filas, limite=25):
             "| BRIER_RESPALDO:", dato["brier_respaldo"],
             "| BRIER_PRIOR:", dato["brier_prior"],
             "| ACTIVOS:", dato["activos_distintos"],
+            "| ACTIVOS_MIN5:", dato["activos_minimo_5"],
+            "| ACTIVOS_BAJO_PRED:", dato["activos_bajo_probabilidad"],
+            "| LOO_ACTIVO_WR_MIN:", dato["loo_activo_wr_min"],
+            "| LOO_ACTIVO_WR_MAX:", dato["loo_activo_wr_max"],
+            "| RESULTADOS_POR_DIA:", dato["resultados_por_dia"],
             "| MINUTOS:", dato["minutos_distintos"],
             "| DIAS:", dato["dias_distintos"],
             "| FUENTE:", dato["clave"],
