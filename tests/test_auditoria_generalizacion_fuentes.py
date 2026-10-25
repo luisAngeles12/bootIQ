@@ -104,6 +104,9 @@ class GeneralizacionFuentesTests(unittest.TestCase):
         self.assertEqual(
             sorted(d["n"] for d in dato["resultados_por_dia"].values()), [1, 3]
         )
+        self.assertEqual(sum(d["wins_hipoteticos"] for d in dato["resultados_por_dia"].values()), 2)
+        self.assertTrue(all(0 <= d["brier_modelo"] <= 1 for d in dato["resultados_por_dia"].values()))
+        self.assertTrue(all(0 <= d["brier_prior"] <= 1 for d in dato["resultados_por_dia"].values()))
 
     def test_solo_un_activo_no_inventa_generalizacion_loo(self):
         grupos, _ = resumir_generalizacion_fuentes([
