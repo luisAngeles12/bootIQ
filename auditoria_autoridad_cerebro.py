@@ -48,9 +48,14 @@ def resumir_autoridad(filas):
             if invalida_dura or invalida_selectiva:
                 conteos["core4_match_invalidado"] += 1
             elif elegible:
-                conteos["core4_match_elegible"] += 1
-                if cancelada:
-                    conteos["core4_elegible_cancelada"] += 1
+                # Elegibilidad estructural no equivale a permiso de
+                # rescate: debe cumplirse tambien el selector V3.
+                if _verdadero(fila.get("core4_elegible_rescate_previo")):
+                    conteos["core4_match_elegible"] += 1
+                    if cancelada:
+                        conteos["core4_elegible_cancelada"] += 1
+                else:
+                    conteos["core4_estructural_sin_selector_v3"] += 1
             else:
                 conteos["core4_match_no_elegible_sin_veto"] += 1
             if _verdadero(fila.get("core4_invalidacion_dura_previa")):
