@@ -62,7 +62,8 @@ jobs:
             tests.test_cache_bootstrap_recovery \
             tests.test_heartbeat_forwarding \
             tests.test_auditoria_causas_cancelacion \
-            tests.test_auditoria_factores_cerebro
+            tests.test_auditoria_factores_cerebro \
+            tests.test_auditoria_calidad_frecuencia_cerebro
 
 #       - run: pipenv run pylint iqoptionapi
 #       - run: pipenv run isort --recursive --diff .
