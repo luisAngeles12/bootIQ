@@ -10,6 +10,7 @@ from math import sqrt
 
 
 FACTORES = ("patron", "direccion", "tipo_mercado", "estado_tendencia", "accion_precio")
+OBJETIVO_WINRATE_MINIMO = 59.0  # solo auditoría, nunca cambia autoridad
 
 
 def _fecha_minuto(fila):
@@ -76,6 +77,13 @@ def analizar_factores_cancelados(filas, minimo=30, minimo_dias=3, minimo_activos
         # Un día con una sola señal no constituye validación temporal.
         dias_con_muestra = sum(len(v) >= 10 for v in g["por_dia"].values())
         suficiente = dias >= minimo_dias and activos >= minimo_activos and dias_con_muestra >= minimo_dias
+        # El agregado no puede ocultar un día con menos del objetivo.
+        supera_59_cada_dia = bool(g["por_dia"]) and all(
+            len(v) >= 10 and sum(v) * 100.0 / len(v) >= OBJETIVO_WINRATE_MINIMO
+            for v in g["por_dia"].values()
+        )
+        supera_59 = (suficiente and 100.0 * g["wins"] / n >= OBJETIVO_WINRATE_MINIMO
+                     and supera_59_cada_dia)
         salida.append({
             "factor": factor, "valor": valor, "n": n, "wins_hipoteticos": g["wins"],
             "wr_hipotetico": round(g["wins"] * 100 / n, 2),
@@ -83,6 +91,7 @@ def analizar_factores_cancelados(filas, minimo=30, minimo_dias=3, minimo_activos
             "dias": dias, "dias_con_muestra": dias_con_muestra,
             "activos": activos, "minutos": len(g["minutos"]),
             "cobertura_temporal_suficiente": suficiente,
+            "objetivo_59_sostenido_en_dias": supera_59,
             "candidato_productivo": False,
         })
     return sorted(salida, key=lambda r: (-r["n"], r["factor"], r["valor"])), excluidos
