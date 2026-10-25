@@ -1771,7 +1771,7 @@ def refrescar_activos_incremental():
     print(
         "D9.98 SCAN CAUSAS TOP20 |",
         "compatibles:", len(candidatos),
-        "| requeridos:", MAX_ACTIVOS_ANALIZAR,
+        "| maximo:", MAX_ACTIVOS_ANALIZAR,
         "| contadores_ronda:", resumen_descartes_d998,
         flush=True,
     )
@@ -1839,7 +1839,7 @@ def refrescar_activos_incremental():
             "SIN CANDIDATOS |",
             "compatibles:",
             len(candidatos),
-            "| requeridos:",
+            "| maximo:",
             MAX_ACTIVOS_ANALIZAR,
             "| SE CONSERVA CACHE OFICIAL",
         )

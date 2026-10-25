@@ -34,9 +34,12 @@ jobs:
         if: steps.cache-it.outputs.cache-hit != 'true'
         run: pipenv install --deploy --dev
 
+      - name: Install offline backtest dependencies for OOS replay
+        run: pipenv run pip install "pandas>=1.5,<3" "numpy>=1.23,<2"
+
       - name: Audit contextual tests (no broker, no REAL)
         run: |
-          pipenv run python -m unittest \
+          pipenv run python ci_run_broker_free.py \
             tests.test_cierre_monitor_sombra \
             tests.test_monitor_pausas_contextuales \
             tests.test_auditoria_vetos_cerebro \
@@ -45,7 +48,19 @@ jobs:
             tests.test_core4_selective_diagnostic \
             tests.test_v3_authority_diagnostic \
             tests.test_auditoria_autoridad_cerebro \
-            tests.test_riesgo_base_provisional
+            tests.test_riesgo_base_provisional \
+            tests.test_auditoria_diversidad_temporal \
+            tests.test_auditoria_cobertura_estabilidad \
+            tests.test_auditoria_calibracion_sombra \
+            tests.test_auditoria_generalizacion_fuentes \
+            tests.test_auditoria_transferencia_temporal \
+            tests.test_auditoria_calibracion_walkforward \
+            tests.test_oos_oct02_replay \
+            tests.test_partial_official_top \
+            tests.test_reconnection_backoff \
+            tests.test_entry_timing_and_websocket_timeout \
+            tests.test_cache_bootstrap_recovery \
+            tests.test_heartbeat_forwarding
 
 #       - run: pipenv run pylint iqoptionapi
 #       - run: pipenv run isort --recursive --diff .
