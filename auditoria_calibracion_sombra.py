@@ -89,7 +89,64 @@ def resumir_calibracion_sombra(filas):
     return sorted(resumen, key=lambda r: (-r["n"], r["decision_sombra"])), descartadas
 
 
+
+def comparar_decisiones_sombra_por_minuto(
+    filas,
+    decision_a="OPERAR_SOMBRA",
+    decision_b="NO_OPERAR_SOMBRA",
+):
+    """Compara aciertos hipoteticos en los mismos minutos UTC.
+
+    Cada minuto compartido tiene el mismo peso, independientemente del numero
+    de activos senalados. No estima rentabilidad ni cambia la decision oficial.
+    """
+    minutos = defaultdict(lambda: defaultdict(list))
+    for fila in filas:
+        if not isinstance(fila, dict):
+            continue
+        decision = str(fila.get("decision_estadistica_sombra") or "").strip().upper()
+        if decision not in (decision_a, decision_b):
+            continue
+        resultado = str(fila.get("resultado_hipotetico") or "").strip().upper()
+        if resultado not in ("WIN", "LOSS"):
+            continue
+        try:
+            instante = float(fila.get("fecha_senal"))
+            if not -1e12 < instante < 1e12:
+                continue
+            minuto = int(instante) // 60
+        except (TypeError, ValueError, OverflowError):
+            continue
+        minutos[minuto][decision].append(int(resultado == "WIN"))
+
+    pares = [
+        (grupos[decision_a], grupos[decision_b])
+        for grupos in minutos.values()
+        if grupos.get(decision_a) and grupos.get(decision_b)
+    ]
+    if not pares:
+        return {
+            "minutos_compartidos": 0, "senales_a": 0, "senales_b": 0,
+            "wr_minuto_a": None, "wr_minuto_b": None, "diferencia_pp": None,
+            "minutos_a_mejor": 0, "minutos_empatados": 0, "minutos_a_peor": 0,
+        }
+    medias = [(sum(a) / len(a), sum(b) / len(b)) for a, b in pares]
+    n = len(pares)
+    return {
+        "minutos_compartidos": n,
+        "senales_a": sum(len(a) for a, _ in pares),
+        "senales_b": sum(len(b) for _, b in pares),
+        "wr_minuto_a": round(100 * sum(a for a, _ in medias) / n, 2),
+        "wr_minuto_b": round(100 * sum(b for _, b in medias) / n, 2),
+        "diferencia_pp": round(100 * sum(a - b for a, b in medias) / n, 2),
+        "minutos_a_mejor": sum(a > b for a, b in medias),
+        "minutos_empatados": sum(a == b for a, b in medias),
+        "minutos_a_peor": sum(a < b for a, b in medias),
+    }
+
+
 def imprimir_calibracion_sombra(filas):
+    filas = list(filas)
     grupos, descartadas = resumir_calibracion_sombra(filas)
     print("===== CALIBRACION SOMBRA — SOLO AUDITORIA =====")
     print("Comparacion descriptiva, no se consideran operaciones ejecutadas.")
@@ -105,6 +162,18 @@ def imprimir_calibracion_sombra(filas):
             "| DIAS:", g["dias_distintos"],
             "| MINUTOS:", g["minutos_distintos"],
         )
+
+    comparacion = comparar_decisiones_sombra_por_minuto(filas)
+    print(
+        "COMPARACION_MINUTOS_COMPARTIDOS:",
+        comparacion["minutos_compartidos"],
+        "| OPERAR_WR_MINUTO:", comparacion["wr_minuto_a"],
+        "| NO_OPERAR_WR_MINUTO:", comparacion["wr_minuto_b"],
+        "| DIFERENCIA_PP:", comparacion["diferencia_pp"],
+        "| MEJOR:", comparacion["minutos_a_mejor"],
+        "| EMPATES:", comparacion["minutos_empatados"],
+        "| PEOR:", comparacion["minutos_a_peor"],
+    )
 
 
 def main():
