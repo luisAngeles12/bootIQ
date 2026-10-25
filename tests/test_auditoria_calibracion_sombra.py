@@ -1,6 +1,9 @@
 import unittest
 
-from auditoria_calibracion_sombra import resumir_calibracion_sombra
+from auditoria_calibracion_sombra import (
+    resumir_calibracion_sombra,
+    comparar_decisiones_sombra_por_minuto,
+)
 
 
 class CalibracionSombraTests(unittest.TestCase):
@@ -54,6 +57,47 @@ class CalibracionSombraTests(unittest.TestCase):
         self.assertEqual({g["decision_sombra"] for g in resumen},
                          {"NO_OPERAR_SOMBRA", "OPERAR_SOMBRA"})
         self.assertEqual(sum(g["dias_distintos"] for g in resumen), 2)
+
+
+    def test_compara_solo_minutos_compartidos_y_pesa_minutos_por_igual(self):
+        filas = [
+            {"fecha_senal": "120", "decision_estadistica_sombra": "OPERAR_SOMBRA",
+             "resultado_hipotetico": "WIN"},
+            {"fecha_senal": "120", "decision_estadistica_sombra": "NO_OPERAR_SOMBRA",
+             "resultado_hipotetico": "LOSS"},
+            {"fecha_senal": "180", "decision_estadistica_sombra": "OPERAR_SOMBRA",
+             "resultado_hipotetico": "LOSS"},
+            {"fecha_senal": "180", "decision_estadistica_sombra": "OPERAR_SOMBRA",
+             "resultado_hipotetico": "LOSS"},
+            {"fecha_senal": "180", "decision_estadistica_sombra": "NO_OPERAR_SOMBRA",
+             "resultado_hipotetico": "WIN"},
+            {"fecha_senal": "240", "decision_estadistica_sombra": "OPERAR_SOMBRA",
+             "resultado_hipotetico": "WIN"},
+            {"fecha_senal": "300", "decision_estadistica_sombra": "NO_OPERAR_SOMBRA",
+             "resultado_hipotetico": "WIN"},
+            {"fecha_senal": "120", "decision_estadistica_sombra": "OPERAR_SOMBRA",
+             "resultado_hipotetico": "TIE"},
+            {"fecha_senal": "", "decision_estadistica_sombra": "NO_OPERAR_SOMBRA",
+             "resultado_hipotetico": "LOSS"},
+        ]
+        resultado = comparar_decisiones_sombra_por_minuto(filas)
+        self.assertEqual(resultado["minutos_compartidos"], 2)
+        self.assertEqual(resultado["senales_a"], 3)
+        self.assertEqual(resultado["senales_b"], 2)
+        self.assertEqual(resultado["wr_minuto_a"], 50.0)
+        self.assertEqual(resultado["wr_minuto_b"], 50.0)
+        self.assertEqual(resultado["diferencia_pp"], 0.0)
+        self.assertEqual(resultado["minutos_a_mejor"], 1)
+        self.assertEqual(resultado["minutos_a_peor"], 1)
+
+    def test_comparacion_sin_minutos_compartidos_no_inventa_rendimiento(self):
+        datos = [{"fecha_senal": "120",
+                  "decision_estadistica_sombra": "OPERAR_SOMBRA",
+                  "resultado_hipotetico": "WIN"}]
+        resultado = comparar_decisiones_sombra_por_minuto(datos)
+        self.assertEqual(resultado["minutos_compartidos"], 0)
+        self.assertIsNone(resultado["wr_minuto_a"])
+        self.assertIsNone(resultado["diferencia_pp"])
 
 
 if __name__ == "__main__":
