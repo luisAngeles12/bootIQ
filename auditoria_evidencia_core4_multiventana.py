@@ -56,3 +56,25 @@ def evaluar_evidencia_multiventana(ventanas, minimo_operaciones=MIN_OPERACIONES,
             "cumple_minimo_muestra_y_tiempo":cumple_muestra,
             "supera_59_con_confianza":cumple_objetivo,
             "autoriza_trading":False}
+
+
+def evaluar_rutas_por_separado(filas, **criterios):
+    """Evita que resultados de R1 y R1+R2 se sumen como una estrategia.
+
+    Cada fila incluye regla exacta, ventana independiente y WIN/LOSS
+    ya auditados; se preserva la decisión de no operar del cerebro.
+    """
+    grupos = {}
+    for fila in filas:
+        if not isinstance(fila, dict):
+            raise ValueError("fila no estructurada")
+        regla = str(fila.get("regla") or "").strip()
+        if not regla:
+            raise ValueError("ruta CORE4 sin nombre")
+        grupos.setdefault(regla, []).append({
+            "ventana": fila.get("ventana"),
+            "wins": fila.get("wins"),
+            "losses": fila.get("losses"),
+        })
+    return {regla: evaluar_evidencia_multiventana(ventanas, **criterios)
+            for regla, ventanas in sorted(grupos.items())}
