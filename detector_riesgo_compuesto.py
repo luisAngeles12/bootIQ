@@ -134,11 +134,14 @@ def evaluar_riesgo_compuesto(evidencia):
             motivos=motivos,
         )
 
-    if base_estrategia in {"media", "debil"}:
+    # "MEDIA" es la etiqueta provisional neutra emitida por
+    # diagnosticar_base_estrategia() mientras decide el Cerebro.
+    # No implica por si sola debilidad estructural comprobada.
+    if base_estrategia == "debil":
         riesgo += _registrar_riesgo(
             categoria="base_estrategia_insuficiente",
             puntos=1,
-            motivo="Base de estrategia débil o media.",
+            motivo="Base de estrategia explícitamente débil.",
             categorias_detectadas=categorias_detectadas,
             motivos=motivos,
         )

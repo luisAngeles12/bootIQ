@@ -405,6 +405,45 @@ def construir_evidencia_operacion(senal, ctx=None):
             ""
         ),
 
+        # Fase 2: trazabilidad estructurada de validaciones que
+        # estrategia.py ya calculo. Solo transporte; no vetos.
+        "validacion_zona_sr_ok": senal.get(
+            "validacion_zona_sr_ok",
+            ctx.get("validacion_zona_sr_ok"),
+        ),
+        "validacion_ubicacion_ok": senal.get(
+            "validacion_ubicacion_ok",
+            ctx.get("validacion_ubicacion_ok"),
+        ),
+        "razon_ubicacion": normalizar(
+            senal.get("razon_ubicacion", ctx.get("razon_ubicacion")),
+            "",
+        ),
+        "zona_operada": senal.get(
+            "zona_operada",
+            ctx.get("zona_operada"),
+        ),
+        "razon_zona_operada": normalizar(
+            senal.get("razon_zona_operada", ctx.get("razon_zona_operada")),
+            "",
+        ),
+        "vela_contraria_reciente": senal.get(
+            "vela_contraria_reciente",
+            ctx.get("vela_contraria_reciente"),
+        ),
+        "razon_vela_contraria": normalizar(
+            senal.get("razon_vela_contraria", ctx.get("razon_vela_contraria")),
+            "",
+        ),
+        "razon_ruptura": normalizar(
+            senal.get("razon_ruptura", ctx.get("razon_ruptura")),
+            "",
+        ),
+        "razon_accion_precio": normalizar(
+            senal.get("razon_accion_precio", ctx.get("razon_accion_precio")),
+            "",
+        ),
+
         "validacion_accion_precio_ok": senal.get(
             "validacion_accion_precio_ok",
             ctx.get("validacion_accion_precio_ok")
