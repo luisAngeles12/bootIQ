@@ -67,5 +67,16 @@ class AuditoriaAutoridadCerebroTests(unittest.TestCase):
         self.assertEqual(resultados, {})
 
 
+    def test_sin_telemetria_no_se_confunde_con_sin_match(self):
+        conteos, _ = resumir_autoridad([
+            {"estado_operacion": "CANCELADA_CEREBRO"},
+            {"estado_operacion": "CANCELADA_CEREBRO", "core4_match_previo": ""},
+            {"estado_operacion": "CANCELADA_CEREBRO", "core4_match_previo": False},
+        ])
+        self.assertEqual(conteos["core4_sin_telemetria"], 2)
+        self.assertEqual(conteos["core4_sin_match"], 1)
+
+
+
 if __name__ == "__main__":
     unittest.main()
