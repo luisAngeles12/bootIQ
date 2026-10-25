@@ -53,5 +53,29 @@ class GeneralizacionFuentesTests(unittest.TestCase):
         self.assertEqual(descartadas, 3)
 
 
+    def test_descompone_error_sin_cambiar_probabilidades(self):
+        filas = [
+            {"clave_probabilidad_principal": "A",
+             "fuente_probabilidad_principal": "{'total': 23, 'winrate': 65.22, 'probabilidad_ajustada': 60}",
+             "fuente_probabilidad_respaldo": "{'probabilidad_ajustada': 55}",
+             "probabilidad_estimada": "58", "resultado_hipotetico": "WIN"},
+            {"clave_probabilidad_principal": "A",
+             "fuente_probabilidad_principal": "{'total': 23, 'winrate': 65.22, 'probabilidad_ajustada': 60}",
+             "fuente_probabilidad_respaldo": "{'probabilidad_ajustada': 55}",
+             "probabilidad_estimada": "58", "resultado_hipotetico": "LOSS"},
+        ]
+        grupos, descartadas = resumir_generalizacion_fuentes(filas)
+        self.assertEqual(descartadas, 0)
+        g = grupos[0]
+        self.assertEqual(g["pred_promedio"], 58.0)
+        self.assertEqual(g["n_principal"], 2)
+        self.assertEqual(g["n_respaldo"], 2)
+        self.assertAlmostEqual(g["brier_modelo"], 0.2564)
+        self.assertAlmostEqual(g["brier_principal"], 0.26)
+        self.assertAlmostEqual(g["brier_respaldo"], 0.2525)
+        self.assertLess(g["brier_prior"], g["brier_modelo"])
+
+
+
 if __name__ == "__main__":
     unittest.main()
