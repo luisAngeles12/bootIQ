@@ -49,7 +49,8 @@ jobs:
             tests.test_auditoria_diversidad_temporal \
             tests.test_auditoria_cobertura_estabilidad \
             tests.test_auditoria_calibracion_sombra \
-            tests.test_auditoria_generalizacion_fuentes
+            tests.test_auditoria_generalizacion_fuentes \
+            tests.test_oos_oct02_replay
 
 #       - run: pipenv run pylint iqoptionapi
 #       - run: pipenv run isort --recursive --diff .
