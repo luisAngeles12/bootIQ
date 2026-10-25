@@ -78,5 +78,43 @@ class V3AuthorityDiagnosticTests(unittest.TestCase):
 
 
 
+    def test_campos_pasivos_no_cambian_autorizacion_core4(self):
+        from constructor_evidencia import construir_evidencia_operacion
+
+        senal = {
+            "activo": "AAA",
+            "direccion": "call",
+            "patron": "reaccion compradora en soporte",
+            "tipo_setup": "INDEFINIDO",
+            "calidad_setup": "PREMIUM",
+            "modo_entrada_setup": "DIRECTA",
+            "calidad_mercado": "NORMAL",
+            "tipo_mercado": "TENDENCIA_ALCISTA",
+        }
+        extras = {
+            "validacion_zona_sr_ok": True,
+            "validacion_ubicacion_ok": True,
+            "zona_operada": False,
+            "vela_contraria_reciente": False,
+            "razon_ruptura": "sin ruptura",
+            "razon_accion_precio": "zona sin conflicto",
+        }
+        sombra = {
+            "decision": "NO_OPERAR_SOMBRA",
+            "motivo": "prueba comparativa",
+            "muestra": 30,
+            "confiabilidad": "ALTA",
+        }
+        origen = construir_evidencia_operacion(senal)
+        enriquecida = construir_evidencia_operacion({**senal, **extras})
+        a = convertir_decision_v3_a_oficial(sombra, origen)
+        b = convertir_decision_v3_a_oficial(sombra, enriquecida)
+        for clave in ("decision", "operar", "requiere_protocolo",
+                      "modo_ejecucion", "core4_rescate", "origen_autoridad"):
+            with self.subTest(clave=clave):
+                self.assertEqual(a.get(clave), b.get(clave))
+
+
+
 if __name__ == "__main__":
     unittest.main()
