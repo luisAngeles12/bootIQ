@@ -77,5 +77,43 @@ class GeneralizacionFuentesTests(unittest.TestCase):
 
 
 
+    def test_desglose_por_activo_y_dia_no_duplica_senales(self):
+        filas = [
+            {"clave_probabilidad_principal": "A", "probabilidad_estimada": "60",
+             "resultado_hipotetico": "WIN", "activo": "AAA",
+             "fecha_senal": "1791807060"},
+            {"clave_probabilidad_principal": "A", "probabilidad_estimada": "60",
+             "resultado_hipotetico": "LOSS", "activo": "AAA",
+             "fecha_senal": "1791807120"},
+            {"clave_probabilidad_principal": "A", "probabilidad_estimada": "60",
+             "resultado_hipotetico": "LOSS", "activo": "BBB",
+             "fecha_senal": "1791807180"},
+            {"clave_probabilidad_principal": "A", "probabilidad_estimada": "60",
+             "resultado_hipotetico": "WIN", "activo": "CCC",
+             "fecha_senal": "1791893460"},
+        ]
+        grupos, descartadas = resumir_generalizacion_fuentes(filas)
+        self.assertEqual(descartadas, 0)
+        dato = grupos[0]
+        self.assertEqual(dato["activos_distintos"], 3)
+        self.assertEqual(dato["activos_minimo_5"], 0)
+        self.assertEqual(dato["activos_bajo_probabilidad"], 2)
+        self.assertEqual(dato["loo_activo_wr_min"], 33.33)
+        self.assertEqual(dato["loo_activo_wr_max"], 66.67)
+        self.assertEqual(dato["dias_distintos"], 2)
+        self.assertEqual(
+            sorted(d["n"] for d in dato["resultados_por_dia"].values()), [1, 3]
+        )
+
+    def test_solo_un_activo_no_inventa_generalizacion_loo(self):
+        grupos, _ = resumir_generalizacion_fuentes([
+            {"clave_probabilidad_principal": "A",
+             "probabilidad_estimada": "50", "resultado_hipotetico": "WIN",
+             "activo": "AAA", "fecha_senal": "1791807060"},
+        ])
+        self.assertIsNone(grupos[0]["loo_activo_wr_min"])
+        self.assertIsNone(grupos[0]["loo_activo_wr_max"])
+
+
 if __name__ == "__main__":
     unittest.main()
