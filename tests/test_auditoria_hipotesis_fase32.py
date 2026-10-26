@@ -58,6 +58,19 @@ class HipotesisFase32Tests(unittest.TestCase):
         self.assertEqual(r["ventanas_prospectivas_validas"],0)
         self.assertFalse(r["evidencia_59_transferible"])
 
+    def test_descubrimiento_no_inflama_wilson_prospectivo(self):
+        base={"pa_fuerza":".31","calidad_setup":"BUENA",
+              "subtipo_setup":"SWEEP_RUPTURA_CONFIRMABLE"}
+        viejas=[dict(base,resultado_hipotetico="WIN",fecha_senal="1791800940") for _ in range(250)]
+        nuevas=[dict(base,resultado_hipotetico="LOSS",fecha_senal="1793059200") for _ in range(5)]
+        r=resumir_hipotesis_ventanas([("exploracion",viejas),("futura",nuevas)],
+                                     minimo_total=5,minimo_ventanas=1,minimo_por_ventana=5,
+                                     ventanas_prospectivas=("futura",))["B"]
+        self.assertEqual(r["n_prospectivo"],5)
+        self.assertEqual(r["wins_prospectivos"],0)
+        self.assertEqual(r["wr_prospectivo"],0)
+        self.assertFalse(r["evidencia_59_transferible"])
+
     def test_duplicacion_identidad_entre_periodos(self):
         senal={"fecha_senal":"1790000000","activo":"EURUSD-OTC",
                "patron":"CHOCH","direccion":"CALL","pa_fuerza":".31",
