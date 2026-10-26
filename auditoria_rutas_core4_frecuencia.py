@@ -34,7 +34,8 @@ def _wilson_min(w, n):
 def auditar_rutas_core4(filas, objetivo=59.0, minimo_operadas=30, minimo_dias=3):
     grupos = defaultdict(lambda: {"senales": 0, "operadas": 0, "canceladas_cerebro": 0,
                                   "canceladas_protocolo": 0, "win_ejecutadas_backtest": 0,
-                                  "loss_ejecutadas_backtest": 0, "win_hipoteticas_veto": 0,
+                                  "loss_ejecutadas_backtest": 0, "operadas_sin_resultado": 0,
+                                  "win_hipoteticas_veto": 0,
                                   "loss_hipoteticas_veto": 0, "dias_operadas": set(),
                                   "activos_operados": set()})
     sin_match = 0
@@ -55,12 +56,15 @@ def auditar_rutas_core4(filas, objetivo=59.0, minimo_operadas=30, minimo_dias=3)
         res = str(fila.get("resultado_hipotetico") or "").upper()
         if estado.startswith("OPERADA_"):
             g["operadas"] += 1
-            # La etiqueta hipotética del replay es observación de backtest,
-            # no ejecución de broker real.
-            if res == "WIN":
+            # En protocolo, entrada diferida puede cambiar el resultado.
+            # Usar cierre de la operada, nunca el hipotético de la señal.
+            cierre = str(fila.get("resultado") or "").upper()
+            if cierre == "WIN":
                 g["win_ejecutadas_backtest"] += 1
-            elif res == "LOSS":
+            elif cierre == "LOSS":
                 g["loss_ejecutadas_backtest"] += 1
+            else:
+                g["operadas_sin_resultado"] += 1
             dia = _dia(fila)
             if dia:
                 g["dias_operadas"].add(dia)
