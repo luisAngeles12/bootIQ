@@ -51,6 +51,8 @@ def evaluar_rentabilidad(filas, payout_neto=None):
     ganancias = perdidas = 0
     pnl = 0.0
     pnl_completo = True
+    identidades_ejecutadas = {}
+    conflictos_order_id = set()
     for r in filas:
         if not isinstance(r, dict):
             ignoradas["INVALIDA"] += 1
@@ -62,6 +64,17 @@ def evaluar_rentabilidad(filas, payout_neto=None):
         if resultado not in ("WIN", "LOSS"):
             ignoradas["SIN_CIERRE_WIN_LOSS"] += 1
             continue
+        order_id = str(r.get("order_id") or "").strip()
+        if order_id:
+            firma = (resultado, str(r.get("pnl_real_cerrado", "")).strip())
+            if order_id in identidades_ejecutadas:
+                if identidades_ejecutadas[order_id] != firma:
+                    conflictos_order_id.add(order_id)
+                    ignoradas["CONFLICTO_ORDER_ID"] += 1
+                else:
+                    ignoradas["DUPLICADO_ORDER_ID"] += 1
+                continue
+            identidades_ejecutadas[order_id] = firma
         evaluadas.append(r)
         ganancias += resultado == "WIN"
         perdidas += resultado == "LOSS"
@@ -80,11 +93,17 @@ def evaluar_rentabilidad(filas, payout_neto=None):
         except (KeyError, TypeError, ValueError):
             pnl_completo = False
     n = len(evaluadas)
-    wr = 100 * ganancias / n if n else None
+    # Identidades contradictorias impiden certificar WR y PNL.
+    datos_confiables = not conflictos_order_id
+    wr = 100 * ganancias / n if n and datos_confiables else None
     break_even = punto_equilibrio(payout_neto) if payout_neto is not None else None
     return {
         "observaciones": len(filas),
         "operaciones_cerradas": n,
+        "order_ids_distintos": len(identidades_ejecutadas),
+        "identidades_conflictivas": len(conflictos_order_id),
+        "identidad_100pct_verificable": bool(n and datos_confiables
+                                             and len(identidades_ejecutadas) == n),
         "wins": ganancias,
         "losses": perdidas,
         "winrate_observado": round(wr, 2) if wr is not None else None,
@@ -102,8 +121,8 @@ def evaluar_rentabilidad(filas, payout_neto=None):
         "supera_59_observado": bool(wr is not None and wr >= META_WR),
         "supera_break_even_teorico": bool(
             wr is not None and break_even is not None and wr > break_even),
-        "pnl_real_cerrado": round(pnl, 2) if n and pnl_completo else None,
+        "pnl_real_cerrado": round(pnl, 2) if n and pnl_completo and datos_confiables else None,
         "rentabilidad_observada_positiva": (
-            pnl > 0 if n and pnl_completo else None),
+            pnl > 0 if n and pnl_completo and datos_confiables else None),
         "autoriza_operacion": False,
     }
