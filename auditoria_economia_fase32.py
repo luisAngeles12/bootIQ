@@ -5,7 +5,7 @@ Las señales canceladas tienen solo resultado hipotético: no son ganancias.
 """
 from collections import Counter
 from datetime import datetime, timezone
-from math import isfinite
+from math import isfinite, sqrt
 
 
 ESTADOS_EJECUTADOS = frozenset({"OPERADA_DIRECTA", "OPERADA_PROTOCOLO", "OPERADA", "CERRADA"})
@@ -18,6 +18,14 @@ def punto_equilibrio(payout_neto):
     if not isfinite(ratio) or ratio <= 0:
         raise ValueError("El payout neto debe ser positivo y finito")
     return round(100 / (1 + ratio), 4)
+
+
+def _wilson_min_95(wins, n):
+    if not n:
+        return 0.0
+    z = 1.96
+    p = wins / n
+    return 100 * (p + z*z/(2*n) - z*sqrt(p*(1-p)/n + z*z/(4*n*n))) / (1+z*z/n)
 
 
 def _dia_utc(valor):
@@ -98,6 +106,12 @@ def evaluar_rentabilidad(filas, payout_neto=None):
     identidad_verificable = bool(n and datos_confiables
                                 and len(identidades_ejecutadas) == n)
     wr = 100 * ganancias / n if n and datos_confiables else None
+    inferior = _wilson_min_95(ganancias, n) if datos_confiables else None
+    evidencia_estadistica = bool(
+        identidad_verificable and n >= 100 and len(fechas) >= 3
+        and inferior is not None and inferior >= META_WR)
+    rentabilidad_certificada = bool(
+        evidencia_estadistica and pnl_completo and pnl > 0)
     break_even = punto_equilibrio(payout_neto) if payout_neto is not None else None
     return {
         "observaciones": len(filas),
@@ -120,6 +134,9 @@ def evaluar_rentabilidad(filas, payout_neto=None):
         "payout_neto_explicito": payout_neto,
         "break_even_teorico": break_even,
         "supera_59_observado": bool(wr is not None and wr >= META_WR),
+        "wilson_inferior_95": round(inferior, 2) if inferior is not None else None,
+        "cobertura_estadistica_retrospectiva_59": evidencia_estadistica,
+        "pnl_positivo_con_cobertura_retrospectiva": rentabilidad_certificada,
         "supera_break_even_teorico": bool(
             wr is not None and break_even is not None and wr > break_even),
         "pnl_real_cerrado": round(pnl, 2) if n and pnl_completo and datos_confiables else None,
