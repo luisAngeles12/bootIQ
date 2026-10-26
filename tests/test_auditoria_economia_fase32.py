@@ -101,6 +101,34 @@ class EconomiaFase32Tests(unittest.TestCase):
         self.assertFalse(r["rentabilidad_observada_positiva"])
         self.assertTrue(r["identidad_100pct_verificable"])
 
+    def test_59_observado_sin_confianza_ni_dias_no_supera_cobertura(self):
+        filas = [{"estado_operacion": "OPERADA_DIRECTA",
+                  "resultado": "WIN" if i < 59 else "LOSS",
+                  "order_id": "id-" + str(i),
+                  "activo": "EURUSD-OTC", "fecha_senal": "2026-10-26",
+                  "pnl_real_cerrado": "1" if i < 59 else "-1"}
+                 for i in range(100)]
+        r = evaluar_rentabilidad(filas)
+        self.assertTrue(r["supera_59_observado"])
+        self.assertLess(r["wilson_inferior_95"],59)
+        self.assertFalse(r["cobertura_estadistica_retrospectiva_59"])
+        self.assertFalse(r["pnl_positivo_con_cobertura_retrospectiva"])
+
+    def test_100_cierres_con_wilson_y_tres_dias_marcan_solo_cobertura(self):
+        filas = [{"estado_operacion": "OPERADA_DIRECTA",
+                  "resultado": "WIN" if i < 90 else "LOSS",
+                  "order_id": "id-" + str(i),
+                  "activo": "EURUSD-OTC",
+                  "fecha_senal": "2026-10-" + str(26 + i//34),
+                  "pnl_real_cerrado": "1" if i < 90 else "-1"}
+                 for i in range(100)]
+        r = evaluar_rentabilidad(filas)
+        self.assertEqual(r["fechas_con_operaciones"],3)
+        self.assertGreaterEqual(r["wilson_inferior_95"],59)
+        self.assertTrue(r["cobertura_estadistica_retrospectiva_59"])
+        self.assertTrue(r["pnl_positivo_con_cobertura_retrospectiva"])
+        self.assertFalse(r["autoriza_operacion"])
+
     def test_pnl_sin_identidad_no_certifica_rentabilidad(self):
         filas = [{"estado_operacion": "OPERADA_DIRECTA",
                   "resultado": "WIN", "activo": "EURUSD-OTC",
