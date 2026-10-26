@@ -458,8 +458,9 @@ def motor_estrategias_profesional(
         razones = [
             "ESTRATEGIA: CHOCH alcista",
             ctx["nombre_choch"],
-            "EMA favorece compra",
-            "CHOCH con contexto confirmado",
+            ("EMA favorece compra" if ctx.get("ema_alcista", False)
+             else "EMA no favorece compra"),
+            "CHOCH detectado; contexto pendiente de validación",
             "rechazo histórico: " + ctx.get("rechazo_hist_razon", ""),
             "presión: " + razon_presion,
             "patrón contexto: " + razon_patron_call,
@@ -514,8 +515,9 @@ def motor_estrategias_profesional(
         razones = [
             "ESTRATEGIA: CHOCH bajista",
             ctx["nombre_choch"],
-            "EMA favorece venta",
-            "CHOCH con contexto confirmado",
+            ("EMA favorece venta" if ctx.get("ema_bajista", False)
+             else "EMA no favorece venta"),
+            "CHOCH detectado; contexto pendiente de validación",
             "rechazo histórico: " + ctx.get("rechazo_hist_razon", ""),
             "presión: " + razon_presion,
             "patrón contexto: " + razon_patron_put,
