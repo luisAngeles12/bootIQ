@@ -28,9 +28,30 @@ class HipotesisFase32Tests(unittest.TestCase):
         filas=[{"pa_fuerza":".31","calidad_setup":"BUENA",
                 "subtipo_setup":"SWEEP_RUPTURA_CONFIRMABLE",
                 "resultado_hipotetico":"WIN"} for _ in range(50)]
-        r=resumir_hipotesis_ventanas([("v1",filas),("v2",filas),("v3",filas)])["B"]
+        r=resumir_hipotesis_ventanas([("v1",filas),("v2",filas),("v3",filas)], ventanas_prospectivas=("v1","v2","v3"))["B"]
         self.assertTrue(r["evidencia_59_transferible"])
         self.assertFalse(r["autoriza_operacion"])
+
+    def test_exploratorias_no_autorizan_transferencia(self):
+        filas=[{"pa_fuerza":".31","calidad_setup":"BUENA",
+                "subtipo_setup":"SWEEP_RUPTURA_CONFIRMABLE",
+                "resultado_hipotetico":"WIN"} for _ in range(50)]
+        r=resumir_hipotesis_ventanas([("sep_exploratorio",filas),
+                                       ("oct_exploratorio",filas),
+                                       ("oct2_exploratorio",filas)])["B"]
+        self.assertFalse(r["cobertura_suficiente"])
+        self.assertEqual(r["ventanas_prospectivas_validas"],0)
+        self.assertFalse(r["evidencia_59_transferible"])
+
+    def test_duplicacion_identidad_entre_periodos(self):
+        senal={"fecha_senal":"1790000000","activo":"EURUSD-OTC",
+               "patron":"CHOCH","direccion":"CALL","pa_fuerza":".31",
+               "calidad_setup":"BUENA",
+               "subtipo_setup":"SWEEP_RUPTURA_CONFIRMABLE",
+               "resultado_hipotetico":"WIN"}
+        with self.assertRaises(ValueError):
+            resumir_hipotesis_ventanas([("dia1",[senal]),("dia2",[senal])],
+                                        ventanas_prospectivas=("dia1","dia2"))
 
     def test_no_duplica_periodos(self):
         with self.assertRaises(ValueError):
