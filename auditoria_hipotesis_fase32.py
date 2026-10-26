@@ -3,7 +3,6 @@
 A/B fueron descubiertas explorando 1,171 combinaciones SEP/OCT.
 No son estrategias autorizadas, ni afectan generación, decisión o órdenes.
 """
-from collections import Counter
 from math import sqrt
 
 
@@ -39,26 +38,41 @@ def _limite_inferior(wins, total):
 
 
 def resumir_hipotesis_ventanas(ventanas, minimo_total=100, minimo_ventanas=3,
-                              minimo_por_ventana=30):
+                              minimo_por_ventana=30, ventanas_prospectivas=()):
     """ventanas: pares (nombre_temporal, iterable de filas históricas).
 
     Evita usar una ventana incompleta como evidencia de estabilidad.
     Resultados de canceladas siempre son hipotéticos.
     """
+    # Una ventana descubierta mirando sus resultados no es OOS prospectiva.
+    # La elegibilidad exige declarar explícitamente cada período posterior
+    # a la congelación de A/B; por defecto, ninguno cuenta como prospectivo.
+    prospectivas = set(ventanas_prospectivas)
     vistos = set()
+    identidades = set()
     datos = {"A": [], "B": []}
     for nombre, filas in ventanas:
         if not nombre or nombre in vistos:
             raise ValueError("Ventana temporal repetida o sin nombre")
         vistos.add(nombre)
         filas = list(filas)
+        # No contar la misma señal bajo nombres de ventanas diferentes.
+        for fila in filas:
+            if not isinstance(fila, dict):
+                continue
+            identidad = tuple(fila.get(k) for k in ("fecha_senal", "activo", "patron", "direccion"))
+            if all(valor not in (None, "") for valor in identidad):
+                if identidad in identidades:
+                    raise ValueError("Señal repetida en ventanas temporales")
+                identidades.add(identidad)
         for clave in datos:
             seleccionadas = [r for r in filas
                              if isinstance(r,dict) and coincide_hipotesis(r, clave)
                              and r.get("resultado_hipotetico") in {"WIN","LOSS"}]
             w = sum(r["resultado_hipotetico"] == "WIN" for r in seleccionadas)
             datos[clave].append({
-                "ventana": nombre, "n": len(seleccionadas), "wins": w,
+                "ventana": nombre, "prospectiva": nombre in prospectivas,
+                "n": len(seleccionadas), "wins": w,
                 "losses": len(seleccionadas)-w,
                 "activos": len({r.get("activo") for r in seleccionadas if r.get("activo")}),
             })
@@ -68,7 +82,10 @@ def resumir_hipotesis_ventanas(ventanas, minimo_total=100, minimo_ventanas=3,
         w = sum(r["wins"] for r in detalle)
         wr = 100*w/n if n else None
         inferior = _limite_inferior(w,n)
-        cobertura = n >= minimo_total and sum(r["n"] >= minimo_por_ventana for r in detalle) >= minimo_ventanas
+        cobertura = (n >= minimo_total
+                     and sum(r["n"] >= minimo_por_ventana and r["prospectiva"]
+                             for r in detalle) >= minimo_ventanas
+                     and prospectivas.issubset(vistos))
         transferible = bool(cobertura and wr is not None and wr >= META_WINRATE
                              and inferior >= META_WINRATE
                              and all(100*r["wins"]/r["n"] >= META_WINRATE
@@ -78,6 +95,7 @@ def resumir_hipotesis_ventanas(ventanas, minimo_total=100, minimo_ventanas=3,
             "wr_hipotetico":round(wr,2) if wr is not None else None,
             "wilson_inferior_95":round(inferior,2),
             "ventanas":detalle,"cobertura_suficiente":cobertura,
+            "ventanas_prospectivas_validas":sum(r["prospectiva"] and r["n"] >= minimo_por_ventana for r in detalle),
             "evidencia_59_transferible":transferible,
             "autoriza_operacion":False,
         }
