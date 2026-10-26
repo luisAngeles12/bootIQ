@@ -4,9 +4,12 @@ A/B fueron descubiertas explorando 1,171 combinaciones SEP/OCT.
 No son estrategias autorizadas, ni afectan generación, decisión o órdenes.
 """
 from math import sqrt
+from datetime import datetime, timezone
 
 
 META_WINRATE = 59.0
+# Congelación: ninguna señal anterior puede ser considerada validación futura.
+CORTE_PROSPECTIVO_UTC = datetime(2026, 10, 26, tzinfo=timezone.utc).timestamp()
 
 
 def _numero(fila, campo):
@@ -35,6 +38,21 @@ def _limite_inferior(wins, total):
     z = 1.96
     p = wins / total
     return 100*(p+z*z/(2*total)-z*sqrt(p*(1-p)/total+z*z/(4*total*total)))/(1+z*z/total)
+
+
+def _timestamp_senal(fila):
+    valor = fila.get("fecha_senal") or fila.get("fecha")
+    if valor in (None, ""):
+        return None
+    try:
+        if isinstance(valor, (int, float)) or str(valor).strip().replace(".", "", 1).isdigit():
+            return float(valor)
+        return datetime.fromisoformat(str(valor).replace("Z", "+00:00")).replace(
+            tzinfo=timezone.utc).timestamp() if datetime.fromisoformat(
+                str(valor).replace("Z", "+00:00")).tzinfo is None else datetime.fromisoformat(
+                str(valor).replace("Z", "+00:00")).timestamp()
+    except (TypeError, ValueError, OverflowError):
+        return None
 
 
 def resumir_hipotesis_ventanas(ventanas, minimo_total=100, minimo_ventanas=3,
@@ -71,7 +89,8 @@ def resumir_hipotesis_ventanas(ventanas, minimo_total=100, minimo_ventanas=3,
                              and r.get("resultado_hipotetico") in {"WIN","LOSS"}]
             w = sum(r["resultado_hipotetico"] == "WIN" for r in seleccionadas)
             datos[clave].append({
-                "ventana": nombre, "prospectiva": nombre in prospectivas,
+                "ventana": nombre, "prospectiva": (nombre in prospectivas and bool(seleccionadas)
+                    and all((_timestamp_senal(r) or 0) >= CORTE_PROSPECTIVO_UTC for r in seleccionadas)),
                 "n": len(seleccionadas), "wins": w,
                 "losses": len(seleccionadas)-w,
                 "activos": len({r.get("activo") for r in seleccionadas if r.get("activo")}),
