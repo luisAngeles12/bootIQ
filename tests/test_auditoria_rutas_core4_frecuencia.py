@@ -13,6 +13,38 @@ class RutasCore4FrecuenciaTests(unittest.TestCase):
         self.assertFalse(x["cumple_objetivo_y_cobertura"])
         self.assertFalse(x["autoriza_modificar_veto"])
 
+    def test_59_observado_no_basta_sin_wilson_estadistico(self):
+        # 21/30=70% en 3 días, pero Wilson inferior 95% < 59%.
+        filas=[]
+        for dia, base in enumerate((1791800000, 1791886400, 1791972800)):
+            for i in range(10):
+                filas.append({"core4_match_previo": True,
+                              "core4_reglas_previas": "R1",
+                              "estado_operacion": "OPERADA_DIRECTA",
+                              "resultado_hipotetico": "WIN" if dia*10+i < 21 else "LOSS",
+                              "fecha_senal": str(base+i*60), "activo": "A"})
+        r,_=auditar_rutas_core4(filas)
+        x=r[("R1","SIN_VETO")]
+        self.assertEqual(x["winrate_operadas_backtest"],70.0)
+        self.assertEqual(x["dias_operadas"],3)
+        self.assertLess(x["limite_inferior_wilson_95"],59)
+        self.assertFalse(x["cumple_objetivo_y_cobertura"])
+
+    def test_solo_wilson_y_tres_dias_permiten_marca_de_cobertura(self):
+        filas=[]
+        for dia, base in enumerate((1791800000, 1791886400, 1791972800)):
+            for i in range(10):
+                filas.append({"core4_match_previo": True,
+                              "core4_reglas_previas": "R1",
+                              "estado_operacion": "OPERADA_DIRECTA",
+                              "resultado_hipotetico": "WIN" if dia*10+i < 27 else "LOSS",
+                              "fecha_senal": str(base+i*60), "activo": "A"})
+        r,_=auditar_rutas_core4(filas)
+        x=r[("R1","SIN_VETO")]
+        self.assertGreaterEqual(x["limite_inferior_wilson_95"],59)
+        self.assertTrue(x["cumple_objetivo_y_cobertura"])
+        self.assertFalse(x["autoriza_modificar_veto"])
+
     def test_rechazos_no_son_operaciones_ejecutadas(self):
         filas=[
             {"core4_match_previo":True,"core4_reglas_previas":"R2",
