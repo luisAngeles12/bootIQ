@@ -95,6 +95,8 @@ def evaluar_rentabilidad(filas, payout_neto=None):
     n = len(evaluadas)
     # Identidades contradictorias impiden certificar WR y PNL.
     datos_confiables = not conflictos_order_id
+    identidad_verificable = bool(n and datos_confiables
+                                and len(identidades_ejecutadas) == n)
     wr = 100 * ganancias / n if n and datos_confiables else None
     break_even = punto_equilibrio(payout_neto) if payout_neto is not None else None
     return {
@@ -102,8 +104,7 @@ def evaluar_rentabilidad(filas, payout_neto=None):
         "operaciones_cerradas": n,
         "order_ids_distintos": len(identidades_ejecutadas),
         "identidades_conflictivas": len(conflictos_order_id),
-        "identidad_100pct_verificable": bool(n and datos_confiables
-                                             and len(identidades_ejecutadas) == n),
+        "identidad_100pct_verificable": identidad_verificable,
         "wins": ganancias,
         "losses": perdidas,
         "winrate_observado": round(wr, 2) if wr is not None else None,
@@ -123,6 +124,6 @@ def evaluar_rentabilidad(filas, payout_neto=None):
             wr is not None and break_even is not None and wr > break_even),
         "pnl_real_cerrado": round(pnl, 2) if n and pnl_completo and datos_confiables else None,
         "rentabilidad_observada_positiva": (
-            pnl > 0 if n and pnl_completo and datos_confiables else None),
+            pnl > 0 if n and pnl_completo and identidad_verificable else None),
         "autoriza_operacion": False,
     }
