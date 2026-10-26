@@ -4,6 +4,7 @@ Separar el porcentaje de aciertos de la ganancia neta observada.
 Las señales canceladas tienen solo resultado hipotético: no son ganancias.
 """
 from collections import Counter
+from datetime import datetime, timezone
 from math import isfinite
 
 
@@ -19,6 +20,22 @@ def punto_equilibrio(payout_neto):
     return round(100 / (1 + ratio), 4)
 
 
+def _dia_utc(valor):
+    """Normaliza fechas ISO y epoch a días UTC, sin suponer huso local."""
+    if valor in (None, ""):
+        return None
+    try:
+        raw = str(valor).strip()
+        if isinstance(valor, (int, float)) or raw.replace(".", "", 1).isdigit():
+            return datetime.fromtimestamp(float(valor), timezone.utc).date().isoformat()
+        fecha = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        if fecha.tzinfo is None:
+            fecha = fecha.replace(tzinfo=timezone.utc)
+        return fecha.astimezone(timezone.utc).date().isoformat()
+    except (ValueError, TypeError, OverflowError, OSError):
+        return None
+
+
 def evaluar_rentabilidad(filas, payout_neto=None):
     """Diagnóstico retrospectivo, sin inferir pagos o ejecuciones ausentes.
 
@@ -30,6 +47,7 @@ def evaluar_rentabilidad(filas, payout_neto=None):
     ignoradas = Counter()
     mercados = set()
     fechas = set()
+    mercados_por_dia = {}
     ganancias = perdidas = 0
     pnl = 0.0
     pnl_completo = True
@@ -49,9 +67,11 @@ def evaluar_rentabilidad(filas, payout_neto=None):
         perdidas += resultado == "LOSS"
         if r.get("activo"):
             mercados.add(r["activo"])
-        fecha = str(r.get("fecha_senal", "") or r.get("fecha", ""))
-        if fecha:
-            fechas.add(fecha[:10] if len(fecha) >= 10 and "-" in fecha[:10] else fecha)
+        dia = _dia_utc(r.get("fecha_senal") or r.get("fecha"))
+        if dia:
+            fechas.add(dia)
+            if r.get("activo"):
+                mercados_por_dia.setdefault(dia, set()).add(r["activo"])
         try:
             valor = float(r["pnl_real_cerrado"])
             if not isfinite(valor):
@@ -70,7 +90,11 @@ def evaluar_rentabilidad(filas, payout_neto=None):
         "winrate_observado": round(wr, 2) if wr is not None else None,
         "mercados_distintos": len(mercados),
         "maximo_mercados": 20,
-        "mercados_dentro_del_maximo": len(mercados) <= 20,
+        # 20 limita el universo simultáneo, NO los distintos de varios días.
+        # Sin instantáneas por ronda, >20 acumulados no prueba infracción.
+        "mercados_dentro_del_maximo": True if len(mercados) <= 20 else None,
+        "capacidad_simultanea_verificable": len(mercados) <= 20,
+        "mercados_por_dia": {dia: len(m) for dia, m in sorted(mercados_por_dia.items())},
         "fechas_con_operaciones": len(fechas),
         "ignoradas": dict(ignoradas),
         "payout_neto_explicito": payout_neto,
