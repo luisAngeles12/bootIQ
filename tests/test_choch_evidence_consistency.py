@@ -1,5 +1,6 @@
 """El texto de evidencia CHOCH debe reflejar EMA realmente observada."""
 import ast
+from collections import defaultdict
 import pathlib
 import unittest
 
@@ -23,6 +24,40 @@ class ChochEvidenceConsistencyTests(unittest.TestCase):
         self.assertNotIn('"CHOCH con contexto confirmado"',self.source)
         self.assertEqual(self.source.count(
             '"CHOCH detectado; contexto pendiente de validación"'),2)
+
+    def test_ejecucion_cuatro_escenarios_no_modifica_puntaje(self):
+        fn=next(n for n in self.tree.body if isinstance(n,ast.FunctionDef)
+                and n.name=="motor_estrategias_profesional")
+        for lado in (-1,1):
+            bloque=next(n for n in ast.walk(fn) if isinstance(n,ast.If)
+                        and n.lineno>400
+                        and ast.unparse(n.test)=="ctx['choch'] == "+str(lado))
+            for ema in (False,True):
+                with self.subTest(lado=lado, ema=ema):
+                    ctx=defaultdict(int,{
+                        "choch":lado,"nombre_choch":"CHOCH detectado",
+                        "rechazo_hist_razon":"diagnostico",
+                        "puntos_patron_vela":2,"pa_direccion":"NEUTRA",
+                        "ema_alcista":ema,"ema_bajista":ema,
+                    })
+                    senales=[]
+                    def capturar(activo,direccion,patron,puntaje,rsi,razones,ctx):
+                        return {"direccion":direccion,"puntaje":puntaje,
+                                "razones":razones}
+                    env={"ctx":ctx,"senales":senales,"activo":"EURUSD-OTC",
+                         "rsi":50,"razon_presion":"estable",
+                         "razon_patron_call":"patron neutro",
+                         "razon_patron_put":"patron neutro",
+                         "crear_senal_profesional":capturar}
+                    solo=ast.fix_missing_locations(ast.Module(
+                        body=[bloque],type_ignores=[]))
+                    exec(compile(solo,"<choch_test>","exec"),env)
+                    self.assertEqual(len(senales),1)
+                    self.assertEqual(senales[0]["puntaje"],16)
+                    self.assertEqual(senales[0]["direccion"],
+                                     "call" if lado==1 else "put")
+                    self.assertEqual(
+                        "EMA favorece" in senales[0]["razones"][2],ema)
 
     def test_mantiene_activadores_originales(self):
         self.assertIn('if ctx["choch"] == 1:',self.source)
