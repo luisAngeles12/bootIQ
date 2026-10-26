@@ -47,13 +47,12 @@ def _timestamp_senal(fila):
     try:
         if isinstance(valor, (int, float)) or str(valor).strip().replace(".", "", 1).isdigit():
             return float(valor)
-        return datetime.fromisoformat(str(valor).replace("Z", "+00:00")).replace(
-            tzinfo=timezone.utc).timestamp() if datetime.fromisoformat(
-                str(valor).replace("Z", "+00:00")).tzinfo is None else datetime.fromisoformat(
-                str(valor).replace("Z", "+00:00")).timestamp()
+        fecha = datetime.fromisoformat(str(valor).replace("Z", "+00:00"))
+        if fecha.tzinfo is None:
+            fecha = fecha.replace(tzinfo=timezone.utc)
+        return fecha.timestamp()
     except (TypeError, ValueError, OverflowError):
         return None
-
 
 def resumir_hipotesis_ventanas(ventanas, minimo_total=100, minimo_ventanas=3,
                               minimo_por_ventana=30, ventanas_prospectivas=()):
