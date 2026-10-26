@@ -82,6 +82,25 @@ class EconomiaFase32Tests(unittest.TestCase):
         self.assertIsNone(r["rentabilidad_observada_positiva"])
         self.assertFalse(r["supera_59_observado"])
 
+    def test_operada_protocolo_cuenta_cierre_real_no_hipotetico(self):
+        filas = [
+            {"estado_operacion": "OPERADA_PROTOCOLO",
+             "resultado": "LOSS", "resultado_hipotetico": "WIN",
+             "order_id": "protocolo-1", "pnl_real_cerrado": "-10",
+             "activo": "EURUSD-OTC", "fecha_senal": "2026-10-26"},
+            {"estado_operacion": "OPERADA_DIRECTA",
+             "resultado": "WIN", "resultado_hipotetico": "LOSS",
+             "order_id": "directa-2", "pnl_real_cerrado": "7",
+             "activo": "AUDJPY-OTC", "fecha_senal": "2026-10-26"},
+        ]
+        r = evaluar_rentabilidad(filas)
+        self.assertEqual(r["operaciones_cerradas"], 2)
+        self.assertEqual((r["wins"], r["losses"]), (1, 1))
+        self.assertEqual(r["winrate_observado"], 50.0)
+        self.assertEqual(r["pnl_real_cerrado"], -3.0)
+        self.assertFalse(r["rentabilidad_observada_positiva"])
+        self.assertTrue(r["identidad_100pct_verificable"])
+
     def test_pnl_sin_identidad_no_certifica_rentabilidad(self):
         filas = [{"estado_operacion": "OPERADA_DIRECTA",
                   "resultado": "WIN", "activo": "EURUSD-OTC",
