@@ -56,6 +56,32 @@ class EconomiaFase32Tests(unittest.TestCase):
         self.assertFalse(r["capacidad_simultanea_verificable"])
         self.assertFalse(r["autoriza_operacion"])
 
+    def test_order_id_repetido_no_duplica_win_ni_pnl(self):
+        orden = {"estado_operacion": "OPERADA_DIRECTA",
+                 "resultado": "WIN", "order_id": "order-42",
+                 "pnl_real_cerrado": "7", "activo": "EURUSD-OTC",
+                 "fecha_senal": "2026-10-26"}
+        r = evaluar_rentabilidad([dict(orden), dict(orden)])
+        self.assertEqual(r["operaciones_cerradas"], 1)
+        self.assertEqual(r["wins"], 1)
+        self.assertEqual(r["pnl_real_cerrado"], 7)
+        self.assertEqual(r["ignoradas"]["DUPLICADO_ORDER_ID"], 1)
+        self.assertTrue(r["identidad_100pct_verificable"])
+
+    def test_order_id_contradictorio_no_certifica_winrate_ni_pnl(self):
+        base = {"estado_operacion": "OPERADA_DIRECTA",
+                "order_id": "order-42", "activo": "EURUSD-OTC",
+                "fecha_senal": "2026-10-26"}
+        r = evaluar_rentabilidad([
+            dict(base, resultado="WIN", pnl_real_cerrado="7"),
+            dict(base, resultado="LOSS", pnl_real_cerrado="-10"),
+        ])
+        self.assertEqual(r["identidades_conflictivas"], 1)
+        self.assertIsNone(r["winrate_observado"])
+        self.assertIsNone(r["pnl_real_cerrado"])
+        self.assertIsNone(r["rentabilidad_observada_positiva"])
+        self.assertFalse(r["supera_59_observado"])
+
     def test_positivo_con_pnl_completo_y_un_mercado_valido(self):
         filas = [{"estado_operacion": "OPERADA_DIRECTA",
                   "resultado": "WIN", "activo": "EURUSD-OTC",
