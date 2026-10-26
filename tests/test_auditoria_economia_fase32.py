@@ -82,13 +82,25 @@ class EconomiaFase32Tests(unittest.TestCase):
         self.assertIsNone(r["rentabilidad_observada_positiva"])
         self.assertFalse(r["supera_59_observado"])
 
+    def test_pnl_sin_identidad_no_certifica_rentabilidad(self):
+        filas = [{"estado_operacion": "OPERADA_DIRECTA",
+                  "resultado": "WIN", "activo": "EURUSD-OTC",
+                  "fecha_senal": "2026-10-26", "pnl_real_cerrado": "7"}]
+        r = evaluar_rentabilidad(filas)
+        self.assertEqual(r["pnl_real_cerrado"], 7)
+        self.assertFalse(r["identidad_100pct_verificable"])
+        self.assertIsNone(r["rentabilidad_observada_positiva"])
+        self.assertFalse(r["autoriza_operacion"])
+
     def test_positivo_con_pnl_completo_y_un_mercado_valido(self):
         filas = [{"estado_operacion": "OPERADA_DIRECTA",
                   "resultado": "WIN", "activo": "EURUSD-OTC",
-                  "fecha_senal": "2026-10-26", "pnl_real_cerrado": "7"},
+                  "fecha_senal": "2026-10-26", "pnl_real_cerrado": "7",
+                  "order_id": "operacion-001"},
                  {"estado_operacion": "OPERADA_DIRECTA",
                   "resultado": "LOSS", "activo": "EURUSD-OTC",
-                  "fecha_senal": "2026-10-26", "pnl_real_cerrado": "-5"}]
+                  "fecha_senal": "2026-10-26", "pnl_real_cerrado": "-5",
+                  "order_id": "operacion-002"}]
         r = evaluar_rentabilidad(filas)
         self.assertEqual(r["pnl_real_cerrado"], 2)
         self.assertTrue(r["rentabilidad_observada_positiva"])
