@@ -100,18 +100,27 @@ def resumir_hipotesis_ventanas(ventanas, minimo_total=100, minimo_ventanas=3,
         w = sum(r["wins"] for r in detalle)
         wr = 100*w/n if n else None
         inferior = _limite_inferior(w,n)
-        cobertura = (n >= minimo_total
-                     and sum(r["n"] >= minimo_por_ventana and r["prospectiva"]
-                             for r in detalle) >= minimo_ventanas
+        futuras = [r for r in detalle if r["prospectiva"]]
+        n_futuro = sum(r["n"] for r in futuras)
+        w_futuro = sum(r["wins"] for r in futuras)
+        wr_futuro = 100*w_futuro/n_futuro if n_futuro else None
+        inferior_futuro = _limite_inferior(w_futuro,n_futuro)
+        cobertura = (n_futuro >= minimo_total
+                     and sum(r["n"] >= minimo_por_ventana for r in futuras) >= minimo_ventanas
                      and prospectivas.issubset(vistos))
-        transferible = bool(cobertura and wr is not None and wr >= META_WINRATE
-                             and inferior >= META_WINRATE
+        transferible = bool(cobertura and wr_futuro is not None
+                             and wr_futuro >= META_WINRATE
+                             and inferior_futuro >= META_WINRATE
                              and all(100*r["wins"]/r["n"] >= META_WINRATE
-                                     for r in detalle if r["n"] >= minimo_por_ventana))
+                                     for r in futuras if r["n"] >= minimo_por_ventana))
         salida[clave] = {
             "n": n,"wins_hipoteticos":w,"losses_hipoteticas":n-w,
             "wr_hipotetico":round(wr,2) if wr is not None else None,
             "wilson_inferior_95":round(inferior,2),
+            "n_prospectivo":n_futuro,
+            "wins_prospectivos":w_futuro,
+            "wr_prospectivo":round(wr_futuro,2) if wr_futuro is not None else None,
+            "wilson_prospectivo_inferior_95":round(inferior_futuro,2),
             "ventanas":detalle,"cobertura_suficiente":cobertura,
             "ventanas_prospectivas_validas":sum(r["prospectiva"] and r["n"] >= minimo_por_ventana for r in detalle),
             "evidencia_59_transferible":transferible,
