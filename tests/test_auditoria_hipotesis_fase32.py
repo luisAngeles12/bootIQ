@@ -28,7 +28,10 @@ class HipotesisFase32Tests(unittest.TestCase):
         filas=[{"pa_fuerza":".31","calidad_setup":"BUENA",
                 "subtipo_setup":"SWEEP_RUPTURA_CONFIRMABLE",
                 "resultado_hipotetico":"WIN"} for _ in range(50)]
-        r=resumir_hipotesis_ventanas([("v1",filas),("v2",filas),("v3",filas)], ventanas_prospectivas=("v1","v2","v3"))["B"]
+        futuras=[(nombre,[dict(fila,fecha_senal=str(1793059200+i*86400),
+                                        activo="ACTIVO_"+str(j)) for j,fila in enumerate(filas)])
+                 for i,nombre in enumerate(("v1","v2","v3"))]
+        r=resumir_hipotesis_ventanas(futuras, ventanas_prospectivas=("v1","v2","v3"))["B"]
         self.assertTrue(r["evidencia_59_transferible"])
         self.assertFalse(r["autoriza_operacion"])
 
@@ -40,6 +43,18 @@ class HipotesisFase32Tests(unittest.TestCase):
                                        ("oct_exploratorio",filas),
                                        ("oct2_exploratorio",filas)])["B"]
         self.assertFalse(r["cobertura_suficiente"])
+        self.assertEqual(r["ventanas_prospectivas_validas"],0)
+        self.assertFalse(r["evidencia_59_transferible"])
+
+    def test_historico_no_es_prospectivo_aunque_se_etiquete(self):
+        filas=[{"fecha_senal":"1791800940", "pa_fuerza":".31",
+                "calidad_setup":"BUENA",
+                "subtipo_setup":"SWEEP_RUPTURA_CONFIRMABLE",
+                "resultado_hipotetico":"WIN"} for _ in range(40)]
+        r=resumir_hipotesis_ventanas([("oct12",filas)],
+                                     minimo_total=1,minimo_ventanas=1,
+                                     minimo_por_ventana=1,
+                                     ventanas_prospectivas=("oct12",))["B"]
         self.assertEqual(r["ventanas_prospectivas_validas"],0)
         self.assertFalse(r["evidencia_59_transferible"])
 
