@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from math import isfinite
 
 
-ESTADOS_EJECUTADOS = frozenset({"OPERADA_DIRECTA", "OPERADA", "CERRADA"})
+ESTADOS_EJECUTADOS = frozenset({"OPERADA_DIRECTA", "OPERADA_PROTOCOLO", "OPERADA", "CERRADA"})
 META_WR = 59.0
 
 
