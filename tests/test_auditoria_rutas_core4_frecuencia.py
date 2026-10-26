@@ -5,7 +5,7 @@ from auditoria_rutas_core4_frecuencia import auditar_rutas_core4
 class RutasCore4FrecuenciaTests(unittest.TestCase):
     def test_winrate_alto_con_poca_muestra_no_autoriza(self):
         f={"core4_match_previo":"True","core4_reglas_previas":"R1","estado_operacion":"OPERADA_DIRECTA",
-           "resultado_hipotetico":"WIN","fecha_senal":"1789473960","activo":"A"}
+           "resultado":"WIN","resultado_hipotetico":"WIN","fecha_senal":"1789473960","activo":"A"}
         r, fuera=auditar_rutas_core4([f]*16)
         self.assertEqual(fuera,0)
         x=r[("R1","SIN_VETO")]
@@ -21,7 +21,8 @@ class RutasCore4FrecuenciaTests(unittest.TestCase):
                 filas.append({"core4_match_previo": True,
                               "core4_reglas_previas": "R1",
                               "estado_operacion": "OPERADA_DIRECTA",
-                              "resultado_hipotetico": "WIN" if dia*10+i < 21 else "LOSS",
+                              "resultado": "WIN" if dia*10+i < 21 else "LOSS",
+                              "resultado_hipotetico": "LOSS",
                               "fecha_senal": str(base+i*60), "activo": "A"})
         r,_=auditar_rutas_core4(filas)
         x=r[("R1","SIN_VETO")]
@@ -37,7 +38,8 @@ class RutasCore4FrecuenciaTests(unittest.TestCase):
                 filas.append({"core4_match_previo": True,
                               "core4_reglas_previas": "R1",
                               "estado_operacion": "OPERADA_DIRECTA",
-                              "resultado_hipotetico": "WIN" if dia*10+i < 27 else "LOSS",
+                              "resultado": "WIN" if dia*10+i < 27 else "LOSS",
+                              "resultado_hipotetico": "LOSS",
                               "fecha_senal": str(base+i*60), "activo": "A"})
         r,_=auditar_rutas_core4(filas)
         x=r[("R1","SIN_VETO")]
@@ -62,6 +64,27 @@ class RutasCore4FrecuenciaTests(unittest.TestCase):
         self.assertEqual(x["win_hipoteticas_veto"],1)
         self.assertEqual(x["loss_hipoteticas_veto"],1)
         self.assertIsNone(x["winrate_operadas_backtest"])
+
+    def test_operada_con_entrada_diferida_usa_cierre_no_hipotesis(self):
+        filas=[
+            {"core4_match_previo": True, "core4_reglas": "R2",
+             "estado_operacion": "OPERADA_PROTOCOLO",
+             "resultado": "LOSS", "resultado_hipotetico": "WIN"},
+            {"core4_match_previo": True, "core4_reglas": "R2",
+             "estado_operacion": "OPERADA_PROTOCOLO",
+             "resultado": "WIN", "resultado_hipotetico": "LOSS"},
+            {"core4_match_previo": True, "core4_reglas": "R2",
+             "estado_operacion": "OPERADA_PROTOCOLO",
+             "resultado": "", "resultado_hipotetico": "WIN"},
+        ]
+        r,_=auditar_rutas_core4(filas)
+        x=r[("R2","SIN_VETO")]
+        self.assertEqual(x["operadas"],3)
+        self.assertEqual(x["win_ejecutadas_backtest"],1)
+        self.assertEqual(x["loss_ejecutadas_backtest"],1)
+        self.assertEqual(x["operadas_sin_resultado"],1)
+        self.assertEqual(x["winrate_operadas_backtest"],50.0)
+        self.assertFalse(x["cumple_objetivo_y_cobertura"])
 
     def test_cancelacion_protocolo_no_equivale_a_trade(self):
         f={"core4_match_previo":True,"core4_reglas_previas":"R1",
