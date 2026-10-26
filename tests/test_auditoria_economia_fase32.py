@@ -30,6 +30,32 @@ class EconomiaFase32Tests(unittest.TestCase):
         self.assertIsNone(r["pnl_real_cerrado"])
         self.assertIsNone(r["rentabilidad_observada_positiva"])
 
+    def test_epoch_utc_agrupa_por_dia(self):
+        filas = [
+            {"estado_operacion": "OPERADA_DIRECTA", "resultado": "WIN",
+             "activo": "A", "fecha_senal": "1792972800", "pnl_real_cerrado": "1"},
+            {"estado_operacion": "OPERADA_DIRECTA", "resultado": "WIN",
+             "activo": "B", "fecha_senal": "1792972860", "pnl_real_cerrado": "1"},
+        ]
+        r = evaluar_rentabilidad(filas)
+        self.assertEqual(r["fechas_con_operaciones"], 1)
+        self.assertEqual(list(r["mercados_por_dia"].values()), [2])
+
+    def test_21_mercados_en_dias_distintos_no_prueba_exceso_simultaneo(self):
+        filas = [
+            {"estado_operacion": "OPERADA_DIRECTA", "resultado": "WIN",
+             "activo": "A" + str(i), "fecha_senal":
+             "2026-10-26" if i < 11 else "2026-10-27",
+             "pnl_real_cerrado": "1"} for i in range(21)
+        ]
+        r = evaluar_rentabilidad(filas)
+        self.assertEqual(r["mercados_distintos"], 21)
+        self.assertEqual(r["mercados_por_dia"],
+                         {"2026-10-26": 11, "2026-10-27": 10})
+        self.assertIsNone(r["mercados_dentro_del_maximo"])
+        self.assertFalse(r["capacidad_simultanea_verificable"])
+        self.assertFalse(r["autoriza_operacion"])
+
     def test_positivo_con_pnl_completo_y_un_mercado_valido(self):
         filas = [{"estado_operacion": "OPERADA_DIRECTA",
                   "resultado": "WIN", "activo": "EURUSD-OTC",
