@@ -85,7 +85,9 @@ def auditar_rutas_core4(filas, objetivo=59.0, minimo_operadas=30, minimo_dias=3)
             "dias_operadas": dias, "activos_operados": len(g["activos_operados"]),
             "winrate_operadas_backtest": round(wr,2) if wr is not None else None,
             "limite_inferior_wilson_95": round(_wilson_min(g["win_ejecutadas_backtest"],n),2),
-            "cumple_objetivo_y_cobertura": bool(suficiente and wr is not None and wr >= objetivo),
+            "cumple_objetivo_y_cobertura": bool(
+                suficiente and wr is not None and wr >= objetivo
+                and _wilson_min(g["win_ejecutadas_backtest"], n) >= objetivo),
             "autoriza_modificar_veto": False,
         }
     return resultado, sin_match
