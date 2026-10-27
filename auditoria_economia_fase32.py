@@ -37,7 +37,7 @@ def punto_equilibrio(payout_neto):
 
 
 def evaluar_rentabilidad(filas, payout_neto=None):
-    """Diagnóstico retrospectivo, sin inferir pagos o ejecuciones ausentes.
+    """Diagnóstico retrospectivo, sin inferir pagos ni simultaneidad ausentes.
 
     Un payout explícito permite calcular el break-even teórico, no demostrar
     PNL observado. Solo PNL monetario cerrado y explícito prueba rentabilidad.
@@ -87,7 +87,11 @@ def evaluar_rentabilidad(filas, payout_neto=None):
         "winrate_observado": round(wr, 2) if wr is not None else None,
         "mercados_distintos": len(mercados),
         "maximo_mercados": 20,
-        "mercados_dentro_del_maximo": len(mercados) <= 20,
+        # La diversidad de mercados a lo largo de muchos días NO mide
+        # cuántos estuvieron abiertos simultáneamente. Sin entradas/salidas
+        # temporales verificables no puede afirmarse cumplimiento de TOP20.
+        "mercados_dentro_del_maximo": None,
+        "limite_simultaneo_comprobado": False,
         "fechas_con_operaciones": len(fechas),
         "ignoradas": dict(ignoradas),
         "payout_neto_explicito": payout_neto,
