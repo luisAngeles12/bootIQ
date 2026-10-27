@@ -20,6 +20,18 @@ class GateProbabilidadF3Tests(unittest.TestCase):
         self.assertEqual(r["dias"]["2026-09-15"]["gate_57"]["n"], 1)
         self.assertFalse(r["autoriza_operacion"])
 
+    def test_p90_del_dia_anterior_sin_fuga_de_etiquetas(self):
+        filas = [
+            fila(15, 40, "WIN"), fila(15, 50, "LOSS"),
+            fila(15, 60, "LOSS"), fila(16, 45, "WIN"),
+            fila(16, 52, "WIN"), fila(16, 61, "LOSS"),
+        ]
+        r = evaluar_gate_probabilidad(filas)
+        self.assertNotIn("2026-09-15", r["detalle_p90_temporal"])
+        self.assertEqual(r["detalle_p90_temporal"]["2026-09-16"]["corte_previo_p90"], 50.0)
+        self.assertEqual(r["seleccion_p90_dia_anterior"]["n"], 2)
+        self.assertEqual(r["seleccion_p90_dia_anterior"]["win"], 1)
+
     def test_rechaza_ajustes_del_umbral_y_malos_registros(self):
         with self.assertRaises(ValueError):
             evaluar_gate_probabilidad([], umbral=50)
