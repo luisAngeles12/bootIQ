@@ -137,7 +137,8 @@ def conectar():
 
     print("Balance inicial:", estado.balance_inicial, flush=True)
 
-    if not actualizar_activos_opcode():
+    # Falla de OPCODE observada en PRACTICE: no bloquear el arranque para siempre.
+    if not actualizar_activos_opcode(max_intentos=3):
         raise RuntimeError(
             "ARRANQUE BLOQUEADO: IQ Option no entregó los "
             "OPCODE binary/turbo después del reintento de conexión. "
