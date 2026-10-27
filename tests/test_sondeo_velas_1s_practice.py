@@ -9,6 +9,7 @@ from sondear_velas_1s_practice import (
     exigir_config_practice,
     conectar_sondeo_practice,
     iniciar_stream_sin_precarga,
+    evaluar_micro_rechazo_sombra,
     observar_instantanea,
     resumir,
 )
@@ -128,6 +129,45 @@ class SondeoPracticaTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "no confirmada"):
             iniciar_stream_sin_precarga(iq, "USDINR-OTC",
                                         {"USDINR-OTC": 1383})
+
+    def test_microrechazo_call_con_nivel_exclusivamente_previo(self):
+        secuencia = {
+            t: vela(t, apertura=101, cierre=101, minimo=100, maximo=102)
+            for t in range(100, 120)
+        }
+        secuencia[120] = vela(120, apertura=100, cierre=99,
+                              minimo=99, maximo=101)
+        secuencia[121] = vela(121, apertura=99, cierre=101,
+                              minimo=99, maximo=101)
+        secuencia[122] = vela(122, apertura=101, cierre=101,
+                              minimo=101, maximo=102)
+        resultados = evaluar_micro_rechazo_sombra(secuencia, 123)
+        self.assertEqual(len(resultados), 1)
+        self.assertEqual(resultados[0]["direccion"], "call")
+        self.assertEqual(resultados[0]["nivel_previo"], 100)
+        self.assertFalse(resultados[0]["operable"])
+
+    def test_microrechazo_put_con_resistencia_previa(self):
+        secuencia = {
+            t: vela(t, apertura=101, cierre=101, minimo=100, maximo=102)
+            for t in range(100, 120)
+        }
+        secuencia[120] = vela(120, apertura=102, cierre=103,
+                              minimo=102, maximo=103)
+        secuencia[121] = vela(121, apertura=103, cierre=101,
+                              minimo=101, maximo=103)
+        secuencia[122] = vela(122, apertura=101, cierre=101,
+                              minimo=100, maximo=101)
+        resultados = evaluar_micro_rechazo_sombra(secuencia, 123)
+        self.assertEqual(len(resultados), 1)
+        self.assertEqual(resultados[0]["direccion"], "put")
+        self.assertEqual(resultados[0]["nivel_previo"], 102)
+
+    def test_no_acepta_huecos_en_contexto(self):
+        secuencia = {
+            t: vela(t) for t in range(100, 124) if t != 115
+        }
+        self.assertEqual(evaluar_micro_rechazo_sombra(secuencia, 124), [])
 
 
 if __name__ == "__main__":
