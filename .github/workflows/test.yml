@@ -75,7 +75,8 @@ jobs:
             tests.test_choch_oos_parity \
             tests.test_auditoria_generacion_fase33 \
             tests.test_breakout_ema_evidence \
-            tests.test_breakout_zona_previa_sombra
+            tests.test_breakout_zona_previa_sombra \
+            tests.test_auditoria_breakout_pre_evento_fase33
 
 #       - run: pipenv run pylint iqoptionapi
 #       - run: pipenv run isort --recursive --diff .
