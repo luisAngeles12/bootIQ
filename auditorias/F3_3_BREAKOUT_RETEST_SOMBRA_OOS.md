@@ -17,7 +17,7 @@ Fecha: 2026-10-27. Rama de diagnóstico: `diagnostico-f33-breakout-retest-sombra
 
 ## Evidencia y reproducibilidad
 
-- Tests: 14/14 exitosos en el entorno Windows/Git Bash de validación (10 del detector + 4 del evaluador).
+- Tests: 14/14 exitosos en Windows/Git Bash (10 del detector + 4 del evaluador) y verificados también mediante [GitHub Actions broker-free](https://github.com/luisAngeles12/bootIQ/actions/runs/40530805642) (SUCCESS). El flujo comprueba además los totales congelados 425/44/60 y 17/104/44W/48L.
 - Auditor independiente: 425 ventanas, 44 CALL, 60 PUT y 321 neutrales.
 - Comparación de salida BACKTEST original / rama sombra: 39 filas frente a 39; cuatro campos adicionales exclusivamente diagnósticos; cero campos originales ausentes y cero filas originales diferentes.
 - BACKTEST hipotético oficial: 39 señales, 14 WIN / 25 LOSS; todas canceladas por el Cerebro Único; cero operaciones autorizadas.
