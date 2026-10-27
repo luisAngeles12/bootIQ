@@ -41,7 +41,7 @@ from config import (
     TIEMPO_EXPIRACION,
     CANDLE_TIME,
 )
-CARPETA_DATA = "data_backtest_9x14_oos_post_9w_alineado_17"
+CARPETA_DATA = os.getenv("BOOTIQ_DATASET_DIR", "data_backtest_actual")
 
 MAX_ACTIVOS_ANALIZAR = 20
 MAX_SENALES_POR_RONDA = None  # legacy desactivado: la capacidad real es MAX_OPERACIONES_ABIERTAS
