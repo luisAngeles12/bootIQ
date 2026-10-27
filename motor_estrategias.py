@@ -106,6 +106,11 @@ def crear_senal_profesional(activo, direccion, estrategia, puntaje, rsi, razones
             ctx.get("sweep_nivel_referencia_sombra")
             if ctx else None
         ),
+        # F3.3 — telemetría pasiva; no participa en decisión ni score.
+        "br_call_sombra": ctx.get("br_call_sombra", 0) if ctx else 0,
+        "br_put_sombra": ctx.get("br_put_sombra", 0) if ctx else 0,
+        "br_call_nivel_sombra": ctx.get("br_call_nivel_sombra") if ctx else None,
+        "br_put_nivel_sombra": ctx.get("br_put_nivel_sombra") if ctx else None,
     }
 
 def motor_estrategias_profesional(
