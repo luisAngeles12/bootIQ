@@ -73,7 +73,8 @@ jobs:
             tests.test_auditoria_familias_fase3 \
             tests.test_choch_evidence_consistency \
             tests.test_choch_oos_parity \
-            tests.test_auditoria_generacion_fase33
+            tests.test_auditoria_generacion_fase33 \
+            tests.test_breakout_ema_evidence
 
 #       - run: pipenv run pylint iqoptionapi
 #       - run: pipenv run isort --recursive --diff .
