@@ -2,6 +2,7 @@ from indicadores import *
 from price_action import *
 from zonas import *
 from mercado import obtener_velas
+from diagnostico_breakout_retest_sombra import diagnosticar_breakout_retest_sombra
 from config import CANDLE_TIME
 from motor_setup import (enriquecer_senal_con_setup,clasificar_setup_estrategico)
 
@@ -173,6 +174,11 @@ def leer_contexto_grafico(activo):
 
     br_put, nombre_br_put = breakout_retest(
         opens, closes, highs, lows, soporte_zona, "soporte"
+    )
+
+    # F3.3: lectura exclusivamente diagnóstica; no modifica br_call/br_put.
+    breakout_sombra = diagnosticar_breakout_retest_sombra(
+        opens, closes, highs, lows
     )
 
     extension = movimiento_extendido(opens, closes, 5)
@@ -355,6 +361,10 @@ def leer_contexto_grafico(activo):
         "nombre_br_call": nombre_br_call,
         "br_put": br_put,
         "nombre_br_put": nombre_br_put,
+        "br_call_sombra": breakout_sombra["br_call_sombra"],
+        "br_put_sombra": breakout_sombra["br_put_sombra"],
+        "br_call_nivel_sombra": breakout_sombra["br_call_nivel_sombra"],
+        "br_put_nivel_sombra": breakout_sombra["br_put_nivel_sombra"],
 
         "entrada_pullback_call": entrada_pullback_call,
         "entrada_pullback_put": entrada_pullback_put,
