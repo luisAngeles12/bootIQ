@@ -638,3 +638,86 @@ def validar_patron_con_contexto(
 
     except Exception as e:
         return False, "error validando patrón contexto: " + str(e)
+
+def diagnosticar_micro_rechazo_1s(velas, nivel, direccion, ahora):
+    """Diagnóstico aislado de velas de 1 s, sin generar órdenes.
+
+    Rechaza huecos, datos inconsistentes y velas todavía abiertas.
+    Solo declara micro-rechazo cuando dos cierres POSTERIORES a
+    la penetración regresan al lado esperado del nivel.
+    """
+    import math
+
+    def resultado(estado, procesadas=0):
+        return {"estado": estado, "velas_validas": procesadas, "operable": False}
+
+    lado = str(direccion).lower()
+    if lado not in {"call", "put"}:
+        return resultado("DIRECCION_INVALIDA")
+    try:
+        referencia = float(nivel)
+        instante = float(ahora)
+        if not math.isfinite(referencia) or not math.isfinite(instante):
+            raise ValueError
+    except (TypeError, ValueError):
+        return resultado("DATOS_INVALIDOS")
+
+    if not isinstance(velas, (list, tuple)):
+        return resultado("SIN_DATOS")
+
+    por_segundo = {}
+    try:
+        for vela in velas:
+            instante_vela = int(float(vela["from"]))
+            if instante_vela + 1 > instante:
+                continue  # nunca observar una vela de un segundo en formación
+            apertura = float(vela["open"])
+            cierre = float(vela["close"])
+            minimo = float(vela["min"])
+            maximo = float(vela["max"])
+            if (
+                not all(math.isfinite(v) for v in (apertura, cierre, minimo, maximo))
+                or minimo > min(apertura, cierre)
+                or maximo < max(apertura, cierre)
+            ):
+                return resultado("VELA_INVALIDA")
+            por_segundo[instante_vela] = {
+                "open": apertura, "close": cierre,
+                "min": minimo, "max": maximo,
+            }
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return resultado("VELA_INVALIDA")
+
+    ordenadas = sorted(por_segundo.items())
+    if len(ordenadas) < 3:
+        return resultado("SIN_DATOS", len(ordenadas))
+    if any(b[0] - a[0] != 1 for a, b in zip(ordenadas, ordenadas[1:])):
+        return resultado("HUECO_TEMPORAL", len(ordenadas))
+    if instante - (ordenadas[-1][0] + 1) > 2:
+        return resultado("DATOS_DESACTUALIZADOS", len(ordenadas))
+
+    secuencia = [v for _, v in ordenadas]
+    if lado == "call":
+        invasiones = [
+            i for i, v in enumerate(secuencia)
+            if v["min"] < referencia and v["close"] <= referencia
+        ]
+        lado_recuperado = lambda v: v["close"] > referencia
+    else:
+        invasiones = [
+            i for i, v in enumerate(secuencia)
+            if v["max"] > referencia and v["close"] >= referencia
+        ]
+        lado_recuperado = lambda v: v["close"] < referencia
+
+    if not invasiones:
+        return resultado("SIN_INVASION", len(secuencia))
+    ultimo_evento = invasiones[-1]
+    posteriores = secuencia[ultimo_evento + 1:]
+    if len(posteriores) >= 2 and all(
+        lado_recuperado(v) for v in posteriores[-2:]
+    ):
+        return resultado("MICRO_RECHAZO_CONFIRMADO", len(secuencia))
+    if posteriores and lado_recuperado(posteriores[-1]):
+        return resultado("RECHAZO_EN_FORMACION", len(secuencia))
+    return resultado("INVASION_SIN_RECUPERACION", len(secuencia))
