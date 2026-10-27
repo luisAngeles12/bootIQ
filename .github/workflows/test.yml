@@ -73,6 +73,7 @@ jobs:
             tests.test_auditoria_intervalo_cerebro_fase3 \
             tests.test_auditoria_dependencia_fuentes_fase3 \
             tests.test_auditoria_gate_probabilidad_fase3 \
+            tests.test_auditoria_meta_sostenida_fase3 \
             tests.test_auditoria_familias_fase3 \
             tests.test_auditar_fase3_prospectiva_offline \
             tests.test_capturar_fase3_velas_practice
