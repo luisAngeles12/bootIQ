@@ -53,6 +53,17 @@ Brier que el prior. No permite ajustar pesos ni fuentes en productivo.
 
 Informe: `auditorias/F3_2_CALIBRACION_FUENTES_SEP_2026.md`.
 
+### F3.2 — Dependencia jerárquica de fuentes (27-oct)
+
+El generador de memoria registra cada resultado en múltiples claves
+jerárquicas. El respaldo puede compartir observaciones con la principal;
+la comparación histórica encontró 2,280 pares comparables, de los cuales
+2,276 tienen más muestra en el respaldo, pero sin identidades no puede
+medirse solapamiento exacto. No ajustar pesos ni intervalos por inferencia.
+Acciones 40546064836: 195 pruebas OK.
+
+Informe: `auditorias/F3_2_DEPENDENCIA_FUENTES_JERARQUICAS.md`.
+
 ### F3.3 — Breakout + Retest pasivo
 
 Ver informe detallado en la otra rama:
