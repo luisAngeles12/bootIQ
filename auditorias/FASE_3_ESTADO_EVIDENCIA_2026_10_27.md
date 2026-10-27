@@ -31,6 +31,18 @@ Ver PR #8 (https://github.com/luisAngeles12/bootIQ/pull/8).
 - Línea base de familias Oct12/Oct13 no alcanzó >=59% en ambos días.
 - CI broker-free: un defecto del shell en `.github/workflows/test.yml` impidió la ejecución correcta de tres módulos finales. Corregido en commit `aac8835`; ejecución Actions 40530029790 completada **SUCCESS** con los 31 módulos listados existentes. La clave de caché `Pipefile` también fue corregida a `Pipfile` en commit `6d1bbc1`.
 
+### F3.2 — Contraste adicional de incertidumbre del Cerebro (27-oct)
+
+Se investigó, **sin tocar el Cerebro operativo**, sustituir la condición
+estadística puntual por el límite inferior de confianza. En
+`auditoria_xpd_sep2026_autoridad.csv`: 610 señales autorizadas con protocolo
+(307W/303L, 50.33 % hipotético), 201 directas (108W/93L, 53.73 %
+hipotético) y **cero** casos cuyo límite inferior sostuviera el umbral.
+La regla alternativa dejaría frecuencia cero en esa evidencia; no promover.
+191 pruebas broker-free superadas en Actions 40544057222.
+
+Informe: `auditorias/F3_2_CONTRASTE_INTERVALO_CEREBRO_2026_10_27.md`.
+
 ### F3.3 — Breakout + Retest pasivo
 
 Ver informe detallado en la otra rama:
