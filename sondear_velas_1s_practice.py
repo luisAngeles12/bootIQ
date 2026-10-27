@@ -127,17 +127,18 @@ def sondear(activo, segundos):
             observar_instantanea(iq.get_realtime_candles(activo, 1),
                                  ahora, inicio, vistos)
             time.sleep(0.2)
+        # Medir ANTES del cierre; desuscribir puede esperar 5 segundos.
+        fin = int(iq.get_server_timestamp())
+        print("RESULTADO:", resumir(vistos, inicio, fin), flush=True)
     finally:
-        # La librería puede bloquearse al desuscribir; esperar como máximo 3 s.
+        # stop_candles_one_stream duerme 5 s antes de comprobar el cierre.
         limpieza = threading.Thread(
             target=iq.stop_candles_stream, args=(activo, 1), daemon=True
         )
         limpieza.start()
-        limpieza.join(timeout=3)
+        limpieza.join(timeout=8)
         if limpieza.is_alive():
-            print("AVISO: desuscripcion excedio 3 s", flush=True)
-    fin = int(iq.get_server_timestamp())
-    print("RESULTADO:", resumir(vistos, inicio, fin), flush=True)
+            print("AVISO: desuscripcion excedio 8 s", flush=True)
 
 
 if __name__ == "__main__":
