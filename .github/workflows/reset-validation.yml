@@ -26,3 +26,6 @@ jobs:
         run: python -m unittest discover -s tests -p test_cold_start_reset.py -v
       - name: Probar microrechazos con velas de un segundo
         run: python -m unittest discover -s tests -p test_micro_rechazo_1s.py -v
+
+      - name: Probar sondeo de velas PRACTICE sin bróker
+        run: python -m unittest discover -s tests -p test_sondeo_velas_1s_practice.py -v
