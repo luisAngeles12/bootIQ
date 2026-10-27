@@ -2,6 +2,7 @@ import unittest
 
 from diagnostico_breakout_retest_sombra import diagnosticar_breakout_retest_sombra
 from zonas import soporte_resistencia_zonas, breakout_retest
+from auditar_breakout_retest_sombra import auditar_filas
 
 
 class BreakoutRetestSombraTests(unittest.TestCase):
@@ -62,6 +63,33 @@ class BreakoutRetestSombraTests(unittest.TestCase):
             opens, closes, highs, lows
         )
         self.assertEqual(resultado_sombra["br_put_sombra"], -1)
+
+    def test_auditor_conserva_ventanas_sin_candidatas(self):
+        filas = []
+        for i in range(182):
+            es_ruptura = i == 180
+            es_retest = i == 181
+            filas.append({
+                "tipo": "turbo", "activo": "PRUEBA",
+                "from": str(100000 + i * 60),
+                "open": str(99.7 if es_ruptura else 100.5 if es_retest else 99.5),
+                "close": str(100.8 if es_ruptura else 100.6 if es_retest else 99.5),
+                "max": str(101.0 if es_ruptura else 100.9 if es_retest else 100.0),
+                "min": str(99.6 if es_ruptura else 100.02 if es_retest else 99.0),
+            })
+        registros = auditar_filas(filas)
+        self.assertEqual(len(registros), 2)
+        self.assertEqual(registros[0]["br_call_sombra"], 0)
+        self.assertEqual(registros[1]["br_call_sombra"], 1)
+        self.assertEqual(registros[1]["idx_senal"], 181)
+
+    def test_auditor_rechaza_hueco_temporal(self):
+        filas = [
+            {"from": "100000", "activo": "PRUEBA"},
+            {"from": "100120", "activo": "PRUEBA"},
+        ]
+        with self.assertRaisesRegex(ValueError, "continuas"):
+            auditar_filas(filas)
 
     def test_no_retest_no_senal(self):
         opens, closes, highs, lows = self.caso_call()
