@@ -13,6 +13,30 @@ class RutasCore4FrecuenciaTests(unittest.TestCase):
         self.assertFalse(x["cumple_objetivo_y_cobertura"])
         self.assertFalse(x["autoriza_modificar_veto"])
 
+    def test_wr_superior_meta_no_basta_si_wilson_inferior_es_bajo(self):
+        # Tres días y 30 observaciones cumplen la cobertura mínima,
+        # pero 20/30 = 66.67% no demuestra límite Wilson >= 59%.
+        from datetime import datetime, timezone
+        from calendar import timegm
+
+        base = timegm(datetime(2026, 10, 12, tzinfo=timezone.utc).timetuple())
+        filas = []
+        for indice in range(30):
+            filas.append({
+                "core4_match_previo": True,
+                "core4_reglas_previas": "R1",
+                "estado_operacion": "OPERADA_DIRECTA",
+                "resultado_hipotetico": "WIN" if indice < 20 else "LOSS",
+                "fecha_senal": str(base + (indice % 3)*86400 + (indice // 3)*60),
+                "activo": "A",
+            })
+        rutas, _ = auditar_rutas_core4(filas)
+        evaluada = rutas[("R1", "SIN_VETO")]
+        self.assertEqual(evaluada["dias_operadas"], 3)
+        self.assertEqual(evaluada["winrate_operadas_backtest"], 66.67)
+        self.assertLess(evaluada["limite_inferior_wilson_95"], 59)
+        self.assertFalse(evaluada["cumple_objetivo_y_cobertura"])
+
     def test_rechazos_no_son_operaciones_ejecutadas(self):
         filas=[
             {"core4_match_previo":True,"core4_reglas_previas":"R2",

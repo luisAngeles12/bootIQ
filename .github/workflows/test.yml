@@ -22,7 +22,7 @@ jobs:
         with:
           path: |
             .venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('**/Pipefile') }}
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/Pipfile') }}
           restore-keys: |
             ${{ runner.os }}-venv
 
@@ -66,7 +66,34 @@ jobs:
             tests.test_auditoria_calidad_frecuencia_cerebro \
             tests.test_auditoria_rutas_core4_frecuencia \
             tests.test_auditoria_evidencia_core4_multiventana \
-            tests.test_auditoria_transferencia_estrategias_multiventana
+            tests.test_auditoria_transferencia_estrategias_multiventana \
+            tests.test_auditoria_hipotesis_fase32 \
+            tests.test_auditoria_economia_fase32 \
+            tests.test_auditoria_generalizacion_fase32 \
+            tests.test_auditoria_intervalo_cerebro_fase3 \
+            tests.test_auditoria_dependencia_fuentes_fase3 \
+            tests.test_auditoria_gate_probabilidad_fase3 \
+            tests.test_auditoria_meta_sostenida_fase3 \
+            tests.test_auditoria_discriminacion_cerebro_fase3 \
+            tests.test_auditoria_pullback_secuencial_f3 \
+            tests.test_auditoria_familias_fase3 \
+            tests.test_auditar_fase3_prospectiva_offline \
+            tests.test_capturar_fase3_velas_practice
+
+      - name: Strict sequential pullback confirmation F3 (offline; never trading)
+        run: pipenv run python auditoria_pullback_secuencial_f3.py data_backtest_9x14_oos_post_9w_alineado_17
+      - name: Historical family patterns by day F3 (offline; never trading)
+        run: pipenv run python auditoria_familias_fase3.py auditoria_xpd_sep2026_autoridad.csv
+      - name: Cerebro statistical selection lift F3 (offline; never trading)
+        run: pipenv run python auditoria_discriminacion_cerebro_fase3.py auditoria_xpd_sep2026_autoridad.csv
+      - name: Fixed threshold 57 F3 diagnostic (offline; never trading)
+        run: pipenv run python auditoria_gate_probabilidad_fase3.py auditoria_xpd_sep2026_autoridad.csv
+      - name: Exploratory F3 historical confidence-band audit (offline; never trading)
+        run: pipenv run python auditoria_intervalo_cerebro_fase3.py auditoria_xpd_sep2026_autoridad.csv
+      - name: Exploratory F3 source calibration audit (offline; never trading)
+        run: pipenv run python auditoria_generalizacion_fuentes.py auditoria_xpd_sep2026_autoridad.csv
+      - name: Exploratory F3 source provenance audit (offline; never trading)
+        run: pipenv run python auditoria_dependencia_fuentes_fase3.py auditoria_xpd_sep2026_autoridad.csv
 
 #       - run: pipenv run pylint iqoptionapi
 #       - run: pipenv run isort --recursive --diff .

@@ -1,0 +1,129 @@
+"""Hipótesis CONGELADAS de Fase 3.2 para validación prospectiva.
+
+A/B fueron descubiertas explorando 1,171 combinaciones SEP/OCT.
+No son estrategias autorizadas, ni afectan generación, decisión o órdenes.
+"""
+from math import sqrt
+from datetime import datetime, timezone
+
+
+META_WINRATE = 59.0
+# Congelación: ninguna señal anterior puede ser considerada validación futura.
+CORTE_PROSPECTIVO_UTC = datetime(2026, 10, 26, tzinfo=timezone.utc).timestamp()
+
+
+def _numero(fila, campo):
+    try:
+        return float(fila[campo])
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def coincide_hipotesis(fila, nombre):
+    pa = _numero(fila, "pa_fuerza")
+    if pa is None or not 0.25 <= pa < 0.50:
+        return False
+    if nombre == "A":
+        rsi, puntos = _numero(fila, "rsi"), _numero(fila, "puntaje")
+        return rsi is not None and puntos is not None and 40 <= rsi < 50 and 15 <= puntos < 20
+    if nombre == "B":
+        return (fila.get("calidad_setup") == "BUENA"
+                and fila.get("subtipo_setup") == "SWEEP_RUPTURA_CONFIRMABLE")
+    raise ValueError("Hipótesis desconocida")
+
+
+def _limite_inferior(wins, total):
+    if not total:
+        return 0.0
+    z = 1.96
+    p = wins / total
+    return 100*(p+z*z/(2*total)-z*sqrt(p*(1-p)/total+z*z/(4*total*total)))/(1+z*z/total)
+
+
+def _timestamp_senal(fila):
+    valor = fila.get("fecha_senal") or fila.get("fecha")
+    if valor in (None, ""):
+        return None
+    try:
+        if isinstance(valor, (int, float)) or str(valor).strip().replace(".", "", 1).isdigit():
+            return float(valor)
+        fecha = datetime.fromisoformat(str(valor).replace("Z", "+00:00"))
+        if fecha.tzinfo is None:
+            fecha = fecha.replace(tzinfo=timezone.utc)
+        return fecha.timestamp()
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+def resumir_hipotesis_ventanas(ventanas, minimo_total=100, minimo_ventanas=3,
+                              minimo_por_ventana=30, ventanas_prospectivas=()):
+    """ventanas: pares (nombre_temporal, iterable de filas históricas).
+
+    Evita usar una ventana incompleta como evidencia de estabilidad.
+    Resultados de canceladas siempre son hipotéticos.
+    """
+    # Una ventana descubierta mirando sus resultados no es OOS prospectiva.
+    # La elegibilidad exige declarar explícitamente cada período posterior
+    # a la congelación de A/B; por defecto, ninguno cuenta como prospectivo.
+    prospectivas = set(ventanas_prospectivas)
+    vistos = set()
+    identidades = set()
+    datos = {"A": [], "B": []}
+    for nombre, filas in ventanas:
+        if not nombre or nombre in vistos:
+            raise ValueError("Ventana temporal repetida o sin nombre")
+        vistos.add(nombre)
+        filas = list(filas)
+        # No contar la misma señal bajo nombres de ventanas diferentes.
+        for fila in filas:
+            if not isinstance(fila, dict):
+                continue
+            identidad = tuple(fila.get(k) for k in ("fecha_senal", "activo", "patron", "direccion"))
+            if all(valor not in (None, "") for valor in identidad):
+                if identidad in identidades:
+                    raise ValueError("Señal repetida en ventanas temporales")
+                identidades.add(identidad)
+        for clave in datos:
+            seleccionadas = [r for r in filas
+                             if isinstance(r,dict) and coincide_hipotesis(r, clave)
+                             and r.get("resultado_hipotetico") in {"WIN","LOSS"}]
+            w = sum(r["resultado_hipotetico"] == "WIN" for r in seleccionadas)
+            datos[clave].append({
+                "ventana": nombre, "prospectiva": (nombre in prospectivas and bool(seleccionadas)
+                    and all((_timestamp_senal(r) or 0) >= CORTE_PROSPECTIVO_UTC for r in seleccionadas)),
+                "n": len(seleccionadas), "wins": w,
+                "losses": len(seleccionadas)-w,
+                "activos": len({r.get("activo") for r in seleccionadas if r.get("activo")}),
+            })
+    salida = {}
+    for clave, detalle in datos.items():
+        n = sum(r["n"] for r in detalle)
+        w = sum(r["wins"] for r in detalle)
+        wr = 100*w/n if n else None
+        inferior = _limite_inferior(w,n)
+        futuras = [r for r in detalle if r["prospectiva"]]
+        n_futuro = sum(r["n"] for r in futuras)
+        w_futuro = sum(r["wins"] for r in futuras)
+        wr_futuro = 100*w_futuro/n_futuro if n_futuro else None
+        inferior_futuro = _limite_inferior(w_futuro,n_futuro)
+        cobertura = (n_futuro >= minimo_total
+                     and sum(r["n"] >= minimo_por_ventana for r in futuras) >= minimo_ventanas
+                     and prospectivas.issubset(vistos))
+        transferible = bool(cobertura and wr_futuro is not None
+                             and wr_futuro >= META_WINRATE
+                             and inferior_futuro >= META_WINRATE
+                             and all(100*r["wins"]/r["n"] >= META_WINRATE
+                                     for r in futuras if r["n"] >= minimo_por_ventana))
+        salida[clave] = {
+            "n": n,"wins_hipoteticos":w,"losses_hipoteticas":n-w,
+            "wr_hipotetico":round(wr,2) if wr is not None else None,
+            "wilson_inferior_95":round(inferior,2),
+            "n_prospectivo":n_futuro,
+            "wins_prospectivos":w_futuro,
+            "wr_prospectivo":round(wr_futuro,2) if wr_futuro is not None else None,
+            "wilson_prospectivo_inferior_95":round(inferior_futuro,2),
+            "ventanas":detalle,"cobertura_suficiente":cobertura,
+            "ventanas_prospectivas_validas":sum(r["prospectiva"] and r["n"] >= minimo_por_ventana for r in detalle),
+            "evidencia_59_transferible":transferible,
+            "autoriza_operacion":False,
+        }
+    return salida
