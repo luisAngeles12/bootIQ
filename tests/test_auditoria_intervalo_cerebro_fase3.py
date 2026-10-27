@@ -44,6 +44,16 @@ class IntervalosCerebroFase3Tests(unittest.TestCase):
         self.assertEqual(r["descartes"]["DECISION_INCOHERENTE_CON_UMBRAL"], 1)
         self.assertEqual(r["descartes"]["NO_AUTORIZADA_ESTADISTICAMENTE"], 1)
 
+    def test_intervalo_de_principal_no_se_confunde_con_probabilidad_combinada(self):
+        fila = senal(0, probabilidad="60", inferior="40")
+        fila["intervalo_probabilidad_superior"] = "55"
+        r = contrastar_intervalo_cerebro([fila])
+        self.assertEqual(r["estimaciones_fuera_intervalo_fuente_principal"], 1)
+        self.assertEqual(r["intervalos_superiores_no_validos"], 0)
+        self.assertEqual(r["cohortes"]["OPERAR_SOMBRA|SOLO_ESTIMACION_PUNTUAL"]["n"], 1)
+        self.assertEqual(r["proveniencia_intervalo"], "FUENTE_PRINCIPAL_NO_INTERVALO_DE_MEZCLA")
+        self.assertFalse(r["autoriza_operaciones"])
+
     def test_duplicados_no_inflan_evidencia(self):
         fila = senal(0)
         with self.assertRaisesRegex(ValueError, "repetida"):
