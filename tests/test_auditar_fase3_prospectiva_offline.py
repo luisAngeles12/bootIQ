@@ -38,6 +38,25 @@ class AuditoriaFase3ProspectivaOfflineTests(unittest.TestCase):
         self.assertIsNone(r["economia_observada"]["pnl_real_cerrado"])
         self.assertFalse(r["autoriza_operaciones"])
 
+    def test_tres_ventanas_mismo_dia_no_demuestran_estabilidad(self):
+        inicio = int(CORTE_PROSPECTIVO_UTC) + 86400
+        ventanas = [
+            ("v1", muestra(inicio, n=30)),
+            ("v2", muestra(inicio + 3*3600, n=30, activo="USDJPY-OTC")),
+            ("v3", muestra(inicio + 6*3600, n=30, activo="GBPUSD-OTC")),
+        ]
+        with self.assertRaisesRegex(ValueError, "comparten día UTC"):
+            evaluar_ventanas_prospectivas(ventanas, ("v1", "v2", "v3"))
+
+    def test_mismo_dia_en_activos_distintos_no_es_ventana_independiente(self):
+        inicio = int(CORTE_PROSPECTIVO_UTC) + 86400
+        ventanas = [
+            ("v1", muestra(inicio, n=2)),
+            ("v2", muestra(inicio + 3600, n=2, activo="USDJPY-OTC")),
+        ]
+        with self.assertRaisesRegex(ValueError, "comparten día UTC"):
+            evaluar_ventanas_prospectivas(ventanas, ("v1", "v2"))
+
     def test_no_acepta_datos_anteriores_al_corte(self):
         antiguo = muestra(int(CORTE_PROSPECTIVO_UTC) - 60, n=1)
         with self.assertRaisesRegex(ValueError, "anteriores"):
