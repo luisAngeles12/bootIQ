@@ -3,7 +3,7 @@ name: Reset - verifica base limpia
 on:
   push:
     branches:
-      - reset/bootiq-base-limpia-20261027
+      - main
   pull_request: {}
 
 jobs:
