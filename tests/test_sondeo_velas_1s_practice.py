@@ -1,9 +1,12 @@
 import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 from pathlib import Path
 
 from sondear_velas_1s_practice import (
     exigir_config_practice,
+    conectar_sondeo_practice,
     observar_instantanea,
     resumir,
 )
@@ -54,6 +57,46 @@ class SondeoPracticaTests(unittest.TestCase):
         self.assertEqual(resultado["huecos_entre_velas"], 1)
         self.assertEqual(resultado["retraso_ultima_segundos"], 1)
         self.assertFalse(resultado["muestra_continua"])
+
+    @patch("sondear_velas_1s_practice.time.sleep")
+    def test_opcode_solo_un_intento_y_aborta(self, _sleep):
+        iq = Mock()
+        iq.connect.return_value = (True, "ok")
+        iq.check_connect.return_value = True
+        iq.get_balance_mode.return_value = "PRACTICE"
+        iq.get_balance.return_value = 9992
+        estado = SimpleNamespace(Iq=None, balance_inicial=None)
+        opcode = Mock(return_value=False)
+        with self.assertRaisesRegex(RuntimeError, "UN intento"):
+            conectar_sondeo_practice(lambda *_: iq, "correo", "clave", estado, opcode)
+        opcode.assert_called_once_with(max_intentos=1, espera_inicial=0)
+        iq.change_balance.assert_called_once_with("PRACTICE")
+        self.assertEqual(estado.balance_inicial, 9992.0)
+
+    @patch("sondear_velas_1s_practice.time.sleep")
+    def test_no_intenta_opcode_si_modo_no_es_practice(self, _sleep):
+        iq = Mock()
+        iq.connect.return_value = (True, "ok")
+        iq.check_connect.return_value = True
+        iq.get_balance_mode.return_value = "REAL"
+        opcode = Mock()
+        with self.assertRaisesRegex(RuntimeError, "BLOQUEADO"):
+            conectar_sondeo_practice(lambda *_: iq, "correo", "clave",
+                                     SimpleNamespace(), opcode)
+        opcode.assert_not_called()
+
+    @patch("sondear_velas_1s_practice.time.sleep")
+    def test_conexion_practice_sondeo_aceptada(self, _sleep):
+        iq = Mock()
+        iq.connect.return_value = (True, "ok")
+        iq.check_connect.return_value = True
+        iq.get_balance_mode.return_value = "PRACTICE"
+        iq.get_balance.return_value = 9992
+        opcode = Mock(return_value=True)
+        resultado = conectar_sondeo_practice(lambda *_: iq, "correo", "clave",
+                                             SimpleNamespace(), opcode)
+        self.assertIs(resultado, iq)
+        opcode.assert_called_once()
 
 
 if __name__ == "__main__":
