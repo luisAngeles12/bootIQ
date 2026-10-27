@@ -20,3 +20,5 @@ jobs:
         run: python -m pip install requests websocket-client==0.56 pandas==2.0.3 numpy==1.26.4
       - name: Importar bot y backtest sin credenciales ni datos
         run: python ci_smoke_runtime.py
+      - name: Probar RSI de Wilder y mercado plano
+        run: python -m unittest discover -s tests -p test_rsi_wilder.py -v
