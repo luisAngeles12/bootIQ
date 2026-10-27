@@ -29,3 +29,6 @@ jobs:
 
       - name: Probar sondeo de velas PRACTICE sin bróker
         run: python -m unittest discover -s tests -p test_sondeo_velas_1s_practice.py -v
+
+      - name: Ejecutar suite completa del bot sin broker ni ordenes
+        run: python -B -m unittest discover -s tests -p 'test_*.py' -v
