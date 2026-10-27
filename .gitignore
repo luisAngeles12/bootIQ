@@ -1,27 +1,34 @@
+# Entorno local y credenciales
+venv/
+.venv/
+__pycache__/
 *.py[cod]
+credenciales_local.py
+.env
+.env.*
+.vscode/
+.idea/
+.vs/
+
+# No versionar NINGÚN dato histórico, vela, operación ni memoria
+*.csv
+*.json
+*.log
+*.zip
+*.bak
+*.tmp
+*.d55tmp
+data_backtest*/
+data/
+capturas/
+bootIQ_fase3_capturas/
+auditoria_*.txt
+manifest_*.txt
+
+# Informes y artefactos generados
+coverage.xml
+htmlcov/
+.pytest_cache/
 build/
 dist/
 *.egg-info/
-.vscode/
-/.vs
-venv/
-.idea
-test.py
-# Credenciales privadas BootIQ
-credenciales_local.py
-auditoria_paridad_live.csv
-
-# Artefactos generados BootIQ
-*.log
-*.bak
-*.pre_*
-backtest*.csv
-debug_*.csv
-auditoria_*.txt
-auditoria_*.json
-manifest_*.txt
-fase*.txt
-tmp_*.csv
-data_backtest*/
-!data_backtest_9x14_oos_post_9w_alineado_17/
-!data_backtest_9x14_oos_post_9w_alineado_17/*.csv
