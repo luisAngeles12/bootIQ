@@ -66,12 +66,80 @@ gane en una muestra elegida después de mirar los resultados.
   operacional útil del sistema completo. Sin estos datos, la conclusión
   correcta es **NO VALIDADO**, no ajustar filtros para fabricar el indicador.
 
+## Cierre de tres tareas pendientes (27-oct-2026)
+
+### Integración del stack
+
+PR #7 -> PR #8 -> PR #9 continúan en DRAFT sobre ramas experimentales. El
+commit de reconciliación `0df969b74ca5c1b243d56adfad4c5e213cd60da7`
+incorpora por ascendencia el commit CI tardío del PR #8 al PR #9 con el
+**mismo árbol** que el PR #9 previo; `mergeable=True`. No se fusionó con
+producción ni se habilitó ninguna regla de trading.
+
+### Embudo de frecuencia observado, replay íntegro
+
+| Estado de embudo | Total | 12-oct | 13-oct |
+| --- | ---: | ---: | ---: |
+| Señales | 6466 | 6229 | 237 |
+| Coincidencia CORE4 previa | 140 | 134 | 6 |
+| Elegible estructural CORE4 | 18 | 18 | 0 |
+| Operación directa simulada | 16 | 16 | 0 |
+| Rechazo de protocolo tras aprobación | 2 | 2 | 0 |
+| Cancelación de cerebro | 6448 | 6211 | 237 |
+
+De las 140 coincidencias CORE4, 122 se cancelaron por cerebro (con veto
+selectivo marcado), 16 operaron directamente y 2 pasaron a protocolo sin
+confirmación. Entre 6,326 señales sin coincidencia y otras 122 con veto, no
+hubo operación. `cerebro_unico_bloquear_por_riesgo=True` en **cero** filas;
+por tanto atribuir el cuello de botella únicamente a esa bandera sería falso.
+El replay registra 100 activos y 796 minutos con señal el 12-oct; 45 activos
+y 36 minutos el 13-oct. Las 16 directas del 12-oct se reparten entre 15 activos
+y 15 minutos. Tasas: 16/6229 = 0.257% de señales y 16/796 = 2.01
+operaciones directas por 100 minutos con señal. El 13-oct hubo cero entradas.
+**Son operaciones del backtest, no cierres verificados del broker**. No consta
+`order_id`, payout ni columna de PNL en este replay. Tampoco hay garantía de
+que 100 activos históricos hubieran sido candidatos del TOP20 simultáneo LIVE.
+Este embudo ubica la pérdida principal **antes del protocolo**, pero no prueba
+que quitar un veto aumentaría ganancias: no se cambió autoridad.
+
+### Protocolo de validación prospectiva congelado
+
+1. Congelar SHA de código/configuración, familias/candidatos, ordenación TOP,
+   ventana temporal de exclusión y criterio de frecuencia *antes* del nuevo
+   replay. A/B descubiertas con SEP/OCT no pueden tomar esos mismos datos como
+   confirmación. Corte de exclusión inicial: 2026-10-26 UTC.
+2. Recoger velas independientes posteriores al corte, con cobertura de varios
+   días y mercados representativos, y conservar hashes/manifiesto de origen,
+   orden cronológico y datos de exposición accesibles al momento de señal.
+   Mantener PRACTICE y aprendizaje desactivado para reproducibilidad.
+3. Reproducir todos los pasos en paridad: señal, elegibilidad CORE4, decisión
+   cerebro, confirmación temporal protocolo, ranking TOP20 íntegro, capacidad
+   abierta, ejecución PRACTICE y cierre. Las señales canceladas nunca se
+   convierten en operaciones solo por WIN hipotético.
+4. Medir por fecha y activo: oportunidades, aprobadas, entradas realmente
+   ejecutables, ejecuciones broker identificadas por `order_id`, cierres,
+   WIN/LOSS, payout, PNL neto y frecuencia por tiempo efectivo. Registrar
+   deslizamiento/errores de ejecución y ausencia de datos.
+5. Para certificación retrospectiva mínima, reportar n >= 100 operaciones
+   deduplicadas en >= 3 días y límite inferior Wilson 95% >= 59%, más PNL
+   completo y positivo; esos mínimos internos NO sustituyen evaluación por
+   períodos separados, ni garantizan rentabilidad futura. La frecuencia mínima
+   práctica debe fijarse ex ante y evaluarse junto al límite MAX20.
+6. Si la muestra sigue siendo escasa, faltan order_id/PNL, el límite Wilson
+   cae bajo 59 o falla una subventana, resultado = **NO VALIDADO**. Nuevas
+   hipótesis nacidas de fallos del bloque pasarán a otra validación futura,
+   nunca se retestearán sobre el mismo bloque para proclamarlas OOS.
+
+**Disponibilidad de datos:** al cierre de este reporte solo hay replay
+histórico Oct12–13 y datos de exploración previos. No existe todavía un bloque
+posterior independiente verificable con ejecuciones y PNL para afirmar éxito.
+
 ## Límites de autoridad
 
 Cambios del PR #9 permanecen experimentales y apilados sobre PR #8.
 No mezclar en LIVE, no REAL, no modificar TOP20/guardas SUCIO/CAÓTICO/
 segundo 9/expiración/estrategias sin evidencia causal y paridad pertinente.
 
-**Decisión:** diagnósticos técnicos de esta fase documentados; A/B y apertura
-genérica RECHAZADAS por evidencia; evaluación prospectiva integral y
+**Decisión:** diagnóstico técnico e integración documental completados; A/B y
+apertura genérica RECHAZADAS por evidencia; evaluación prospectiva integral y
 rentabilidad **pendientes**. Ninguna estrategia nueva queda autorizada.
