@@ -73,6 +73,37 @@ def resumir(velas, inicio, fin, latencias=None):
     }
 
 
+
+def evaluar_micro_rechazo_sombra(velas, ahora):
+    """Nivel calculado de 20 velas anteriores; patrón solo en las 3 posteriores.
+
+    Diagnóstico sin autorización operativa ni comparación con resultados futuros.
+    """
+    from price_action import diagnosticar_micro_rechazo_1s
+
+    secuencia = [velas[t] for t in sorted(velas)]
+    if len(secuencia) < 23:
+        return []
+    ultimas = secuencia[-23:]
+    marcas = [int(v["from"]) for v in ultimas]
+    if any(b - a != 1 for a, b in zip(marcas, marcas[1:])):
+        return []
+    contexto, evento = ultimas[:20], ultimas[20:]
+    soporte = min(float(v["min"]) for v in contexto)
+    resistencia = max(float(v["max"]) for v in contexto)
+    eventos = []
+    for direccion, nivel in (("call", soporte), ("put", resistencia)):
+        r = diagnosticar_micro_rechazo_1s(evento, nivel, direccion, ahora)
+        if r["estado"] == "MICRO_RECHAZO_CONFIRMADO":
+            eventos.append({
+                "timestamp": marcas[-1],
+                "direccion": direccion,
+                "nivel_previo": nivel,
+                "operable": False,
+            })
+    return eventos
+
+
 def conectar_sondeo_practice(iq_factory, email, password, estado):
     """Arranque de solo lectura: no solicita initialization-data ni OPCODE."""
     iq = iq_factory(email, password)
@@ -125,6 +156,8 @@ def sondear(activo, segundos):
         raise RuntimeError("BLOQUEADO: reloj IQ no disponible")
     vistos = {}
     latencias = {}
+    ultimos_evaluados = set()
+    eventos_sombra = []
     print("SONDEO SOLO LECTURA | PRACTICE | activo:", activo,
           "| segundos:", segundos, flush=True)
     try:
@@ -136,12 +169,26 @@ def sondear(activo, segundos):
             ahora = int(iq.get_server_timestamp())
             if ahora <= 0:
                 raise RuntimeError("BLOQUEADO: reloj IQ no disponible")
-            observar_instantanea(iq.get_realtime_candles(activo, 1),
-                                 ahora, inicio, vistos, latencias)
+            nuevas = observar_instantanea(iq.get_realtime_candles(activo, 1),
+                                           ahora, inicio, vistos, latencias)
+            if nuevas and vistos:
+                ultimo_timestamp = max(vistos)
+                if ultimo_timestamp not in ultimos_evaluados:
+                    ultimos_evaluados.add(ultimo_timestamp)
+                    for evento in evaluar_micro_rechazo_sombra(vistos, ahora):
+                        eventos_sombra.append(evento)
+                        print("MICRORECHAZO_SOMBRA:", evento, flush=True)
             time.sleep(0.2)
         # Medir ANTES del cierre; desuscribir puede esperar 5 segundos.
         fin = int(iq.get_server_timestamp())
         print("RESULTADO:", resumir(vistos, inicio, fin, latencias), flush=True)
+        print("MICRORECHAZOS_SOMBRA:", {
+            "total": len(eventos_sombra),
+            "call": sum(e["direccion"] == "call" for e in eventos_sombra),
+            "put": sum(e["direccion"] == "put" for e in eventos_sombra),
+            "operaciones": 0,
+            "advertencia": "NO_ES_SENAL_NI_WINRATE",
+        }, flush=True)
     finally:
         # stop_candles_one_stream duerme 5 s antes de comprobar el cierre.
         limpieza = threading.Thread(
