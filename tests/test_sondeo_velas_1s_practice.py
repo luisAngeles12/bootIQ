@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+from collections import defaultdict
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 from pathlib import Path
@@ -94,6 +95,7 @@ class SondeoPracticaTests(unittest.TestCase):
     def test_suscribe_un_segundo_sin_precarga_historica(self):
         iq = Mock()
         iq.start_candles_one_stream.return_value = True
+        iq.api.real_time_candles_maxdict_table = defaultdict(dict)
         iniciar_stream_sin_precarga(iq, "USDINR-OTC", {"USDINR-OTC": 1383})
         self.assertEqual(iq.api.real_time_candles_maxdict_table[
             "USDINR-OTC"][1], 60)
@@ -104,6 +106,7 @@ class SondeoPracticaTests(unittest.TestCase):
     def test_suscripcion_no_confirmada_aborta(self):
         iq = Mock()
         iq.start_candles_one_stream.return_value = False
+        iq.api.real_time_candles_maxdict_table = defaultdict(dict)
         with self.assertRaisesRegex(RuntimeError, "no confirmada"):
             iniciar_stream_sin_precarga(iq, "USDINR-OTC",
                                         {"USDINR-OTC": 1383})
