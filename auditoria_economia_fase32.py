@@ -4,7 +4,24 @@ Separar el porcentaje de aciertos de la ganancia neta observada.
 Las señales canceladas tienen solo resultado hipotético: no son ganancias.
 """
 from collections import Counter
+from datetime import datetime, timezone
 from math import isfinite
+
+
+def _dia_utc(valor):
+    """Agrupa fechas de señales por día UTC, incluso si vienen en epoch."""
+    if valor in (None, ""):
+        return None
+    try:
+        texto = str(valor).strip()
+        if texto.replace(".", "", 1).isdigit():
+            return datetime.fromtimestamp(float(texto), timezone.utc).date().isoformat()
+        fecha = datetime.fromisoformat(texto.replace("Z", "+00:00"))
+        if fecha.tzinfo is None:
+            fecha = fecha.replace(tzinfo=timezone.utc)
+        return fecha.astimezone(timezone.utc).date().isoformat()
+    except (ValueError, TypeError, OverflowError, OSError):
+        return None
 
 
 ESTADOS_EJECUTADOS = frozenset({"OPERADA_DIRECTA", "OPERADA", "CERRADA"})
@@ -49,9 +66,9 @@ def evaluar_rentabilidad(filas, payout_neto=None):
         perdidas += resultado == "LOSS"
         if r.get("activo"):
             mercados.add(r["activo"])
-        fecha = str(r.get("fecha_senal", "") or r.get("fecha", ""))
+        fecha = _dia_utc(r.get("fecha_senal") or r.get("fecha"))
         if fecha:
-            fechas.add(fecha[:10] if len(fecha) >= 10 and "-" in fecha[:10] else fecha)
+            fechas.add(fecha)
         try:
             valor = float(r["pnl_real_cerrado"])
             if not isfinite(valor):
