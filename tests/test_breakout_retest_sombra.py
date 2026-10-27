@@ -1,6 +1,7 @@
 import unittest
 
 from diagnostico_breakout_retest_sombra import diagnosticar_breakout_retest_sombra
+from zonas import soporte_resistencia_zonas, breakout_retest
 
 
 class BreakoutRetestSombraTests(unittest.TestCase):
@@ -27,6 +28,40 @@ class BreakoutRetestSombraTests(unittest.TestCase):
         self.assertEqual(resultado["br_call_sombra"], 0)
         self.assertEqual(resultado["br_put_sombra"], -1)
         self.assertAlmostEqual(resultado["br_put_nivel_sombra"], 105.0)
+
+    def test_diferencial_detector_operativo_permanece_intacto(self):
+        opens, closes, highs, lows = self.caso_call()
+        vol = sum(h - l for h, l in zip(highs[-14:], lows[-14:])) / 14
+        soporte, resistencia = soporte_resistencia_zonas(
+            closes[-1], highs, lows, vol
+        )
+        resultado_original, _ = breakout_retest(
+            opens, closes, highs, lows, resistencia, "resistencia"
+        )
+        self.assertEqual(resultado_original, 0)
+        resultado_sombra = diagnosticar_breakout_retest_sombra(
+            opens, closes, highs, lows
+        )
+        self.assertEqual(resultado_sombra["br_call_sombra"], 1)
+
+    def test_diferencial_put_no_activa_detector_original(self):
+        opens, closes, highs, lows = self.caso_call()
+        espejo = lambda xs: [205.0 - x for x in xs]
+        opens, closes, highs, lows = (
+            espejo(opens), espejo(closes), espejo(lows), espejo(highs)
+        )
+        vol = sum(h - l for h, l in zip(highs[-14:], lows[-14:])) / 14
+        soporte, resistencia = soporte_resistencia_zonas(
+            closes[-1], highs, lows, vol
+        )
+        resultado_original, _ = breakout_retest(
+            opens, closes, highs, lows, soporte, "soporte"
+        )
+        self.assertEqual(resultado_original, 0)
+        resultado_sombra = diagnosticar_breakout_retest_sombra(
+            opens, closes, highs, lows
+        )
+        self.assertEqual(resultado_sombra["br_put_sombra"], -1)
 
     def test_no_retest_no_senal(self):
         opens, closes, highs, lows = self.caso_call()
