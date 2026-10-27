@@ -1,0 +1,22 @@
+name: F3.3 Breakout Retest Shadow (offline)
+
+on:
+  push:
+    branches:
+      - diagnostico-f33-breakout-retest-sombra
+  workflow_dispatch:
+
+jobs:
+  shadow-audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Test detector and hypothetical evaluator (no broker)
+        run: python -B -m unittest discover -s tests -p "test_*breakout_retest_sombra.py" -v
+      - name: Validate frozen OOS shadow diagnostic totals
+        run: |
+          python -B -c 'from auditar_breakout_retest_sombra import auditar_directorio; p="data_backtest_9x14_oos_post_9w_alineado_17"; r=auditar_directorio(p); print(r); assert r=={"ventanas":425,"call":44,"put":60},r'
+          python -B -c 'from evaluar_breakout_retest_sombra import evaluar_directorio; p="data_backtest_9x14_oos_post_9w_alineado_17"; r=evaluar_directorio(p); print(r); assert (r["datasets"],r["patrones"],r["win"],r["loss"],r["sin_futuro"],r["empates"],r["wr_hipotetico"])==(17,104,44,48,9,3,47.83),r'
