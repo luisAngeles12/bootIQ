@@ -34,9 +34,9 @@ FUENTES_SIN_AUTORIDAD_PRODUCTIVA_PUT = {
     "PA_DIRECCION|RECHAZO_VENDEDOR_HISTORICO|PUT",
 }
 
-# Prior conservador del universo observado. Se usa solo para suavizar
-# muestras pequeñas; no autoriza ni bloquea operaciones.
-PRIOR_WINRATE = 49.25
+# Prior matemático neutro sin información histórica previa.
+# Solo suaviza estimaciones; nunca constituye evidencia operativa.
+PRIOR_WINRATE = 50.0
 PRIOR_FUERZA = 20.0
 Z_INTERVALO = 1.96
 
