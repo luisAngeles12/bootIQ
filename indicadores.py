@@ -63,28 +63,42 @@ def fuerza_impulso(opens, closes, highs, lows, lookback=8):
 
     return ratio
 def calcular_rsi(prices, period=14):
-    if len(prices) < period + 2:
+    """RSI de Wilder usando exclusivamente cierres disponibles.
+
+    Devuelve 50 si no existe movimiento en ninguna dirección.
+    La semilla utiliza los primeros `period` cambios, y las
+    observaciones posteriores reciben suavizado de Wilder.
+    """
+    if period < 1 or len(prices) < period + 1:
         return None
 
     serie = pd.Series(prices, dtype="float64")
-    delta = serie.diff()
-
-    gain = delta.where(delta > 0, 0).rolling(period).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(period).mean()
-
-    if pd.isna(gain.iloc[-1]) or pd.isna(loss.iloc[-1]):
+    if not np.isfinite(serie.to_numpy()).all():
         return None
 
-    if loss.iloc[-1] == 0:
-        return 100.0
+    cambios = serie.diff().iloc[1:]
+    ganancias = cambios.clip(lower=0.0)
+    perdidas = (-cambios).clip(lower=0.0)
 
-    if gain.iloc[-1] == 0:
+    ganancia_media = float(ganancias.iloc[:period].mean())
+    perdida_media = float(perdidas.iloc[:period].mean())
+
+    for ganancia, perdida in zip(
+        ganancias.iloc[period:],
+        perdidas.iloc[period:],
+    ):
+        ganancia_media = ((period - 1) * ganancia_media + float(ganancia)) / period
+        perdida_media = ((period - 1) * perdida_media + float(perdida)) / period
+
+    if ganancia_media == 0.0 and perdida_media == 0.0:
+        return 50.0
+    if perdida_media == 0.0:
+        return 100.0
+    if ganancia_media == 0.0:
         return 0.0
 
-    rs = gain.iloc[-1] / loss.iloc[-1]
-    rsi = 100 - (100 / (1 + rs))
-
-    return float(rsi)
+    rs = ganancia_media / perdida_media
+    return float(100.0 - (100.0 / (1.0 + rs)))
 
 def ema(prices, period):
     return float(pd.Series(prices, dtype="float64").ewm(span=period, adjust=False).mean().iloc[-1])
