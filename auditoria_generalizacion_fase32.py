@@ -22,7 +22,20 @@ def _dia_utc(fila):
 
 def evaluar_generalizacion(filas):
     """Cuenta señales únicas sin promover WIN hipotético a PNL ejecutado."""
-    datos = list(filas)
+    datos = []
+    identidades = set()
+    for fila in filas:
+        if not isinstance(fila, dict):
+            continue
+        # Solo se deduplica con identidad temporal y estructural completa.
+        # La falta de telemetría NO se interpreta como duplicación.
+        marca = fila.get("fecha_senal") or fila.get("fecha")
+        clave = (marca, fila.get("activo"), fila.get("patron"), fila.get("direccion"))
+        if all(v not in (None, "") for v in clave):
+            if clave in identidades:
+                raise ValueError("Señal repetida en universo de generalización")
+            identidades.add(clave)
+        datos.append(fila)
     resultado = {}
     for nombre in ("A", "B"):
         muestras = [r for r in datos
