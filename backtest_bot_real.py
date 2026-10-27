@@ -1317,6 +1317,11 @@ def crear_registro_resultado(
         # ==================================================
 
         "accion_precio": senal.get("accion_precio", ""),
+        # F3.3: diagnóstico informativo, sin autoridad operativa.
+        "br_call_sombra": senal.get("br_call_sombra", 0),
+        "br_put_sombra": senal.get("br_put_sombra", 0),
+        "br_call_nivel_sombra": senal.get("br_call_nivel_sombra"),
+        "br_put_nivel_sombra": senal.get("br_put_nivel_sombra"),
 
         "razon_accion_precio": _texto(
             senal.get("razon_accion_precio", "")
@@ -4948,6 +4953,10 @@ def guardar_resultados(resultados):
         "direccion_tendencia",
 
         "accion_precio",
+        "br_call_sombra",
+        "br_put_sombra",
+        "br_call_nivel_sombra",
+        "br_put_nivel_sombra",
         "razon_accion_precio",
         "pa_tipo",
         "pa_direccion",
