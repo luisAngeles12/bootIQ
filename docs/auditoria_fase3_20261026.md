@@ -228,3 +228,40 @@ por este cambio. Los textos alimentan componentes posteriores;
 por eso la nueva rama permanece DRAFT hasta obtener paridad OOS
 para señales breakout verdaderas. **No implica activar señales sin EMA
 ni modificar autorización de protocolos.**
+
+## Fase 3.3 — bloqueo lógico de breakout/retest y experimento sombra
+
+**Causa localizada:** `lector_contexto.py` selecciona soporte/resistencia
+mediante `soporte_resistencia_zonas(price_actual, ...)`. Ese selector
+exige resistencia por encima de `price_actual` (o usa max high como
+fallback); `breakout_retest()` exige simultáneamente que
+`cierre_actual > resistencia` para CALL. Para PUT ocurre el inverso:
+el soporte del selector queda bajo el precio actual y el detector exige
+`cierre_actual < soporte`. Bajo velas OHLC válidas ambas activaciones
+resultan lógicamente imposibles por ese enlace entre funciones.
+
+Dos casos sintéticos (CALL/PUT) confirmaron: detector original 0/0,
+selector fijado antes de las dos velas del evento 1/-1. Se creó la función
+`diagnosticar_breakout_retest_pre_evento()` en `zonas.py` y exposición
+**solo sombra** en `lector_contexto.py`; `br_call`/`br_put` oficiales
+siguen sin modificaciones. La nueva lectura usa solo velas hasta -3
+para el nivel, mientras -2 es ruptura y -1 es retest. Pruebas 4/4
+para el detector y 3/3 para el replay broker-free, incorporadas a CI.
+
+Replay histórico de 17 archivos de
+`data_backtest_9x14_oos_post_9w_alineado_17` (2-oct-2026): 1,292
+ventanas con mínimo 130 velas; **0** coincidencias con selector actual;
+**92 detecciones técnicas en sombra** (43 CALL, 49 PUT), en los 17
+activos, **52 minutos diferentes** y pico de 4 detecciones por minuto.
+Se reprodujo con `auditoria_breakout_pre_evento_fase33.py`, sin red ni
+broker al evaluar el material recuperado de GitHub. El grupo de 17
+mercados ya se había usado en investigaciones anteriores, y solo cubre
+un día: **NO es OOS nuevo**. Las 92 detecciones NO equivalen a operaciones
+aprobadas, ejecutables, WIN, ni PNL. Requieren clasificación, mercado,
+CORE4/cerebro, protocolos, TOP20, confirmación temporal, capacidad y
+prueba posterior independiente con expiración real.
+
+**Decisión:** se corrige el diagnóstico técnico de un generador inalcanzable,
+pero se mantiene la producción intacta hasta validar un reemplazo que
+cumpla tasa de aciertos >=59%, frecuencia útil, PNL y paridad. No desbloquear
+SUCIO/CAÓTICO ni convertir sombra en autoridad por el volumen de señales.
