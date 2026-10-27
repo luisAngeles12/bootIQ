@@ -75,10 +75,13 @@ jobs:
             tests.test_auditoria_gate_probabilidad_fase3 \
             tests.test_auditoria_meta_sostenida_fase3 \
             tests.test_auditoria_discriminacion_cerebro_fase3 \
+            tests.test_auditoria_pullback_secuencial_f3 \
             tests.test_auditoria_familias_fase3 \
             tests.test_auditar_fase3_prospectiva_offline \
             tests.test_capturar_fase3_velas_practice
 
+      - name: Strict sequential pullback confirmation F3 (offline; never trading)
+        run: pipenv run python auditoria_pullback_secuencial_f3.py data_backtest_9x14_oos_post_9w_alineado_17
       - name: Historical family patterns by day F3 (offline; never trading)
         run: pipenv run python auditoria_familias_fase3.py auditoria_xpd_sep2026_autoridad.csv
       - name: Cerebro statistical selection lift F3 (offline; never trading)
