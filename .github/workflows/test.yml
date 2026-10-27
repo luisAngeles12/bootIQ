@@ -72,10 +72,13 @@ jobs:
             tests.test_auditoria_generalizacion_fase32 \
             tests.test_auditoria_intervalo_cerebro_fase3 \
             tests.test_auditoria_dependencia_fuentes_fase3 \
+            tests.test_auditoria_gate_probabilidad_fase3 \
             tests.test_auditoria_familias_fase3 \
             tests.test_auditar_fase3_prospectiva_offline \
             tests.test_capturar_fase3_velas_practice
 
+      - name: Fixed threshold 57 F3 diagnostic (offline; never trading)
+        run: pipenv run python auditoria_gate_probabilidad_fase3.py auditoria_xpd_sep2026_autoridad.csv
       - name: Exploratory F3 historical confidence-band audit (offline; never trading)
         run: pipenv run python auditoria_intervalo_cerebro_fase3.py auditoria_xpd_sep2026_autoridad.csv
       - name: Exploratory F3 source calibration audit (offline; never trading)
