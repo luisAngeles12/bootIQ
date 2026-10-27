@@ -60,6 +60,24 @@ class SondeoPracticaTests(unittest.TestCase):
         self.assertEqual(resultado["retraso_ultima_segundos"], 1)
         self.assertFalse(resultado["muestra_continua"])
 
+    def test_latencias_por_primera_llegada_y_percentil(self):
+        vistos = {}
+        latencias = {}
+        self.assertEqual(observar_instantanea(
+            {100: vela(100)}, 101, 100, vistos, latencias
+        ), 1)
+        self.assertEqual(observar_instantanea(
+            {100: vela(100)}, 105, 100, vistos, latencias
+        ), 0)
+        self.assertEqual(observar_instantanea(
+            {101: vela(101)}, 104, 100, vistos, latencias
+        ), 1)
+        resumen = resumir(vistos, 100, 105, latencias)
+        self.assertEqual(resumen["latencia_mediana_segundos"], 0)
+        self.assertEqual(resumen["latencia_p95_segundos"], 2)
+        self.assertEqual(resumen["latencia_maxima_segundos"], 2)
+        self.assertEqual(resumen["velas_con_demora_2s_o_mas"], 1)
+
     @patch("sondear_velas_1s_practice.time.sleep")
     def test_conexion_no_depende_de_opcode(self, _sleep):
         iq = Mock()
