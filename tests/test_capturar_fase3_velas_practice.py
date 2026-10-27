@@ -97,7 +97,7 @@ class CapturaFase3PracticeTests(unittest.TestCase):
             with ruta.open("w", newline="", encoding="utf-8") as stream:
                 writer = csv.writer(stream)
                 writer.writerow(["tipo", "activo", "from", "open", "close", "max", "min", "volume"])
-                desplazamiento = 100000 if activo == "STALE" else 0
+                desplazamiento = 100000 if activo.startswith("STALE") else 0
                 for n in range(201):
                     writer.writerow([tipo, activo, referencia - (200-n)*60 - desplazamiento,
                                      1, 1, 2, 0, 0])
