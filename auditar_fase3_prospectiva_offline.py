@@ -8,6 +8,7 @@ No importa config, estrategia, credenciales ni código del broker.
 import argparse
 import csv
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 from auditoria_economia_fase32 import evaluar_rentabilidad
@@ -33,6 +34,7 @@ def evaluar_ventanas_prospectivas(ventanas, prospectivas, payout_neto=None):
         raise ValueError("Ventana prospectiva sin archivo correspondiente")
 
     periodos = []
+    dias_asignados = {}
     for nombre, filas in bloques:
         if nombre not in declaradas:
             continue
@@ -43,6 +45,14 @@ def evaluar_ventanas_prospectivas(ventanas, prospectivas, payout_neto=None):
             raise ValueError("Fecha ausente/inválida en ventana prospectiva: " + nombre)
         if min(marcas) < CORTE_PROSPECTIVO_UTC:
             raise ValueError("Datos anteriores al corte prospectivo: " + nombre)
+        for marca in marcas:
+            dia = datetime.fromtimestamp(marca, timezone.utc).date().isoformat()
+            if dia in dias_asignados and dias_asignados[dia] != nombre:
+                raise ValueError(
+                    "Ventanas prospectivas comparten día UTC: "
+                    + dias_asignados[dia] + " / " + nombre + " (" + dia + ")"
+                )
+            dias_asignados[dia] = nombre
         periodos.append((min(marcas), max(marcas), nombre))
 
     periodos.sort()
