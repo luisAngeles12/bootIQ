@@ -23,7 +23,7 @@ def exigir_config_practice(ruta):
         raise RuntimeError("BLOQUEADO: MODO_CUENTA no es literalmente PRACTICE")
 
 
-def observar_instantanea(instantanea, ahora, desde, vistos):
+def observar_instantanea(instantanea, ahora, desde, vistos, latencias=None):
     """Cuenta solamente velas cerradas, nuevas y recibidas desde el inicio."""
     if not isinstance(instantanea, dict):
         return 0
@@ -43,14 +43,20 @@ def observar_instantanea(instantanea, ahora, desde, vistos):
             continue
         if inicio not in vistos:
             vistos[inicio] = dict(vela)
+            if latencias is not None:
+                # Primer instante del reloj IQ en que vimos el cierre.
+                latencias[inicio] = max(0, ahora - (inicio + 1))
             nuevas += 1
     return nuevas
 
 
-def resumir(velas, inicio, fin):
+def resumir(velas, inicio, fin, latencias=None):
     marcas = sorted(velas)
     saltos = [(a, b) for a, b in zip(marcas, marcas[1:]) if b - a != 1]
     ultima = marcas[-1] if marcas else None
+    retrasos = sorted(latencias.values()) if latencias is not None else []
+    p95 = retrasos[max(0, (len(retrasos) * 95 + 99) // 100 - 1)] if retrasos else None
+    mediana = retrasos[(len(retrasos) - 1) // 2] if retrasos else None
     return {
         "segundos_observacion": fin - inicio,
         "velas_1s_nuevas": len(marcas),
@@ -58,6 +64,11 @@ def resumir(velas, inicio, fin):
         "ultima_vela": ultima,
         "retraso_ultima_segundos": fin - ultima - 1 if ultima is not None else None,
         "muestra_continua": bool(marcas) and not saltos,
+        "latencia_mediana_segundos": mediana,
+        "latencia_p95_segundos": p95,
+        "latencia_maxima_segundos": max(retrasos) if retrasos else None,
+        "velas_con_demora_2s_o_mas": sum(n >= 2 for n in retrasos),
+        "advertencia_latencia": "RESOLUCION_1S_NO_SUBSEGUNDO",
         "advertencia": "DIAGNOSTICO_SIN_OPERACIONES_NO_ESTIMA_WINRATE",
     }
 
@@ -113,6 +124,7 @@ def sondear(activo, segundos):
     if inicio <= 0:
         raise RuntimeError("BLOQUEADO: reloj IQ no disponible")
     vistos = {}
+    latencias = {}
     print("SONDEO SOLO LECTURA | PRACTICE | activo:", activo,
           "| segundos:", segundos, flush=True)
     try:
@@ -125,11 +137,11 @@ def sondear(activo, segundos):
             if ahora <= 0:
                 raise RuntimeError("BLOQUEADO: reloj IQ no disponible")
             observar_instantanea(iq.get_realtime_candles(activo, 1),
-                                 ahora, inicio, vistos)
+                                 ahora, inicio, vistos, latencias)
             time.sleep(0.2)
         # Medir ANTES del cierre; desuscribir puede esperar 5 segundos.
         fin = int(iq.get_server_timestamp())
-        print("RESULTADO:", resumir(vistos, inicio, fin), flush=True)
+        print("RESULTADO:", resumir(vistos, inicio, fin, latencias), flush=True)
     finally:
         # stop_candles_one_stream duerme 5 s antes de comprobar el cierre.
         limpieza = threading.Thread(
