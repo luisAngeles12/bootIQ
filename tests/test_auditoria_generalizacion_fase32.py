@@ -14,6 +14,20 @@ class GeneralizacionFase32Tests(unittest.TestCase):
         self.assertFalse(r["supera_meta_59"])
         self.assertFalse(r["apto_para_promocion"])
 
+    def test_identidad_duplicada_no_infla_muestra_ni_wr(self):
+        fila = {"pa_fuerza": ".35", "rsi": "45", "puntaje": "17",
+                "resultado_hipotetico": "WIN", "fecha_senal": "1791800940",
+                "activo": "EURUSD-OTC", "patron": "P1", "direccion": "call"}
+        with self.assertRaisesRegex(ValueError, "Señal repetida"):
+            evaluar_generalizacion([fila, dict(fila)])
+
+    def test_igual_minuto_en_otros_activos_no_se_considera_duplicado(self):
+        fila = {"pa_fuerza": ".35", "rsi": "45", "puntaje": "17",
+                "resultado_hipotetico": "WIN", "fecha_senal": "1791800940",
+                "activo": "EURUSD-OTC", "patron": "P1", "direccion": "call"}
+        resultado = evaluar_generalizacion([fila, dict(fila, activo="USDJPY-OTC")])
+        self.assertEqual(resultado["A"]["n_senales"], 2)
+
     def test_20_es_maximo_no_minimo(self):
         base={"pa_fuerza":".35","calidad_setup":"BUENA",
               "subtipo_setup":"SWEEP_RUPTURA_CONFIRMABLE",
