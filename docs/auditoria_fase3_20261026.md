@@ -143,3 +143,42 @@ segundo 9/expiración/estrategias sin evidencia causal y paridad pertinente.
 **Decisión:** diagnóstico técnico e integración documental completados; A/B y
 apertura genérica RECHAZADAS por evidencia; evaluación prospectiva integral y
 rentabilidad **pendientes**. Ninguna estrategia nueva queda autorizada.
+
+## Fase 3.3 — Primera prueba causal de decisiones (27-oct-2026)
+
+Se confrontaron los 6,466 registros Oct12–13 con `motor_decision.py`,
+las banderas de elegibilidad CORE4 y las decisiones finales:
+
+- **6,326 señales sin coincidencia CORE4**, con 3,067 WIN y 3,259 LOSS
+  hipotéticos (48.48%). No son operaciones; abrirlas indiscriminadamente
+  no tiene fundamento de ventaja estadística.
+- **122 coincidencias CORE4 con veto selectivo**: 55 WIN/67 LOSS
+  hipotéticos (45.08%). Desglose: R2 solo 77 (34W/43L), R6 solo 25
+  (10W/15L), R1 solo 10 (5W/5L), R1+R2 10 (6W/4L).
+  El total R2 incluye dos casos con invalidación dura adicional.
+  La etiqueta de ruta por sí sola no identifica cuál subregla causó el veto.
+- **18 elegibles CORE4**: 16 OPERADA_DIRECTA y 2 CANCELADA_PROTOCOLO.
+  Cero elegibles marcadas `NO_OPERAR` y cero no elegibles marcadas
+  `OPERAR`/`OPERAR_CON_PROTOCOLO` en el replay.
+- Las familias predominantes sin match tampoco muestran ventaja
+  contrafactual: REVERSIÓN_ESTRUCTURAL/ESPERAR_RUPTURA 741W/758L
+  (1499); CONTINUACIÓN/DIRECTA 709W/746L (1455);
+  REVERSIÓN_ESTRUCTURAL/DIRECTA 401W/452L (853).
+
+**Diagnóstico:** no se reproduce una contradicción entre la bandera
+CORE4 de elegibilidad y la decisión del cerebro. El problema de frecuencia
+no autoriza eliminar los vetos existentes, cuyos contrafactuales agregados
+son peores que 50%. Es necesario mejorar la calidad de candidatos
+**antes** del selector y probar estrategias alternativas en sombra.
+
+El código actual ya calcula `core4_motivos_selectivos_previos` por causa
+concreta y lo exporta en el backtest; el CSV histórico utilizado no incluye
+esa columna. Reproducir bajo el SHA experimental y comparar motivos
+individuales exige dataset de velas y paridad, no reconstruirlos desde
+etiquetas agregadas. No se han cambiado umbrales ni permisos de ejecución.
+
+**Próximo criterio de corrección:** una propuesta concreta deberá mostrar
+un error causal demostrable o un candidato generado ex ante que tenga
+frecuencia útil, efecto por activo/día, OOS genuino y eventual PNL
+verificado. Si no supera el estándar, se descarta aunque produzca
+más señales.
