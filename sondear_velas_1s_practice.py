@@ -1,0 +1,116 @@
+"""Sondeo de velas de 1 s; SOLO PRACTICE, sin órdenes ni archivos."""
+
+import argparse
+import ast
+from pathlib import Path
+import time
+import threading
+
+
+def exigir_config_practice(ruta):
+    """Validar literalmente el modo ANTES de importar módulos del bróker."""
+    arbol = ast.parse(Path(ruta).read_text(encoding="utf-8"))
+    modos = [
+        nodo.value.value
+        for nodo in arbol.body
+        if isinstance(nodo, (ast.Assign, ast.AnnAssign))
+        for destino in (nodo.targets if isinstance(nodo, ast.Assign) else [nodo.target])
+        if isinstance(destino, ast.Name)
+        and destino.id == "MODO_CUENTA"
+        and isinstance(nodo.value, ast.Constant)
+    ]
+    if modos != ["PRACTICE"]:
+        raise RuntimeError("BLOQUEADO: MODO_CUENTA no es literalmente PRACTICE")
+
+
+def observar_instantanea(instantanea, ahora, desde, vistos):
+    """Cuenta solamente velas cerradas, nuevas y recibidas desde el inicio."""
+    if not isinstance(instantanea, dict):
+        return 0
+    nuevas = 0
+    for clave, vela in sorted(instantanea.items(), key=lambda par: int(par[0])):
+        try:
+            inicio = int(vela["from"])
+            if inicio != int(clave) or inicio < desde or inicio + 1 > ahora:
+                continue
+            apertura = float(vela["open"])
+            cierre = float(vela["close"])
+            minimo = float(vela["min"])
+            maximo = float(vela["max"])
+            if not (minimo <= apertura <= maximo and minimo <= cierre <= maximo):
+                continue
+        except (KeyError, ValueError, TypeError, OverflowError):
+            continue
+        if inicio not in vistos:
+            vistos[inicio] = dict(vela)
+            nuevas += 1
+    return nuevas
+
+
+def resumir(velas, inicio, fin):
+    marcas = sorted(velas)
+    saltos = [(a, b) for a, b in zip(marcas, marcas[1:]) if b - a != 1]
+    ultima = marcas[-1] if marcas else None
+    return {
+        "segundos_observacion": fin - inicio,
+        "velas_1s_nuevas": len(marcas),
+        "huecos_entre_velas": len(saltos),
+        "ultima_vela": ultima,
+        "retraso_ultima_segundos": fin - ultima - 1 if ultima is not None else None,
+        "muestra_continua": bool(marcas) and not saltos,
+        "advertencia": "DIAGNOSTICO_SIN_OPERACIONES_NO_ESTIMA_WINRATE",
+    }
+
+
+def sondear(activo, segundos):
+    exigir_config_practice(Path(__file__).with_name("config.py"))
+    # Importaciones del bróker únicamente después del bloqueo anterior.
+    import estado
+    from conexion import conectar
+
+    conectar()
+    iq = estado.Iq
+    if iq.get_balance_mode() != "PRACTICE":
+        raise RuntimeError("BLOQUEADO: cuenta no confirmada PRACTICE")
+    if not iq.check_connect():
+        raise RuntimeError("BLOQUEADO: sin conexion confirmada")
+    inicio = int(iq.get_server_timestamp())
+    if inicio <= 0:
+        raise RuntimeError("BLOQUEADO: reloj IQ no disponible")
+    vistos = {}
+    print("SONDEO SOLO LECTURA | PRACTICE | activo:", activo,
+          "| segundos:", segundos, flush=True)
+    try:
+        iq.start_candles_stream(activo, 1, 60)
+        limite = time.monotonic() + segundos
+        while time.monotonic() < limite:
+            if not iq.check_connect() or iq.get_balance_mode() != "PRACTICE":
+                raise RuntimeError("BLOQUEADO: sesion o modo PRACTICE perdido")
+            ahora = int(iq.get_server_timestamp())
+            if ahora <= 0:
+                raise RuntimeError("BLOQUEADO: reloj IQ no disponible")
+            observar_instantanea(iq.get_realtime_candles(activo, 1),
+                                 ahora, inicio, vistos)
+            time.sleep(0.2)
+    finally:
+        # La librería puede bloquearse al desuscribir; esperar como máximo 3 s.
+        limpieza = threading.Thread(
+            target=iq.stop_candles_stream, args=(activo, 1), daemon=True
+        )
+        limpieza.start()
+        limpieza.join(timeout=3)
+        if limpieza.is_alive():
+            print("AVISO: desuscripcion excedio 3 s", flush=True)
+    fin = int(iq.get_server_timestamp())
+    print("RESULTADO:", resumir(vistos, inicio, fin), flush=True)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--activo", required=True,
+                        help="Nombre de activo abierto en IQ Option")
+    parser.add_argument("--segundos", type=int, default=30)
+    args = parser.parse_args()
+    if not 10 <= args.segundos <= 60:
+        parser.error("--segundos debe estar entre 10 y 60")
+    sondear(args.activo, args.segundos)
