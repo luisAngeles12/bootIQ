@@ -43,6 +43,8 @@ def contrastar_intervalo_cerebro(filas):
     grupos = defaultdict(lambda: {"n": 0, "wins": 0, "losses": 0,
                                   "dias": set(), "activos": set()})
     descartes = defaultdict(int)
+    fuera_intervalo_principal = 0
+    sin_superior_valido = 0
     identidades = set()
     for fila in filas:
         if not isinstance(fila, dict):
@@ -69,6 +71,13 @@ def contrastar_intervalo_cerebro(filas):
             if identidad in identidades:
                 raise ValueError("Señal repetida en contraste estadístico")
             identidades.add(identidad)
+        superior = _numero(fila.get("intervalo_probabilidad_superior"))
+        if superior is None or not 0 <= inferior <= superior <= 100:
+            sin_superior_valido += 1
+        elif not inferior <= punto <= superior:
+            # El intervalo registrado pertenece a la fuente principal;
+            # la probabilidad final puede mezclar respaldo o prior.
+            fuera_intervalo_principal += 1
         umbral = UMBRALES[decision]
         if punto < umbral:
             descartes["DECISION_INCOHERENTE_CON_UMBRAL"] += 1
@@ -94,6 +103,9 @@ def contrastar_intervalo_cerebro(filas):
             "autoriza_cambio": False,
         }
     return {"cohortes": salida, "descartes": dict(descartes),
+            "estimaciones_fuera_intervalo_fuente_principal": fuera_intervalo_principal,
+            "intervalos_superiores_no_validos": sin_superior_valido,
+            "proveniencia_intervalo": "FUENTE_PRINCIPAL_NO_INTERVALO_DE_MEZCLA",
             "advertencia": "RESULTADOS_HIPOTETICOS_NO_ORDENES_NI_PNL",
             "autoriza_operaciones": False}
 
