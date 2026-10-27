@@ -63,9 +63,29 @@ def evaluar_gate_probabilidad(filas, umbral=UMBRAL):
         dias[dia] = {"base": _resumen(base), "gate_57": _resumen(elegidas)}
         todos.extend(base)
         seleccionados.extend(elegidas)
+    # Validación temporal descriptiva: umbral del percentil 90 del día anterior.
+    # Las etiquetas WIN/LOSS nunca se consultan para seleccionar el umbral.
+    top_prev_dia = {}
+    prev_probs = None
+    for dia, entradas in sorted(grupos.items()):
+        if prev_probs:
+            ordenadas = sorted(prev_probs)
+            corte = ordenadas[int(0.9 * (len(ordenadas) - 1))]
+            elegidas = [f for p, f in entradas if p >= corte]
+            top_prev_dia[dia] = {
+                "corte_previo_p90": round(corte, 3),
+                "base": _resumen([f for _, f in entradas]),
+                "seleccion": _resumen(elegidas),
+            }
+        prev_probs = [p for p, _ in entradas]
+    futuro = [f for dia, datos in sorted(top_prev_dia.items())
+              for p, f in grupos[dia]
+              if p >= datos["corte_previo_p90"]]
     return {"umbral_predefinido": UMBRAL,
             "dias": dias, "base": _resumen(todos),
             "gate_57": _resumen(seleccionados),
+            "seleccion_p90_dia_anterior": _resumen(futuro),
+            "detalle_p90_temporal": top_prev_dia,
             "filas_invalidas": invalidas,
             "dias_ordenados": sorted(dias),
             "autoriza_operacion": False,
