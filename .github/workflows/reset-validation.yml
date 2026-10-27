@@ -31,4 +31,12 @@ jobs:
         run: python -m unittest discover -s tests -p test_sondeo_velas_1s_practice.py -v
 
       - name: Ejecutar suite completa del bot sin broker ni ordenes
-        run: python -B -m unittest discover -s tests -p 'test_*.py' -v
+        run: |
+          python -B - <<'PY'
+          import runpy
+          import unittest
+          runpy.run_path("ci_smoke_runtime.py")
+          suite = unittest.defaultTestLoader.discover("tests", pattern="test_*.py")
+          result = unittest.TextTestRunner(verbosity=2).run(suite)
+          raise SystemExit(0 if result.wasSuccessful() else 1)
+          PY
