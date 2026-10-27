@@ -40,7 +40,8 @@ class EconomiaFase32Tests(unittest.TestCase):
         r = evaluar_rentabilidad(filas)
         self.assertEqual(r["pnl_real_cerrado"], 2)
         self.assertTrue(r["rentabilidad_observada_positiva"])
-        self.assertTrue(r["mercados_dentro_del_maximo"])
+        self.assertIsNone(r["mercados_dentro_del_maximo"])
+        self.assertFalse(r["limite_simultaneo_comprobado"])
         self.assertEqual(r["mercados_distintos"], 1)
         self.assertFalse(r["autoriza_operacion"])
 
@@ -55,6 +56,22 @@ class EconomiaFase32Tests(unittest.TestCase):
         self.assertEqual(r["operaciones_cerradas"], 3)
         self.assertEqual(r["fechas_con_operaciones"], 2)
         self.assertEqual(r["pnl_real_cerrado"], 6.0)
+
+
+    def test_21_activos_historicos_no_prueban_21_simultaneos(self):
+        filas = [
+            {"estado_operacion": "OPERADA_DIRECTA", "resultado": "WIN",
+             "activo": "ACTIVO_" + str(i),
+             "fecha_senal": str(1793059200 + 86400*i),
+             "pnl_real_cerrado": "1"}
+            for i in range(21)
+        ]
+        r = evaluar_rentabilidad(filas)
+        self.assertEqual(r["mercados_distintos"], 21)
+        self.assertEqual(r["fechas_con_operaciones"], 21)
+        self.assertIsNone(r["mercados_dentro_del_maximo"])
+        self.assertFalse(r["limite_simultaneo_comprobado"])
+        self.assertFalse(r["autoriza_operacion"])
 
 
 
