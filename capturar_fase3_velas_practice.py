@@ -31,13 +31,14 @@ def validar_top_oficial(activos):
 def capturar(raiz=None):
     # Los imports de conexión solo ocurren al ejecutar expresamente el script.
     from config import MODO_CUENTA
+    if MODO_CUENTA != "PRACTICE":
+        raise RuntimeError("CAPTURA BLOQUEADA: configuración distinta de PRACTICE")
+
     from conexion import conectar
     from mercado import obtener_activos
     import backtest_data
     import estado
 
-    if MODO_CUENTA != "PRACTICE":
-        raise RuntimeError("CAPTURA BLOQUEADA: configuración distinta de PRACTICE")
     conectar()
     if estado.Iq is None or estado.Iq.get_balance_mode() != "PRACTICE":
         raise RuntimeError("CAPTURA BLOQUEADA: balance PRACTICE no confirmado")
