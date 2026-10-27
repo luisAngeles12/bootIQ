@@ -10,6 +10,8 @@ import csv
 import json
 from pathlib import Path
 
+from auditoria_economia_fase32 import evaluar_rentabilidad
+from auditoria_calidad_frecuencia_cerebro import resumir_frecuencia_cerebro
 from auditoria_hipotesis_fase32 import (
     CORTE_PROSPECTIVO_UTC,
     _timestamp_senal,
@@ -17,7 +19,7 @@ from auditoria_hipotesis_fase32 import (
 )
 
 
-def evaluar_ventanas_prospectivas(ventanas, prospectivas):
+def evaluar_ventanas_prospectivas(ventanas, prospectivas, payout_neto=None):
     """ventanas: (nombre, iterable de filas). Nunca activa operaciones."""
     bloques = [(str(nombre), list(filas)) for nombre, filas in ventanas]
     nombres = [nombre for nombre, _ in bloques]
@@ -53,6 +55,11 @@ def evaluar_ventanas_prospectivas(ventanas, prospectivas):
     hipotesis = resumir_hipotesis_ventanas(
         bloques, ventanas_prospectivas=declaradas
     )
+    filas_futuras = [
+        fila for nombre, filas in bloques if nombre in declaradas for fila in filas
+    ]
+    economia = evaluar_rentabilidad(filas_futuras, payout_neto=payout_neto)
+    frecuencia = resumir_frecuencia_cerebro(filas_futuras)
     return {
         "corte_prospectivo_utc": CORTE_PROSPECTIVO_UTC,
         "ventanas_declaradas": sorted(declaradas),
@@ -61,11 +68,14 @@ def evaluar_ventanas_prospectivas(ventanas, prospectivas):
             for inicio, fin, nombre in periodos
         ],
         "hipotesis": hipotesis,
+        "economia_observada": economia,
+        "frecuencia_backtest_por_dia": frecuencia,
+        "nota": "Frecuencia retrospectiva y PNL solo cuando hay cierre monetario explícito",
         "autoriza_operaciones": False,
     }
 
 
-def evaluar_archivos(archivos, prospectivas):
+def evaluar_archivos(archivos, prospectivas, payout_neto=None):
     bloques = []
     for nombre, ruta in archivos:
         with Path(ruta).open(newline="", encoding="utf-8-sig") as stream:
@@ -78,7 +88,7 @@ def evaluar_archivos(archivos, prospectivas):
             if not ({"fecha_senal", "fecha"} & set(lector.fieldnames)):
                 raise ValueError("CSV sin fecha de señal: " + str(ruta))
             bloques.append((nombre, list(lector)))
-    return evaluar_ventanas_prospectivas(bloques, prospectivas)
+    return evaluar_ventanas_prospectivas(bloques, prospectivas, payout_neto=payout_neto)
 
 
 if __name__ == "__main__":
@@ -90,8 +100,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--prospectiva", action="append", required=True, metavar="NOMBRE",
     )
+    parser.add_argument(
+        "--payout-neto", type=float, default=None,
+        help="Ratio neto real por victoria, si se conoce; no infiere PNL",
+    )
     args = parser.parse_args()
     print(json.dumps(
-        evaluar_archivos(args.ventana, args.prospectiva),
+        evaluar_archivos(args.ventana, args.prospectiva, payout_neto=args.payout_neto),
         ensure_ascii=False, indent=2, sort_keys=True,
     ))
