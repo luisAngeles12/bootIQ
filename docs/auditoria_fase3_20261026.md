@@ -182,3 +182,31 @@ un error causal demostrable o un candidato generado ex ante que tenga
 frecuencia útil, efecto por activo/día, OOS genuino y eventual PNL
 verificado. Si no supera el estándar, se descarta aunque produzca
 más señales.
+
+### Fase 3.3 — contraste de calidad de generación (27-oct)
+
+Se incorporó `auditoria_generacion_fase33.py` (sin autorización de
+trading), con cinco pruebas automatizadas nuevas en
+`tests/test_auditoria_generacion_fase33.py`; 5/5 ejecutadas localmente
+mediante carga directa del contenido de GitHub, sin broker. La suite se
+incluyó en `.github/workflows/test.yml`; todavía sin ejecución fresca
+confirmada de GitHub Actions.
+
+Aplicado sobre el replay de 6,466 señales: 6,326 sin coincidencia CORE4,
+0 filas sin resultado hipotético/fecha, 14 grupos por familia/calidad,
+**0 grupos con cobertura exploratoria suficiente**. Son solo dos días,
+insuficientes frente al requisito interno de tres. Familias grandes:
+
+| Familia/calidad | n | WIN hipotéticos | WR | Wilson inferior 95% |
+| --- | ---: | ---: | ---: | ---: |
+| REVERSIÓN_ESTRUCTURAL/MEDIA | 1208 | 599 | 49.59% | 46.77% |
+| CONTINUACIÓN/DEBIL | 1166 | 568 | 48.71% | 45.85% |
+| CONTINUACIÓN/MEDIA | 915 | 433 | 47.32% | 44.11% |
+| REVERSIÓN_ESTRUCTURAL/BUENA | 631 | 293 | 46.43% | 42.58% |
+| CONTINUACIÓN/BUENA | 458 | 229 | 50.00% | 45.44% |
+
+El subtipo REVERSIÓN_ESTRUCTURAL/PREMIUM contrasta 159/334 WIN del 12-oct
+(47.60%) con 9/10 WIN del 13-oct (90%); ese pico no es estabilidad.
+No se alteró `motor_estrategias.py`, CORE4 ni cerebro. La etiqueta de
+calidad por sí sola NO justifica abrir autoridad. Se deben formular
+nuevas hipótesis antes de observar los próximos bloques OOS.
