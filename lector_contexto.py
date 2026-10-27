@@ -109,6 +109,12 @@ def leer_contexto_grafico(activo):
         opens, closes, highs, lows, soporte_zona, "soporte"
     )
 
+    # Fase 3.3: deteccion alternativa SOLO SOMBRA, nivel previo al evento.
+    # Los activadores br_call/br_put productivos NO se modifican.
+    br_pre_evento_sombra = diagnosticar_breakout_retest_pre_evento(
+        opens, closes, highs, lows, vol
+    )
+
     extension = movimiento_extendido(opens, closes, 5)
     micro = micro_tendencia(opens, closes, 6)
 
@@ -270,6 +276,7 @@ def leer_contexto_grafico(activo):
         "nombre_br_call": nombre_br_call,
         "br_put": br_put,
         "nombre_br_put": nombre_br_put,
+        **br_pre_evento_sombra,
 
         "entrada_pullback_call": entrada_pullback_call,
         "entrada_pullback_put": entrada_pullback_put,
