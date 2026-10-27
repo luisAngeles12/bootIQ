@@ -47,6 +47,28 @@ Sin identificadores de los resultados que contribuyeron a cada clave,
 una mezcla sea mala por este único hecho. Contadores distintos tampoco
 prueban independencia.
 
+## Comprobación ampliada de inclusión estructural
+
+El generador `_claves_jerarquicas` agrega por definición `FAMILIA_DIRECCION|familia|direccion`
+a cada registro que aporta a `CONTEXTO_SETUP|direccion|familia|...` o
+`CONTEXTO_TECNICO|direccion|familia|...`. Por eso, **cuando ambas claves
+coinciden en familia y dirección**, los registros de la fuente contextual
+también pertenecen a la fuente de familia-dirección bajo la misma generación
+de memoria. Esto demuestra inclusión, sin necesitar identificadores persistidos.
+
+El auditor contrasta *las claves concretas*, no únicamente los nombres de nivel.
+En [Actions 40548232762](https://github.com/luisAngeles12/bootIQ/actions/runs/40548232762)
+se verificaron **197 tests OK** y sobre 2,280 pares comparables se identificaron
+**1,184 pares de inclusión estructural demostrada** (766 CONTEXTO_SETUP y
+418 CONTEXTO_TECNICO hacia FAMILIA_DIRECCION); **0 anomalías** con
+muestra contextual superior a la familiar. Para los otros 1,096 pares,
+este detector conservador no emite veredicto de independencia.
+
+Esto refina la advertencia anterior: existe dependencia demostrada en
+1,184 pares de fuentes históricas, pero **no cuantifica el sesgo o
+la mejora de la probabilidad combinada** ni prueba rentabilidad.
+La condición de no alterar el motor se mantiene.
+
 ## Decisión
 
 **No alterar selección, pesos ni ajuste de probabilidades.**
