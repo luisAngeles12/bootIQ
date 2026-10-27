@@ -67,9 +67,9 @@ jobs:
             tests.test_auditoria_rutas_core4_frecuencia \
             tests.test_auditoria_evidencia_core4_multiventana \
             tests.test_auditoria_transferencia_estrategias_multiventana \
-            tests.test_auditoria_hipotesis_fase32
-            tests.test_auditoria_economia_fase32
-            tests.test_auditoria_generalizacion_fase32
+            tests.test_auditoria_hipotesis_fase32 \
+            tests.test_auditoria_economia_fase32 \
+            tests.test_auditoria_generalizacion_fase32 \
             tests.test_auditoria_familias_fase3
 
 #       - run: pipenv run pylint iqoptionapi
