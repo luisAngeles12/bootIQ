@@ -62,18 +62,41 @@ def resumir(velas, inicio, fin):
     }
 
 
+def conectar_sondeo_practice(iq_factory, email, password, estado, actualizar_opcode):
+    """Conexión exclusiva del sondeo: OPCODE se intenta UNA vez."""
+    iq = iq_factory(email, password)
+    estado.Iq = iq
+    conectado, motivo = iq.connect()
+    if not conectado or not iq.check_connect():
+        raise RuntimeError("SONDEO_CANCELADO: conexion fallida: " + str(motivo))
+    iq.change_balance("PRACTICE")
+    if iq.get_balance_mode() != "PRACTICE":
+        raise RuntimeError("BLOQUEADO: cuenta no confirmada PRACTICE")
+    # Respetar el orden probado por conexion.py: BALANCE antes que OPCODE.
+    time.sleep(2)
+    estado.balance_inicial = float(iq.get_balance())
+    print("SONDEO | conexion y balance PRACTICE confirmados", flush=True)
+    if not actualizar_opcode(max_intentos=1, espera_inicial=0):
+        raise RuntimeError(
+            "SONDEO_CANCELADO: OPCODE no disponible tras UN intento; "
+            "no se inicia el flujo ni se abren operaciones"
+        )
+    return iq
+
+
 def sondear(activo, segundos):
     exigir_config_practice(Path(__file__).with_name("config.py"))
     # Importaciones del bróker únicamente después del bloqueo anterior.
     import estado
-    from conexion import conectar
+    from config import EMAIL, PASSWORD
+    from conexion import actualizar_activos_opcode
+    from iqoptionapi.stable_api import IQ_Option
 
-    conectar()
-    iq = estado.Iq
-    if iq.get_balance_mode() != "PRACTICE":
-        raise RuntimeError("BLOQUEADO: cuenta no confirmada PRACTICE")
-    if not iq.check_connect():
-        raise RuntimeError("BLOQUEADO: sin conexion confirmada")
+    iq = conectar_sondeo_practice(
+        IQ_Option, EMAIL, PASSWORD, estado, actualizar_activos_opcode
+    )
+    if not iq.check_connect() or iq.get_balance_mode() != "PRACTICE":
+        raise RuntimeError("BLOQUEADO: sesion PRACTICE no confirmada")
     inicio = int(iq.get_server_timestamp())
     if inicio <= 0:
         raise RuntimeError("BLOQUEADO: reloj IQ no disponible")
