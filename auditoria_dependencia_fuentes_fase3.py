@@ -1,6 +1,7 @@
 """Chequeo pasivo de procedencia de fuentes principal/respaldo F3.
 
-No puede demostrar solapamiento muestral sin IDs de observaciones.
+Demuestra inclusión estructural en pares compatibles CONTEXTO_* -> FAMILIA_DIRECCION.
+No identifica cada observación histórica ni cuantifica otros cruces.
 Compara solo las estadísticas archivadas y nunca cambia el Cerebro.
 """
 import ast
@@ -33,6 +34,24 @@ def _conteos(fuente):
         return None
 
 
+def _subconjunto_demostrable(principal, respaldo):
+    """Prueba estructural, sin IDs, para CONTEXTO_* -> FAMILIA_DIRECCION.
+
+    La generación jerárquica agrega la misma operación a ambas claves.
+    Solo se reconoce cuando familia y dirección coinciden literalmente.
+    """
+    kp = str(principal.get("clave") or "").split("|")
+    kr = str(respaldo.get("clave") or "").split("|")
+    if (
+        len(kp) < 3
+        or len(kr) != 3
+        or kp[0] not in ("CONTEXTO_SETUP", "CONTEXTO_TECNICO")
+        or kr[0] != "FAMILIA_DIRECCION"
+    ):
+        return False
+    return kp[1] == kr[2] and kp[2] == kr[1]
+
+
 def auditar_dependencia_fuentes(filas):
     conteos = Counter()
     grupos = Counter()
@@ -61,6 +80,10 @@ def auditar_dependencia_fuentes(filas):
             conteos["CLAVES_IGUALES"] += 1
         if cp == cr:
             conteos["CONTADORES_WIN_LOSS_IDENTICOS"] += 1
+        if _subconjunto_demostrable(p, r):
+            conteos["SUBCONJUNTO_ESTRUCTURAL_DEMOSTRADO"] += 1
+            if cp[0] > cr[0]:
+                conteos["ANOMALIA_CONTEOS_SUBCONJUNTO"] += 1
         if cp[0] > cr[0]:
             conteos["PRINCIPAL_MUESTRA_MAYOR"] += 1
         elif cp[0] < cr[0]:
@@ -74,6 +97,7 @@ def auditar_dependencia_fuentes(filas):
         },
         "identidades_de_observaciones_disponibles": False,
         "solapamiento_individual_verificable": False,
+        "subconjunto_estructural_verificable": True,
         "autoriza_cambio": False,
     }
 
