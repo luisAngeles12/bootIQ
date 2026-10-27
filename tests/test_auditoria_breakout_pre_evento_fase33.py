@@ -8,10 +8,10 @@ class ReplayBreakoutPreEventoTests(unittest.TestCase):
         if lado == "call":
             c = [99.0]*128 + [101.5, 101.0]
             h = [100.0]*128 + [102.5, 102.0]
-            l = [95.0]*128 + [98.5, 100.2]
+            l = [99.0]*128 + [98.5, 100.2]
         else:
             c = [96.0]*128 + [93.7, 94.0]
-            h = [100.0]*128 + [96.2, 94.8]
+            h = [96.0]*128 + [96.2, 94.8]
             l = [95.0]*128 + [93.5, 93.8]
         return [{"from": str(1000000000+i*60), "open": str(c[i]),
                  "close": str(c[i]), "max": str(h[i]), "min": str(l[i])}
