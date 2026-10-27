@@ -210,3 +210,21 @@ El subtipo REVERSIÓN_ESTRUCTURAL/PREMIUM contrasta 159/334 WIN del 12-oct
 No se alteró `motor_estrategias.py`, CORE4 ni cerebro. La etiqueta de
 calidad por sí sola NO justifica abrir autoridad. Se deben formular
 nuevas hipótesis antes de observar los próximos bloques OOS.
+
+### Fase 3.3 — defecto de explicación breakout/retest corregido en sombra
+
+En `motor_estrategias.py`, los activadores `br_call == 1` y
+`br_put == -1` no exigían EMA favorable, pero el texto afirmaba de
+manera incondicional «EMA favorece compra/venta». Se corrigieron
+**solo esas dos frases** para consultar `ema_alcista`/`ema_bajista`.
+Los predicados, puntuación y número de candidatos se preservan para
+las cuatro combinaciones lado/EMA, comprobado mediante 3 tests
+nuevos (4 subcasos de ejecución) en
+`tests/test_breakout_ema_evidence.py` y suite CI actualizada.
+
+El replay Oct12–13 contiene **cero** señales cuyo patrón sea
+breakout/retest: no existe evidencia allí de ganancia de WR/frecuencia
+por este cambio. Los textos alimentan componentes posteriores;
+por eso la nueva rama permanece DRAFT hasta obtener paridad OOS
+para señales breakout verdaderas. **No implica activar señales sin EMA
+ni modificar autorización de protocolos.**
