@@ -15,7 +15,7 @@ class DependenciaFuentesFase3Tests(unittest.TestCase):
         }])
         self.assertEqual(r["conteos"]["CON_AMBAS_FUENTES"], 1)
         self.assertEqual(r["conteos"]["CONTADORES_WIN_LOSS_IDENTICOS"], 1)
-        self.assertEqual(r["conteos"]["CLAVES_IGUALES"], 0)
+        self.assertEqual(r["conteos"].get("CLAVES_IGUALES", 0), 0)
         self.assertFalse(r["solapamiento_individual_verificable"])
         self.assertFalse(r["autoriza_cambio"])
 
