@@ -28,6 +28,32 @@ def validar_top_oficial(activos):
     return list(activos)
 
 
+
+def seleccionar_velas_cerradas_vigentes(filas, timestamp_referencia, minimo=200):
+    """Rechaza velas abiertas y segmentos antiguos; nunca rellena huecos."""
+    if not filas:
+        raise ValueError("SIN_VELAS")
+    inicio_actual = (int(timestamp_referencia) // 60) * 60
+    cerradas = sorted(
+        (fila for fila in filas if int(float(fila["from"])) < inicio_actual),
+        key=lambda fila: int(float(fila["from"])),
+    )
+    if len(cerradas) < minimo:
+        raise ValueError("VELAS_CERRADAS_INSUFICIENTES")
+    tiempos = [int(float(fila["from"])) for fila in cerradas]
+    if any(b-a != 60 for a, b in zip(tiempos, tiempos[1:])):
+        raise ValueError("HUECO_TEMPORAL_EN_VELAS_CERRADAS")
+    if tiempos[0] < CORTE_F3_UTC:
+        raise ValueError("VENTANA_ANTERIOR_AL_CORTE_F3")
+    esperada = inicio_actual - 60
+    if tiempos[-1] != esperada:
+        raise ValueError(
+            "ULTIMA_VELA_CERRADA_DESACTUALIZADA: "
+            + str(tiempos[-1]) + " != " + str(esperada)
+        )
+    return cerradas
+
+
 def capturar(raiz=None):
     # Los imports de conexión solo ocurren al ejecutar expresamente el script.
     from config import MODO_CUENTA
@@ -35,7 +61,7 @@ def capturar(raiz=None):
         raise RuntimeError("CAPTURA BLOQUEADA: configuración distinta de PRACTICE")
 
     from conexion import conectar
-    from mercado import obtener_activos
+    from mercado import obtener_activos, _timestamp_servidor_iq
     import backtest_data
     import estado
 
@@ -48,6 +74,8 @@ def capturar(raiz=None):
     raiz = Path(raiz) if raiz is not None else Path.home() / "bootIQ_fase3_capturas"
     destino = raiz / ahora.strftime("%Y%m%dT%H%M%S_%fZ")
     destino.mkdir(parents=True, exist_ok=False)
+    destino_cerradas = destino / "cerradas"
+    destino_cerradas.mkdir()
 
     # Única redirección de ruta; se omite deliberadamente limpiar_data_backtest().
     backtest_data.CARPETA_DATA = str(destino)
@@ -64,23 +92,36 @@ def capturar(raiz=None):
         ruta = destino / nombre
         with ruta.open(newline="", encoding="utf-8") as entrada:
             filas = list(csv.DictReader(entrada))
-        if not filas:
-            raise RuntimeError("CSV sin velas: " + str(ruta))
-        inicio = int(float(filas[0]["from"]))
-        fin = int(float(filas[-1]["from"]))
-        if inicio < CORTE_F3_UTC or fin < CORTE_F3_UTC:
-            raise RuntimeError(
-                "Captura no es totalmente posterior al corte F3: " + str(ruta)
+        referencia_servidor = _timestamp_servidor_iq()
+        try:
+            cerradas = seleccionar_velas_cerradas_vigentes(
+                filas, referencia_servidor,
             )
+        except ValueError as error:
+            raise RuntimeError(
+                "Captura NO validada para TOP oficial: "
+                + item["activo"] + " | " + str(error)
+                + " | archivos brutos conservados en " + str(destino)
+            ) from error
+
+        archivo_cerrado = destino_cerradas / nombre
+        with archivo_cerrado.open("x", newline="", encoding="utf-8") as salida:
+            escritor = csv.DictWriter(salida, fieldnames=list(filas[0]))
+            escritor.writeheader()
+            escritor.writerows(cerradas)
         guardados.append({
             "activo": item["activo"], "tipo": item["tipo"],
-            "archivo": nombre, "velas": len(filas),
-            "desde": inicio, "hasta": fin,
-            "sha256": hashlib.sha256(ruta.read_bytes()).hexdigest(),
+            "archivo": "cerradas/" + nombre,
+            "archivo_bruto": nombre, "velas": len(cerradas),
+            "desde": int(float(cerradas[0]["from"])),
+            "hasta": int(float(cerradas[-1]["from"])),
+            "referencia_servidor": referencia_servidor,
+            "sha256": hashlib.sha256(archivo_cerrado.read_bytes()).hexdigest(),
+            "sha256_bruto": hashlib.sha256(ruta.read_bytes()).hexdigest(),
         })
 
     manifiesto = {
-        "modo": "PRACTICE", "tipo": "VELAS_CRUDAS_SIN_OPERACIONES",
+        "modo": "PRACTICE", "tipo": "VELAS_CERRADAS_VALIDADAS_SIN_OPERACIONES",
         "capturado_utc": ahora.isoformat(),
         "corte_prospectivo_utc": CORTE_F3_UTC,
         "total_activos": len(top), "datasets": guardados,
