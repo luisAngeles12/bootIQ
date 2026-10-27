@@ -62,8 +62,8 @@ def resumir(velas, inicio, fin):
     }
 
 
-def conectar_sondeo_practice(iq_factory, email, password, estado, actualizar_opcode):
-    """Conexión exclusiva del sondeo: OPCODE se intenta UNA vez."""
+def conectar_sondeo_practice(iq_factory, email, password, estado):
+    """Arranque de solo lectura: no solicita initialization-data ni OPCODE."""
     iq = iq_factory(email, password)
     estado.Iq = iq
     conectado, motivo = iq.connect()
@@ -72,16 +72,24 @@ def conectar_sondeo_practice(iq_factory, email, password, estado, actualizar_opc
     iq.change_balance("PRACTICE")
     if iq.get_balance_mode() != "PRACTICE":
         raise RuntimeError("BLOQUEADO: cuenta no confirmada PRACTICE")
-    # Respetar el orden probado por conexion.py: BALANCE antes que OPCODE.
     time.sleep(2)
     estado.balance_inicial = float(iq.get_balance())
     print("SONDEO | conexion y balance PRACTICE confirmados", flush=True)
-    if not actualizar_opcode(max_intentos=1, espera_inicial=0):
-        raise RuntimeError(
-            "SONDEO_CANCELADO: OPCODE no disponible tras UN intento; "
-            "no se inicia el flujo ni se abren operaciones"
-        )
     return iq
+
+
+def iniciar_stream_sin_precarga(iq, activo, opcodes):
+    """Suscripción en memoria para un código estático conocido; sin historial."""
+    codigo = opcodes.get(activo)
+    if not isinstance(codigo, int) or codigo <= 0:
+        raise RuntimeError(
+            "SONDEO_CANCELADO: activo sin ID local verificable; "
+            "se requiere OPCODE pero el broker no lo entrega"
+        )
+    iq.api.real_time_candles_maxdict_table[activo][1] = 60
+    if iq.start_candles_one_stream(activo, 1) is not True:
+        raise RuntimeError("SONDEO_CANCELADO: suscripcion 1s no confirmada")
+
 
 
 def sondear(activo, segundos):
@@ -89,12 +97,16 @@ def sondear(activo, segundos):
     # Importaciones del bróker únicamente después del bloqueo anterior.
     import estado
     from config import EMAIL, PASSWORD
-    from conexion import actualizar_activos_opcode
     from iqoptionapi.stable_api import IQ_Option
+    from iqoptionapi.constants import ACTIVES
 
-    iq = conectar_sondeo_practice(
-        IQ_Option, EMAIL, PASSWORD, estado, actualizar_activos_opcode
-    )
+    # Nunca inferir IDs para activos recientes: el mapa local debe conocerlo.
+    if activo not in ACTIVES:
+        raise RuntimeError(
+            "SONDEO_CANCELADO: activo no incluido en IDs locales; "
+            "elige uno conocido (ejemplo USDINR-OTC)"
+        )
+    iq = conectar_sondeo_practice(IQ_Option, EMAIL, PASSWORD, estado)
     if not iq.check_connect() or iq.get_balance_mode() != "PRACTICE":
         raise RuntimeError("BLOQUEADO: sesion PRACTICE no confirmada")
     inicio = int(iq.get_server_timestamp())
@@ -104,7 +116,7 @@ def sondear(activo, segundos):
     print("SONDEO SOLO LECTURA | PRACTICE | activo:", activo,
           "| segundos:", segundos, flush=True)
     try:
-        iq.start_candles_stream(activo, 1, 60)
+        iniciar_stream_sin_precarga(iq, activo, ACTIVES)
         limite = time.monotonic() + segundos
         while time.monotonic() < limite:
             if not iq.check_connect() or iq.get_balance_mode() != "PRACTICE":
