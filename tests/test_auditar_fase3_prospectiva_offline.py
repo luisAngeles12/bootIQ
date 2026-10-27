@@ -34,6 +34,8 @@ class AuditoriaFase3ProspectivaOfflineTests(unittest.TestCase):
         self.assertEqual(r["hipotesis"]["A"]["n_prospectivo"], 120)
         self.assertTrue(r["hipotesis"]["A"]["evidencia_59_transferible"])
         self.assertFalse(r["hipotesis"]["A"]["autoriza_operacion"])
+        self.assertEqual(r["economia_observada"]["operaciones_cerradas"], 0)
+        self.assertIsNone(r["economia_observada"]["pnl_real_cerrado"])
         self.assertFalse(r["autoriza_operaciones"])
 
     def test_no_acepta_datos_anteriores_al_corte(self):
@@ -79,6 +81,25 @@ class AuditoriaFase3ProspectivaOfflineTests(unittest.TestCase):
             self.assertEqual(r["hipotesis"]["A"]["n_prospectivo"], 2)
             self.assertFalse(r["hipotesis"]["A"]["evidencia_59_transferible"])
             self.assertFalse(r["autoriza_operaciones"])
+
+    def test_economia_y_frecuencia_exigen_cierres_explicitos(self):
+        futuro = muestra(int(CORTE_PROSPECTIVO_UTC) + 86400, 2)
+        futuro[0].update({
+            "estado_operacion": "OPERADA_DIRECTA", "resultado": "WIN",
+            "pnl_real_cerrado": "7",
+        })
+        futuro[1].update({
+            "estado_operacion": "OPERADA_DIRECTA", "resultado": "LOSS",
+            "pnl_real_cerrado": "-5",
+        })
+        r = evaluar_ventanas_prospectivas([("v1", futuro)], ("v1",), payout_neto=.70)
+        self.assertEqual(r["economia_observada"]["operaciones_cerradas"], 2)
+        self.assertEqual(r["economia_observada"]["pnl_real_cerrado"], 2.0)
+        self.assertAlmostEqual(r["economia_observada"]["break_even_teorico"], 58.8235, places=4)
+        dia = next(iter(r["frecuencia_backtest_por_dia"].values()))
+        self.assertEqual(dia["operadas_backtest"], 2)
+        self.assertFalse(r["autoriza_operaciones"])
+
 
 
 if __name__ == "__main__":
