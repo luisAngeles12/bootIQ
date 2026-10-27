@@ -22,7 +22,7 @@ jobs:
         with:
           path: |
             .venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('**/Pipefile') }}
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/Pipfile') }}
           restore-keys: |
             ${{ runner.os }}-venv
 
