@@ -75,6 +75,9 @@ jobs:
             tests.test_auditar_fase3_prospectiva_offline \
             tests.test_capturar_fase3_velas_practice
 
+      - name: Exploratory F3 historical confidence-band audit (offline; never trading)
+        run: pipenv run python auditoria_intervalo_cerebro_fase3.py auditoria_xpd_sep2026_autoridad.csv
+
 #       - run: pipenv run pylint iqoptionapi
 #       - run: pipenv run isort --recursive --diff .
 #       - run: pipenv run black --check .
