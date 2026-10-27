@@ -167,6 +167,11 @@ def leer_csv_velas(ruta):
 def cargar_datasets():
     datasets = []
 
+    if not os.path.isdir(CARPETA_DATA):
+        raise FileNotFoundError(
+            'SIN_DATOS_ACTUALES: falta carpeta de velas PRACTICE ' + CARPETA_DATA
+        )
+
     for archivo in sorted(os.listdir(CARPETA_DATA)):
         if not archivo.endswith(".csv"):
             continue
