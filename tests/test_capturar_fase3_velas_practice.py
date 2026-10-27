@@ -10,6 +10,7 @@ from unittest.mock import patch
 from capturar_fase3_velas_practice import (
     CORTE_F3_UTC,
     capturar,
+    seleccionar_velas_cerradas_vigentes,
     validar_top_oficial,
 )
 
@@ -45,13 +46,15 @@ class CapturaFase3PracticeTests(unittest.TestCase):
             def get_balance_mode(self):
                 return "PRACTICE"
 
+        referencia = int(CORTE_F3_UTC) + 86400 + 201*60
+
         def descarga(tipo, activo):
             ruta = Path(backtest.CARPETA_DATA) / (tipo + "_" + activo + ".csv")
             with ruta.open("w", newline="", encoding="utf-8") as stream:
                 writer = csv.writer(stream)
                 writer.writerow(["tipo", "activo", "from", "open", "close", "max", "min", "volume"])
-                for n in range(2):
-                    writer.writerow([tipo, activo, int(CORTE_F3_UTC) + 86400 + n*60,
+                for n in range(201):
+                    writer.writerow([tipo, activo, referencia - (200-n)*60,
                                      1, 1, 2, 0, 0])
             return True
 
@@ -61,7 +64,7 @@ class CapturaFase3PracticeTests(unittest.TestCase):
             "conexion": mod("conexion", conectar=lambda: None),
             "mercado": mod("mercado", obtener_activos=lambda: [
                 {"activo": "ACTIVO", "tipo": "turbo"}
-            ]),
+            ], _timestamp_servidor_iq=lambda: referencia),
             "backtest_data": backtest,
             "estado": mod("estado", Iq=Balance()),
         }
@@ -77,7 +80,22 @@ class CapturaFase3PracticeTests(unittest.TestCase):
             self.assertFalse(r["autoriza_operaciones"])
             self.assertEqual(r["total_activos"], 1)
             self.assertEqual(len(r["datasets"][0]["sha256"]), 64)
+            self.assertEqual(r["datasets"][0]["velas"], 200)
+            self.assertEqual(len(list(csv.DictReader((ruta/"turbo_ACTIVO.csv").open()))), 201)
+            self.assertEqual(len(list(csv.DictReader((ruta/"cerradas"/"turbo_ACTIVO.csv").open()))), 200)
             self.assertEqual(json.loads((ruta/"manifest.json").read_text())["total_activos"], 1)
+
+    def test_no_incluye_vela_abierta_ni_acepta_stale(self):
+        referencia = int(CORTE_F3_UTC) + 86400 + 201*60
+        filas = [{"from": str(referencia - (200-n)*60)} for n in range(201)]
+        cerradas = seleccionar_velas_cerradas_vigentes(filas, referencia)
+        self.assertEqual(len(cerradas), 200)
+        self.assertEqual(int(cerradas[-1]["from"]), referencia - 60)
+        with self.assertRaisesRegex(ValueError, "DESACTUALIZADA"):
+            seleccionar_velas_cerradas_vigentes(filas[:-20], referencia)
+        with self.assertRaisesRegex(ValueError, "HUECO_TEMPORAL"):
+            seleccionar_velas_cerradas_vigentes(filas[:100] + filas[101:], referencia)
+
 
 
 if __name__ == "__main__":
