@@ -7,7 +7,7 @@ Corte de auditoría: 2026-10-27. Investigación exclusivamente PRACTICE/OOS, sin
 - F3.1: `audit/v3-fase31-causas-cerebro-20261025`, PR #7 (draft).
 - F3.2: `audit/v3-fase32-candidatos-estrategias-20261025`, PR #8 (draft; apilado sobre #7).
 - F3.3: `diagnostico-f33-breakout-retest-sombra`, investigación separada del commit operativo `2a33911`.
-- Operativa: `boot iq-v3-auditoria` no es un nombre de branch; el branch oficial es `bootiq-v3-auditoria`. No se ha fusionado ninguna de las ramas F3 experimentales con él.
+- Operativa: `bootiq-v3-auditoria`. Ninguna de las ramas experimentales F3 se ha fusionado con ella.
 
 ## Resultados verificables
 
