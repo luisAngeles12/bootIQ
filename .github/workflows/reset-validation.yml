@@ -24,3 +24,5 @@ jobs:
         run: python -m unittest discover -s tests -p test_rsi_wilder.py -v
       - name: Probar arranque sin memoria estadística anterior
         run: python -m unittest discover -s tests -p test_cold_start_reset.py -v
+      - name: Probar microrechazos con velas de un segundo
+        run: python -m unittest discover -s tests -p test_micro_rechazo_1s.py -v
