@@ -91,10 +91,14 @@ class CapturaFase3PracticeTests(unittest.TestCase):
         cerradas = seleccionar_velas_cerradas_vigentes(filas, referencia)
         self.assertEqual(len(cerradas), 200)
         self.assertEqual(int(cerradas[-1]["from"]), referencia - 60)
+        antiguas = [
+            {"from": str(referencia - (220-n)*60)} for n in range(201)
+        ]
         with self.assertRaisesRegex(ValueError, "DESACTUALIZADA"):
-            seleccionar_velas_cerradas_vigentes(filas[:-20], referencia)
+            seleccionar_velas_cerradas_vigentes(antiguas, referencia)
+        con_hueco = [{"from": str(referencia - 201*60)}] + filas[:100] + filas[101:]
         with self.assertRaisesRegex(ValueError, "HUECO_TEMPORAL"):
-            seleccionar_velas_cerradas_vigentes(filas[:100] + filas[101:], referencia)
+            seleccionar_velas_cerradas_vigentes(con_hueco, referencia)
 
 
 
