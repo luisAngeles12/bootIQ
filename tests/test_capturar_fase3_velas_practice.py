@@ -85,6 +85,52 @@ class CapturaFase3PracticeTests(unittest.TestCase):
             self.assertEqual(len(list(csv.DictReader((ruta/"cerradas"/"turbo_ACTIVO.csv").open()))), 200)
             self.assertEqual(json.loads((ruta/"manifest.json").read_text())["total_activos"], 1)
 
+    def test_diagnostico_acumula_fallos_y_no_aprueba_top_parcial(self):
+        class Balance:
+            def get_balance_mode(self):
+                return "PRACTICE"
+
+        referencia = int(CORTE_F3_UTC) + 86400 + 201*60
+
+        def descarga(tipo, activo):
+            ruta = Path(backtest.CARPETA_DATA) / (tipo + "_" + activo + ".csv")
+            with ruta.open("w", newline="", encoding="utf-8") as stream:
+                writer = csv.writer(stream)
+                writer.writerow(["tipo", "activo", "from", "open", "close", "max", "min", "volume"])
+                desplazamiento = 100000 if activo == "STALE" else 0
+                for n in range(201):
+                    writer.writerow([tipo, activo, referencia - (200-n)*60 - desplazamiento,
+                                     1, 1, 2, 0, 0])
+            return True
+
+        backtest = mod("backtest_data", descargar_velas_activo=descarga)
+        modulos = {
+            "config": mod("config", MODO_CUENTA="PRACTICE"),
+            "conexion": mod("conexion", conectar=lambda: None),
+            "mercado": mod("mercado", obtener_activos=lambda: [
+                {"activo": "STALE", "tipo": "turbo"},
+                {"activo": "OK", "tipo": "turbo"},
+                {"activo": "STALE2", "tipo": "turbo"},
+            ], _timestamp_servidor_iq=lambda: referencia),
+            "backtest_data": backtest,
+            "estado": mod("estado", Iq=Balance()),
+        }
+        with tempfile.TemporaryDirectory() as temporal:
+            with patch.dict(sys.modules, modulos):
+                with self.assertRaisesRegex(RuntimeError, "2/3"):
+                    capturar(temporal)
+            directorios = list(Path(temporal).iterdir())
+            self.assertEqual(len(directorios), 1)
+            destino = directorios[0]
+            self.assertFalse((destino / "manifest.json").exists())
+            self.assertTrue((destino / "turbo_OK.csv").exists())
+            self.assertTrue((destino / "cerradas" / "turbo_OK.csv").exists())
+            diag = json.loads((destino / "diagnostico_no_validado.json").read_text(encoding="utf-8"))
+            self.assertEqual(diag["total_activos_top"], 3)
+            self.assertEqual(diag["activos_cerrados_validos"], 1)
+            self.assertEqual([x["activo"] for x in diag["fallos"]], ["STALE", "STALE2"])
+            self.assertFalse(diag["autoriza_replay"])
+
     def test_no_incluye_vela_abierta_ni_acepta_stale(self):
         referencia = int(CORTE_F3_UTC) + 86400 + 201*60
         filas = [{"from": str(referencia - (200-n)*60)} for n in range(201)]
