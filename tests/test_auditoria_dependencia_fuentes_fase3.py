@@ -30,6 +30,41 @@ class DependenciaFuentesFase3Tests(unittest.TestCase):
         self.assertEqual(r["conteos"]["CONTEOS_COMPARABLES"], 1)
         self.assertFalse(r["identidades_de_observaciones_disponibles"])
 
+    def test_demuestra_inclusion_por_claves_jerarquicas_identicas(self):
+        casos = [
+            ("CONTEXTO_SETUP|PUT|CHOCH|REVERSAL|A|TREND",
+             "FAMILIA_DIRECCION|CHOCH|PUT"),
+            ("CONTEXTO_TECNICO|CALL|BREAKOUT|TENDENCIA|ALCISTA",
+             "FAMILIA_DIRECCION|BREAKOUT|CALL"),
+        ]
+        filas = [{
+            "fuente_probabilidad_principal": {
+                "nivel": clave.split("|")[0], "clave": clave,
+                "total": 20, "wins": 10, "losses": 10,
+            },
+            "fuente_probabilidad_respaldo": {
+                "nivel": respaldo.split("|")[0], "clave": respaldo,
+                "total": 40, "wins": 20, "losses": 20,
+            },
+        } for clave, respaldo in casos]
+        r = auditar_dependencia_fuentes(filas)
+        self.assertEqual(r["conteos"]["SUBCONJUNTO_ESTRUCTURAL_DEMOSTRADO"], 2)
+        self.assertEqual(r["conteos"].get("ANOMALIA_CONTEOS_SUBCONJUNTO", 0), 0)
+        self.assertFalse(r["solapamiento_individual_verificable"])
+
+    def test_no_presume_inclusion_si_claves_no_corresponden(self):
+        r = auditar_dependencia_fuentes([{
+            "fuente_probabilidad_principal": {
+                "nivel": "CONTEXTO_SETUP", "clave": "CONTEXTO_SETUP|PUT|CHOCH|A",
+                "total": 10, "wins": 5, "losses": 5,
+            },
+            "fuente_probabilidad_respaldo": {
+                "nivel": "FAMILIA_DIRECCION", "clave": "FAMILIA_DIRECCION|PULLBACK|PUT",
+                "total": 20, "wins": 10, "losses": 10,
+            },
+        }])
+        self.assertEqual(r["conteos"].get("SUBCONJUNTO_ESTRUCTURAL_DEMOSTRADO", 0), 0)
+
     def test_fuentes_faltantes_o_malformadas_no_fabrican_comparacion(self):
         r = auditar_dependencia_fuentes([
             {"fuente_probabilidad_principal":"__import__('os').system('false')"},
