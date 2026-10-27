@@ -79,6 +79,8 @@ jobs:
             tests.test_auditar_fase3_prospectiva_offline \
             tests.test_capturar_fase3_velas_practice
 
+      - name: Historical family patterns by day F3 (offline; never trading)
+        run: pipenv run python auditoria_familias_fase3.py auditoria_xpd_sep2026_autoridad.csv
       - name: Cerebro statistical selection lift F3 (offline; never trading)
         run: pipenv run python auditoria_discriminacion_cerebro_fase3.py auditoria_xpd_sep2026_autoridad.csv
       - name: Fixed threshold 57 F3 diagnostic (offline; never trading)
