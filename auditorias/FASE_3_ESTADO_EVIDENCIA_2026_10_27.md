@@ -43,6 +43,16 @@ La regla alternativa dejaría frecuencia cero en esa evidencia; no promover.
 
 Informe: `auditorias/F3_2_CONTRASTE_INTERVALO_CEREBRO_2026_10_27.md`.
 
+### F3.2 — Calibración histórica por fuente (27-oct)
+
+La auditoría de `auditoria_xpd_sep2026_autoridad.csv` por clave principal
+(Actions 40545103766, broker-free OK) halló 417 señales CHOCH PUT con
+48.44 % hipotético y 335 CHOCH CALL con 55.22 %, este último inestable
+por día. Entre las 25 fuentes más frecuentes, 15 tuvieron mayor error
+Brier que el prior. No permite ajustar pesos ni fuentes en productivo.
+
+Informe: `auditorias/F3_2_CALIBRACION_FUENTES_SEP_2026.md`.
+
 ### F3.3 — Breakout + Retest pasivo
 
 Ver informe detallado en la otra rama:
