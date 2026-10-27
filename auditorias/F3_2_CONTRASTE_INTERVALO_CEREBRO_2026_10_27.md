@@ -32,6 +32,25 @@ Otras 1,469 filas no tenían autorización estadística y se excluyeron
 del contraste. Los grupos de 20 activos miden **diversidad histórica**, no
 cantidad simultánea en el TOP oficial.
 
+## Alcance exacto del intervalo: hallazgo de procedencia
+
+Inspección estática de `motor_aprendizaje_historico.py`,
+función `_combinar_fuentes`: la `probabilidad_estimada` puede mezclar
+probabilidad de fuente principal con respaldo o prior, mientras que
+`intervalo_inferior` e `intervalo_superior` se copian de **la fuente
+principal**. Por tanto, el intervalo no se ha calculado como intervalo
+estadístico de la mezcla y no debe presentarse como tal.
+
+Se amplió el diagnóstico para contar estimaciones finales que queden fuera
+del intervalo de la principal. En la misma muestra histórica hubo
+**0 de 811 fuera**, con **0 intervalos superiores inválidos**. Esa
+coincidencia empírica no corrige la discrepancia de procedencia ni valida
+su cobertura nominal. Prueba broker-free: **192 tests OK**,
+[Actions 40544746521](https://github.com/luisAngeles12/bootIQ/actions/runs/40544746521).
+
+No recalcular ni cambiar intervalos del motor en esta fase sin contrastes
+causales de cobertura y calibración OOS independientes.
+
 ## Veredicto de esta hipótesis
 
 **No promover una regla de veto por límite inferior del intervalo con estos datos.**
