@@ -278,7 +278,8 @@ def motor_estrategias_profesional(
             "ESTRATEGIA: breakout retest alcista",
             ctx.get("nombre_br_call", "ruptura/retest alcista"),
             "ruptura y retest de resistencia confirmado",
-            "EMA favorece compra",
+            ("EMA favorece compra" if ctx.get("ema_alcista", False)
+             else "EMA no favorece compra"),
             "presión: " + razon_presion,
             "RSI: " + str(round(rsi, 2))
         ]
@@ -316,7 +317,8 @@ def motor_estrategias_profesional(
             "ESTRATEGIA: breakout retest bajista",
             ctx.get("nombre_br_put", "ruptura/retest bajista"),
             "ruptura y retest de soporte confirmado",
-            "EMA favorece venta",
+            ("EMA favorece venta" if ctx.get("ema_bajista", False)
+             else "EMA no favorece venta"),
             "presión: " + razon_presion,
             "RSI: " + str(round(rsi, 2))
         ]
@@ -458,8 +460,9 @@ def motor_estrategias_profesional(
         razones = [
             "ESTRATEGIA: CHOCH alcista",
             ctx["nombre_choch"],
-            "EMA favorece compra",
-            "CHOCH con contexto confirmado",
+            ("EMA favorece compra" if ctx.get("ema_alcista", False)
+             else "EMA no favorece compra"),
+            "CHOCH detectado; contexto pendiente de validación",
             "rechazo histórico: " + ctx.get("rechazo_hist_razon", ""),
             "presión: " + razon_presion,
             "patrón contexto: " + razon_patron_call,
@@ -514,8 +517,9 @@ def motor_estrategias_profesional(
         razones = [
             "ESTRATEGIA: CHOCH bajista",
             ctx["nombre_choch"],
-            "EMA favorece venta",
-            "CHOCH con contexto confirmado",
+            ("EMA favorece venta" if ctx.get("ema_bajista", False)
+             else "EMA no favorece venta"),
+            "CHOCH detectado; contexto pendiente de validación",
             "rechazo histórico: " + ctx.get("rechazo_hist_razon", ""),
             "presión: " + razon_presion,
             "patrón contexto: " + razon_patron_put,

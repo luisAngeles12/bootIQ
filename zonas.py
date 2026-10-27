@@ -801,3 +801,42 @@ def evaluar_memoria_zona(
             "sesgo": "ERROR",
             "razon": "error memoria zona: " + str(e)
         }
+
+
+def diagnosticar_breakout_retest_pre_evento(opens, closes, highs, lows, vol):
+    """Candidato BR en SOMBRA usando zonas existentes antes del breakout.
+
+    La vela -2 debe superar un nivel conocido hasta la vela -3;
+    la vela -1 hace el retest. El selector productivo de zonas actual
+    sigue intacto. No autoriza senales ni cambia los protocolos.
+    """
+    vacio = {
+        "br_call_sombra": 0,
+        "nombre_br_call_sombra": "sin breakout retest previo",
+        "br_put_sombra": 0,
+        "nombre_br_put_sombra": "sin breakout retest previo",
+        "resistencia_previa_sombra": None,
+        "soporte_previo_sombra": None,
+    }
+    if (len(closes) < 5 or len(highs) != len(closes)
+            or len(lows) != len(closes) or len(opens) != len(closes)
+            or vol <= 0):
+        return vacio
+    # No usar las dos velas de confirmacion para construir el nivel.
+    soporte_previo, resistencia_previa = soporte_resistencia_zonas(
+        closes[-3], highs[:-2], lows[:-2], vol
+    )
+    call, razon_call = breakout_retest(
+        opens, closes, highs, lows, resistencia_previa, "resistencia"
+    )
+    put, razon_put = breakout_retest(
+        opens, closes, highs, lows, soporte_previo, "soporte"
+    )
+    return {
+        "br_call_sombra": call,
+        "nombre_br_call_sombra": razon_call,
+        "br_put_sombra": put,
+        "nombre_br_put_sombra": razon_put,
+        "resistencia_previa_sombra": resistencia_previa["precio"],
+        "soporte_previo_sombra": soporte_previo["precio"],
+    }

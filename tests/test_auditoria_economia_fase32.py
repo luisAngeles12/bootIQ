@@ -30,13 +30,124 @@ class EconomiaFase32Tests(unittest.TestCase):
         self.assertIsNone(r["pnl_real_cerrado"])
         self.assertIsNone(r["rentabilidad_observada_positiva"])
 
+    def test_epoch_utc_agrupa_por_dia(self):
+        filas = [
+            {"estado_operacion": "OPERADA_DIRECTA", "resultado": "WIN",
+             "activo": "A", "fecha_senal": "1792972800", "pnl_real_cerrado": "1"},
+            {"estado_operacion": "OPERADA_DIRECTA", "resultado": "WIN",
+             "activo": "B", "fecha_senal": "1792972860", "pnl_real_cerrado": "1"},
+        ]
+        r = evaluar_rentabilidad(filas)
+        self.assertEqual(r["fechas_con_operaciones"], 1)
+        self.assertEqual(list(r["mercados_por_dia"].values()), [2])
+
+    def test_21_mercados_en_dias_distintos_no_prueba_exceso_simultaneo(self):
+        filas = [
+            {"estado_operacion": "OPERADA_DIRECTA", "resultado": "WIN",
+             "activo": "A" + str(i), "fecha_senal":
+             "2026-10-26" if i < 11 else "2026-10-27",
+             "pnl_real_cerrado": "1"} for i in range(21)
+        ]
+        r = evaluar_rentabilidad(filas)
+        self.assertEqual(r["mercados_distintos"], 21)
+        self.assertEqual(r["mercados_por_dia"],
+                         {"2026-10-26": 11, "2026-10-27": 10})
+        self.assertIsNone(r["mercados_dentro_del_maximo"])
+        self.assertFalse(r["capacidad_simultanea_verificable"])
+        self.assertFalse(r["autoriza_operacion"])
+
+    def test_order_id_repetido_no_duplica_win_ni_pnl(self):
+        orden = {"estado_operacion": "OPERADA_DIRECTA",
+                 "resultado": "WIN", "order_id": "order-42",
+                 "pnl_real_cerrado": "7", "activo": "EURUSD-OTC",
+                 "fecha_senal": "2026-10-26"}
+        r = evaluar_rentabilidad([dict(orden), dict(orden)])
+        self.assertEqual(r["operaciones_cerradas"], 1)
+        self.assertEqual(r["wins"], 1)
+        self.assertEqual(r["pnl_real_cerrado"], 7)
+        self.assertEqual(r["ignoradas"]["DUPLICADO_ORDER_ID"], 1)
+        self.assertTrue(r["identidad_100pct_verificable"])
+
+    def test_order_id_contradictorio_no_certifica_winrate_ni_pnl(self):
+        base = {"estado_operacion": "OPERADA_DIRECTA",
+                "order_id": "order-42", "activo": "EURUSD-OTC",
+                "fecha_senal": "2026-10-26"}
+        r = evaluar_rentabilidad([
+            dict(base, resultado="WIN", pnl_real_cerrado="7"),
+            dict(base, resultado="LOSS", pnl_real_cerrado="-10"),
+        ])
+        self.assertEqual(r["identidades_conflictivas"], 1)
+        self.assertIsNone(r["winrate_observado"])
+        self.assertIsNone(r["pnl_real_cerrado"])
+        self.assertIsNone(r["rentabilidad_observada_positiva"])
+        self.assertFalse(r["supera_59_observado"])
+
+    def test_operada_protocolo_cuenta_cierre_real_no_hipotetico(self):
+        filas = [
+            {"estado_operacion": "OPERADA_PROTOCOLO",
+             "resultado": "LOSS", "resultado_hipotetico": "WIN",
+             "order_id": "protocolo-1", "pnl_real_cerrado": "-10",
+             "activo": "EURUSD-OTC", "fecha_senal": "2026-10-26"},
+            {"estado_operacion": "OPERADA_DIRECTA",
+             "resultado": "WIN", "resultado_hipotetico": "LOSS",
+             "order_id": "directa-2", "pnl_real_cerrado": "7",
+             "activo": "AUDJPY-OTC", "fecha_senal": "2026-10-26"},
+        ]
+        r = evaluar_rentabilidad(filas)
+        self.assertEqual(r["operaciones_cerradas"], 2)
+        self.assertEqual((r["wins"], r["losses"]), (1, 1))
+        self.assertEqual(r["winrate_observado"], 50.0)
+        self.assertEqual(r["pnl_real_cerrado"], -3.0)
+        self.assertFalse(r["rentabilidad_observada_positiva"])
+        self.assertTrue(r["identidad_100pct_verificable"])
+
+    def test_59_observado_sin_confianza_ni_dias_no_supera_cobertura(self):
+        filas = [{"estado_operacion": "OPERADA_DIRECTA",
+                  "resultado": "WIN" if i < 59 else "LOSS",
+                  "order_id": "id-" + str(i),
+                  "activo": "EURUSD-OTC", "fecha_senal": "2026-10-26",
+                  "pnl_real_cerrado": "1" if i < 59 else "-1"}
+                 for i in range(100)]
+        r = evaluar_rentabilidad(filas)
+        self.assertTrue(r["supera_59_observado"])
+        self.assertLess(r["wilson_inferior_95"],59)
+        self.assertFalse(r["cobertura_estadistica_retrospectiva_59"])
+        self.assertFalse(r["pnl_positivo_con_cobertura_retrospectiva"])
+
+    def test_100_cierres_con_wilson_y_tres_dias_marcan_solo_cobertura(self):
+        filas = [{"estado_operacion": "OPERADA_DIRECTA",
+                  "resultado": "WIN" if i < 90 else "LOSS",
+                  "order_id": "id-" + str(i),
+                  "activo": "EURUSD-OTC",
+                  "fecha_senal": "2026-10-" + str(26 + i//34),
+                  "pnl_real_cerrado": "1" if i < 90 else "-1"}
+                 for i in range(100)]
+        r = evaluar_rentabilidad(filas)
+        self.assertEqual(r["fechas_con_operaciones"],3)
+        self.assertGreaterEqual(r["wilson_inferior_95"],59)
+        self.assertTrue(r["cobertura_estadistica_retrospectiva_59"])
+        self.assertTrue(r["pnl_positivo_con_cobertura_retrospectiva"])
+        self.assertFalse(r["autoriza_operacion"])
+
+    def test_pnl_sin_identidad_no_certifica_rentabilidad(self):
+        filas = [{"estado_operacion": "OPERADA_DIRECTA",
+                  "resultado": "WIN", "activo": "EURUSD-OTC",
+                  "fecha_senal": "2026-10-26", "pnl_real_cerrado": "7"}]
+        r = evaluar_rentabilidad(filas)
+        self.assertEqual(r["pnl_real_cerrado"], 7)
+        self.assertFalse(r["identidad_100pct_verificable"])
+        self.assertIsNone(r["rentabilidad_observada_positiva"])
+        self.assertFalse(r["autoriza_operacion"])
+
     def test_positivo_con_pnl_completo_y_un_mercado_valido(self):
         filas = [{"estado_operacion": "OPERADA_DIRECTA",
                   "resultado": "WIN", "activo": "EURUSD-OTC",
-                  "fecha_senal": "2026-10-26", "pnl_real_cerrado": "7"},
+                  "fecha_senal": "2026-10-26", "pnl_real_cerrado": "7",
+                  "order_id": "operacion-001"},
                  {"estado_operacion": "OPERADA_DIRECTA",
                   "resultado": "LOSS", "activo": "EURUSD-OTC",
-                  "fecha_senal": "2026-10-26", "pnl_real_cerrado": "-5"}]
+                  "fecha_senal": "2026-10-26", "pnl_real_cerrado": "-5",
+                  "order_id": "operacion-002"}]
         r = evaluar_rentabilidad(filas)
         self.assertEqual(r["pnl_real_cerrado"], 2)
         self.assertTrue(r["rentabilidad_observada_positiva"])
