@@ -80,11 +80,11 @@ def capturar(raiz=None):
     # Única redirección de ruta; se omite deliberadamente limpiar_data_backtest().
     backtest_data.CARPETA_DATA = str(destino)
     guardados = []
+    fallos = []
     for item in top:
         if not backtest_data.descargar_velas_activo(item["tipo"], item["activo"]):
-            raise RuntimeError(
-                "Captura incompleta: revisar directorio conservado " + str(destino)
-            )
+            fallos.append({"activo": item["activo"], "motivo": "DESCARGA_INCOMPLETA"})
+            continue
         nombre = (
             item["tipo"] + "_" +
             item["activo"].replace("/", "_").replace(":", "_") + ".csv"
@@ -98,11 +98,8 @@ def capturar(raiz=None):
                 filas, referencia_servidor,
             )
         except ValueError as error:
-            raise RuntimeError(
-                "Captura NO validada para TOP oficial: "
-                + item["activo"] + " | " + str(error)
-                + " | archivos brutos conservados en " + str(destino)
-            ) from error
+            fallos.append({"activo": item["activo"], "motivo": str(error)})
+            continue
 
         archivo_cerrado = destino_cerradas / nombre
         with archivo_cerrado.open("x", newline="", encoding="utf-8") as salida:
@@ -119,6 +116,24 @@ def capturar(raiz=None):
             "sha256": hashlib.sha256(archivo_cerrado.read_bytes()).hexdigest(),
             "sha256_bruto": hashlib.sha256(ruta.read_bytes()).hexdigest(),
         })
+
+    if fallos:
+        diagnostico = {
+            "tipo": "TOP_OFICIAL_NO_VALIDADO",
+            "total_activos_top": len(top),
+            "activos_cerrados_validos": len(guardados),
+            "fallos": fallos,
+            "autoriza_replay": False,
+            "autoriza_operaciones": False,
+        }
+        with (destino / "diagnostico_no_validado.json").open("x", encoding="utf-8") as salida:
+            json.dump(diagnostico, salida, indent=2, ensure_ascii=False)
+        resumen = "; ".join(x["activo"] + ": " + x["motivo"] for x in fallos)
+        raise RuntimeError(
+            "Captura NO validada para TOP oficial (" + str(len(fallos))
+            + "/" + str(len(top)) + "): " + resumen
+            + " | diagnóstico y archivos conservados en " + str(destino)
+        )
 
     manifiesto = {
         "modo": "PRACTICE", "tipo": "VELAS_CERRADAS_VALIDADAS_SIN_OPERACIONES",
