@@ -41,7 +41,7 @@ class BreakoutEmaEvidenceTests(unittest.TestCase):
                     self.assertEqual(len(senales), 1)
                     self.assertEqual(senales[0]["puntaje"], 20)
                     self.assertEqual(senales[0]["direccion"], sentido)
-                    frase = senales[0]["razones"][2]
+                    frase = senales[0]["razones"][3]
                     self.assertEqual("EMA favorece" in frase, coincide)
                     self.assertEqual("EMA no favorece" in frase, not coincide)
 
