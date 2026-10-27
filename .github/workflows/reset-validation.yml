@@ -22,3 +22,5 @@ jobs:
         run: python ci_smoke_runtime.py
       - name: Probar RSI de Wilder y mercado plano
         run: python -m unittest discover -s tests -p test_rsi_wilder.py -v
+      - name: Probar arranque sin memoria estadística anterior
+        run: python -m unittest discover -s tests -p test_cold_start_reset.py -v
