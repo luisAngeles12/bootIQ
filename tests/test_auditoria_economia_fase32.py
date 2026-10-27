@@ -44,6 +44,19 @@ class EconomiaFase32Tests(unittest.TestCase):
         self.assertEqual(r["mercados_distintos"], 1)
         self.assertFalse(r["autoriza_operacion"])
 
+    def test_epoch_agrupa_operaciones_en_dias_utc(self):
+        base = 1793059200
+        filas = [
+            {"estado_operacion": "OPERADA_DIRECTA", "resultado": "WIN",
+             "fecha_senal": str(base + i*60), "pnl_real_cerrado": "2"}
+            for i in (0, 1, 1440)
+        ]
+        r = evaluar_rentabilidad(filas)
+        self.assertEqual(r["operaciones_cerradas"], 3)
+        self.assertEqual(r["fechas_con_operaciones"], 2)
+        self.assertEqual(r["pnl_real_cerrado"], 6.0)
+
+
 
 if __name__ == "__main__":
     unittest.main()
