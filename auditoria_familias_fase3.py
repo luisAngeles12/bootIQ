@@ -45,3 +45,21 @@ def evaluar_familias(filas, minimo_por_dia=30, meta=59.0):
             "autoriza_operaciones": False,
         }
     return resumen
+
+
+def main():
+    """Inspección histórica únicamente. No promueve familias."""
+    import argparse
+    import csv
+    import json
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument("csv")
+    args = p.parse_args()
+    with open(args.csv, encoding="utf-8-sig", newline="") as archivo:
+        resultado = evaluar_familias(csv.DictReader(archivo),
+                                     minimo_por_dia=30, meta=57.0)
+    print(json.dumps(resultado, indent=2, sort_keys=True, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()
