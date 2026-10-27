@@ -45,14 +45,6 @@ def evaluar_ventanas_prospectivas(ventanas, prospectivas, payout_neto=None):
             raise ValueError("Fecha ausente/inválida en ventana prospectiva: " + nombre)
         if min(marcas) < CORTE_PROSPECTIVO_UTC:
             raise ValueError("Datos anteriores al corte prospectivo: " + nombre)
-        for marca in marcas:
-            dia = datetime.fromtimestamp(marca, timezone.utc).date().isoformat()
-            if dia in dias_asignados and dias_asignados[dia] != nombre:
-                raise ValueError(
-                    "Ventanas prospectivas comparten día UTC: "
-                    + dias_asignados[dia] + " / " + nombre + " (" + dia + ")"
-                )
-            dias_asignados[dia] = nombre
         periodos.append((min(marcas), max(marcas), nombre))
 
     periodos.sort()
@@ -61,6 +53,21 @@ def evaluar_ventanas_prospectivas(ventanas, prospectivas, payout_neto=None):
             raise ValueError(
                 "Ventanas prospectivas solapadas: " + anterior[2] + " / " + siguiente[2]
             )
+
+    # Comprobar primero el solapamiento temporal exacto; después exigir
+    # días UTC independientes incluso cuando los intervalos no se cruzan.
+    for nombre, filas in bloques:
+        if nombre not in declaradas:
+            continue
+        for fila in filas:
+            marca = _timestamp_senal(fila)
+            dia = datetime.fromtimestamp(marca, timezone.utc).date().isoformat()
+            if dia in dias_asignados and dias_asignados[dia] != nombre:
+                raise ValueError(
+                    "Ventanas prospectivas comparten día UTC: "
+                    + dias_asignados[dia] + " / " + nombre + " (" + dia + ")"
+                )
+            dias_asignados[dia] = nombre
 
     hipotesis = resumir_hipotesis_ventanas(
         bloques, ventanas_prospectivas=declaradas
