@@ -8,7 +8,7 @@ import math
 from pathlib import Path
 import re
 
-COLUMNAS = ("activo", "timestamp_utc", "open", "high", "low", "close", "capturado_en_utc")
+COLUMNAS = ("activo", "timestamp_utc", "open", "high", "low", "close", "capturado_en_utc", "latencia_primera_recepcion_s")
 
 
 def preparar_filas(activo, velas, inicio, fin):
@@ -39,7 +39,7 @@ def preparar_filas(activo, velas, inicio, fin):
     return filas
 
 
-def guardar_captura_fresca(activo, velas, inicio, fin, directorio):
+def guardar_captura_fresca(activo, velas, inicio, fin, directorio, latencias=None):
     """Una captura por archivo exclusivo; nunca reescribe ni mezcla sesiones."""
     filas = preparar_filas(activo, velas, inicio, fin)
     destino = Path(directorio)
@@ -51,5 +51,7 @@ def guardar_captura_fresca(activo, velas, inicio, fin, directorio):
         escritor = csv.writer(archivo)
         escritor.writerow(COLUMNAS)
         for fila in filas:
-            escritor.writerow((*fila, marca_captura))
+            demora = latencias.get(fila[1]) if latencias is not None else None
+            escritor.writerow((*fila, marca_captura,
+                               "" if demora is None else int(demora)))
     return ruta, len(filas)
