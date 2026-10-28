@@ -367,35 +367,21 @@ class IQ_Option:
 
     def get_ALL_Binary_ACTIVES_OPCODE(
         self,
-        timeout=15.0,
+        timeout=45.0,
     ):
         """
-        Actualiza OPCODE para binary/turbo usando la ruta
-        acotada de BootIQ.
+        Una solicitud V2 prolongada y correlacionada por request_id.
 
-        No utiliza get_all_init(), ya que esa ruta puede
-        bloquear hasta 30 segundos.
+        Evidencia PRACTICE: respuestas initialization-data llegaron
+        cuando solicitudes anteriores de 15 s ya habían vencido.
+        Evitar 3 solicitudes solapadas temporalmente y conservar
+        la correlación estricta; nunca aceptar un ID vencido.
         """
-        init_info = None
-        intentos = 3
         self._bootiq_init_v2_bootstrap = None
-
-        for intento in range(
-            1,
-            intentos + 1,
-        ):
-            init_info = self.get_all_init_v2(
-                timeout=timeout,
-                avisar_timeout=(
-                    intento == intentos
-                ),
-            )
-
-            if init_info:
-                break
-
-            if intento < intentos:
-                time.sleep(1)
+        init_info = self.get_all_init_v2(
+            timeout=timeout,
+            avisar_timeout=True,
+        )
 
         if not init_info:
             logging.warning(
@@ -403,7 +389,7 @@ class IQ_Option:
                 "trying bounded legacy initialization"
             )
             init_info = self._get_all_init_legacy_bounded(
-                timeout=timeout,
+                timeout=min(timeout, 10.0),
             )
 
         if not init_info:
