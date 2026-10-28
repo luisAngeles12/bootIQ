@@ -20,12 +20,14 @@ from operaciones import (
 class EntryTimingTests(unittest.TestCase):
     def setUp(self):
         self.original_iq = estado.Iq
+        self.original_balance_id = global_value.balance_id
         self.original_cooldowns = estado.cooldown_activos
         self.original_open_operations = estado.operaciones_abiertas
         estado.cooldown_activos = {}
 
     def tearDown(self):
         estado.Iq = self.original_iq
+        global_value.balance_id = self.original_balance_id
         estado.cooldown_activos = self.original_cooldowns
         estado.operaciones_abiertas = self.original_open_operations
 
@@ -33,6 +35,8 @@ class EntryTimingTests(unittest.TestCase):
         current_candle = int(timestamp // 60) * 60
         iq = Mock()
         iq.get_server_timestamp.return_value = timestamp
+        global_value.balance_id = 900
+        iq.api.profile.msg = {"balances": [{"id": 900, "type": 4}]}
         iq.buy.return_value = (False, "mock-rejected")
         estado.Iq = iq
 
@@ -51,6 +55,20 @@ class EntryTimingTests(unittest.TestCase):
 
         self.assertFalse(abrir_operacion(signal))
         iq.buy.assert_called_once()
+
+    def test_real_balance_blocks_order_even_if_brain_approves(self):
+        timestamp = (int(time.time() // 60) * 60) + 27
+        iq, signal = self._signal(timestamp)
+        iq.api.profile.msg = {"balances": [{"id": 900, "type": 1}]}
+        self.assertFalse(abrir_operacion(signal))
+        iq.buy.assert_not_called()
+
+    def test_unknown_balance_blocks_order_even_if_brain_approves(self):
+        timestamp = (int(time.time() // 60) * 60) + 27
+        iq, signal = self._signal(timestamp)
+        iq.api.profile.msg = {"balances": []}
+        self.assertFalse(abrir_operacion(signal))
+        iq.buy.assert_not_called()
 
     def test_entry_is_rejected_at_send_margin(self):
         timestamp = (int(time.time() // 60) * 60) + 28
