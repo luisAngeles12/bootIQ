@@ -134,7 +134,7 @@ def iniciar_stream_sin_precarga(iq, activo, opcodes):
 
 
 
-def sondear(activo, segundos):
+def sondear(activo, segundos, guardar_nuevas=False):
     exigir_config_practice(Path(__file__).with_name("config.py"))
     # Importaciones del bróker únicamente después del bloqueo anterior.
     import estado
@@ -182,6 +182,13 @@ def sondear(activo, segundos):
         # Medir ANTES del cierre; desuscribir puede esperar 5 segundos.
         fin = int(iq.get_server_timestamp())
         print("RESULTADO:", resumir(vistos, inicio, fin, latencias), flush=True)
+        if guardar_nuevas:
+            from captura_fresca_practice import guardar_captura_fresca
+            ruta, total = guardar_captura_fresca(
+                activo, vistos, inicio, fin,
+                Path(__file__).with_name("data_actual_practice"),
+            )
+            print("CAPTURA_NUEVA_VALIDADA:", ruta, "| velas:", total, flush=True)
         print("MICRORECHAZOS_SOMBRA:", {
             "total": len(eventos_sombra),
             "call": sum(e["direccion"] == "call" for e in eventos_sombra),
@@ -205,7 +212,9 @@ if __name__ == "__main__":
     parser.add_argument("--activo", required=True,
                         help="Nombre de activo abierto en IQ Option")
     parser.add_argument("--segundos", type=int, default=30)
+    parser.add_argument("--guardar-nuevas", action="store_true",
+                        help="Guarda solo velas nuevas validas de la sesion; no importa historial")
     args = parser.parse_args()
-    if not 10 <= args.segundos <= 60:
-        parser.error("--segundos debe estar entre 10 y 60")
-    sondear(args.activo, args.segundos)
+    if not 10 <= args.segundos <= 3600:
+        parser.error("--segundos debe estar entre 10 y 3600")
+    sondear(args.activo, args.segundos, args.guardar_nuevas)
