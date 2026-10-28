@@ -26,9 +26,14 @@ def leer_captura(ruta):
         t = int(fila["timestamp_utc"])
         if t in velas:
             raise ValueError("TIMESTAMP_DUPLICADO")
+        demora_texto = fila.get("latencia_primera_recepcion_s", "")
+        demora = None if demora_texto in (None, "") else int(demora_texto)
+        if demora is not None and demora < 0:
+            raise ValueError("LATENCIA_INVALIDA")
         velas[t] = {
             "from": t, "open": float(fila["open"]), "close": float(fila["close"]),
             "max": float(fila["high"]), "min": float(fila["low"]),
+            "_latencia_primera_recepcion_s": demora,
         }
     from captura_fresca_practice import preparar_filas
     preparar_filas(next(iter(activos)), velas, min(velas), max(velas) + 1)
@@ -71,7 +76,16 @@ def evaluar_sesion(velas, horizonte=60):
                 resultado = "WIN"
             else:
                 resultado = "LOSS"
-        resultados.append({"timestamp_senal": t, "direccion": direccion, "resultado": resultado})
+        demoras = [velas[marcas[j]].get("_latencia_primera_recepcion_s")
+                   for j in range(i - 2, i + 1)]
+        if any(d is None for d in demoras):
+            calidad = "LATENCIA_NO_REGISTRADA"
+        elif any(d > 1 for d in demoras):
+            calidad = "DETECCION_TARDIA"
+        else:
+            calidad = "TIEMPO_VERIFICADO"
+        resultados.append({"timestamp_senal": t, "direccion": direccion,
+                           "resultado": resultado, "calidad_tiempo": calidad})
         ocupado_hasta = t + horizonte + 1
     return resultados
 
@@ -84,6 +98,12 @@ def resumen_sesion(eventos):
         "senales_no_solapadas": len(eventos),
         **conteos,
         "wr_hipotetico": round(100 * conteos["WIN"] / validas, 2) if validas else None,
+        "con_tiempo_verificado": sum(e.get("calidad_tiempo") == "TIEMPO_VERIFICADO"
+                                     for e in eventos),
+        "detecciones_tardias": sum(e.get("calidad_tiempo") == "DETECCION_TARDIA"
+                                    for e in eventos),
+        "sin_latencia_registrada": sum(e.get("calidad_tiempo") == "LATENCIA_NO_REGISTRADA"
+                                       for e in eventos),
         "advertencia": "HIPOTETICO_NO_OPERACIONES_REALES_NI_RENDIMIENTO_GARANTIZADO",
     }
 
