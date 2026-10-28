@@ -13,6 +13,7 @@ from config import (
     VENTANA_ENTRADA_FIN,
     MARGEN_ENVIO_IQ_SEGUNDOS,
     HISTORIAL_CSV,
+    MODO_CUENTA,
 )
 from historial import (
     guardar_operaciones_pendientes,
@@ -66,6 +67,29 @@ def obtener_auditoria_orden_async(
         time.sleep(0.05)
 
     return None
+
+def _confirmar_balance_practice_sin_red(iq):
+    """Comprobación final local, sin consulta de red en la ventana de envío."""
+    if MODO_CUENTA != "PRACTICE":
+        return False
+    try:
+        from iqoptionapi import global_value
+        balance_id = global_value.balance_id
+        perfil = iq.api.profile.msg
+        if balance_id is None or not isinstance(perfil, dict):
+            return False
+        balances = perfil.get("balances")
+        if not isinstance(balances, list):
+            return False
+        return any(
+            isinstance(b, dict)
+            and b.get("id") == balance_id
+            and b.get("type") == 4  # 4 = PRACTICE, 1 = REAL
+            for b in balances
+        )
+    except (AttributeError, TypeError, ValueError):
+        return False
+
 
 def abrir_operacion(senal):
     # ==========================================
@@ -264,6 +288,10 @@ def abrir_operacion(senal):
     # Esta lectura no participa en autorización, monto ni riesgo
     # y puede bloquear la orden después de haber validado timing.
     balance_antes = None
+
+    if not _confirmar_balance_practice_sin_red(estado.Iq):
+        print("OPERACION BLOQUEADA: balance activo no confirmado PRACTICE")
+        return False
 
     try:
         if tipo in ["turbo", "binary"]:
