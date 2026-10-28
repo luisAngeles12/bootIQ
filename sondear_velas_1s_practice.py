@@ -187,6 +187,7 @@ def sondear(activo, segundos, guardar_nuevas=False):
             ruta, total = guardar_captura_fresca(
                 activo, vistos, inicio, fin,
                 Path(__file__).with_name("data_actual_practice"),
+                latencias=latencias,
             )
             print("CAPTURA_NUEVA_VALIDADA:", ruta, "| velas:", total, flush=True)
         print("MICRORECHAZOS_SOMBRA:", {
