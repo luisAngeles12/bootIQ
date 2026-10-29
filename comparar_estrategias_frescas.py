@@ -31,10 +31,16 @@ def comparar_estrategias(velas_1s, horizonte_minutos=1):
             segundo_salida = cierre_senal_utc + horizonte_minutos * 60 - 1
             entrada_1s = velas_1s.get(segundo_entrada)
             salida_1s = velas_1s.get(segundo_salida)
-            if (salida >= len(minutos)
-                    or minutos[salida]["from"] != segundo_entrada
-                    + (horizonte_minutos - 1) * 60
-                    or entrada_1s is None or salida_1s is None):
+            # No evaluar vencimientos si desaparecio algun minuto
+            # intermedio, incluso cuando existe el minuto final.
+            futuro_continuo = (
+                salida < len(minutos)
+                and all(
+                    minutos[j]["from"] == segundo_entrada + (j - i - 1) * 60
+                    for j in range(i + 1, salida + 1)
+                )
+            )
+            if not futuro_continuo or entrada_1s is None or salida_1s is None:
                 resultado = "SIN_FUTURO"
             else:
                 # Simulacion hipotetica: apertura de la primera vela futura,
