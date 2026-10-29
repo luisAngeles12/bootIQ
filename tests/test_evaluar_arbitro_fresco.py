@@ -92,5 +92,24 @@ class EvaluarArbitroFrescoTests(unittest.TestCase):
                                  "LATENCIA_INVALIDA_O_NO_REGISTRADA")
 
 
+    @patch("evaluar_arbitro_fresco.diagnosticar_cierre")
+    def test_vela_intermedia_tardia_invalida_senal_del_minuto(self, fn):
+        fn.return_value = diagnostico()
+        velas = datos(25)
+        # Vela 10 se recibe despues del cierre, aunque la 59 llegue a tiempo.
+        velas[23 * 60 + 10]["_latencia_primera_recepcion_s"] = 70
+        evento = evaluar_arbitro(velas)[0]
+        self.assertEqual(evento["calidad_tiempo"], "DETECCION_TARDIA")
+        self.assertNotEqual(evento["calidad_tiempo"], "TIEMPO_VERIFICADO")
+
+    @patch("evaluar_arbitro_fresco.diagnosticar_cierre")
+    def test_vela_intermedia_demorada_pero_antes_del_cierre_valida(self, fn):
+        fn.return_value = diagnostico()
+        velas = datos(25)
+        velas[23 * 60 + 10]["_latencia_primera_recepcion_s"] = 2
+        self.assertEqual(evaluar_arbitro(velas)[0]["calidad_tiempo"],
+                         "TIEMPO_VERIFICADO")
+
+
 if __name__ == "__main__":
     unittest.main()
