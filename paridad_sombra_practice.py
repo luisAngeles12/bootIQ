@@ -48,6 +48,24 @@ def calidad_recepcion_cierre(velas_1s, fin_minuto):
     return "TIEMPO_VERIFICADO"
 
 
+def calidad_contexto_historico(velas_1s, minutos, profundidad=24):
+    """Comprueba disponibilidad real de las barras que alimentan una senal.
+
+    El ultimo minuto se evalua por separado para conservar el motivo preciso
+    de latencia del disparador. Solo usa barras previas al disparador.
+    """
+    if len(minutos) < profundidad:
+        return "CONTEXTO_INSUFICIENTE"
+    recientes = minutos[-profundidad:]
+    if any(b["from"] - a["from"] != 60
+           for a, b in zip(recientes, recientes[1:])):
+        return "CONTEXTO_CON_HUECOS"
+    for minuto in recientes[:-1]:
+        if calidad_recepcion_cierre(velas_1s, minuto["end"]) != "TIEMPO_VERIFICADO":
+            return "CONTEXTO_NO_DISPONIBLE_EN_TIEMPO_REAL"
+    return "TIEMPO_VERIFICADO"
+
+
 def reproducir_cierres(velas_1s):
     """Referencia por timestamp, sin utilizar barras futuras al decidir."""
     minutos = consolidar_minutos(velas_1s)
