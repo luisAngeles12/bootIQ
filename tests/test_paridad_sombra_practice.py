@@ -106,5 +106,46 @@ class PruebasParidadSombra(unittest.TestCase):
                 self.assertEqual(resultado["motivo"], "LATENCIAS_INVALIDAS")
 
 
+    def test_interrupcion_recupera_contexto_sin_reutilizar_pasado(self):
+        datos = velas(53)
+        # 25 minutos normales, luego minuto 25 perdido completamente.
+        for t in range(25 * 60, 26 * 60):
+            del datos[t]
+        llegadas = [(t + 1, vela) for t, vela in datos.items()]
+        flujo = evaluar_flujo(llegadas)
+        por_fin = dict(flujo)
+        self.assertNotIn(26 * 60, por_fin)
+        self.assertEqual(por_fin[27 * 60]["contexto"]["estado"], "SIN_DATOS")
+        self.assertEqual(por_fin[49 * 60]["contexto"]["estado"], "SIN_DATOS")
+        self.assertNotEqual(por_fin[50 * 60]["contexto"]["estado"], "SIN_DATOS")
+        self.assertEqual([fin for fin, _ in flujo], sorted(por_fin))
+        self.assertTrue(all(
+            diagnostico["arbitraje"]["operable"] is False
+            for _, diagnostico in flujo
+        ))
+        self.assertTrue(comprobar_paridad(datos, llegadas)["paridad"])
+
+    def test_duplicados_no_reemiten_ni_reescriben_cierres(self):
+        datos = velas(3)
+        referencia = evaluar_flujo([(t + 1, v) for t, v in datos.items()])
+        llegadas = [(t + 1, v) for t, v in datos.items()]
+        llegadas.append((12, dict(datos[10])))
+        llegadas.append((125, dict(datos[59])))
+        llegadas.sort(key=lambda par: (par[0], par[1]["from"]))
+        self.assertEqual(evaluar_flujo(llegadas), referencia)
+
+    def test_retraso_intermedio_rechaza_minuto_y_reanuda(self):
+        datos = velas(3)
+        # Segunda 10 de minuto cero: llega cuando minuto cero ya cerro.
+        llegadas = [
+            (t + 1 + (80 if t == 10 else 0), v)
+            for t, v in datos.items()
+        ]
+        llegadas.sort(key=lambda par: (par[0], par[1]["from"]))
+        cierres = [fin for fin, _ in evaluar_flujo(llegadas)]
+        self.assertEqual(cierres, [120, 180])
+        self.assertFalse(comprobar_paridad(datos, llegadas)["paridad"])
+
+
 if __name__ == "__main__":
     unittest.main()
