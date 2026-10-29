@@ -35,6 +35,11 @@ def validar_oos_por_dias(eventos_por_estrategia, fraccion_desarrollo=0.7):
             "estado": "OOS_NO_VALIDADO", "motivos": ["SIN_SESIONES"],
             "estrategia_fijada": None, "operaciones_autorizadas": False,
         }
+    if len(dias) < 2:
+        return {
+            "estado": "OOS_NO_VALIDADO", "motivos": ["MENOS_DE_DOS_DIAS"],
+            "estrategia_fijada": None, "operaciones_autorizadas": False,
+        }
     # ceil evita mover un dia del futuro al conjunto de entrenamiento.
     n_desarrollo = min(len(dias) - 1, max(1, ceil(len(dias) * fraccion_desarrollo)))
     dias_desarrollo = set(dias[:n_desarrollo])
@@ -83,3 +88,14 @@ def validar_oos_por_dias(eventos_por_estrategia, fraccion_desarrollo=0.7):
         "operaciones_autorizadas": False,
         "advertencia": "SIN_VALIDACION_DE_EJECUCION_PRACTICE_NO_HABILITAR_TRADING",
     }
+
+
+def validar_oos_capturas(sesiones, fraccion_desarrollo=0.7):
+    """Aplica el protocolo OOS a capturas nuevas sin seleccionar por holdout."""
+    from comparar_estrategias_frescas import comparar_estrategias
+    eventos = {nombre: [] for nombre in ESTRATEGIAS}
+    for activo, inicio, velas in sesiones:
+        comparados = comparar_estrategias(velas)
+        for nombre in ESTRATEGIAS:
+            eventos[nombre].append((activo, inicio, comparados[nombre]))
+    return validar_oos_por_dias(eventos, fraccion_desarrollo)
