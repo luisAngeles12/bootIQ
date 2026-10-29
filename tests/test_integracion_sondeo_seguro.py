@@ -66,8 +66,7 @@ class IntegracionSondeoSeguroTests(unittest.TestCase):
         iq.get_realtime_candles.side_effect = [
             {t: vela(t)} for t in range(120, 181)
         ]
-        with patch("iqoptionapi.stable_api.IQ_Option", return_value=iq), \\
-             redirect_stdout(io.StringIO()) as salida:
+        with patch("iqoptionapi.stable_api.IQ_Option", return_value=iq), redirect_stdout(io.StringIO()) as salida:
             sondear("USDINR-OTC", 62)
         texto = salida.getvalue()
         self.assertIn("CIERRE_1M_SOMBRA_NO_OPERABLE", texto)
