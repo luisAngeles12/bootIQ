@@ -116,8 +116,13 @@ class PruebasParidadSombra(unittest.TestCase):
         por_fin = dict(flujo)
         self.assertNotIn(26 * 60, por_fin)
         self.assertEqual(por_fin[27 * 60]["contexto"]["estado"], "SIN_DATOS")
-        self.assertEqual(por_fin[49 * 60]["contexto"]["estado"], "SIN_DATOS")
-        self.assertNotEqual(por_fin[50 * 60]["contexto"]["estado"], "SIN_DATOS")
+        # Diagnostico requiere 20 minutos nuevos; estrategia requiere 24.
+        self.assertEqual(por_fin[45 * 60]["contexto"]["estado"], "SIN_DATOS")
+        self.assertNotEqual(por_fin[46 * 60]["contexto"]["estado"], "SIN_DATOS")
+        self.assertTrue(all(c["estado"] == "SIN_SENAL"
+                            for c in por_fin[49 * 60]["candidatos"]))
+        self.assertTrue(all(c["razon"] != "SIN_DATOS"
+                            for c in por_fin[50 * 60]["candidatos"]))
         self.assertEqual([fin for fin, _ in flujo], sorted(por_fin))
         self.assertTrue(all(
             diagnostico["arbitraje"]["operable"] is False
