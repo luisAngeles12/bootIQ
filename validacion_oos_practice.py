@@ -74,6 +74,10 @@ def validar_oos_por_dias(eventos_por_estrategia, fraccion_desarrollo=0.7):
     )
     if evidencia_holdout is not None and evidencia_holdout["estado"] != "EVIDENCIA_PRELIMINAR_SUPERA_OBJETIVO":
         motivos.append("HOLDOUT_BAJO_CRITERIOS")
+    from evaluar_pago_practice import evaluar_viabilidad_pago
+    pago_holdout = (evaluar_viabilidad_pago(
+        [evento for _, _, eventos in holdout[elegido] for evento in eventos])
+        if elegido is not None else None)
     return {
         "estado": ("EVIDENCIA_OOS_PRELIMINAR" if not motivos
                    else "OOS_NO_VALIDADO"),
@@ -84,6 +88,7 @@ def validar_oos_por_dias(eventos_por_estrategia, fraccion_desarrollo=0.7):
         "primer_dia_holdout": str(min(dias_holdout)) if dias_holdout else None,
         "desarrollo": desarrollo,
         "holdout_estrategia_fijada": evidencia_holdout,
+        "viabilidad_pago_holdout": pago_holdout,
         "motivos": motivos,
         "operaciones_autorizadas": False,
         "advertencia": "SIN_VALIDACION_DE_EJECUCION_PRACTICE_NO_HABILITAR_TRADING",
