@@ -86,3 +86,30 @@ def comprobar_paridad(velas_1s, llegadas):
         "operable": False,
         "advertencia": "PARIDAD_TECNICA_NO_DEMUESTRA_WINRATE",
     }
+
+
+def comprobar_paridad_recepcion_1s(velas_1s, latencias):
+    """Diagnostico por primera recepcion observada, resolucion 1 segundo.
+
+    Requiere latencia de CADA vela; no inventa tiempos de capturas antiguas.
+    El resultado no equivale a latencia de ejecucion ni autoriza operaciones.
+    """
+    if not velas_1s or any(t not in latencias for t in velas_1s):
+        return {
+            "paridad": None, "motivo": "LATENCIAS_INCOMPLETAS",
+            "operable": False,
+        }
+    if any(not isinstance(latencias[t], int) or latencias[t] < 0
+           for t in velas_1s):
+        return {
+            "paridad": None, "motivo": "LATENCIAS_INVALIDAS",
+            "operable": False,
+        }
+    llegadas = sorted(
+        ((t + 1 + latencias[t], dict(vela)) for t, vela in velas_1s.items()),
+        key=lambda par: (par[0], int(par[1]["from"])),
+    )
+    resultado = comprobar_paridad(velas_1s, llegadas)
+    resultado["resolucion_recepcion"] = "SEGUNDO_IQ_NO_SUBSEGUNDO"
+    resultado["velas_con_retraso"] = sum(latencias[t] > 0 for t in velas_1s)
+    return resultado
