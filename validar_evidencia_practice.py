@@ -32,6 +32,7 @@ def verificar_evidencia_sostenida(sesiones, objetivo=0.57):
     conteos = []
     rangos = set()
     eventos_vistos = set()
+    intervalos_por_activo = {}
     for activo, comienzo, eventos in sesiones:
         if (activo, comienzo) in rangos:
             motivos.append("SESION_DUPLICADA")
@@ -41,6 +42,7 @@ def verificar_evidencia_sostenida(sesiones, objetivo=0.57):
         # Una observacion debe tener timestamp verificable y no repetirse.
         # Esta puerta evita inflar el winrate con capturas solapadas.
         anterior = None
+        ultimo_evento = None
         for evento in eventos:
             instante = evento.get("timestamp_senal")
             if isinstance(instante, bool) or not isinstance(instante, int):
@@ -55,10 +57,16 @@ def verificar_evidencia_sostenida(sesiones, objetivo=0.57):
             if anterior is not None and instante <= anterior:
                 motivos.append("EVENTOS_DESORDENADOS_O_REPETIDOS")
             anterior = instante
+            ultimo_evento = max(instante, ultimo_evento) if ultimo_evento is not None else instante
             clave_evento = (activo, instante)
             if clave_evento in eventos_vistos:
                 motivos.append("EVENTO_DUPLICADO_ENTRE_SESIONES")
             eventos_vistos.add(clave_evento)
+        # Dos capturas del mismo activo pueden compartir intervalo
+        # observado sin repetir exactamente el timestamp de una senal.
+        # No tratarlas como muestras independientes.
+        if ultimo_evento is not None:
+            intervalos_por_activo.setdefault(activo, []).append((comienzo, ultimo_evento))
         evaluables = [e for e in eventos if e["resultado"] in ("WIN", "LOSS")]
         wins = sum(e["resultado"] == "WIN" for e in evaluables)
         n = len(evaluables)
@@ -69,6 +77,12 @@ def verificar_evidencia_sostenida(sesiones, objetivo=0.57):
             motivos.append("SESION_BAJO_OBJETIVO")
         if any(e.get("calidad_tiempo") != "TIEMPO_VERIFICADO" for e in eventos):
             motivos.append("LATENCIA_SIN_VERIFICAR_O_TARDIA")
+    for intervalos in intervalos_por_activo.values():
+        anterior_fin = None
+        for comienzo, fin in sorted(intervalos):
+            if anterior_fin is not None and comienzo <= anterior_fin:
+                motivos.append("SESIONES_SOLAPADAS_MISMO_ACTIVO")
+            anterior_fin = max(fin, anterior_fin) if anterior_fin is not None else fin
     total = sum(n for _, n in conteos)
     wins_total = sum(w for w, _ in conteos)
     if len(dias) < 3:
