@@ -123,10 +123,17 @@ def resumen_sesion(eventos):
     conteos = {k: sum(e["resultado"] == k for e in eventos)
                for k in ("WIN", "LOSS", "EMPATE", "SIN_FUTURO")}
     validas = conteos["WIN"] + conteos["LOSS"]
+    verificadas = [e for e in eventos if e.get("calidad_tiempo") == "TIEMPO_VERIFICADO"
+                   and e["resultado"] in ("WIN", "LOSS")]
+    wins_verificados = sum(e["resultado"] == "WIN" for e in verificadas)
     return {
         "senales_no_solapadas": len(eventos),
         **conteos,
         "wr_hipotetico": round(100 * conteos["WIN"] / validas, 2) if validas else None,
+        "resultados_con_tiempo_verificado": len(verificadas),
+        "wr_hipotetico_con_tiempo_verificado": (
+            round(100 * wins_verificados / len(verificadas), 2) if verificadas else None
+        ),
         "con_tiempo_verificado": sum(e.get("calidad_tiempo") == "TIEMPO_VERIFICADO"
                                      for e in eventos),
         "detecciones_tardias": sum(e.get("calidad_tiempo") == "DETECCION_TARDIA"
