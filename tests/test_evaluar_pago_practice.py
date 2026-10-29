@@ -8,7 +8,9 @@ def eventos(wins, losses, pago=None, fuente="PRACTICE_PREENTRADA"):
     return [
         {"resultado": "WIN" if i < wins else "LOSS",
          "calidad_tiempo": "TIEMPO_VERIFICADO",
-         "payout_neto": pago, "payout_fuente": fuente}
+         "payout_neto": pago, "payout_fuente": fuente,
+         "timestamp_entrada_hipotetica": 1000 + i * 60,
+         "timestamp_payout_utc": 999 + i * 60}
         for i in range(wins + losses)
     ]
 
@@ -45,6 +47,26 @@ class PagoPracticeTests(unittest.TestCase):
         self.assertEqual(r["estado"], "NO_VALIDADA")
         self.assertGreater(r["equilibrio_con_payout_minimo_pct"], 98)
         self.assertFalse(r["operaciones_autorizadas"])
+
+
+    def test_pago_posterior_a_entrada_es_invalido_aunque_todo_gane(self):
+        filas = eventos(200, 0, .8)
+        filas[0]["timestamp_payout_utc"] = (
+            filas[0]["timestamp_entrada_hipotetica"] + 1
+        )
+        r = evaluar_viabilidad_pago(filas)
+        self.assertEqual(r["estado"], "NO_VALIDADA")
+        self.assertIn("PAYOUT_SIN_TIEMPO_PREENTRADA_VERIFICABLE", r["motivos"])
+
+    def test_pago_antiguo_o_sin_timestamp_es_invalido(self):
+        for invalido in (None, 500, True):
+            with self.subTest(valor=invalido):
+                filas = eventos(200, 0, .8)
+                filas[0]["timestamp_payout_utc"] = invalido
+                r = evaluar_viabilidad_pago(filas)
+                self.assertEqual(r["estado"], "NO_VALIDADA")
+                self.assertIn("PAYOUT_SIN_TIEMPO_PREENTRADA_VERIFICABLE",
+                              r["motivos"])
 
 
 if __name__ == "__main__":
