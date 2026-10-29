@@ -80,6 +80,17 @@ class EvaluarArbitroFrescoTests(unittest.TestCase):
         r = evaluar_arbitro(velas, horizonte_minutos=3)
         self.assertEqual(r[0]["resultado"], "SIN_FUTURO")
 
+    @patch("evaluar_arbitro_fresco.diagnosticar_cierre")
+    def test_latencias_invalidas_no_son_verificadas(self, fn):
+        fn.return_value = diagnostico()
+        for demora in (-1, False, 0.5, "0"):
+            with self.subTest(demora=demora):
+                velas = datos(25)
+                velas[23 * 60 + 59]["_latencia_primera_recepcion_s"] = demora
+                evento = evaluar_arbitro(velas)[0]
+                self.assertEqual(evento["calidad_tiempo"],
+                                 "LATENCIA_INVALIDA_O_NO_REGISTRADA")
+
 
 if __name__ == "__main__":
     unittest.main()
