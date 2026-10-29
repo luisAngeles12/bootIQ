@@ -64,6 +64,30 @@ class EvaluarCapturaFrescaTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "SESIONES_MEZCLADAS|TIMESTAMP_DUPLICADO"):
                 leer_captura(ruta)
 
+    def test_rechaza_marcas_de_captura_falsas_o_no_utc(self):
+        with tempfile.TemporaryDirectory() as temporal:
+            ruta, _ = guardar_captura_fresca(
+                "USDINR-OTC", {100: vela(100)}, 100, 102, temporal
+            )
+            with ruta.open(newline="", encoding="utf-8") as archivo:
+                filas = list(csv.DictReader(archivo))
+                columnas = list(filas[0])
+            for marca, motivo in (
+                ("fecha_invalida", "MARCA_CAPTURA_INVALIDA"),
+                ("2026-10-28T00:00:00", "MARCA_CAPTURA_NO_UTC"),
+                ("2026-10-28T01:00:00+01:00", "MARCA_CAPTURA_NO_UTC"),
+                ("2999-01-01T00:00:00+00:00", "MARCA_CAPTURA_EN_FUTURO"),
+                ("1970-01-01T00:00:00+00:00", "VELA_POSTERIOR_A_CAPTURA"),
+            ):
+                with self.subTest(marca=marca):
+                    filas[0]["capturado_en_utc"] = marca
+                    with ruta.open("w", newline="", encoding="utf-8") as archivo:
+                        escritor = csv.DictWriter(archivo, fieldnames=columnas)
+                        escritor.writeheader()
+                        escritor.writerows(filas)
+                    with self.assertRaisesRegex(ValueError, motivo):
+                        leer_captura(ruta)
+
     def test_rechaza_huecos_en_evaluacion(self):
         datos = caso_call()
         del datos[110]
