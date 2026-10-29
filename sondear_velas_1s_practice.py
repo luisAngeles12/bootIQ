@@ -203,11 +203,15 @@ def sondear(activo, segundos, guardar_nuevas=False):
             from estrategias_contexto_fresco import diagnosticar_estrategias
             print("ESTRATEGIAS_CONTEXTO_SOMBRA:",
                   diagnosticar_estrategias(minutos, contexto["estado"]), flush=True)
+            from comparar_estrategias_frescas import resumen_comparativa
+            velas_con_latencia = {
+                t: {**vela, "_latencia_primera_recepcion_s": latencias.get(t)}
+                for t, vela in vistos.items()
+            }
+            print("COMPARATIVA_ESTRATEGIAS_SOMBRA_1M:",
+                  resumen_comparativa(velas_con_latencia), flush=True)
             print("EVALUACION_AUTOMATICA_SOMBRA_60S:",
-                  evaluar_captura_finalizada({
-                      t: {**vela, "_latencia_primera_recepcion_s": latencias.get(t)}
-                      for t, vela in vistos.items()
-                  }), flush=True)
+                  evaluar_captura_finalizada(velas_con_latencia), flush=True)
         print("MICRORECHAZOS_SOMBRA:", {
             "total": len(eventos_sombra),
             "call": sum(e["direccion"] == "call" for e in eventos_sombra),
