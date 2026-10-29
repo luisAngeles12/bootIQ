@@ -5,7 +5,8 @@ operaciones independientes. No conecta al broker ni envia ordenes.
 """
 from contexto_mercado_fresco import consolidar_minutos, diagnosticar_contexto
 from estrategias_contexto_fresco import diagnosticar_estrategias
-from paridad_sombra_practice import _segmento_actual, calidad_recepcion_cierre
+from paridad_sombra_practice import (_segmento_actual, calidad_recepcion_cierre,
+                                    calidad_contexto_historico)
 
 
 def comparar_estrategias(velas_1s, horizonte_minutos=1):
@@ -68,6 +69,8 @@ def comparar_estrategias(velas_1s, horizonte_minutos=1):
             # Un solo segundo puntual no prueba que el minuto entero
             # estuviera disponible para tomar la decision en vivo.
             calidad = calidad_recepcion_cierre(velas_1s, cierre_senal_utc)
+            if calidad == "TIEMPO_VERIFICADO":
+                calidad = calidad_contexto_historico(velas_1s, actuales)
             if calidad == "TIEMPO_VERIFICADO" and entrada_1s is None:
                 calidad = "ENTRADA_NO_OBSERVADA"
             resultados[nombre].append({
