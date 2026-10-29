@@ -70,6 +70,16 @@ class EvaluarArbitroFrescoTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "ARBITRO_AUTORIZO_OPERACION"):
             evaluar_arbitro(datos())
 
+    @patch("evaluar_arbitro_fresco.diagnosticar_cierre")
+    def test_horizonte_con_minuto_intermedio_ausente_no_cuenta_win(self, fn):
+        fn.return_value = diagnostico()
+        velas = datos(28)
+        # Horizonte 3m: falta minuto 25, aunque minuto 26 existe.
+        for t in range(25 * 60, 26 * 60):
+            del velas[t]
+        r = evaluar_arbitro(velas, horizonte_minutos=3)
+        self.assertEqual(r[0]["resultado"], "SIN_FUTURO")
+
 
 if __name__ == "__main__":
     unittest.main()
