@@ -98,7 +98,8 @@ def evaluar_flujo(llegadas):
                 resultados.append((fin, diagnosticar_cierre(_segmento_actual(minutos))))
 
     for recibido, vela in llegadas:
-        recibido = int(recibido)
+        if type(recibido) is not int or recibido < 0:
+            raise ValueError("RECEPCION_INVALIDA")
         if recepcion_anterior is not None and recibido < recepcion_anterior:
             raise ValueError("RECEPCIONES_DESORDENADAS")
         recepcion_anterior = recibido
@@ -138,7 +139,7 @@ def comprobar_paridad_recepcion_1s(velas_1s, latencias):
             "paridad": None, "motivo": "LATENCIAS_INCOMPLETAS",
             "operable": False,
         }
-    if any(not isinstance(latencias[t], int) or latencias[t] < 0
+    if any(type(latencias[t]) is not int or latencias[t] < 0
            for t in velas_1s):
         return {
             "paridad": None, "motivo": "LATENCIAS_INVALIDAS",
