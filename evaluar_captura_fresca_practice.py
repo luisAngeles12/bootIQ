@@ -126,14 +126,18 @@ def main():
     if not rutas:
         raise SystemExit("SIN_CAPTURAS_NUEVAS")
     totales = []
+    sesiones = []
     for ruta in rutas:
         activo, velas = leer_captura(ruta)
         eventos = evaluar_sesion(velas, args.horizonte)
         totales.extend(eventos)
+        sesiones.append((activo, min(velas), eventos))
         print(activo, ruta.name, resumen_sesion(eventos))
         print("DESGLOSE_POR_DIRECCION:", diagnostico_direcciones(eventos))
     print("TOTAL", resumen_sesion(totales))
     print("TOTAL_POR_DIRECCION:", diagnostico_direcciones(totales))
+    from validar_evidencia_practice import verificar_evidencia_sostenida
+    print("EVIDENCIA_SOSTENIDA_PRACTICE:", verificar_evidencia_sostenida(sesiones))
 
 
 if __name__ == "__main__":
