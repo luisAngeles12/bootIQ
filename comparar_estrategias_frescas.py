@@ -5,7 +5,7 @@ operaciones independientes. No conecta al broker ni envia ordenes.
 """
 from contexto_mercado_fresco import consolidar_minutos, diagnosticar_contexto
 from estrategias_contexto_fresco import diagnosticar_estrategias
-from paridad_sombra_practice import _segmento_actual
+from paridad_sombra_practice import _segmento_actual, calidad_recepcion_cierre
 
 
 def comparar_estrategias(velas_1s, horizonte_minutos=1):
@@ -65,19 +65,11 @@ def comparar_estrategias(velas_1s, horizonte_minutos=1):
                 else:
                     resultado = "LOSS"
             ultimo_segundo = cierre_senal_utc - 1
-            latencia = velas_1s[ultimo_segundo].get("_latencia_primera_recepcion_s")
-            # Para asumir la siguiente apertura, el cierre debe haberse
-            # visto dentro del mismo segundo de su disponibilidad.
-            if latencia is None:
-                calidad = "LATENCIA_NO_REGISTRADA"
-            elif type(latencia) is not int or latencia < 0:
-                calidad = "LATENCIA_INVALIDA_O_NO_REGISTRADA"
-            elif latencia > 0:
-                calidad = "DETECCION_TARDIA"
-            elif entrada_1s is None:
+            # Un solo segundo puntual no prueba que el minuto entero
+            # estuviera disponible para tomar la decision en vivo.
+            calidad = calidad_recepcion_cierre(velas_1s, cierre_senal_utc)
+            if calidad == "TIEMPO_VERIFICADO" and entrada_1s is None:
                 calidad = "ENTRADA_NO_OBSERVADA"
-            else:
-                calidad = "TIEMPO_VERIFICADO"
             resultados[nombre].append({
                 "timestamp_senal": ultimo_segundo,
                 "timestamp_entrada_hipotetica": segundo_entrada,
