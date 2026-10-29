@@ -53,7 +53,9 @@ def evaluar_arbitro(velas_1s, horizonte_minutos=1):
                 resultado = "LOSS"
         ultima_senal = entrada_ts - 1
         demora = velas_1s[ultima_senal].get("_latencia_primera_recepcion_s")
-        if type(demora) is not int or demora < 0:
+        if demora is None:
+            calidad = "LATENCIA_NO_REGISTRADA"
+        elif type(demora) is not int or demora < 0:
             calidad = "LATENCIA_INVALIDA_O_NO_REGISTRADA"
         elif demora > 0:
             calidad = "DETECCION_TARDIA"
