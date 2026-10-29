@@ -5,7 +5,7 @@ bloqueado. Ni esta funcion ni sus resultados autorizan operaciones.
 """
 from contexto_mercado_fresco import consolidar_minutos
 from paridad_sombra_practice import (diagnosticar_cierre, _segmento_actual,
-                                    calidad_recepcion_cierre)
+                                    calidad_recepcion_cierre, calidad_contexto_historico)
 
 
 def evaluar_arbitro(velas_1s, horizonte_minutos=1):
@@ -54,6 +54,8 @@ def evaluar_arbitro(velas_1s, horizonte_minutos=1):
                 resultado = "LOSS"
         ultima_senal = entrada_ts - 1
         calidad = calidad_recepcion_cierre(velas_1s, entrada_ts)
+        if calidad == "TIEMPO_VERIFICADO":
+            calidad = calidad_contexto_historico(velas_1s, actuales)
         if calidad == "TIEMPO_VERIFICADO" and entrada is None:
             calidad = "ENTRADA_NO_OBSERVADA"
         eventos.append({
