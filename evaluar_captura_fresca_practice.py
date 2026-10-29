@@ -63,29 +63,44 @@ def evaluar_sesion(velas, horizonte=60):
         if len(eventos) != 1:
             continue  # ambigüedad de direcciones: ninguna operacion
         direccion = eventos[0]["direccion"]
-        cierre_senal = float(velas[t]["close"])
-        # Después del cierre en t+1, vencimiento al cierre de t+horizonte.
+        # La decision solo existe tras el cierre t+1. Ese cierre ya es
+        # informacion conocida, NO un precio ejecutable. La primera
+        # apertura hipotetica es la vela siguiente (sin orden real).
+        indice_entrada = i + 1
         indice_salida = i + horizonte
         if indice_salida >= len(marcas):
             resultado = "SIN_FUTURO"
         else:
-            cierre_salida = float(velas[marcas[indice_salida]]["close"])
-            if cierre_salida == cierre_senal:
+            precio_entrada = float(velas[marcas[indice_entrada]]["open"])
+            precio_salida = float(velas[marcas[indice_salida]]["close"])
+            if precio_salida == precio_entrada:
                 resultado = "EMPATE"
-            elif (cierre_salida > cierre_senal) == (direccion == "call"):
+            elif (precio_salida > precio_entrada) == (direccion == "call"):
                 resultado = "WIN"
             else:
                 resultado = "LOSS"
-        demoras = [velas[marcas[j]].get("_latencia_primera_recepcion_s")
+        # Los tres cierres del patron deben estar disponibles a t+1;
+        # especialmente la vela final debe tener latencia cero.
+        demoras = [(marcas[j], velas[marcas[j]].get("_latencia_primera_recepcion_s"))
                    for j in range(i - 2, i + 1)]
-        if any(d is None for d in demoras):
+        if any(d is None for _, d in demoras):
             calidad = "LATENCIA_NO_REGISTRADA"
-        elif any(d > 1 for d in demoras):
+        elif any(type(d) is not int or d < 0 for _, d in demoras):
+            calidad = "LATENCIA_INVALIDA_O_NO_REGISTRADA"
+        elif any(instante + 1 + d > t + 1 for instante, d in demoras):
             calidad = "DETECCION_TARDIA"
         else:
             calidad = "TIEMPO_VERIFICADO"
-        resultados.append({"timestamp_senal": t, "direccion": direccion,
-                           "resultado": resultado, "calidad_tiempo": calidad})
+        resultados.append({
+            "timestamp_senal": t,
+            "timestamp_entrada_hipotetica": t + 1,
+            "timestamp_salida_hipotetica": marcas[indice_salida]
+            if indice_salida < len(marcas) else t + horizonte,
+            "modelo_entrada": "APERTURA_PRIMERA_VELA_FUTURA_NO_EJECUTADA",
+            "direccion": direccion,
+            "resultado": resultado,
+            "calidad_tiempo": calidad,
+        })
         ocupado_hasta = t + horizonte + 1
     return resultados
 
