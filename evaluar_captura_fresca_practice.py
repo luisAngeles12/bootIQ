@@ -127,11 +127,13 @@ def main():
         raise SystemExit("SIN_CAPTURAS_NUEVAS")
     totales = []
     sesiones = []
+    sesiones_estrategias = []
     for ruta in rutas:
         activo, velas = leer_captura(ruta)
         eventos = evaluar_sesion(velas, args.horizonte)
         totales.extend(eventos)
         sesiones.append((activo, min(velas), eventos))
+        sesiones_estrategias.append((activo, min(velas), velas))
         print(activo, ruta.name, resumen_sesion(eventos))
         print("DESGLOSE_POR_DIRECCION:", diagnostico_direcciones(eventos))
         from comparar_estrategias_frescas import resumen_comparativa
@@ -140,6 +142,9 @@ def main():
     print("TOTAL_POR_DIRECCION:", diagnostico_direcciones(totales))
     from validar_evidencia_practice import verificar_evidencia_sostenida
     print("EVIDENCIA_SOSTENIDA_PRACTICE:", verificar_evidencia_sostenida(sesiones))
+    from estudio_multisesion_practice import estudiar_sesiones
+    print("ESTUDIO_TRES_ESTRATEGIAS_MULTISESION:",
+          estudiar_sesiones(sesiones_estrategias))
 
 
 if __name__ == "__main__":
