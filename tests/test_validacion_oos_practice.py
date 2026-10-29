@@ -51,6 +51,9 @@ class ValidacionOOSTests(unittest.TestCase):
         self.assertEqual(resultado["estado"], "EVIDENCIA_OOS_PRELIMINAR")
         self.assertEqual(resultado["estrategia_fijada"], "RECHAZO_ZONA")
         self.assertFalse(resultado["operaciones_autorizadas"])
+        self.assertEqual(resultado["viabilidad_pago_holdout"]["estado"], "NO_VALIDADA")
+        self.assertIn("PAYOUT_NO_VERIFICADO",
+                      resultado["viabilidad_pago_holdout"]["motivos"])
 
     def test_una_sesion_no_se_trata_como_holdout(self):
         datos = {nombre: [("USDINR-OTC", dia(1), eventos(dia(1), 40, 0))]
