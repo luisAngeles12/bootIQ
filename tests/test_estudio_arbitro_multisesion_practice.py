@@ -56,5 +56,17 @@ class EstudioArbitroMultisesionTests(unittest.TestCase):
         self.assertIn("ARBITRO_DESARROLLO_NO_VALIDADO", r["motivos"])
 
 
+    def test_senal_del_holdout_marcada_como_desarrollo_bloquea(self):
+        muestras = sesiones()
+        # Ultima senal del dia 7 se falsifica con timestamp del dia 8.
+        # Nunca debe contarse como evidencia de desarrollo.
+        muestras[6][2][-1]["timestamp_senal"] = ts(8) + 5
+        resultado = estudiar_eventos_arbitro(muestras)
+        self.assertEqual(resultado["estado"], "ARBITRO_OOS_NO_VALIDADO")
+        self.assertIn("ARBITRO_DESARROLLO_NO_VALIDADO", resultado["motivos"])
+        self.assertIn("EVENTO_FUERA_DIA_SESION",
+                      resultado["desarrollo"]["motivos"])
+
+
 if __name__ == "__main__":
     unittest.main()
