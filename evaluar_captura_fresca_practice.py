@@ -4,6 +4,7 @@ No importa broker, no emite operaciones, no calibra filtros a posteriori.
 """
 import argparse
 import csv
+from datetime import datetime, timezone
 from pathlib import Path
 
 from sondear_velas_1s_practice import evaluar_micro_rechazo_sombra
@@ -21,6 +22,14 @@ def leer_captura(ruta):
     marcas_captura = {fila["capturado_en_utc"] for fila in filas}
     if len(activos) != 1 or len(marcas_captura) != 1:
         raise ValueError("SESIONES_MEZCLADAS")
+    try:
+        marca = datetime.fromisoformat(next(iter(marcas_captura)))
+    except (ValueError, TypeError):
+        raise ValueError("MARCA_CAPTURA_INVALIDA") from None
+    if marca.tzinfo is None or marca.utcoffset().total_seconds() != 0:
+        raise ValueError("MARCA_CAPTURA_NO_UTC")
+    if marca.timestamp() > datetime.now(timezone.utc).timestamp() + 5:
+        raise ValueError("MARCA_CAPTURA_EN_FUTURO")
     velas = {}
     for fila in filas:
         t = int(fila["timestamp_utc"])
@@ -35,6 +44,8 @@ def leer_captura(ruta):
             "max": float(fila["high"]), "min": float(fila["low"]),
             "_latencia_primera_recepcion_s": demora,
         }
+    if max(velas) + 1 > marca.timestamp():
+        raise ValueError("VELA_POSTERIOR_A_CAPTURA")
     from captura_fresca_practice import preparar_filas
     preparar_filas(next(iter(activos)), velas, min(velas), max(velas) + 1)
     return next(iter(activos)), velas
