@@ -26,9 +26,7 @@ class PreparacionPracticeTests(unittest.TestCase):
     def test_no_acepta_ventana_corta_ni_falsifica_estrategias(self):
         resultado = diagnosticar_preparacion(muestra())
         self.assertIn("CONTEXTO_MENOR_24_MINUTOS", resultado["motivos"])
-        self.assertIn("PARIDAD_NO_DEMOSTRADA", resultado["motivos"] if
-                      resultado["paridad"]["paridad"] is not True else
-                      ["PARIDAD_NO_DEMOSTRADA"])
+        self.assertTrue(resultado["paridad"]["paridad"])
         self.assertFalse(resultado["operaciones_autorizadas"])
 
     def test_no_acepta_captura_sin_latencia(self):
