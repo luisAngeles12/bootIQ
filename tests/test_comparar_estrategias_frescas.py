@@ -137,5 +137,22 @@ class CompararEstrategiasFrescasTests(unittest.TestCase):
             comparar_estrategias(velas_minutos(25))
 
 
+    @patch("comparar_estrategias_frescas.diagnosticar_estrategias",
+           side_effect=lambda *_: candidato())
+    @patch("comparar_estrategias_frescas.diagnosticar_contexto",
+           return_value={"estado": "TENDENCIA_ALCISTA"})
+    def test_reanuda_tras_24_minutos_continuos_desde_hueco(self, _, fn):
+        velas = velas_minutos(53)
+        for t in range(25 * 60, 26 * 60):
+            del velas[t]
+        resultado = comparar_estrategias(velas)["RUPTURA_RETEST"]
+        marcas = {e["timestamp_senal"] for e in resultado}
+        self.assertIn(23 * 60 + 59, marcas)
+        self.assertIn(49 * 60 + 59, marcas)
+        self.assertFalse(any(26 * 60 <= t < 49 * 60 for t in marcas))
+        # Antes del hueco hubo candidatos; despues reanuda con 24 velas.
+        self.assertGreaterEqual(fn.call_count, 2)
+
+
 if __name__ == "__main__":
     unittest.main()
