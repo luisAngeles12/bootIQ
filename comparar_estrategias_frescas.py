@@ -5,6 +5,7 @@ operaciones independientes. No conecta al broker ni envia ordenes.
 """
 from contexto_mercado_fresco import consolidar_minutos, diagnosticar_contexto
 from estrategias_contexto_fresco import diagnosticar_estrategias
+from paridad_sombra_practice import _segmento_actual
 
 
 def comparar_estrategias(velas_1s, horizonte_minutos=1):
@@ -15,7 +16,11 @@ def comparar_estrategias(velas_1s, horizonte_minutos=1):
     resultados = {nombre: [] for nombre in nombres}
     ocupados = {nombre: -1 for nombre in nombres}
     for i in range(23, len(minutos)):
-        actuales = minutos[:i + 1]
+        # Tras un hueco, reiniciar el calentamiento del comparador igual
+        # que el arbitro. No mezclar historia previa ni bloquear por siempre.
+        actuales = _segmento_actual(minutos[:i + 1])
+        if len(actuales) < 24:
+            continue
         contexto = diagnosticar_contexto(actuales)
         # Nunca usar una barra futura para decidir el candidato.
         candidatos = diagnosticar_estrategias(actuales, contexto["estado"])
