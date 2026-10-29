@@ -21,8 +21,14 @@ def comparar_estrategias(velas_1s, horizonte_minutos=1):
         candidatos = diagnosticar_estrategias(actuales, contexto["estado"])
         for candidato in candidatos:
             nombre = candidato["estrategia"]
+            if nombre not in resultados:
+                raise RuntimeError("ESTRATEGIA_DESCONOCIDA_EN_REPLAY")
             if candidato["estado"] != "CANDIDATO_SOMBRA" or i < ocupados[nombre]:
                 continue
+            # Comparar contra 'call' con un valor vacio interpretaria
+            # cualquier direccion desconocida como 'put' y podria crear WIN.
+            if candidato.get("direccion") not in ("call", "put"):
+                raise RuntimeError("DIRECCION_INVALIDA_EN_REPLAY")
             salida = i + horizonte_minutos
             # La señal solo se conoce al CIERRE de este minuto.
             # El precio de ese cierre no puede asumirse ejecutable.
