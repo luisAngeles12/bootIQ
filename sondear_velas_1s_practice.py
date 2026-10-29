@@ -201,8 +201,11 @@ def sondear(activo, segundos, guardar_nuevas=False):
             contexto = diagnosticar_contexto(minutos)
             print("CONTEXTO_MERCADO_1M:", contexto, flush=True)
             from estrategias_contexto_fresco import diagnosticar_estrategias
-            print("ESTRATEGIAS_CONTEXTO_SOMBRA:",
-                  diagnosticar_estrategias(minutos, contexto["estado"]), flush=True)
+            candidatos = diagnosticar_estrategias(minutos, contexto["estado"])
+            print("ESTRATEGIAS_CONTEXTO_SOMBRA:", candidatos, flush=True)
+            from arbitro_estrategias_frescas import arbitrar_candidatos
+            print("ARBITRAJE_ESTRATEGIAS_NO_OPERABLE:",
+                  arbitrar_candidatos(candidatos, contexto["estado"]), flush=True)
             from comparar_estrategias_frescas import resumen_comparativa
             velas_con_latencia = {
                 t: {**vela, "_latencia_primera_recepcion_s": latencias.get(t)}
