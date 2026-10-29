@@ -1,4 +1,4 @@
-"""Sondeo de velas de 1 s; SOLO PRACTICE, sin órdenes ni archivos."""
+"""Sondeo de velas de 1 s; SOLO PRACTICE, sin órdenes."""
 
 import argparse
 import ast
@@ -134,6 +134,12 @@ def iniciar_stream_sin_precarga(iq, activo, opcodes):
 
 
 
+def evaluar_captura_finalizada(velas, horizonte=60):
+    """Evaluacion hipotetica independiente al finalizar una captura continua."""
+    from evaluar_captura_fresca_practice import evaluar_sesion, resumen_sesion
+    return resumen_sesion(evaluar_sesion(velas, horizonte=horizonte))
+
+
 def sondear(activo, segundos, guardar_nuevas=False):
     exigir_config_practice(Path(__file__).with_name("config.py"))
     # Importaciones del bróker únicamente después del bloqueo anterior.
@@ -190,6 +196,11 @@ def sondear(activo, segundos, guardar_nuevas=False):
                 latencias=latencias,
             )
             print("CAPTURA_NUEVA_VALIDADA:", ruta, "| velas:", total, flush=True)
+            print("EVALUACION_AUTOMATICA_SOMBRA_60S:",
+                  evaluar_captura_finalizada({
+                      t: {**vela, "_latencia_primera_recepcion_s": latencias.get(t)}
+                      for t, vela in vistos.items()
+                  }), flush=True)
         print("MICRORECHAZOS_SOMBRA:", {
             "total": len(eventos_sombra),
             "call": sum(e["direccion"] == "call" for e in eventos_sombra),
