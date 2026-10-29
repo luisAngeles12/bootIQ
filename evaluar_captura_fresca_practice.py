@@ -147,6 +147,9 @@ def main():
     from estudio_multisesion_practice import estudiar_sesiones
     print("ESTUDIO_TRES_ESTRATEGIAS_MULTISESION:",
           estudiar_sesiones(sesiones_estrategias))
+    from validacion_oos_practice import validar_oos_capturas
+    print("VALIDACION_OOS_POR_DIAS:",
+          validar_oos_capturas(sesiones_estrategias))
 
 
 if __name__ == "__main__":
