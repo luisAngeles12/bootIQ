@@ -4,7 +4,8 @@ No suma ganancias hipoteticas de estrategias que el cerebro habria
 bloqueado. Ni esta funcion ni sus resultados autorizan operaciones.
 """
 from contexto_mercado_fresco import consolidar_minutos
-from paridad_sombra_practice import diagnosticar_cierre, _segmento_actual
+from paridad_sombra_practice import (diagnosticar_cierre, _segmento_actual,
+                                    calidad_recepcion_cierre)
 
 
 def evaluar_arbitro(velas_1s, horizonte_minutos=1):
@@ -52,17 +53,9 @@ def evaluar_arbitro(velas_1s, horizonte_minutos=1):
             else:
                 resultado = "LOSS"
         ultima_senal = entrada_ts - 1
-        demora = velas_1s[ultima_senal].get("_latencia_primera_recepcion_s")
-        if demora is None:
-            calidad = "LATENCIA_NO_REGISTRADA"
-        elif type(demora) is not int or demora < 0:
-            calidad = "LATENCIA_INVALIDA_O_NO_REGISTRADA"
-        elif demora > 0:
-            calidad = "DETECCION_TARDIA"
-        elif entrada is None:
+        calidad = calidad_recepcion_cierre(velas_1s, entrada_ts)
+        if calidad == "TIEMPO_VERIFICADO" and entrada is None:
             calidad = "ENTRADA_NO_OBSERVADA"
-        else:
-            calidad = "TIEMPO_VERIFICADO"
         eventos.append({
             "timestamp_senal": ultima_senal,
             "timestamp_entrada_hipotetica": entrada_ts,
