@@ -31,10 +31,16 @@ def evaluar_arbitro(velas_1s, horizonte_minutos=1):
         indice_salida = i + horizonte_minutos
         entrada = velas_1s.get(entrada_ts)
         salida = velas_1s.get(salida_ts)
-        if (indice_salida >= len(minutos)
-                or minutos[indice_salida]["from"] !=
-                   entrada_ts + (horizonte_minutos - 1) * 60
-                or entrada is None or salida is None):
+        # Todo el horizonte debe ser continuo: verificar solo el minuto
+        # final ocultaria huecos intermedios en capturas incompletas.
+        futuro_continuo = (
+            indice_salida < len(minutos)
+            and all(
+                minutos[j]["from"] == entrada_ts + (j - i - 1) * 60
+                for j in range(i + 1, indice_salida + 1)
+            )
+        )
+        if not futuro_continuo or entrada is None or salida is None:
             resultado = "SIN_FUTURO"
         else:
             precio_entrada = float(entrada["open"])
