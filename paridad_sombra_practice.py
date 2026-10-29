@@ -19,56 +19,44 @@ def diagnosticar_cierre(minutos):
     return {"contexto": contexto, "candidatos": candidatos, "arbitraje": arbitraje}
 
 
+def _segmento_actual(minutos):
+    """No mezclar los contextos a traves de un hueco de minutos."""
+    j = len(minutos) - 1
+    while j and minutos[j]["from"] - minutos[j - 1]["from"] == 60:
+        j -= 1
+    return minutos[j:]
+
+
 def reproducir_cierres(velas_1s):
-    """Referencia por timestamp, sin utilizar ninguna barra futura al decidir."""
+    """Referencia por timestamp, sin utilizar barras futuras al decidir."""
     minutos = consolidar_minutos(velas_1s)
-    resultados = []
-    for i, minuto in enumerate(minutos):
-        if i and minuto["from"] - minutos[i - 1]["from"] != 60:
-            # Los historiales separados no deben transferir contexto.
-            inicio = i
-            while inicio and minutos[inicio - 1]["from"] == minutos[inicio]["from"] - 60:
-                inicio -= 1
-            historia = minutos[inicio:i + 1]
-        else:
-            historia = minutos[:i + 1]
-            if historia and len(historia) > 1:
-                # Aislar cualquier segmento anterior desconectado.
-                j = len(historia) - 1
-                while j and historia[j]["from"] - historia[j - 1]["from"] == 60:
-                    j -= 1
-                historia = historia[j:]
-        resultados.append((minuto["end"], diagnosticar_cierre(historia)))
-    return resultados
+    return [
+        (minuto["end"], diagnosticar_cierre(_segmento_actual(minutos[:i + 1])))
+        for i, minuto in enumerate(minutos)
+    ]
 
 
 def evaluar_flujo(llegadas):
-    """Cada llegada: (segundo_de_recepcion, vela_1s). Orden temporal obligatorio.
+    """Llegadas (segundo_de_recepcion, vela_1s), monotonicamente ordenadas.
 
-    Usa el segundo de RECEPCION, no el timestamp de la vela, para determinar
-    si pudo ser conocida al cierre. No reinterpreta datos tardios como oportunos.
+    Un cierre se publica una sola vez al recibir la vela 59 del minuto o
+    al avanzar el reloj. Las velas posteriores al cierre no reescriben pasado.
     """
     vistos = {}
     resultados = []
+    cerrados = set()
     recepcion_anterior = None
-    minuto_vigente = None
 
-    def cerrar(hasta):
-        nonlocal minuto_vigente
-        if minuto_vigente is None:
-            return
-        fin = minuto_vigente + 60
-        if hasta < fin:
-            return
-        # Solo observaciones recibidas como maximo en el instante de cierre.
-        historia = {t: v for t, v in vistos.items() if t < fin}
-        minutos = consolidar_minutos(historia)
-        if minutos and minutos[-1]["end"] == fin:
-            j = len(minutos) - 1
-            while j and minutos[j]["from"] - minutos[j - 1]["from"] == 60:
-                j -= 1
-            resultados.append((fin, diagnosticar_cierre(minutos[j:])))
-        minuto_vigente = None
+    def finalizar_hasta(recepcion):
+        # Los cierres sin 60 velas completas se descartan, no se reconstruyen.
+        pendientes = sorted({t // 60 * 60 + 60 for t in vistos
+                             if t // 60 * 60 + 60 <= recepcion
+                             and t // 60 * 60 + 60 not in cerrados})
+        for fin in pendientes:
+            cerrados.add(fin)
+            minutos = consolidar_minutos({t: v for t, v in vistos.items() if t < fin})
+            if minutos and minutos[-1]["end"] == fin:
+                resultados.append((fin, diagnosticar_cierre(_segmento_actual(minutos))))
 
     for recibido, vela in llegadas:
         recibido = int(recibido)
@@ -76,17 +64,14 @@ def evaluar_flujo(llegadas):
             raise ValueError("RECEPCIONES_DESORDENADAS")
         recepcion_anterior = recibido
         t = int(vela["from"])
-        if t + 1 > recibido:
+        fin = (t // 60 + 1) * 60
+        if recibido < t + 1:
             raise ValueError("VELA_AUN_ABIERTA")
-        if minuto_vigente is None:
-            minuto_vigente = (recibido // 60) * 60
-        if recibido >= minuto_vigente + 60:
-            cerrar(recibido)
-            minuto_vigente = (recibido // 60) * 60
-        # Rechazar timestamps anteriores: llegaron tarde y no pueden corregir pasado.
-        if t // 60 == recibido // 60 and t not in vistos:
+        # Si la ultima vela del minuto llega justo a su cierre, se acepta.
+        # Las velas anteriores recibidas tras el cierre NO corrigen decisiones.
+        if recibido <= fin and fin not in cerrados and t not in vistos:
             vistos[t] = dict(vela)
-    cerrar(recepcion_anterior or 0)
+        finalizar_hasta(recibido)
     return resultados
 
 
