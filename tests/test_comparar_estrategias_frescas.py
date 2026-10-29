@@ -154,5 +154,26 @@ class CompararEstrategiasFrescasTests(unittest.TestCase):
         self.assertGreaterEqual(fn.call_count, 2)
 
 
+    @patch("comparar_estrategias_frescas.diagnosticar_estrategias",
+           side_effect=lambda *_: candidato())
+    @patch("comparar_estrategias_frescas.diagnosticar_contexto",
+           return_value={"estado": "TENDENCIA_ALCISTA"})
+    def test_vela_intermedia_tardia_invalida_senal_del_minuto(self, *_mocks):
+        velas = velas_minutos(25)
+        velas[23 * 60 + 10]["_latencia_primera_recepcion_s"] = 70
+        evento = comparar_estrategias(velas)["RUPTURA_RETEST"][0]
+        self.assertEqual(evento["calidad_tiempo"], "DETECCION_TARDIA")
+
+    @patch("comparar_estrategias_frescas.diagnosticar_estrategias",
+           side_effect=lambda *_: candidato())
+    @patch("comparar_estrategias_frescas.diagnosticar_contexto",
+           return_value={"estado": "TENDENCIA_ALCISTA"})
+    def test_vela_intermedia_antes_del_cierre_valida(self, *_mocks):
+        velas = velas_minutos(25)
+        velas[23 * 60 + 10]["_latencia_primera_recepcion_s"] = 2
+        evento = comparar_estrategias(velas)["RUPTURA_RETEST"][0]
+        self.assertEqual(evento["calidad_tiempo"], "TIEMPO_VERIFICADO")
+
+
 if __name__ == "__main__":
     unittest.main()
