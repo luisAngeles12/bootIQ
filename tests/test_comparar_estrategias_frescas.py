@@ -99,6 +99,19 @@ class CompararEstrategiasFrescasTests(unittest.TestCase):
         r = comparar_estrategias(datos, horizonte_minutos=3)
         self.assertEqual(r["RUPTURA_RETEST"][0]["resultado"], "SIN_FUTURO")
 
+    @patch("comparar_estrategias_frescas.diagnosticar_estrategias",
+           side_effect=lambda *_: candidato())
+    @patch("comparar_estrategias_frescas.diagnosticar_contexto",
+           return_value={"estado": "TENDENCIA_ALCISTA"})
+    def test_latencias_invalidas_no_son_verificadas(self, *_mocks):
+        for demora in (-1, False, 0.5, "0"):
+            with self.subTest(demora=demora):
+                velas = velas_minutos(25)
+                velas[23 * 60 + 59]["_latencia_primera_recepcion_s"] = demora
+                evento = comparar_estrategias(velas)["RUPTURA_RETEST"][0]
+                self.assertEqual(evento["calidad_tiempo"],
+                                 "LATENCIA_INVALIDA_O_NO_REGISTRADA")
+
 
 if __name__ == "__main__":
     unittest.main()
