@@ -94,5 +94,16 @@ class ValidacionEvidenciaPracticeTests(unittest.TestCase):
         self.assertEqual(limite_inferior_wilson(0, 0), 0.0)
 
 
+    def test_evento_de_otro_dia_invalida_evidencia_aunque_todo_gane(self):
+        muestras = [
+            ("USDINR-OTC", ts(dia), eventos(40, 0, inicio=ts(dia)))
+            for dia in (26, 27, 28)
+        ]
+        muestras[0][2][-1]["timestamp_senal"] = ts(27) + 3600
+        resultado = verificar_evidencia_sostenida(muestras)
+        self.assertEqual(resultado["estado"], "NO_VALIDADA")
+        self.assertIn("EVENTO_FUERA_DIA_SESION", resultado["motivos"])
+
+
 if __name__ == "__main__":
     unittest.main()
