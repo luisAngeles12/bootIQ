@@ -198,7 +198,11 @@ def sondear(activo, segundos, guardar_nuevas=False):
             print("CAPTURA_NUEVA_VALIDADA:", ruta, "| velas:", total, flush=True)
             from contexto_mercado_fresco import consolidar_minutos, diagnosticar_contexto
             minutos = consolidar_minutos(vistos)
-            print("CONTEXTO_MERCADO_1M:", diagnosticar_contexto(minutos), flush=True)
+            contexto = diagnosticar_contexto(minutos)
+            print("CONTEXTO_MERCADO_1M:", contexto, flush=True)
+            from estrategias_contexto_fresco import diagnosticar_estrategias
+            print("ESTRATEGIAS_CONTEXTO_SOMBRA:",
+                  diagnosticar_estrategias(minutos, contexto["estado"]), flush=True)
             print("EVALUACION_AUTOMATICA_SOMBRA_60S:",
                   evaluar_captura_finalizada({
                       t: {**vela, "_latencia_primera_recepcion_s": latencias.get(t)}
