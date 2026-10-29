@@ -107,11 +107,11 @@ class ValidacionEvidenciaPracticeTests(unittest.TestCase):
 
     def test_solapamiento_sin_timestamps_identicos_tampoco_valida(self):
         dia = ts(26)
-        # Diferencia de 30 segundos entre senales: ninguna se repite.
-        # Sin embargo, los intervalos observados son el mismo periodo.
+        # La segunda captura comienza antes de acabar la primera,
+        # pero sus senales empiezan despues de la ultima de la primera.
         muestras = [
             ("USDINR-OTC", dia, eventos(40, 0, inicio=dia)),
-            ("USDINR-OTC", dia + 30, eventos(40, 0, inicio=dia + 30)),
+            ("USDINR-OTC", dia + 45, eventos(40, 0, inicio=dia + 45)),
             ("USDINR-OTC", ts(27), eventos(40, 0, inicio=ts(27))),
             ("USDINR-OTC", ts(28), eventos(40, 0, inicio=ts(28))),
         ]
