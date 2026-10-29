@@ -32,6 +32,14 @@ def evaluar_viabilidad_pago(eventos, objetivo=0.57):
         if evento.get("payout_fuente") != "PRACTICE_PREENTRADA":
             motivos.append("PAYOUT_SIN_PROCEDENCIA_PREENTRADA")
             continue
+        # El nombre de la fuente no prueba por si solo que el pago
+        # estuviera disponible ANTES de la entrada hipotetica.
+        ts_pago = evento.get("timestamp_payout_utc")
+        ts_entrada = evento.get("timestamp_entrada_hipotetica")
+        if (type(ts_pago) is not int or type(ts_entrada) is not int
+                or ts_pago > ts_entrada or ts_entrada - ts_pago > 60):
+            motivos.append("PAYOUT_SIN_TIEMPO_PREENTRADA_VERIFICABLE")
+            continue
         payouts.append(float(pago))
         validos.append(evento)
     if len(validos) != sum(e.get("resultado") in ("WIN", "LOSS") for e in eventos):
