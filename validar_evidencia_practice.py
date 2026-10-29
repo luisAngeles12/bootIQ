@@ -31,11 +31,29 @@ def verificar_evidencia_sostenida(sesiones, objetivo=0.57):
     dias = set()
     conteos = []
     rangos = set()
+    eventos_vistos = set()
     for activo, comienzo, eventos in sesiones:
         if (activo, comienzo) in rangos:
             motivos.append("SESION_DUPLICADA")
         rangos.add((activo, comienzo))
         dias.add(datetime.fromtimestamp(comienzo, tz=timezone.utc).date())
+        # Una observacion debe tener timestamp verificable y no repetirse.
+        # Esta puerta evita inflar el winrate con capturas solapadas.
+        anterior = None
+        for evento in eventos:
+            instante = evento.get("timestamp_senal")
+            if isinstance(instante, bool) or not isinstance(instante, int):
+                motivos.append("SIN_TRAZABILIDAD_TEMPORAL")
+                continue
+            if instante < comienzo:
+                motivos.append("EVENTO_ANTERIOR_A_LA_SESION")
+            if anterior is not None and instante <= anterior:
+                motivos.append("EVENTOS_DESORDENADOS_O_REPETIDOS")
+            anterior = instante
+            clave_evento = (activo, instante)
+            if clave_evento in eventos_vistos:
+                motivos.append("EVENTO_DUPLICADO_ENTRE_SESIONES")
+            eventos_vistos.add(clave_evento)
         evaluables = [e for e in eventos if e["resultado"] in ("WIN", "LOSS")]
         wins = sum(e["resultado"] == "WIN" for e in evaluables)
         n = len(evaluables)
