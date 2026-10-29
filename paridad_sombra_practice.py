@@ -27,6 +27,27 @@ def _segmento_actual(minutos):
     return minutos[j:]
 
 
+def calidad_recepcion_cierre(velas_1s, fin_minuto):
+    """Valida las 60 primeras recepciones antes de declarar señal causal.
+
+    Una vela intermedia recibida tras el cierre impide que el minuto
+    hubiese estado completo en el flujo al decidir. Resolucion: 1 segundo.
+    """
+    inicio = fin_minuto - 60
+    for t in range(inicio, fin_minuto):
+        vela = velas_1s.get(t)
+        if vela is None:
+            return "MINUTO_INCOMPLETO"
+        latencia = vela.get("_latencia_primera_recepcion_s")
+        if latencia is None:
+            return "LATENCIA_NO_REGISTRADA"
+        if type(latencia) is not int or latencia < 0:
+            return "LATENCIA_INVALIDA_O_NO_REGISTRADA"
+        if t + 1 + latencia > fin_minuto:
+            return "DETECCION_TARDIA"
+    return "TIEMPO_VERIFICADO"
+
+
 def reproducir_cierres(velas_1s):
     """Referencia por timestamp, sin utilizar barras futuras al decidir."""
     minutos = consolidar_minutos(velas_1s)
