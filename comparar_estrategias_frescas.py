@@ -24,30 +24,46 @@ def comparar_estrategias(velas_1s, horizonte_minutos=1):
             if candidato["estado"] != "CANDIDATO_SOMBRA" or i < ocupados[nombre]:
                 continue
             salida = i + horizonte_minutos
-            if salida >= len(minutos):
-                resultado = "SIN_FUTURO"
-            elif minutos[salida]["from"] != minutos[i]["from"] + horizonte_minutos * 60:
+            # La señal solo se conoce al CIERRE de este minuto.
+            # El precio de ese cierre no puede asumirse ejecutable.
+            cierre_senal_utc = minutos[i]["end"]
+            segundo_entrada = cierre_senal_utc
+            segundo_salida = cierre_senal_utc + horizonte_minutos * 60 - 1
+            entrada_1s = velas_1s.get(segundo_entrada)
+            salida_1s = velas_1s.get(segundo_salida)
+            if (salida >= len(minutos)
+                    or minutos[salida]["from"] != segundo_entrada
+                    + (horizonte_minutos - 1) * 60
+                    or entrada_1s is None or salida_1s is None):
                 resultado = "SIN_FUTURO"
             else:
-                entrada = float(minutos[i]["close"])
-                cierre = float(minutos[salida]["close"])
+                # Simulacion hipotetica: apertura de la primera vela futura,
+                # no el cierre ya observado de la vela de confirmacion.
+                entrada = float(entrada_1s["open"])
+                cierre = float(salida_1s["close"])
                 if cierre == entrada:
                     resultado = "EMPATE"
                 elif (cierre > entrada) == (candidato["direccion"] == "call"):
                     resultado = "WIN"
                 else:
                     resultado = "LOSS"
-            # Retraso del ultimo segundo de la barra de confirmacion.
-            ultimo_segundo = minutos[i]["end"] - 1
+            ultimo_segundo = cierre_senal_utc - 1
             latencia = velas_1s[ultimo_segundo].get("_latencia_primera_recepcion_s")
+            # Para asumir la siguiente apertura, el cierre debe haberse
+            # visto dentro del mismo segundo de su disponibilidad.
             if latencia is None:
                 calidad = "LATENCIA_NO_REGISTRADA"
-            elif latencia > 1:
+            elif latencia > 0:
                 calidad = "DETECCION_TARDIA"
+            elif entrada_1s is None:
+                calidad = "ENTRADA_NO_OBSERVADA"
             else:
                 calidad = "TIEMPO_VERIFICADO"
             resultados[nombre].append({
                 "timestamp_senal": ultimo_segundo,
+                "timestamp_entrada_hipotetica": segundo_entrada,
+                "timestamp_salida_hipotetica": segundo_salida,
+                "modelo_entrada": "APERTURA_PRIMERA_VELA_FUTURA_NO_EJECUTADA",
                 "direccion": candidato["direccion"],
                 "resultado": resultado,
                 "calidad_tiempo": calidad,
