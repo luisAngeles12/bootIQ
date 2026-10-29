@@ -88,6 +88,17 @@ class CompararEstrategiasFrescasTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "HORIZONTE_INVALIDO"):
             comparar_estrategias({}, 0)
 
+    @patch("comparar_estrategias_frescas.diagnosticar_estrategias",
+           side_effect=lambda *_: candidato())
+    @patch("comparar_estrategias_frescas.diagnosticar_contexto",
+           return_value={"estado": "TENDENCIA_ALCISTA"})
+    def test_horizonte_con_minuto_intermedio_ausente_no_cuenta_win(self, *_mocks):
+        datos = velas_minutos(28)
+        for t in range(25 * 60, 26 * 60):
+            del datos[t]
+        r = comparar_estrategias(datos, horizonte_minutos=3)
+        self.assertEqual(r["RUPTURA_RETEST"][0]["resultado"], "SIN_FUTURO")
+
 
 if __name__ == "__main__":
     unittest.main()
