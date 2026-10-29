@@ -12,8 +12,8 @@ class ObservadorMinutoSombra:
         self._cerrados = set()
         self._ultimo_reloj = None
 
-    def registrar(self, vela, recibido):
-        """Inserta una vela cerrada conocida por primera vez."""
+    def _registrar_sin_cerrar(self, vela, recibido):
+        """Inserta sin finalizar: un lote puede compartir segundo de recepcion."""
         recibido = int(recibido)
         t = int(vela["from"])
         if recibido < t + 1:
@@ -23,6 +23,19 @@ class ObservadorMinutoSombra:
         fin = (t // 60 + 1) * 60
         if recibido <= fin and fin not in self._cerrados and t not in self._vistos:
             self._vistos[t] = dict(vela)
+    def registrar(self, vela, recibido):
+        """API individual conservada; el sondeador debe usar registrar_lote."""
+        self._registrar_sin_cerrar(vela, recibido)
+        return self.avanzar(recibido)
+
+    def registrar_lote(self, velas, recibido):
+        """Agrupa todas las velas de una instantanea antes de cerrar minutos.
+
+        Solo acepta velas con recibido <= fin de su minuto; no reconstruye
+        cierres con velas tardias. No prueba orden subsegundo entre sondeos.
+        """
+        for vela in velas:
+            self._registrar_sin_cerrar(vela, recibido)
         return self.avanzar(recibido)
 
     def avanzar(self, ahora):
