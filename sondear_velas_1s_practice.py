@@ -206,6 +206,9 @@ def sondear(activo, segundos, guardar_nuevas=False):
             from arbitro_estrategias_frescas import arbitrar_candidatos
             print("ARBITRAJE_ESTRATEGIAS_NO_OPERABLE:",
                   arbitrar_candidatos(candidatos, contexto["estado"]), flush=True)
+            from paridad_sombra_practice import comprobar_paridad_recepcion_1s
+            print("PARIDAD_SOMBRA_REPLAY_VS_RECEPCION_1S:",
+                  comprobar_paridad_recepcion_1s(vistos, latencias), flush=True)
             from comparar_estrategias_frescas import resumen_comparativa
             velas_con_latencia = {
                 t: {**vela, "_latencia_primera_recepcion_s": latencias.get(t)}
