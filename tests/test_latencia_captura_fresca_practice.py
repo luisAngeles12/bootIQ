@@ -47,5 +47,23 @@ class TiempoRealistaTests(unittest.TestCase):
         self.assertEqual(resumen["con_tiempo_verificado"], 0)
 
 
+    def test_un_segundo_de_demora_final_invalida_timing_entrada(self):
+        v = datos()
+        for t in v:
+            v[t]["_latencia_primera_recepcion_s"] = 0
+        v[122]["_latencia_primera_recepcion_s"] = 1
+        r = evaluar_sesion(v)
+        self.assertEqual(r[0]["calidad_tiempo"], "DETECCION_TARDIA")
+        self.assertEqual(resumen_sesion(r)["con_tiempo_verificado"], 0)
+
+    def test_demora_temprana_antes_de_cierre_no_invalida(self):
+        v = datos()
+        for t in v:
+            v[t]["_latencia_primera_recepcion_s"] = 0
+        v[120]["_latencia_primera_recepcion_s"] = 2
+        self.assertEqual(evaluar_sesion(v)[0]["calidad_tiempo"],
+                         "TIEMPO_VERIFICADO")
+
+
 if __name__ == "__main__":
     unittest.main()
