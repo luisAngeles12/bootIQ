@@ -71,5 +71,16 @@ class EvaluarCapturaFrescaTests(unittest.TestCase):
             evaluar_sesion(datos)
 
 
+    def test_apertura_futura_evitar_win_por_cierre_no_ejecutable(self):
+        datos = caso_call(102)
+        # Cierre de confirmacion 101, apertura futura 110, salida 102.
+        datos[123] = vela(123, open_=110, close=101, low=100, high=111)
+        evento = evaluar_sesion(datos)[0]
+        self.assertEqual(evento["resultado"], "LOSS")
+        self.assertEqual(evento["timestamp_entrada_hipotetica"], 123)
+        self.assertEqual(evento["modelo_entrada"],
+                         "APERTURA_PRIMERA_VELA_FUTURA_NO_EJECUTADA")
+
+
 if __name__ == "__main__":
     unittest.main()
