@@ -194,10 +194,7 @@ def sondear(activo, segundos, guardar_nuevas=False):
             nuevas = observar_instantanea(iq.get_realtime_candles(activo, 1),
                                            ahora, inicio, vistos, latencias,
                                            nuevas_velas=nuevas_velas)
-            decisiones = []
-            for vela_nueva in nuevas_velas:
-                decisiones.extend(observador_sombra.registrar(vela_nueva, ahora))
-            decisiones.extend(observador_sombra.avanzar(ahora))
+            decisiones = observador_sombra.registrar_lote(nuevas_velas, ahora)
             if suscripcion_comision:
                 try:
                     comisiones = iq.get_commission_change("turbo-option")
