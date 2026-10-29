@@ -108,6 +108,14 @@ def resumen_sesion(eventos):
     }
 
 
+def diagnostico_direcciones(eventos):
+    """Desglose descriptivo fijo; NO selecciona ni invierte estrategias."""
+    return {
+        direccion: resumen_sesion([e for e in eventos if e["direccion"] == direccion])
+        for direccion in ("call", "put")
+    }
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("directorio", help="Directorio de capturas nuevas PRACTICE")
@@ -123,7 +131,9 @@ def main():
         eventos = evaluar_sesion(velas, args.horizonte)
         totales.extend(eventos)
         print(activo, ruta.name, resumen_sesion(eventos))
+        print("DESGLOSE_POR_DIRECCION:", diagnostico_direcciones(eventos))
     print("TOTAL", resumen_sesion(totales))
+    print("TOTAL_POR_DIRECCION:", diagnostico_direcciones(totales))
 
 
 if __name__ == "__main__":
