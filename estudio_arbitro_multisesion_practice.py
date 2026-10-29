@@ -44,6 +44,15 @@ def estudiar_eventos_arbitro(sesiones, fraccion_desarrollo=0.7):
         e for _, _, eventos in oos for e in eventos
     ])
     motivos = []
+    for nombre, grupo in (("DESARROLLO", dev), ("HOLDOUT", oos)):
+        # El arbitro en sombra jamas emite ordenes. Si se recibe un
+        # evento con autoridad inesperada, el estudio NO puede aprobar.
+        eventos_grupo = [e for _, _, eventos in grupo for e in eventos]
+        if any(e.get("operable") is not False for e in eventos_grupo):
+            motivos.append("ARBITRO_" + nombre + "_AUTORIZACION_INESPERADA")
+        if any(e.get("direccion") not in ("call", "put")
+               for e in eventos_grupo):
+            motivos.append("ARBITRO_" + nombre + "_DIRECCION_INVALIDA")
     if len(dias_dev) < 3:
         motivos.append("DESARROLLO_MENOR_TRES_DIAS")
     if len(dias_oos) < 3:
