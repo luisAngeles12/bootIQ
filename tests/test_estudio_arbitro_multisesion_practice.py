@@ -68,5 +68,22 @@ class EstudioArbitroMultisesionTests(unittest.TestCase):
                       resultado["desarrollo"]["motivos"])
 
 
+    def test_evento_marcado_operable_invalida_estudio_sombra(self):
+        muestras = sesiones()
+        muestras[8][2][0]["operable"] = True
+        r = estudiar_eventos_arbitro(muestras)
+        self.assertEqual(r["estado"], "ARBITRO_OOS_NO_VALIDADO")
+        self.assertIn("ARBITRO_HOLDOUT_AUTORIZACION_INESPERADA", r["motivos"])
+        self.assertFalse(r["operaciones_autorizadas"])
+
+    def test_direccion_invalida_no_se_contabiliza_como_evidencia_valida(self):
+        muestras = sesiones()
+        muestras[2][2][0]["direccion"] = None
+        r = estudiar_eventos_arbitro(muestras)
+        self.assertEqual(r["estado"], "ARBITRO_OOS_NO_VALIDADO")
+        self.assertIn("ARBITRO_DESARROLLO_DIRECCION_INVALIDA", r["motivos"])
+        self.assertFalse(r["operaciones_autorizadas"])
+
+
 if __name__ == "__main__":
     unittest.main()
