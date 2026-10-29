@@ -152,6 +152,9 @@ def main():
     from validacion_oos_practice import validar_oos_capturas
     print("VALIDACION_OOS_POR_DIAS:",
           validar_oos_capturas(sesiones_estrategias))
+    from estudio_arbitro_multisesion_practice import estudiar_capturas_arbitro
+    print("VALIDACION_OOS_ARB_CEREBRO_COMPLETO:",
+          estudiar_capturas_arbitro(sesiones_estrategias))
 
 
 if __name__ == "__main__":
