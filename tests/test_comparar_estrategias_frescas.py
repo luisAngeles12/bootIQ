@@ -175,5 +175,17 @@ class CompararEstrategiasFrescasTests(unittest.TestCase):
         self.assertEqual(evento["calidad_tiempo"], "TIEMPO_VERIFICADO")
 
 
+    @patch("comparar_estrategias_frescas.diagnosticar_estrategias",
+           side_effect=lambda *_: candidato())
+    @patch("comparar_estrategias_frescas.diagnosticar_contexto",
+           return_value={"estado": "TENDENCIA_ALCISTA"})
+    def test_contexto_previo_tardio_no_valida_decision(self, *_mocks):
+        velas = velas_minutos(25)
+        velas[22 * 60 + 10]["_latencia_primera_recepcion_s"] = 70
+        evento = comparar_estrategias(velas)["RUPTURA_RETEST"][0]
+        self.assertEqual(evento["calidad_tiempo"],
+                         "CONTEXTO_NO_DISPONIBLE_EN_TIEMPO_REAL")
+
+
 if __name__ == "__main__":
     unittest.main()
