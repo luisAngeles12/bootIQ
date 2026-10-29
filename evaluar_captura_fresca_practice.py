@@ -134,6 +134,8 @@ def main():
         sesiones.append((activo, min(velas), eventos))
         print(activo, ruta.name, resumen_sesion(eventos))
         print("DESGLOSE_POR_DIRECCION:", diagnostico_direcciones(eventos))
+        from comparar_estrategias_frescas import resumen_comparativa
+        print("COMPARATIVA_TRES_ESTRATEGIAS:", resumen_comparativa(velas))
     print("TOTAL", resumen_sesion(totales))
     print("TOTAL_POR_DIRECCION:", diagnostico_direcciones(totales))
     from validar_evidencia_practice import verificar_evidencia_sostenida
