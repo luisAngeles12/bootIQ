@@ -41,6 +41,24 @@ class TiempoRealistaTests(unittest.TestCase):
         self.assertEqual(resumen["detecciones_tardias"], 1)
         self.assertEqual(resumen["con_tiempo_verificado"], 0)
 
+    def test_win_hipotetico_tardio_no_infla_wr_verificado(self):
+        v = datos()
+        for t in v:
+            v[t]["_latencia_primera_recepcion_s"] = 0
+        v[122]["_latencia_primera_recepcion_s"] = 1
+        r = resumen_sesion(evaluar_sesion(v))
+        self.assertEqual(r["wr_hipotetico"], 100.0)
+        self.assertEqual(r["resultados_con_tiempo_verificado"], 0)
+        self.assertIsNone(r["wr_hipotetico_con_tiempo_verificado"])
+
+    def test_win_hipotetico_puntual_aparece_en_ambos_indicadores(self):
+        v = datos()
+        for t in v:
+            v[t]["_latencia_primera_recepcion_s"] = 0
+        r = resumen_sesion(evaluar_sesion(v))
+        self.assertEqual(r["resultados_con_tiempo_verificado"], 1)
+        self.assertEqual(r["wr_hipotetico_con_tiempo_verificado"], 100.0)
+
     def test_captura_previa_sin_columna_no_finge_latencia(self):
         resumen = resumen_sesion(evaluar_sesion(datos()))
         self.assertEqual(resumen["sin_latencia_registrada"], 1)
