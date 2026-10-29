@@ -1,0 +1,64 @@
+import unittest
+from unittest.mock import patch
+
+from comparar_estrategias_frescas import comparar_estrategias, resumen_comparativa
+
+
+def velas_minutos(n=26):
+    return {
+        t: {"from": t, "open": 100, "close": 101,
+            "min": 99, "max": 102,
+            "_latencia_primera_recepcion_s": 0}
+        for t in range(n * 60)
+    }
+
+
+def candidato():
+    return [
+        {"estrategia": "RUPTURA_RETEST", "estado": "CANDIDATO_SOMBRA",
+         "direccion": "call"},
+        {"estrategia": "RECHAZO_ZONA", "estado": "SIN_SENAL",
+         "direccion": None},
+        {"estrategia": "CONTINUACION_TENDENCIA", "estado": "SIN_SENAL",
+         "direccion": None},
+    ]
+
+
+class CompararEstrategiasFrescasTests(unittest.TestCase):
+    def test_sin_movimiento_ningun_candidato(self):
+        r = resumen_comparativa(velas_minutos())
+        self.assertEqual(set(r), {
+            "RUPTURA_RETEST", "RECHAZO_ZONA", "CONTINUACION_TENDENCIA"})
+        self.assertTrue(all(v["senales_no_solapadas"] == 0 for v in r.values()))
+
+    @patch("comparar_estrategias_frescas.diagnosticar_estrategias",
+           side_effect=lambda *_: candidato())
+    @patch("comparar_estrategias_frescas.diagnosticar_contexto",
+           return_value={"estado": "TENDENCIA_ALCISTA"})
+    def test_no_solapa_por_estrategia_ni_inventa_ultima_salida(self, *_mocks):
+        datos = velas_minutos(26)
+        r = comparar_estrategias(datos)
+        self.assertEqual(len(r["RUPTURA_RETEST"]), 2)
+        self.assertEqual(r["RUPTURA_RETEST"][0]["resultado"], "EMPATE")
+        self.assertEqual(r["RUPTURA_RETEST"][1]["resultado"], "SIN_FUTURO")
+        self.assertEqual(len(r["RECHAZO_ZONA"]), 0)
+        self.assertEqual(len(r["CONTINUACION_TENDENCIA"]), 0)
+
+    @patch("comparar_estrategias_frescas.diagnosticar_estrategias",
+           side_effect=lambda *_: candidato())
+    @patch("comparar_estrategias_frescas.diagnosticar_contexto",
+           return_value={"estado": "TENDENCIA_ALCISTA"})
+    def test_latencia_desconocida_no_es_verificada(self, *_mocks):
+        datos = velas_minutos(25)
+        datos[23 * 60 + 59]["_latencia_primera_recepcion_s"] = None
+        r = comparar_estrategias(datos)
+        self.assertEqual(r["RUPTURA_RETEST"][0]["calidad_tiempo"],
+                         "LATENCIA_NO_REGISTRADA")
+
+    def test_rechaza_horizonte_invalido(self):
+        with self.assertRaisesRegex(ValueError, "HORIZONTE_INVALIDO"):
+            comparar_estrategias({}, 0)
+
+
+if __name__ == "__main__":
+    unittest.main()
