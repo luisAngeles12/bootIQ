@@ -10,9 +10,13 @@ def ts(dia):
     return int(datetime(2026, 10, dia, tzinfo=timezone.utc).timestamp())
 
 
-def eventos(wins, losses, calidad="TIEMPO_VERIFICADO"):
-    return ([{"resultado": "WIN", "calidad_tiempo": calidad}] * wins
-            + [{"resultado": "LOSS", "calidad_tiempo": calidad}] * losses)
+def eventos(wins, losses, calidad="TIEMPO_VERIFICADO", inicio=None):
+    filas = ([{"resultado": "WIN", "calidad_tiempo": calidad}] * wins
+             + [{"resultado": "LOSS", "calidad_tiempo": calidad}] * losses)
+    if inicio is not None:
+        filas = [dict(fila, timestamp_senal=inicio + i + 60)
+                 for i, fila in enumerate(filas)]
+    return filas
 
 
 class ValidacionEvidenciaPracticeTests(unittest.TestCase):
@@ -35,9 +39,9 @@ class ValidacionEvidenciaPracticeTests(unittest.TestCase):
 
     def test_tres_dias_con_muestra_suficiente_solo_evidencia_preliminar(self):
         r = verificar_evidencia_sostenida([
-            ("USDINR-OTC", ts(26), eventos(70, 10)),
-            ("USDINR-OTC", ts(27), eventos(70, 10)),
-            ("USDINR-OTC", ts(28), eventos(70, 10)),
+            ("USDINR-OTC", ts(26), eventos(70, 10, inicio=ts(26))),
+            ("USDINR-OTC", ts(27), eventos(70, 10, inicio=ts(27))),
+            ("USDINR-OTC", ts(28), eventos(70, 10, inicio=ts(28))),
         ])
         self.assertEqual(r["estado"], "EVIDENCIA_PRELIMINAR_SUPERA_OBJETIVO")
         self.assertGreater(r["limite_inferior_95_pct"], 57)
@@ -51,6 +55,39 @@ class ValidacionEvidenciaPracticeTests(unittest.TestCase):
         ])
         self.assertIn("SESION_BAJO_OBJETIVO", r["motivos"])
         self.assertEqual(r["estado"], "NO_VALIDADA")
+
+    def test_no_inflar_el_porcentaje_con_sesiones_repetidas(self):
+        inicio = ts(26)
+        iguales = eventos(50, 0, inicio=inicio)
+        r = verificar_evidencia_sostenida([
+            ("USDINR-OTC", inicio, iguales),
+            ("USDINR-OTC", inicio + 1, iguales),
+            ("USDINR-OTC", ts(27), eventos(50, 0, inicio=ts(27))),
+            ("USDINR-OTC", ts(28), eventos(50, 0, inicio=ts(28))),
+        ])
+        self.assertEqual(r["estado"], "NO_VALIDADA")
+        self.assertIn("EVENTO_DUPLICADO_ENTRE_SESIONES", r["motivos"])
+
+    def test_winrate_perfecto_sin_timestamps_no_valida(self):
+        r = verificar_evidencia_sostenida([
+            ("USDINR-OTC", ts(dia), eventos(70, 10))
+            for dia in (26, 27, 28)
+        ])
+        self.assertEqual(r["estado"], "NO_VALIDADA")
+        self.assertIn("SIN_TRAZABILIDAD_TEMPORAL", r["motivos"])
+
+    def test_timestamps_desordenados_o_anteriores_bloquean(self):
+        inicio = ts(26)
+        filas = eventos(40, 0, inicio=inicio)
+        filas[0]["timestamp_senal"] = inicio - 1
+        filas[1]["timestamp_senal"] = inicio - 1
+        r = verificar_evidencia_sostenida([
+            ("USDINR-OTC", inicio, filas),
+            ("USDINR-OTC", ts(27), eventos(40, 0, inicio=ts(27))),
+            ("USDINR-OTC", ts(28), eventos(40, 0, inicio=ts(28))),
+        ])
+        self.assertIn("EVENTO_ANTERIOR_A_LA_SESION", r["motivos"])
+        self.assertIn("EVENTOS_DESORDENADOS_O_REPETIDOS", r["motivos"])
 
     def test_wilson_limita_muestras_pequenas(self):
         self.assertLess(limite_inferior_wilson(6, 10), .57)
