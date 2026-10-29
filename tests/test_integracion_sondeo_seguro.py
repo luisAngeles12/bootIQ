@@ -58,6 +58,24 @@ class IntegracionSondeoSeguroTests(unittest.TestCase):
         iq.buy_digital_spot_v2.assert_not_called()
 
     @patch("sondear_velas_1s_practice.time.sleep")
+    @patch("sondear_velas_1s_practice.time.monotonic")
+    def test_cierre_minuto_realizado_sin_compras(self, monotonic, _espera):
+        iq = broker_falso()
+        monotonic.side_effect = iter(range(64))
+        iq.get_server_timestamp.side_effect = [120] + list(range(121, 182)) + [182]
+        iq.get_realtime_candles.side_effect = [
+            {t: vela(t)} for t in range(120, 181)
+        ]
+        with patch("iqoptionapi.stable_api.IQ_Option", return_value=iq), \\
+             redirect_stdout(io.StringIO()) as salida:
+            sondear("USDINR-OTC", 62)
+        texto = salida.getvalue()
+        self.assertIn("CIERRE_1M_SOMBRA_NO_OPERABLE", texto)
+        self.assertIn("'minutos_evaluados': 1", texto)
+        iq.buy.assert_not_called()
+        iq.buy_digital_spot_v2.assert_not_called()
+
+    @patch("sondear_velas_1s_practice.time.sleep")
     def test_modo_real_corta_antes_de_abrir_stream(self, _espera):
         iq = broker_falso("REAL")
         with patch("iqoptionapi.stable_api.IQ_Option", return_value=iq), \
