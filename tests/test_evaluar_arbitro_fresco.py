@@ -111,5 +111,16 @@ class EvaluarArbitroFrescoTests(unittest.TestCase):
                          "TIEMPO_VERIFICADO")
 
 
+    @patch("evaluar_arbitro_fresco.diagnosticar_cierre")
+    def test_contexto_previo_tardio_no_valida_decision(self, fn):
+        fn.return_value = diagnostico()
+        velas = datos(25)
+        # En el minuto 22 falta causalidad al cierre; minuto 23 llega normal.
+        velas[22 * 60 + 10]["_latencia_primera_recepcion_s"] = 70
+        evento = evaluar_arbitro(velas)[0]
+        self.assertEqual(evento["calidad_tiempo"],
+                         "CONTEXTO_NO_DISPONIBLE_EN_TIEMPO_REAL")
+
+
 if __name__ == "__main__":
     unittest.main()
