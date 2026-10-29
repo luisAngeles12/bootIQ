@@ -57,8 +57,8 @@ def comparar_estrategias(velas_1s, horizonte_minutos=1):
             latencia = velas_1s[ultimo_segundo].get("_latencia_primera_recepcion_s")
             # Para asumir la siguiente apertura, el cierre debe haberse
             # visto dentro del mismo segundo de su disponibilidad.
-            if latencia is None:
-                calidad = "LATENCIA_NO_REGISTRADA"
+            if type(latencia) is not int or latencia < 0:
+                calidad = "LATENCIA_INVALIDA_O_NO_REGISTRADA"
             elif latencia > 0:
                 calidad = "DETECCION_TARDIA"
             elif entrada_1s is None:
