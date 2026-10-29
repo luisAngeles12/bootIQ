@@ -253,6 +253,9 @@ def sondear(activo, segundos, guardar_nuevas=False):
             }
             print("COMPARATIVA_ESTRATEGIAS_SOMBRA_1M:",
                   resumen_comparativa(velas_con_latencia), flush=True)
+            from evaluar_arbitro_fresco import resumen_arbitro
+            print("RESULTADO_ARBITRO_COMPLETO_SOMBRA:",
+                  resumen_arbitro(velas_con_latencia), flush=True)
             print("EVALUACION_AUTOMATICA_SOMBRA_60S:",
                   evaluar_captura_finalizada(velas_con_latencia), flush=True)
         from auditar_decisiones_sombra import resumir_decisiones_sombra
