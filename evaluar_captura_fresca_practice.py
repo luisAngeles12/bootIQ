@@ -138,6 +138,8 @@ def main():
         print("DESGLOSE_POR_DIRECCION:", diagnostico_direcciones(eventos))
         from comparar_estrategias_frescas import resumen_comparativa
         print("COMPARATIVA_TRES_ESTRATEGIAS:", resumen_comparativa(velas))
+        from evaluar_arbitro_fresco import resumen_arbitro
+        print("ARBITRO_COMPLETO_SOMBRA:", resumen_arbitro(velas))
         from diagnostico_preparacion_practice import diagnosticar_preparacion
         print("DIAGNOSTICO_PREPARACION_SOMBRA:", diagnosticar_preparacion(velas))
     print("TOTAL", resumen_sesion(totales))
