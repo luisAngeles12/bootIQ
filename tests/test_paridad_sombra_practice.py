@@ -88,5 +88,23 @@ class PruebasParidadSombra(unittest.TestCase):
             evaluar_flujo([(0, datos[0])])
 
 
+    def test_rechaza_tiempos_de_recepcion_no_enteros(self):
+        dato = velas(1)[0]
+        for recibido in (True, 1.5, "1", -1):
+            with self.subTest(recibido=recibido):
+                with self.assertRaisesRegex(ValueError, "RECEPCION_INVALIDA"):
+                    evaluar_flujo([(recibido, dato)])
+
+    def test_latencias_booleanas_y_fraccionarias_no_son_paridad_valida(self):
+        datos = velas(1)
+        for invalida in (True, False, 0.5, "0", -1):
+            with self.subTest(latencia=invalida):
+                latencias = {t: 0 for t in datos}
+                latencias[10] = invalida
+                resultado = comprobar_paridad_recepcion_1s(datos, latencias)
+                self.assertIsNone(resultado["paridad"])
+                self.assertEqual(resultado["motivo"], "LATENCIAS_INVALIDAS")
+
+
 if __name__ == "__main__":
     unittest.main()
