@@ -2,7 +2,7 @@
 import unittest
 
 from paridad_sombra_practice import (
-    comprobar_paridad, evaluar_flujo, reproducir_cierres,
+    comprobar_paridad, comprobar_paridad_recepcion_1s, evaluar_flujo, reproducir_cierres,
 )
 
 
@@ -59,6 +59,28 @@ class PruebasParidadSombra(unittest.TestCase):
         datos = velas(1)
         with self.assertRaisesRegex(ValueError, "RECEPCIONES_DESORDENADAS"):
             evaluar_flujo([(3, datos[0]), (2, datos[1])])
+
+    def test_paridad_a_partir_de_latencias_observadas(self):
+        datos = velas()
+        latencias = {t: 0 for t in datos}
+        resultado = comprobar_paridad_recepcion_1s(datos, latencias)
+        self.assertTrue(resultado["paridad"])
+        self.assertEqual(resultado["velas_con_retraso"], 0)
+        self.assertFalse(resultado["operable"])
+
+    def test_paridad_falla_por_retraso_de_ultima_vela(self):
+        datos = velas()
+        latencias = {t: 0 for t in datos}
+        latencias[59] = 2
+        resultado = comprobar_paridad_recepcion_1s(datos, latencias)
+        self.assertFalse(resultado["paridad"])
+        self.assertLess(resultado["cierres_flujo"], resultado["cierres_replay"])
+
+    def test_sin_tiempos_registrados_no_se_declara_paridad(self):
+        datos = velas(1)
+        resultado = comprobar_paridad_recepcion_1s(datos, {})
+        self.assertIsNone(resultado["paridad"])
+        self.assertEqual(resultado["motivo"], "LATENCIAS_INCOMPLETAS")
 
     def test_vela_abierta_se_rechaza(self):
         datos = velas(1)
