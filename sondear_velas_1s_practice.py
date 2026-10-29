@@ -168,7 +168,7 @@ def sondear(activo, segundos, guardar_nuevas=False):
     eventos_sombra = []
     from observador_minuto_sombra import ObservadorMinutoSombra
     observador_sombra = ObservadorMinutoSombra()
-    cierres_sombra = 0
+    decisiones_minuto_sombra = []
     print("SONDEO SOLO LECTURA | PRACTICE | activo:", activo,
           "| segundos:", segundos, flush=True)
     try:
@@ -189,7 +189,7 @@ def sondear(activo, segundos, guardar_nuevas=False):
                 decisiones.extend(observador_sombra.registrar(vela_nueva, ahora))
             decisiones.extend(observador_sombra.avanzar(ahora))
             for cierre, decision in decisiones:
-                cierres_sombra += 1
+                decisiones_minuto_sombra.append((cierre, decision))
                 print("CIERRE_1M_SOMBRA_NO_OPERABLE:", cierre,
                       decision, flush=True)
             if nuevas and vistos:
@@ -233,7 +233,9 @@ def sondear(activo, segundos, guardar_nuevas=False):
                   resumen_comparativa(velas_con_latencia), flush=True)
             print("EVALUACION_AUTOMATICA_SOMBRA_60S:",
                   evaluar_captura_finalizada(velas_con_latencia), flush=True)
-        print("CIERRES_1M_SOMBRA_PROCESADOS:", cierres_sombra, flush=True)
+        from auditar_decisiones_sombra import resumir_decisiones_sombra
+        print("AUDITORIA_CEREBRO_SOMBRA:",
+              resumir_decisiones_sombra(decisiones_minuto_sombra), flush=True)
         print("MICRORECHAZOS_SOMBRA:", {
             "total": len(eventos_sombra),
             "call": sum(e["direccion"] == "call" for e in eventos_sombra),
