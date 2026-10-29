@@ -36,7 +36,8 @@ def verificar_evidencia_sostenida(sesiones, objetivo=0.57):
         if (activo, comienzo) in rangos:
             motivos.append("SESION_DUPLICADA")
         rangos.add((activo, comienzo))
-        dias.add(datetime.fromtimestamp(comienzo, tz=timezone.utc).date())
+        dia_sesion = datetime.fromtimestamp(comienzo, tz=timezone.utc).date()
+        dias.add(dia_sesion)
         # Una observacion debe tener timestamp verificable y no repetirse.
         # Esta puerta evita inflar el winrate con capturas solapadas.
         anterior = None
@@ -47,6 +48,10 @@ def verificar_evidencia_sostenida(sesiones, objetivo=0.57):
                 continue
             if instante < comienzo:
                 motivos.append("EVENTO_ANTERIOR_A_LA_SESION")
+            if datetime.fromtimestamp(instante, tz=timezone.utc).date() != dia_sesion:
+                # La division OOS se realiza por dia de inicio. Una senal
+                # del dia siguiente no puede clasificarse como desarrollo.
+                motivos.append("EVENTO_FUERA_DIA_SESION")
             if anterior is not None and instante <= anterior:
                 motivos.append("EVENTOS_DESORDENADOS_O_REPETIDOS")
             anterior = instante
