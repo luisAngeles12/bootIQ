@@ -63,6 +63,8 @@ def evaluar_sesion(velas, horizonte=60):
         if len(eventos) != 1:
             continue  # ambigüedad de direcciones: ninguna operacion
         direccion = eventos[0]["direccion"]
+        if direccion not in ("call", "put"):
+            continue  # una direccion desconocida no equivale a PUT
         # La decision solo existe tras el cierre t+1. Ese cierre ya es
         # informacion conocida, NO un precio ejecutable. La primera
         # apertura hipotetica es la vela siguiente (sin orden real).
@@ -79,10 +81,11 @@ def evaluar_sesion(velas, horizonte=60):
                 resultado = "WIN"
             else:
                 resultado = "LOSS"
-        # Los tres cierres del patron deben estar disponibles a t+1;
-        # especialmente la vela final debe tener latencia cero.
+        # Todas las 23 velas utilizadas para decidir deben haberse recibido
+        # antes de t+1; comprobar solo las tres del patron permite contexto
+        # historico tardio y crea una falsa validacion causal.
         demoras = [(marcas[j], velas[marcas[j]].get("_latencia_primera_recepcion_s"))
-                   for j in range(i - 2, i + 1)]
+                   for j in range(i - 22, i + 1)]
         if any(d is None for _, d in demoras):
             calidad = "LATENCIA_NO_REGISTRADA"
         elif any(type(d) is not int or d < 0 for _, d in demoras):
@@ -119,6 +122,8 @@ def resumen_sesion(eventos):
                                     for e in eventos),
         "sin_latencia_registrada": sum(e.get("calidad_tiempo") == "LATENCIA_NO_REGISTRADA"
                                        for e in eventos),
+        "latencia_invalida": sum(e.get("calidad_tiempo") == "LATENCIA_INVALIDA_O_NO_REGISTRADA"
+                                for e in eventos),
         "advertencia": "HIPOTETICO_NO_OPERACIONES_REALES_NI_RENDIMIENTO_GARANTIZADO",
     }
 
