@@ -169,10 +169,20 @@ def sondear(activo, segundos, guardar_nuevas=False):
     from observador_minuto_sombra import ObservadorMinutoSombra
     observador_sombra = ObservadorMinutoSombra()
     decisiones_minuto_sombra = []
+    suscripcion_comision = False
+    ultimo_pago_observado = None
     print("SONDEO SOLO LECTURA | PRACTICE | activo:", activo,
           "| segundos:", segundos, flush=True)
     try:
         iniciar_stream_sin_precarga(iq, activo, ACTIVES)
+        # Suscripcion de solo lectura. No hacer get_all_profit/get_all_init:
+        # esos endpoints pueden quedarse esperando initialization-data.
+        try:
+            iq.subscribe_commission_changed("turbo-option")
+            suscripcion_comision = True
+        except Exception as exc:
+            print("PAYOUT_PRACTICE_NO_DISPONIBLE:", type(exc).__name__, flush=True)
+        from observador_pago_practice import leer_comision_turbo
         limite = time.monotonic() + segundos
         while time.monotonic() < limite:
             if not iq.check_connect() or iq.get_balance_mode() != "PRACTICE":
@@ -188,6 +198,18 @@ def sondear(activo, segundos, guardar_nuevas=False):
             for vela_nueva in nuevas_velas:
                 decisiones.extend(observador_sombra.registrar(vela_nueva, ahora))
             decisiones.extend(observador_sombra.avanzar(ahora))
+            if suscripcion_comision:
+                try:
+                    comisiones = iq.get_commission_change("turbo-option")
+                    pago_observado = leer_comision_turbo(comisiones, activo, ahora)
+                    if (pago_observado["estado"].startswith("COMISION_RECIENTE")
+                            and pago_observado["timestamp_fuente"] != ultimo_pago_observado):
+                        ultimo_pago_observado = pago_observado["timestamp_fuente"]
+                        print("PAYOUT_PRACTICE_SOMBRA:", pago_observado, flush=True)
+                except Exception as exc:
+                    print("PAYOUT_PRACTICE_NO_DISPONIBLE:",
+                          type(exc).__name__, flush=True)
+                    suscripcion_comision = False
             for cierre, decision in decisiones:
                 decisiones_minuto_sombra.append((cierre, decision))
                 print("CIERRE_1M_SOMBRA_NO_OPERABLE:", cierre,
@@ -244,6 +266,11 @@ def sondear(activo, segundos, guardar_nuevas=False):
             "advertencia": "NO_ES_SENAL_NI_WINRATE",
         }, flush=True)
     finally:
+        if suscripcion_comision:
+            try:
+                iq.unsubscribe_commission_changed("turbo-option")
+            except Exception:
+                print("AVISO: no se confirmo desuscripcion de comision", flush=True)
         # stop_candles_one_stream duerme 5 s antes de comprobar el cierre.
         limpieza = threading.Thread(
             target=iq.stop_candles_stream, args=(activo, 1), daemon=True
