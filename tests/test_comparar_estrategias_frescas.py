@@ -113,5 +113,29 @@ class CompararEstrategiasFrescasTests(unittest.TestCase):
                                  "LATENCIA_INVALIDA_O_NO_REGISTRADA")
 
 
+    @patch("comparar_estrategias_frescas.diagnosticar_estrategias")
+    @patch("comparar_estrategias_frescas.diagnosticar_contexto",
+           return_value={"estado": "TENDENCIA_ALCISTA"})
+    def test_direccion_invalida_no_puede_convertirse_en_win(self, _, fn):
+        for direccion in (None, "CALL", "sell", ""):
+            with self.subTest(direccion=direccion):
+                defectuoso = candidato()
+                defectuoso[0]["direccion"] = direccion
+                fn.return_value = defectuoso
+                with self.assertRaisesRegex(RuntimeError,
+                                            "DIRECCION_INVALIDA_EN_REPLAY"):
+                    comparar_estrategias(velas_minutos(25))
+
+    @patch("comparar_estrategias_frescas.diagnosticar_estrategias")
+    @patch("comparar_estrategias_frescas.diagnosticar_contexto",
+           return_value={"estado": "TENDENCIA_ALCISTA"})
+    def test_estrategia_desconocida_no_contamina_evidencia(self, _, fn):
+        defectuoso = candidato()
+        defectuoso[0]["estrategia"] = "MODELO_NO_AUTORIZADO"
+        fn.return_value = defectuoso
+        with self.assertRaisesRegex(RuntimeError, "ESTRATEGIA_DESCONOCIDA_EN_REPLAY"):
+            comparar_estrategias(velas_minutos(25))
+
+
 if __name__ == "__main__":
     unittest.main()
