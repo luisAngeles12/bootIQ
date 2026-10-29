@@ -24,6 +24,30 @@ class ObservadorSombraTests(unittest.TestCase):
         self.assertEqual(salidas, reproducir_cierres(velas))
         self.assertTrue(all(not d["arbitraje"]["operable"] for _, d in salidas))
 
+    def test_lote_mismo_segundo_no_cierra_antes_de_ultima_vela(self):
+        datos = muestra(120)
+        observador = ObservadorMinutoSombra()
+        salidas = []
+        for t in range(58):
+            salidas.extend(observador.registrar_lote([datos[t]], t + 1))
+        # Ambos cierres se conocen en el segundo 60; antes, registrar()
+        # cerraba el minuto al insertar 58 y rechazaba 59.
+        salidas.extend(observador.registrar_lote([datos[58], datos[59]], 60))
+        self.assertEqual([fin for fin, _ in salidas], [60])
+        self.assertEqual(salidas, reproducir_cierres({t: datos[t] for t in range(60)}))
+
+    def test_lote_no_admite_vela_que_llego_despues_del_cierre(self):
+        datos = muestra(120)
+        observador = ObservadorMinutoSombra()
+        salidas = []
+        for t in range(58):
+            salidas.extend(observador.registrar_lote([datos[t]], t + 1))
+        salidas.extend(observador.registrar_lote([datos[58]], 59))
+        salidas.extend(observador.registrar_lote([datos[59]], 61))
+        for t in range(60, 120):
+            salidas.extend(observador.registrar_lote([datos[t]], t + 1))
+        self.assertEqual([fin for fin, _ in salidas], [120])
+
     def test_captura_tardia_no_rehace_cierre(self):
         datos = muestra(120)
         observador = ObservadorMinutoSombra()
