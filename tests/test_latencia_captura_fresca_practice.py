@@ -56,6 +56,35 @@ class TiempoRealistaTests(unittest.TestCase):
         self.assertEqual(r[0]["calidad_tiempo"], "DETECCION_TARDIA")
         self.assertEqual(resumen_sesion(r)["con_tiempo_verificado"], 0)
 
+    def test_contexto_historico_llegado_tarde_invalida_senal(self):
+        v = datos()
+        for t in v:
+            v[t]["_latencia_primera_recepcion_s"] = 0
+        # La vela 100 es parte de las 23 usadas en la decision 122.
+        # Llega despues de t+1 aunque las tres del patron sean puntuales.
+        v[100]["_latencia_primera_recepcion_s"] = 30
+        r = evaluar_sesion(v)
+        self.assertEqual(r[0]["calidad_tiempo"], "DETECCION_TARDIA")
+        self.assertEqual(resumen_sesion(r)["con_tiempo_verificado"], 0)
+
+    def test_contexto_historico_sin_latencia_no_se_verifica(self):
+        v = datos()
+        for t in v:
+            v[t]["_latencia_primera_recepcion_s"] = 0
+        del v[110]["_latencia_primera_recepcion_s"]
+        r = evaluar_sesion(v)
+        self.assertEqual(r[0]["calidad_tiempo"], "LATENCIA_NO_REGISTRADA")
+        self.assertEqual(resumen_sesion(r)["sin_latencia_registrada"], 1)
+
+    def test_contexto_historico_con_tipo_invalido_se_cuenta(self):
+        v = datos()
+        for t in v:
+            v[t]["_latencia_primera_recepcion_s"] = 0
+        v[101]["_latencia_primera_recepcion_s"] = True
+        r = evaluar_sesion(v)
+        self.assertEqual(r[0]["calidad_tiempo"], "LATENCIA_INVALIDA_O_NO_REGISTRADA")
+        self.assertEqual(resumen_sesion(r)["latencia_invalida"], 1)
+
     def test_demora_temprana_antes_de_cierre_no_invalida(self):
         v = datos()
         for t in v:
