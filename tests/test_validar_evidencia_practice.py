@@ -105,5 +105,34 @@ class ValidacionEvidenciaPracticeTests(unittest.TestCase):
         self.assertIn("EVENTO_FUERA_DIA_SESION", resultado["motivos"])
 
 
+    def test_solapamiento_sin_timestamps_identicos_tampoco_valida(self):
+        dia = ts(26)
+        # Diferencia de 30 segundos entre senales: ninguna se repite.
+        # Sin embargo, los intervalos observados son el mismo periodo.
+        muestras = [
+            ("USDINR-OTC", dia, eventos(40, 0, inicio=dia)),
+            ("USDINR-OTC", dia + 30, eventos(40, 0, inicio=dia + 30)),
+            ("USDINR-OTC", ts(27), eventos(40, 0, inicio=ts(27))),
+            ("USDINR-OTC", ts(28), eventos(40, 0, inicio=ts(28))),
+        ]
+        resultado = verificar_evidencia_sostenida(muestras)
+        self.assertEqual(resultado["estado"], "NO_VALIDADA")
+        self.assertIn("SESIONES_SOLAPADAS_MISMO_ACTIVO", resultado["motivos"])
+        self.assertNotIn("EVENTO_DUPLICADO_ENTRE_SESIONES", resultado["motivos"])
+
+    def test_sesiones_sin_solapamiento_siguen_siendoseparadas(self):
+        dia = ts(26)
+        muestras = [
+            ("USDINR-OTC", dia, eventos(40, 0, inicio=dia)),
+            ("USDINR-OTC", dia + 3600,
+             eventos(40, 0, inicio=dia + 3600)),
+            ("USDINR-OTC", ts(27), eventos(40, 0, inicio=ts(27))),
+            ("USDINR-OTC", ts(28), eventos(40, 0, inicio=ts(28))),
+        ]
+        resultado = verificar_evidencia_sostenida(muestras)
+        self.assertEqual(resultado["estado"], "EVIDENCIA_PRELIMINAR_SUPERA_OBJETIVO")
+        self.assertNotIn("SESIONES_SOLAPADAS_MISMO_ACTIVO", resultado["motivos"])
+
+
 if __name__ == "__main__":
     unittest.main()
