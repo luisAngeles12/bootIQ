@@ -76,6 +76,28 @@ class PruebasParidadSombra(unittest.TestCase):
         self.assertFalse(resultado["paridad"])
         self.assertLess(resultado["cierres_flujo"], resultado["cierres_replay"])
 
+    def test_distingue_cierre_tardio_de_paridad_completa(self):
+        datos = velas(3)
+        latencias = {t: 0 for t in datos}
+        latencias[59] = 1
+        diagnostico = comprobar_paridad_recepcion_1s(datos, latencias)
+        self.assertFalse(diagnostico["paridad"])
+        self.assertEqual(diagnostico["cierres_replay"], 3)
+        self.assertEqual(diagnostico["cierres_replay_disponibles_a_tiempo"], 2)
+        self.assertEqual(diagnostico["cierres_replay_con_recepcion_tardia"], 1)
+        self.assertTrue(diagnostico["coincidencia_cierres_elegibles"])
+        self.assertFalse(diagnostico["operable"])
+
+    def test_paridad_sin_retrasos_tiene_cobertura_completa(self):
+        datos = velas(3)
+        diagnostico = comprobar_paridad_recepcion_1s(
+            datos, {t: 0 for t in datos}
+        )
+        self.assertTrue(diagnostico["paridad"])
+        self.assertEqual(diagnostico["cierres_replay_disponibles_a_tiempo"], 3)
+        self.assertEqual(diagnostico["cierres_replay_con_recepcion_tardia"], 0)
+        self.assertTrue(diagnostico["coincidencia_cierres_elegibles"])
+
     def test_sin_tiempos_registrados_no_se_declara_paridad(self):
         datos = velas(1)
         resultado = comprobar_paridad_recepcion_1s(datos, {})
