@@ -342,6 +342,20 @@ class CandleRequestTimeoutTests(unittest.TestCase):
             "diagnostic-channel": 1,
         })
 
+    def test_ssid_profile_timeout_closes_socket_without_order(self):
+        api = IQOptionAPI.__new__(IQOptionAPI)
+        api.websocket_client = None
+        api.session = Mock()
+        api.get_ssid = Mock(return_value=Mock(cookies={"ssid": "fake-test-ssid"}))
+        api.start_websocket = Mock(return_value=(True, None))
+        api.send_ssid = Mock(return_value=False)
+        api.close = Mock(return_value=True)
+        with patch.object(global_value, "SSID", None):
+            connected, reason = api.connect()
+        self.assertFalse(connected)
+        self.assertEqual(reason, "SSID_PROFILE_TIMEOUT")
+        api.close.assert_called_once_with()
+
     def test_websocket_open_timeout_closes_socket_and_returns(self):
         class FakeThread:
             def __init__(self, *args, **kwargs):
