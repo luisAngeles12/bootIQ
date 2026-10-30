@@ -43,6 +43,7 @@ class EstudioArbitroMultisesionTests(unittest.TestCase):
         self.assertEqual(r["estado"], "EVIDENCIA_OOS_ARB_SOMBRA")
         self.assertEqual(r["holdout"]["dias"], 3)
         self.assertEqual(r["viabilidad_pago_holdout"]["estado"], "NO_VALIDADA")
+        self.assertEqual(r["estado_integral"], "NO_VALIDADO_ESTADISTICA_O_ECONOMIA")
         self.assertFalse(r["operaciones_autorizadas"])
         self.assertTrue(r["objetivos_arbitro"]["minimo_57_oos_respaldado"])
         self.assertTrue(r["objetivos_arbitro"]["principal_60_oos_respaldado"])
