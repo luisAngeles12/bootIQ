@@ -72,6 +72,11 @@ def estudiar_eventos_arbitro(sesiones, fraccion_desarrollo=0.7):
         "primera_fecha_holdout": str(min(dias_oos)),
         "desarrollo": evidencia_dev,
         "holdout": evidencia_oos,
+        "estado_integral": (
+            "EVIDENCIA_ESTADISTICA_Y_ECONOMICA_PRELIMINAR"
+            if not motivos and viabilidad_pago["estado"] == "EVIDENCIA_ECONOMICA_PRELIMINAR"
+            else "NO_VALIDADO_ESTADISTICA_O_ECONOMIA"
+        ),
         "viabilidad_pago_holdout": viabilidad_pago,
         "objetivos_arbitro": {
             "minimo_57_oos_respaldado": (
