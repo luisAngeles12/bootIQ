@@ -38,7 +38,7 @@ def evaluar_viabilidad_pago(eventos, objetivo=0.57):
         ts_pago = evento.get("timestamp_payout_utc")
         ts_entrada = evento.get("timestamp_entrada_hipotetica")
         if (type(ts_pago) is not int or type(ts_entrada) is not int
-                or ts_pago > ts_entrada or ts_entrada - ts_pago > 60):
+                or ts_pago >= ts_entrada or ts_entrada - ts_pago > 60):
             motivos.append("PAYOUT_SIN_TIEMPO_PREENTRADA_VERIFICABLE")
             continue
         payouts.append(float(pago))
