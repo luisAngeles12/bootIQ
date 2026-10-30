@@ -47,6 +47,27 @@ class ValidacionEvidenciaPracticeTests(unittest.TestCase):
         self.assertGreater(r["limite_inferior_95_pct"], 57)
         self.assertFalse(r["operaciones_autorizadas"])
 
+    def test_distingue_aprobacion_57_de_meta_sostenida_60(self):
+        # 200 observaciones, 140 WIN: Wilson > 57 % pero < 60 %.
+        evidencia_57 = verificar_evidencia_sostenida([
+            ("USDINR-OTC", ts(26), eventos(70, 30, inicio=ts(26))),
+            ("USDINR-OTC", ts(27), eventos(35, 15, inicio=ts(27))),
+            ("USDINR-OTC", ts(28), eventos(35, 15, inicio=ts(28))),
+        ])
+        self.assertEqual(evidencia_57["estado"],
+                         "EVIDENCIA_PRELIMINAR_SUPERA_OBJETIVO")
+        self.assertFalse(evidencia_57["objetivo_principal_60_respaldado"])
+        self.assertEqual(evidencia_57["minimo_aprobacion_pct"], 57.0)
+        self.assertEqual(evidencia_57["objetivo_principal_wr_pct"], 60.0)
+
+        evidencia_60 = verificar_evidencia_sostenida([
+            ("USDINR-OTC", ts(26), eventos(90, 10, inicio=ts(26))),
+            ("USDINR-OTC", ts(27), eventos(90, 10, inicio=ts(27))),
+            ("USDINR-OTC", ts(28), eventos(90, 10, inicio=ts(28))),
+        ])
+        self.assertTrue(evidencia_60["objetivo_principal_60_respaldado"])
+        self.assertFalse(evidencia_60["operaciones_autorizadas"])
+
     def test_dia_con_resultado_malo_impide_validacion(self):
         r = verificar_evidencia_sostenida([
             ("USDINR-OTC", ts(26), eventos(80, 0)),
