@@ -366,6 +366,8 @@ class CandleRequestTimeoutTests(unittest.TestCase):
         api.close = Mock(return_value=True)
         with patch.object(global_value, "SSID", "fake-test-ssid"), patch.object(
             global_value, "check_websocket_if_connect", False
+        ), patch("iqoptionapi.api.atexit.register"), patch(
+            "iqoptionapi.api.requests.utils.add_dict_to_cookiejar"
         ):
             connected, reason = api.connect()
         self.assertFalse(connected)
