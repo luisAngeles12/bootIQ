@@ -171,6 +171,7 @@ def sondear(activo, segundos, guardar_nuevas=False):
     decisiones_minuto_sombra = []
     suscripcion_comision = False
     ultimo_pago_observado = None
+    eventos_comision_observados = []
     print("SONDEO SOLO LECTURA | PRACTICE | activo:", activo,
           "| segundos:", segundos, flush=True)
     try:
@@ -202,6 +203,7 @@ def sondear(activo, segundos, guardar_nuevas=False):
                     if (pago_observado["estado"].startswith("COMISION_RECIENTE")
                             and pago_observado["timestamp_fuente"] != ultimo_pago_observado):
                         ultimo_pago_observado = pago_observado["timestamp_fuente"]
+                        eventos_comision_observados.append({**pago_observado, "timestamp_observacion_utc": ahora})
                         print("PAYOUT_PRACTICE_SOMBRA:", pago_observado, flush=True)
                 except Exception as exc:
                     print("PAYOUT_PRACTICE_NO_DISPONIBLE:",
@@ -230,6 +232,13 @@ def sondear(activo, segundos, guardar_nuevas=False):
                 latencias=latencias,
             )
             print("CAPTURA_NUEVA_VALIDADA:", ruta, "| velas:", total, flush=True)
+            from registro_comisiones_practice import guardar_eventos_comision
+            ruta_pago, n_pago = guardar_eventos_comision(
+                activo, inicio, fin, eventos_comision_observados,
+                Path(__file__).with_name("data_actual_practice"),
+            )
+            print("CAMBIOS_COMISION_OBSERVADOS_NO_EJECUTABLES:",
+                  n_pago, "| archivo:", ruta_pago, flush=True)
             from contexto_mercado_fresco import consolidar_minutos, diagnosticar_contexto
             minutos = consolidar_minutos(vistos)
             contexto = diagnosticar_contexto(minutos)
