@@ -388,6 +388,31 @@ class CandleRequestTimeoutTests(unittest.TestCase):
         self.assertEqual(reason, "SSID_PROFILE_TIMEOUT")
         api.close.assert_called_once_with()
 
+    def test_websocket_open_state_exception_closes_socket(self):
+        class BrokenState:
+            check_websocket_if_error = property(
+                lambda self: (_ for _ in ()).throw(RuntimeError("state-broken")),
+                lambda self, value: None,
+            )
+            check_websocket_if_connect = None
+            websocket_error_reason = None
+
+        class FakeThread:
+            def __init__(self, *args, **kwargs):
+                pass
+            def start(self):
+                pass
+
+        api = IQOptionAPI.__new__(IQOptionAPI)
+        api.websocket_client = None
+        api.close = Mock(return_value=True)
+        with patch("iqoptionapi.api.global_value", BrokenState()), patch(
+            "iqoptionapi.api.WebsocketClient", return_value=Mock()
+        ), patch("iqoptionapi.api.threading.Thread", FakeThread):
+            result = api.start_websocket(timeout=0.1)
+        self.assertEqual(result, (False, "state-broken"))
+        api.close.assert_called_once_with(timeout=1.0)
+
     def test_websocket_early_error_closes_socket(self):
         api = IQOptionAPI.__new__(IQOptionAPI)
         api.websocket_client = None
