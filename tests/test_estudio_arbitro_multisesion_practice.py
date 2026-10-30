@@ -35,6 +35,7 @@ class EstudioArbitroMultisesionTests(unittest.TestCase):
         self.assertEqual(r["estado"], "ARBITRO_OOS_NO_VALIDADO")
         self.assertIn("ARBITRO_HOLDOUT_NO_VALIDADO", r["motivos"])
         self.assertEqual(r["dias_holdout"], 3)
+        self.assertFalse(r["objetivos_arbitro"]["principal_60_oos_respaldado"])
         self.assertFalse(r["operaciones_autorizadas"])
 
     def test_holdout_favorable_no_autoriza_operar(self):
@@ -43,6 +44,10 @@ class EstudioArbitroMultisesionTests(unittest.TestCase):
         self.assertEqual(r["holdout"]["dias"], 3)
         self.assertEqual(r["viabilidad_pago_holdout"]["estado"], "NO_VALIDADA")
         self.assertFalse(r["operaciones_autorizadas"])
+        self.assertTrue(r["objetivos_arbitro"]["minimo_57_oos_respaldado"])
+        self.assertTrue(r["objetivos_arbitro"]["principal_60_oos_respaldado"])
+        self.assertFalse(r["objetivos_arbitro"]["viabilidad_economica_holdout_validada"])
+        self.assertFalse(r["objetivos_arbitro"]["operaciones_autorizadas"])
 
     def test_una_sesion_no_establece_evidencia(self):
         r = estudiar_eventos_arbitro([sesiones()[0]])
