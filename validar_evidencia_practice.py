@@ -100,6 +100,11 @@ def verificar_evidencia_sostenida(sesiones, objetivo=0.57):
         "wins": wins_total,
         "wr_hipotetico": round(100 * wins_total / total, 2) if total else None,
         "limite_inferior_95_pct": round(100 * inferior, 2),
+        "objetivo_principal_wr_pct": 60.0,
+        "minimo_aprobacion_pct": round(100 * objetivo, 2),
+        "objetivo_principal_60_respaldado": (
+            not motivos and inferior >= 0.60
+        ),
         "motivos": sorted(set(motivos)),
         "operaciones_autorizadas": False,
     }
