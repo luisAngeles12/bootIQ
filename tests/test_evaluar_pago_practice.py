@@ -68,6 +68,17 @@ class PagoPracticeTests(unittest.TestCase):
                       resultado["motivos"])
         self.assertFalse(resultado["operaciones_autorizadas"])
 
+    def test_tiempo_no_verificado_no_suma_pago_valido(self):
+        filas = eventos(200, 0, .8)
+        filas[0]["calidad_tiempo"] = "DETECCION_TARDIA"
+        resultado = evaluar_viabilidad_pago(filas)
+        self.assertEqual(resultado["evaluables_con_pago"], 199)
+        self.assertEqual(resultado["wins"], 199)
+        self.assertIn("TIEMPO_NO_VERIFICADO", resultado["motivos"])
+        self.assertIn("EVENTOS_EVALUABLES_SIN_PAYOUT", resultado["motivos"])
+        self.assertEqual(resultado["estado"], "NO_VALIDADA")
+        self.assertFalse(resultado["operaciones_autorizadas"])
+
     def test_pago_minimo_rige_y_no_la_media(self):
         filas = eventos(200, 0, .9)
         filas[0]["payout_neto"] = .01
