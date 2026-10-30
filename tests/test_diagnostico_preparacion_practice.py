@@ -1,5 +1,6 @@
 """Puerta de seguridad para la evaluacion del cerebro PRACTICE."""
 import unittest
+from unittest.mock import patch
 
 from diagnostico_preparacion_practice import diagnosticar_preparacion
 
@@ -36,6 +37,29 @@ class PreparacionPracticeTests(unittest.TestCase):
         resultado = diagnosticar_preparacion(datos)
         self.assertIn("PARIDAD_NO_DEMOSTRADA", resultado["motivos"])
         self.assertIsNone(resultado["paridad"]["paridad"])
+
+    @patch("diagnostico_preparacion_practice.resumen_comparativa")
+    def test_totales_sin_verificar_no_cumplen_minimo(self, comparativa):
+        # 20 WIN/LOSS por estrategia no bastan si solo 14 tienen
+        # tiempo verificado, aunque no existan detecciones tardias.
+        comparativa.return_value = {
+            nombre: {
+                "WIN": 10, "LOSS": 10,
+                "resultados_con_tiempo_verificado": 14,
+                "sin_latencia_registrada": 0,
+                "detecciones_tardias": 0,
+                "latencia_invalida": 0,
+            }
+            for nombre in (
+                "RUPTURA_RETEST", "RECHAZO_ZONA",
+                "CONTINUACION_TENDENCIA"
+            )
+        }
+        resultado = diagnosticar_preparacion(muestra(24 * 60))
+        for nombre in comparativa.return_value:
+            self.assertIn("MUESTRA_INSUFICIENTE_" + nombre, resultado["motivos"])
+            self.assertIn("TIEMPOS_SIN_VALIDAR_" + nombre, resultado["motivos"])
+        self.assertFalse(resultado["operaciones_autorizadas"])
 
     def test_no_acepta_huecos(self):
         datos = muestra()
