@@ -1,5 +1,8 @@
 """Pruebas de rentabilidad teorica condicionada al payout PRACTICE."""
 import unittest
+from tempfile import TemporaryDirectory
+import csv
+from registro_comisiones_practice import guardar_eventos_comision
 
 from evaluar_pago_practice import evaluar_viabilidad_pago
 
@@ -39,6 +42,31 @@ class PagoPracticeTests(unittest.TestCase):
         r = evaluar_viabilidad_pago(eventos(200, 0, .8, "POST_RESULTADO"))
         self.assertIn("PAYOUT_SIN_PROCEDENCIA_PREENTRADA", r["motivos"])
         self.assertEqual(r["estado"], "NO_VALIDADA")
+
+    def test_archivo_websocket_no_es_payout_preentrada(self):
+        cambio = {
+            "estado": "COMISION_RECIENTE_ESTIMACION_CONSERVADORA",
+            "activo": "USDINR-OTC", "instrumento": "turbo-option",
+            "payout_neto": .84, "timestamp_fuente": 110,
+            "timestamp_observacion_utc": 111, "operable": False,
+        }
+        with TemporaryDirectory() as carpeta:
+            ruta, total = guardar_eventos_comision(
+                "USDINR-OTC", 100, 200, [cambio], carpeta)
+            self.assertEqual(total, 1)
+            with ruta.open(encoding="utf-8", newline="") as archivo:
+                observacion = next(csv.DictReader(archivo))
+        self.assertEqual(observacion["procedencia"],
+                         "WEBSOCKET_CAMBIO_NO_EJECUTABLE")
+        fila = eventos(1, 0, float(observacion["payout_estimado_conservador"]))[0]
+        fila["payout_fuente"] = observacion["procedencia"]
+        fila["timestamp_payout_utc"] = int(observacion["timestamp_fuente_utc"])
+        fila["timestamp_entrada_hipotetica"] = 112
+        resultado = evaluar_viabilidad_pago([fila])
+        self.assertEqual(resultado["evaluables_con_pago"], 0)
+        self.assertIn("PAYOUT_SIN_PROCEDENCIA_PREENTRADA",
+                      resultado["motivos"])
+        self.assertFalse(resultado["operaciones_autorizadas"])
 
     def test_pago_minimo_rige_y_no_la_media(self):
         filas = eventos(200, 0, .9)
