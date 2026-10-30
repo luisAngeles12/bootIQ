@@ -856,8 +856,11 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
         while time.monotonic() < deadline:
             try:
                 if global_value.check_websocket_if_error:
-                    return False, global_value.websocket_error_reason
+                    reason = global_value.websocket_error_reason
+                    self.close(timeout=1.0)
+                    return False, reason
                 if global_value.check_websocket_if_connect == 0:
+                    self.close(timeout=1.0)
                     return False, "Websocket connection closed."
                 elif global_value.check_websocket_if_connect == 1:
                     return True, None
