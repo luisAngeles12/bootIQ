@@ -951,6 +951,7 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
                 if not check_websocket:
                     return False, websocket_reason
                 if not self.send_ssid():
+                    self.close()
                     return False, "SSID_PROFILE_TIMEOUT"
 
         # the ssid is None need get ssid
@@ -963,6 +964,7 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
                 return False, str(response) if isinstance(response, Exception) else getattr(response, "text", "SSID_RESPONSE_INVALID")
             atexit.register(self.logout)
             if not self.send_ssid():
+                self.close()
                 return False, "SSID_PROFILE_TIMEOUT"
 
         # set ssis cookie
