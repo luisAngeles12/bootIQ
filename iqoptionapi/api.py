@@ -865,6 +865,7 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
                 elif global_value.check_websocket_if_connect == 1:
                     return True, None
             except Exception as e:
+                self.close(timeout=1.0)
                 return False, str(e)
 
             time.sleep(0.01)
