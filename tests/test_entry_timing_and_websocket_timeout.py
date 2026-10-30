@@ -355,6 +355,23 @@ class CandleRequestTimeoutTests(unittest.TestCase):
         self.assertEqual(reason, "refresh-failed")
         api.close.assert_called_once_with()
 
+    def test_time_sync_disconnect_closes_websocket(self):
+        api = IQOptionAPI.__new__(IQOptionAPI)
+        api.websocket_client = None
+        api.start_websocket = Mock(return_value=(True, None))
+        api.send_ssid = Mock(return_value=True)
+        api.session = Mock()
+        api.timesync = Mock()
+        api.timesync.server_timestamp = None
+        api.close = Mock(return_value=True)
+        with patch.object(global_value, "SSID", "fake-test-ssid"), patch.object(
+            global_value, "check_websocket_if_connect", False
+        ):
+            connected, reason = api.connect()
+        self.assertFalse(connected)
+        self.assertEqual(reason, "WEBSOCKET_CLOSED_WAITING_TIME_SYNC")
+        api.close.assert_called_once_with()
+
     def test_ssid_profile_timeout_closes_socket_without_order(self):
         api = IQOptionAPI.__new__(IQOptionAPI)
         api.websocket_client = None
