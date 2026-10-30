@@ -128,6 +128,34 @@ class ValidacionEvidenciaPracticeTests(unittest.TestCase):
         self.assertIn("LATENCIA_SIN_VERIFICAR_O_TARDIA", resultado["motivos"])
         self.assertFalse(resultado["operaciones_autorizadas"])
 
+    def test_umbral_100_no_cuenta_resultados_temporalmente_invalidos(self):
+        muestras = [
+            ("USDINR-OTC", ts(dia), eventos(36, 4, inicio=ts(dia)))
+            for dia in (26, 27, 28)
+        ]
+        # 120 WIN/LOSS brutos, pero 90 validos: la puerta no puede aprobar.
+        for sesion in muestras:
+            for fila in sesion[2][:10]:
+                fila["calidad_tiempo"] = "DETECCION_TARDIA"
+        resultado = verificar_evidencia_sostenida(muestras)
+        self.assertEqual(resultado["evaluables"], 120)
+        self.assertEqual(resultado["evaluables_tiempo_verificado"], 90)
+        self.assertIn("MENOS_DE_100_RESULTADOS", resultado["motivos"])
+        self.assertEqual(resultado["estado"], "NO_VALIDADA")
+
+    def test_umbral_por_sesion_usa_solo_resultados_verificados(self):
+        muestras = [
+            ("USDINR-OTC", ts(dia), eventos(17, 3, inicio=ts(dia)))
+            for dia in (26, 27, 28)
+        ]
+        for sesion in muestras:
+            for fila in sesion[2][:6]:
+                fila["calidad_tiempo"] = "DETECCION_TARDIA"
+        resultado = verificar_evidencia_sostenida(muestras)
+        self.assertEqual(resultado["evaluables_tiempo_verificado"], 42)
+        self.assertIn("MUESTRA_POR_SESION_INSUFICIENTE", resultado["motivos"])
+        self.assertFalse(resultado["operaciones_autorizadas"])
+
     def test_wilson_limita_muestras_pequenas(self):
         self.assertLess(limite_inferior_wilson(6, 10), .57)
         self.assertEqual(limite_inferior_wilson(0, 0), 0.0)
