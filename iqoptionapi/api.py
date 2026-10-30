@@ -979,10 +979,12 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
             and time.monotonic() < deadline
         ):
             if not global_value.check_websocket_if_connect:
+                self.close()
                 return False, "WEBSOCKET_CLOSED_WAITING_TIME_SYNC"
             time.sleep(0.01)
 
         if self.timesync.server_timestamp is None:
+            self.close()
             return False, "TIMEOUT_SERVER_TIMESTAMP"
 
         return True, None
