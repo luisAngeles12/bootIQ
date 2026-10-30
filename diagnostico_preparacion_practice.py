@@ -33,10 +33,15 @@ def diagnosticar_preparacion(velas):
     comparativa = resumen_comparativa(velas) if len(minutos) >= 24 else {}
     for estrategia in ESTRATEGIAS:
         resultado = comparativa.get(estrategia)
-        if not resultado or resultado["WIN"] + resultado["LOSS"] < 15:
+        # Solo WIN/LOSS hipoteticos con recepcion causal verificada cuentan
+        # para el minimo. Los totales sin verificar nunca desbloquean la puerta.
+        if not resultado or resultado["resultados_con_tiempo_verificado"] < 15:
             motivos.append("MUESTRA_INSUFICIENTE_" + estrategia)
-        elif (resultado["sin_latencia_registrada"]
-              or resultado["detecciones_tardias"]):
+        if resultado and (resultado["sin_latencia_registrada"]
+                          or resultado["detecciones_tardias"]
+                          or resultado["latencia_invalida"]
+                          or resultado["WIN"] + resultado["LOSS"]
+                          != resultado["resultados_con_tiempo_verificado"]):
             motivos.append("TIEMPOS_SIN_VALIDAR_" + estrategia)
     return {
         "estado": ("BASE_TECNICA_PARA_MAS_PRUEBAS_SOMBRA" if not motivos
