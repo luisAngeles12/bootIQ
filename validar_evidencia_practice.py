@@ -78,9 +78,13 @@ def verificar_evidencia_sostenida(sesiones, objetivo=0.57):
             sum(e["resultado"] == "WIN" for e in validos_tiempo),
             len(validos_tiempo),
         ))
-        if n < 15:
+        # La puerta usa exclusivamente outcomes temporalmente verificados.
+        n_verificado = len(validos_tiempo)
+        wins_verificados_sesion = sum(e["resultado"] == "WIN"
+                                     for e in validos_tiempo)
+        if n_verificado < 15:
             motivos.append("MUESTRA_POR_SESION_INSUFICIENTE")
-        elif wins / n <= objetivo:
+        elif wins_verificados_sesion / n_verificado <= objetivo:
             motivos.append("SESION_BAJO_OBJETIVO")
         if any(e.get("calidad_tiempo") != "TIEMPO_VERIFICADO" for e in eventos):
             motivos.append("LATENCIA_SIN_VERIFICAR_O_TARDIA")
@@ -94,13 +98,13 @@ def verificar_evidencia_sostenida(sesiones, objetivo=0.57):
     wins_total = sum(w for w, _ in conteos)
     if len(dias) < 3:
         motivos.append("MENOS_DE_TRES_DIAS")
-    if total < 100:
+    if total_verificado < 100:
         motivos.append("MENOS_DE_100_RESULTADOS")
     inferior = limite_inferior_wilson(wins_total, total)
     total_verificado = sum(n for _, n in conteos_verificados)
     wins_verificados = sum(w for w, _ in conteos_verificados)
     inferior_verificado = limite_inferior_wilson(wins_verificados, total_verificado)
-    if inferior <= objetivo:
+    if inferior_verificado <= objetivo:
         motivos.append("LIMITE_INFERIOR_NO_SUPERA_OBJETIVO")
     return {
         "estado": "EVIDENCIA_PRELIMINAR_SUPERA_OBJETIVO" if not motivos else "NO_VALIDADA",
