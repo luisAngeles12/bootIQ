@@ -203,7 +203,10 @@ def sondear(activo, segundos, guardar_nuevas=False):
                     if (pago_observado["estado"].startswith("COMISION_RECIENTE")
                             and pago_observado["timestamp_fuente"] != ultimo_pago_observado):
                         ultimo_pago_observado = pago_observado["timestamp_fuente"]
-                        eventos_comision_observados.append({**pago_observado, "timestamp_observacion_utc": ahora})
+                        if pago_observado["timestamp_fuente"] >= inicio:
+                            eventos_comision_observados.append({
+                                **pago_observado, "timestamp_observacion_utc": ahora,
+                            })
                         print("PAYOUT_PRACTICE_SOMBRA:", pago_observado, flush=True)
                 except Exception as exc:
                     print("PAYOUT_PRACTICE_NO_DISPONIBLE:",
