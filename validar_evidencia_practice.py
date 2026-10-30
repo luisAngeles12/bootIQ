@@ -98,12 +98,12 @@ def verificar_evidencia_sostenida(sesiones, objetivo=0.57):
     wins_total = sum(w for w, _ in conteos)
     if len(dias) < 3:
         motivos.append("MENOS_DE_TRES_DIAS")
-    if total_verificado < 100:
-        motivos.append("MENOS_DE_100_RESULTADOS")
-    inferior = limite_inferior_wilson(wins_total, total)
     total_verificado = sum(n for _, n in conteos_verificados)
     wins_verificados = sum(w for w, _ in conteos_verificados)
+    inferior = limite_inferior_wilson(wins_total, total)
     inferior_verificado = limite_inferior_wilson(wins_verificados, total_verificado)
+    if total_verificado < 100:
+        motivos.append("MENOS_DE_100_RESULTADOS")
     if inferior_verificado <= objetivo:
         motivos.append("LIMITE_INFERIOR_NO_SUPERA_OBJETIVO")
     return {
