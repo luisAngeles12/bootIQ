@@ -73,6 +73,22 @@ def estudiar_eventos_arbitro(sesiones, fraccion_desarrollo=0.7):
         "desarrollo": evidencia_dev,
         "holdout": evidencia_oos,
         "viabilidad_pago_holdout": viabilidad_pago,
+        "objetivos_arbitro": {
+            "minimo_57_oos_respaldado": (
+                not motivos
+                and evidencia_dev["estado"] == "EVIDENCIA_PRELIMINAR_SUPERA_OBJETIVO"
+                and evidencia_oos["estado"] == "EVIDENCIA_PRELIMINAR_SUPERA_OBJETIVO"
+            ),
+            "principal_60_oos_respaldado": (
+                not motivos
+                and evidencia_dev["objetivo_principal_60_respaldado"]
+                and evidencia_oos["objetivo_principal_60_respaldado"]
+            ),
+            "viabilidad_economica_holdout_validada": (
+                viabilidad_pago["estado"] == "EVIDENCIA_ECONOMICA_PRELIMINAR"
+            ),
+            "operaciones_autorizadas": False,
+        },
         "operaciones_autorizadas": False,
         "advertencia": "SOMBRA_NO_ES_EJECUCION_NI_RENTABILIDAD_DEMOSTRADA",
     }
