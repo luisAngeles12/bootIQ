@@ -28,7 +28,15 @@ def estudiar_eventos_arbitro(sesiones, fraccion_desarrollo=0.7):
         return {
             "estado": "ARBITRO_OOS_NO_VALIDADO",
             "motivos": ["DIAS_INSUFICIENTES"],
-            "resumen_total": resumen, "operaciones_autorizadas": False,
+            "resumen_total": resumen,
+            "estado_integral": "NO_VALIDADO_ESTADISTICA_O_ECONOMIA",
+            "objetivos_arbitro": {
+                "minimo_57_oos_respaldado": False,
+                "principal_60_oos_respaldado": False,
+                "viabilidad_economica_holdout_validada": False,
+                "operaciones_autorizadas": False,
+            },
+            "operaciones_autorizadas": False,
         }
     n_dev = min(len(dias) - 1, max(1, ceil(len(dias) * fraccion_desarrollo)))
     dias_dev = set(dias[:n_dev])
