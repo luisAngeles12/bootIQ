@@ -110,6 +110,24 @@ class ValidacionEvidenciaPracticeTests(unittest.TestCase):
         self.assertIn("EVENTO_ANTERIOR_A_LA_SESION", r["motivos"])
         self.assertIn("EVENTOS_DESORDENADOS_O_REPETIDOS", r["motivos"])
 
+    def test_reporte_60_distingue_resultados_brutos_de_verificados(self):
+        muestras = [
+            ("USDINR-OTC", ts(dia), eventos(90, 10, inicio=ts(dia)))
+            for dia in (26, 27, 28)
+        ]
+        # Quince WIN sin tiempo comprobado no deben respaldar la meta 60.
+        for sesion in muestras:
+            for fila in sesion[2][:5]:
+                fila["calidad_tiempo"] = "DETECCION_TARDIA"
+        resultado = verificar_evidencia_sostenida(muestras)
+        self.assertEqual(resultado["evaluables"], 300)
+        self.assertEqual(resultado["evaluables_tiempo_verificado"], 285)
+        self.assertEqual(resultado["wins_tiempo_verificado"], 255)
+        self.assertEqual(resultado["estado"], "NO_VALIDADA")
+        self.assertFalse(resultado["objetivo_principal_60_respaldado"])
+        self.assertIn("LATENCIA_SIN_VERIFICAR_O_TARDIA", resultado["motivos"])
+        self.assertFalse(resultado["operaciones_autorizadas"])
+
     def test_wilson_limita_muestras_pequenas(self):
         self.assertLess(limite_inferior_wilson(6, 10), .57)
         self.assertEqual(limite_inferior_wilson(0, 0), 0.0)
