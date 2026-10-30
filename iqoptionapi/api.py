@@ -943,6 +943,7 @@ class IQOptionAPI(object):  # pylint: disable=too-many-instance-attributes
                 try:
                     global_value.SSID = response.cookies["ssid"]
                 except:
+                    self.close()
                     return False, str(response) if isinstance(response, Exception) else getattr(response, "text", "SSID_RESPONSE_INVALID")
                 atexit.register(self.logout)
                 if not self.close():
