@@ -97,6 +97,16 @@ class PagoPracticeTests(unittest.TestCase):
         self.assertEqual(r["estado"], "NO_VALIDADA")
         self.assertIn("PAYOUT_SIN_TIEMPO_PREENTRADA_VERIFICABLE", r["motivos"])
 
+    def test_payout_mismo_segundo_que_entrada_no_prueba_preentrada(self):
+        filas = eventos(200, 0, .8)
+        filas[0]["timestamp_payout_utc"] = filas[0]["timestamp_entrada_hipotetica"]
+        resultado = evaluar_viabilidad_pago(filas)
+        self.assertEqual(resultado["evaluables_con_pago"], 199)
+        self.assertIn("PAYOUT_SIN_TIEMPO_PREENTRADA_VERIFICABLE",
+                      resultado["motivos"])
+        self.assertEqual(resultado["estado"], "NO_VALIDADA")
+        self.assertFalse(resultado["operaciones_autorizadas"])
+
     def test_pago_antiguo_o_sin_timestamp_es_invalido(self):
         for invalido in (None, 500, True):
             with self.subTest(valor=invalido):
