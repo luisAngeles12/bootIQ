@@ -48,6 +48,7 @@ class RegistroComisionesTests(unittest.TestCase):
                 {**evento(), "operable": True},
                 evento(112, 111),
                 evento(100, 170),
+                evento(99, 110),  # Cambio previo a la sesion: cache, no evento nuevo
                 {**evento(), "payout_neto": None},
                 {**evento(), "activo": "EURUSD-OTC"},
             ]
