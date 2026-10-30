@@ -150,6 +150,25 @@ def comprobar_paridad_recepcion_1s(velas_1s, latencias):
         key=lambda par: (par[0], int(par[1]["from"])),
     )
     resultado = comprobar_paridad(velas_1s, llegadas)
+    # Cobertura causal: distingue replay historico de cierres recibidos a tiempo.
+    # No equivale a paridad de decisiones (puede diferir el contexto anterior).
+    minutos = consolidar_minutos(velas_1s)
+    elegibles = set()
+    tardios = set()
+    for minuto in minutos:
+        fin = minuto["end"]
+        if all(t + 1 + latencias[t] <= fin
+               for t in range(fin - 60, fin)):
+            elegibles.add(fin)
+        else:
+            tardios.add(fin)
+    cierres_flujo = {fin for fin, _ in evaluar_flujo(llegadas)}
+    resultado["cierres_replay_disponibles_a_tiempo"] = len(elegibles)
+    resultado["cierres_replay_con_recepcion_tardia"] = len(tardios)
+    resultado["coincidencia_cierres_elegibles"] = (cierres_flujo == elegibles)
+    resultado["advertencia_cobertura"] = (
+        "COINCIDENCIA_DE_TIMESTAMPS_NO_ES_PARIDAD_DE_DECISIONES"
+    )
     resultado["resolucion_recepcion"] = "SEGUNDO_IQ_NO_SUBSEGUNDO"
     resultado["velas_con_retraso"] = sum(latencias[t] > 0 for t in velas_1s)
     return resultado
