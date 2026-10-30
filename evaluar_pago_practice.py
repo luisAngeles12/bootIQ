@@ -24,6 +24,7 @@ def evaluar_viabilidad_pago(eventos, objetivo=0.57):
             continue
         if evento.get("calidad_tiempo") != "TIEMPO_VERIFICADO":
             motivos.append("TIEMPO_NO_VERIFICADO")
+            continue
         pago = evento.get("payout_neto")
         if (isinstance(pago, bool) or not isinstance(pago, (int, float))
                 or not isfinite(pago) or not 0 < pago <= 1):
