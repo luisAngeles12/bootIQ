@@ -28,7 +28,8 @@ def guardar_eventos_comision(activo, inicio, fin, eventos, directorio):
                 or evento.get("instrumento") != "turbo-option"
                 or evento.get("operable") is not False
                 or type(fuente) is not int or type(observado) is not int
-                or fuente > observado or observado < inicio or observado > fin
+                or fuente < inicio or fuente > observado
+                or observado < inicio or observado > fin
                 or observado - fuente > 60):
             raise ValueError("EVENTO_COMISION_NO_VERIFICABLE")
         pago = evento.get("payout_neto")
