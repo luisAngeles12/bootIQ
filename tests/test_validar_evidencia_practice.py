@@ -48,11 +48,11 @@ class ValidacionEvidenciaPracticeTests(unittest.TestCase):
         self.assertFalse(r["operaciones_autorizadas"])
 
     def test_distingue_aprobacion_57_de_meta_sostenida_60(self):
-        # 200 observaciones, 140 WIN: Wilson > 57 % pero < 60 %.
+        # 200 observaciones, 130 WIN: Wilson > 57 % pero < 60 %.
         evidencia_57 = verificar_evidencia_sostenida([
-            ("USDINR-OTC", ts(26), eventos(70, 30, inicio=ts(26))),
-            ("USDINR-OTC", ts(27), eventos(35, 15, inicio=ts(27))),
-            ("USDINR-OTC", ts(28), eventos(35, 15, inicio=ts(28))),
+            ("USDINR-OTC", ts(26), eventos(65, 35, inicio=ts(26))),
+            ("USDINR-OTC", ts(27), eventos(32, 18, inicio=ts(27))),
+            ("USDINR-OTC", ts(28), eventos(33, 17, inicio=ts(28))),
         ])
         self.assertEqual(evidencia_57["estado"],
                          "EVIDENCIA_PRELIMINAR_SUPERA_OBJETIVO")
