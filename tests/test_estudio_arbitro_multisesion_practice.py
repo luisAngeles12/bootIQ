@@ -54,6 +54,10 @@ class EstudioArbitroMultisesionTests(unittest.TestCase):
         r = estudiar_eventos_arbitro([sesiones()[0]])
         self.assertEqual(r["estado"], "ARBITRO_OOS_NO_VALIDADO")
         self.assertIn("DIAS_INSUFICIENTES", r["motivos"])
+        self.assertEqual(r["estado_integral"], "NO_VALIDADO_ESTADISTICA_O_ECONOMIA")
+        self.assertFalse(r["objetivos_arbitro"]["minimo_57_oos_respaldado"])
+        self.assertFalse(r["objetivos_arbitro"]["principal_60_oos_respaldado"])
+        self.assertFalse(r["objetivos_arbitro"]["viabilidad_economica_holdout_validada"])
 
     def test_duplicados_bloquean_evidencia(self):
         muestras = sesiones()
