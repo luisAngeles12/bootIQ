@@ -30,6 +30,7 @@ def verificar_evidencia_sostenida(sesiones, objetivo=0.57):
     motivos = []
     dias = set()
     conteos = []
+    conteos_verificados = []
     rangos = set()
     eventos_vistos = set()
     intervalos_por_activo = {}
@@ -71,6 +72,12 @@ def verificar_evidencia_sostenida(sesiones, objetivo=0.57):
         wins = sum(e["resultado"] == "WIN" for e in evaluables)
         n = len(evaluables)
         conteos.append((wins, n))
+        validos_tiempo = [e for e in evaluables
+                         if e.get("calidad_tiempo") == "TIEMPO_VERIFICADO"]
+        conteos_verificados.append((
+            sum(e["resultado"] == "WIN" for e in validos_tiempo),
+            len(validos_tiempo),
+        ))
         if n < 15:
             motivos.append("MUESTRA_POR_SESION_INSUFICIENTE")
         elif wins / n <= objetivo:
@@ -90,6 +97,9 @@ def verificar_evidencia_sostenida(sesiones, objetivo=0.57):
     if total < 100:
         motivos.append("MENOS_DE_100_RESULTADOS")
     inferior = limite_inferior_wilson(wins_total, total)
+    total_verificado = sum(n for _, n in conteos_verificados)
+    wins_verificados = sum(w for w, _ in conteos_verificados)
+    inferior_verificado = limite_inferior_wilson(wins_verificados, total_verificado)
     if inferior <= objetivo:
         motivos.append("LIMITE_INFERIOR_NO_SUPERA_OBJETIVO")
     return {
@@ -100,10 +110,17 @@ def verificar_evidencia_sostenida(sesiones, objetivo=0.57):
         "wins": wins_total,
         "wr_hipotetico": round(100 * wins_total / total, 2) if total else None,
         "limite_inferior_95_pct": round(100 * inferior, 2),
+        "evaluables_tiempo_verificado": total_verificado,
+        "wins_tiempo_verificado": wins_verificados,
+        "wr_hipotetico_tiempo_verificado": (
+            round(100 * wins_verificados / total_verificado, 2)
+            if total_verificado else None
+        ),
+        "limite_inferior_95_verificado_pct": round(100 * inferior_verificado, 2),
         "objetivo_principal_wr_pct": 60.0,
         "minimo_aprobacion_pct": round(100 * objetivo, 2),
         "objetivo_principal_60_respaldado": (
-            not motivos and inferior >= 0.60
+            not motivos and inferior_verificado >= 0.60
         ),
         "motivos": sorted(set(motivos)),
         "operaciones_autorizadas": False,
