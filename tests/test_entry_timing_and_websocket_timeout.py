@@ -382,7 +382,9 @@ class CandleRequestTimeoutTests(unittest.TestCase):
         api.start_websocket = Mock(return_value=(True, None))
         api.send_ssid = Mock(return_value=False)
         api.close = Mock(return_value=True)
-        with patch.object(global_value, "SSID", None):
+        with patch.object(global_value, "SSID", None), patch(
+            "iqoptionapi.api.atexit.register"
+        ):
             connected, reason = api.connect()
         self.assertFalse(connected)
         self.assertEqual(reason, "SSID_PROFILE_TIMEOUT")
