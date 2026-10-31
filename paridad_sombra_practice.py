@@ -4,6 +4,7 @@ No conecta con IQ Option, no importa credenciales y nunca ejecuta ordenes.
 Una decision solo existe cuando llegaron las 60 velas cerradas del minuto;
 si una vela llega despues del cierre, ese minuto no se evalua en tiempo real.
 """
+from itertools import groupby
 from contexto_mercado_fresco import consolidar_minutos, diagnosticar_contexto
 from estrategias_contexto_fresco import diagnosticar_estrategias
 from arbitro_estrategias_frescas import arbitrar_candidatos
@@ -97,20 +98,21 @@ def evaluar_flujo(llegadas):
             if minutos and minutos[-1]["end"] == fin:
                 resultados.append((fin, diagnosticar_cierre(_segmento_actual(minutos))))
 
-    for recibido, vela in llegadas:
+    # Todas las velas recibidas en el mismo segundo forman un lote.
+    # No cerrar el minuto entre dos velas del mismo segundo de recepcion.
+    for recibido, lote in groupby(llegadas, key=lambda par: par[0]):
         if type(recibido) is not int or recibido < 0:
             raise ValueError("RECEPCION_INVALIDA")
         if recepcion_anterior is not None and recibido < recepcion_anterior:
             raise ValueError("RECEPCIONES_DESORDENADAS")
         recepcion_anterior = recibido
-        t = int(vela["from"])
-        fin = (t // 60 + 1) * 60
-        if recibido < t + 1:
-            raise ValueError("VELA_AUN_ABIERTA")
-        # Si la ultima vela del minuto llega justo a su cierre, se acepta.
-        # Las velas anteriores recibidas tras el cierre NO corrigen decisiones.
-        if recibido <= fin and fin not in cerrados and t not in vistos:
-            vistos[t] = dict(vela)
+        for _, vela in lote:
+            t = int(vela["from"])
+            fin = (t // 60 + 1) * 60
+            if recibido < t + 1:
+                raise ValueError("VELA_AUN_ABIERTA")
+            if recibido <= fin and fin not in cerrados and t not in vistos:
+                vistos[t] = dict(vela)
         finalizar_hasta(recibido)
     return resultados
 
