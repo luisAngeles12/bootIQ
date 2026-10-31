@@ -68,6 +68,22 @@ class PruebasParidadSombra(unittest.TestCase):
         self.assertEqual(resultado["velas_con_retraso"], 0)
         self.assertFalse(resultado["operable"])
 
+    def test_llegadas_mismo_segundo_se_agrupan_antes_del_cierre(self):
+        datos = velas(3)
+        latencias = {t: 0 for t in datos}
+        # La penultima y ultima vela llegan en el segundo exacto de cierre.
+        # Cerrarlas por separado descartaria falsamente un minuto elegible.
+        latencias[58] = 1
+        llegadas = sorted(
+            ((t + 1 + latencias[t], vela) for t, vela in datos.items()),
+            key=lambda par: (par[0], par[1]["from"]),
+        )
+        resultado = comprobar_paridad_recepcion_1s(datos, latencias)
+        self.assertEqual([fin for fin, _ in evaluar_flujo(llegadas)], [60, 120, 180])
+        self.assertTrue(resultado["paridad"])
+        self.assertTrue(resultado["coincidencia_cierres_elegibles"])
+        self.assertFalse(resultado["operable"])
+
     def test_paridad_falla_por_retraso_de_ultima_vela(self):
         datos = velas()
         latencias = {t: 0 for t in datos}
