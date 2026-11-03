@@ -9,6 +9,7 @@ on:
       - 'tests/test_auditoria_candidatas_sombra_practice.py'
       - 'reporte_candidatas_sombra_practice.py'
       - 'tests/test_reporte_candidatas_sombra_practice.py'
+      - 'tests/test_oportunidades_independientes_fase49.py'
       - '.github/workflows/fase49-sombra-candidatas.yml'
   workflow_dispatch:
 jobs:
@@ -27,3 +28,5 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_auditoria_candidatas_sombra_practice.py' -v
       - name: Regression reporte por estrategia y contexto
         run: python -m unittest discover -s tests -p 'test_reporte_candidatas_sombra_practice.py' -v
+      - name: Regression independencia de oportunidades
+        run: python -m unittest discover -s tests -p 'test_oportunidades_independientes_fase49.py' -v
