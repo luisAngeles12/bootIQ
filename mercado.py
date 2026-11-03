@@ -159,8 +159,8 @@ def _buffer_velas_integro(candles):
 
 
 def _seleccionar_top_con_buffers(candidatos):
-    # 20 es el maximo, no un minimo: operar con 1..20 candidatos validos.
-    objetivo = min(MAX_ACTIVOS_ANALIZAR, len(candidatos))
+    # Contrato de auditoria: no publicar selecciones TOP20 parciales.
+    objetivo = MAX_ACTIVOS_ANALIZAR
     listos = [
         item
         for item in candidatos
@@ -175,7 +175,7 @@ def _seleccionar_top_con_buffers(candidatos):
 
 
 def _publicar_top_con_buffers(top):
-    if not (0 < len(top) <= MAX_ACTIVOS_ANALIZAR) or any(
+    if len(top) != MAX_ACTIVOS_ANALIZAR or any(
         not _buffer_velas_integro(estado.velas_cache.get(item["activo"], []))
         for item in top
     ):
@@ -1293,7 +1293,7 @@ def refrescar_activos_incremental():
             elegibles
         )
 
-        if not objetivo_top or len(top_publicable) < objetivo_top:
+        if len(top_publicable) != objetivo_top:
             print(
                 "D7.6D TOP PENDIENTE BUFFER |"
                 "listos:",
