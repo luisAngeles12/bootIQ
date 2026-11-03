@@ -147,8 +147,8 @@ def resumir_arbitro_flujo(velas, latencias, profundidad=24):
             c["contexto_24_min_verificado"] for c in candidatos
         ),
         "candidatos": candidatos,
-        "resultados_win_loss_verificados": 0,
-        "payouts_preentrada_verificados": 0,
+        "resultados_win_loss_verificados": None,
+        "payouts_preentrada_verificados": None,
         "operaciones_autorizadas": False,
         "advertencia": "VENTANA_VALIDADA_NO_ES_SENAL; CANDIDATO_NO_ES_WIN",
     }
