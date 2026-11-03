@@ -97,6 +97,63 @@ def resumir_contexto_temporal(velas, latencias, profundidad=24):
     }
 
 
+
+def resumir_arbitro_flujo(velas, latencias, profundidad=24):
+    """Diagnostica el arbitro REALMENTE observable en flujo, no replay.
+
+    Solo cuenta candidatos generados por el arbitro original. Que un cierre
+    tenga contexto temporal suficiente no constituye una senal ni un WIN.
+    """
+    from collections import Counter
+    llegadas = sorted(
+        ((t + 1 + latencias[t], dict(vela)) for t, vela in velas.items()),
+        key=lambda par: (par[0], int(par[1]["from"])),
+    )
+    cierres = evaluar_flujo(llegadas)
+    motivos = Counter()
+    estados = Counter()
+    candidatos = []
+    validos_por_fin = {fin for fin, _ in cierres}
+    # El historial disponible en el flujo debe ser continuo y observable.
+    racha = 0
+    anterior = None
+    ventanas_verificadas = 0
+    for fin, diagnostico in cierres:
+        racha = racha + 1 if anterior == fin - 60 else 1
+        anterior = fin
+        contexto_verificado = racha >= profundidad
+        ventanas_verificadas += contexto_verificado
+        arbitraje = diagnostico["arbitraje"]
+        if arbitraje["operable"] is not False:
+            raise RuntimeError("ARBITRO_FLUJO_AUTORIZO_OPERACION")
+        motivos[arbitraje["motivo"]] += 1
+        estados[arbitraje["estado"]] += 1
+        if arbitraje["estado"] == "CANDIDATO_SOMBRA_NO_OPERABLE":
+            candidatos.append({
+                "timestamp_cierre": fin,
+                "direccion": arbitraje["direccion"],
+                "estrategias": list(arbitraje["estrategias"]),
+                "contexto_24_min_verificado": contexto_verificado,
+                "operable": False,
+            })
+    return {
+        "cierres_flujo": len(cierres),
+        "cierres_temporales_distintos": len(validos_por_fin),
+        "ventanas_contexto_verificadas": ventanas_verificadas,
+        "estados_arbitro": dict(sorted(estados.items())),
+        "motivos_arbitro": dict(sorted(motivos.items())),
+        "candidatos_sombra_totales": len(candidatos),
+        "candidatos_con_contexto_temporal_verificado": sum(
+            c["contexto_24_min_verificado"] for c in candidatos
+        ),
+        "candidatos": candidatos,
+        "resultados_win_loss_verificados": 0,
+        "payouts_preentrada_verificados": 0,
+        "operaciones_autorizadas": False,
+        "advertencia": "VENTANA_VALIDADA_NO_ES_SENAL; CANDIDATO_NO_ES_WIN",
+    }
+
+
 def auditar_decisiones(velas, latencias):
     """Compara cada cierre causal con su replay sin forzar igualdad artificial."""
     cobertura = comprobar_paridad_recepcion_1s(velas, latencias)
@@ -123,6 +180,7 @@ def auditar_decisiones(velas, latencias):
         "cierres_replay": len(historico),
         "cierres_flujo": len(flujo),
         "contexto_temporal": resumir_contexto_temporal(velas, latencias),
+        "arbitro_flujo": resumir_arbitro_flujo(velas, latencias),
         "cierres_replay_excluidos": sorted(set(historico) - set(flujo)),
         "coincidencia_cierres_elegibles": cobertura["coincidencia_cierres_elegibles"],
         "decisiones_iguales_sobre_flujo": len(flujo) - len(distintos),
