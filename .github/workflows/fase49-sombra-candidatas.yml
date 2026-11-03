@@ -1,0 +1,25 @@
+name: Fase 4.9 - señales rechazadas en sombra
+on:
+  push:
+    branches:
+      - bootiq-v3-auditoria
+    paths:
+      - 'estrategia.py'
+      - 'auditoria_candidatas_sombra_practice.py'
+      - 'tests/test_auditoria_candidatas_sombra_practice.py'
+      - '.github/workflows/fase49-sombra-candidatas.yml'
+  workflow_dispatch:
+jobs:
+  diagnostico-sombra:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validar sintaxis
+        run: python -m py_compile auditoria_candidatas_sombra_practice.py estrategia.py
+      - name: Regression shadow ledger sin broker
+        run: python -m unittest discover -s tests -p 'test_auditoria_candidatas_sombra_practice.py' -v
