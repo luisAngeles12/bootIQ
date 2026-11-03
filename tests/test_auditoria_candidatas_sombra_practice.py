@@ -79,6 +79,21 @@ class AuditoriaCandidatasSombra(unittest.TestCase):
         resolver_candidatas("USDINR-OTC", ctx([600, 660], [100, 100], [100, 100]), self.p)
         self.assertEqual(self.leer()[0]["resultado_hipotetico"], "EMPATE")
 
+    def test_ventana_expirada_se_reporta_sin_imputar_win_loss(self):
+        registrar_candidata(senal(), ctx(), self.p)
+        datos = ctx([900, 960], [100, 100], [100, 101])
+        self.assertEqual(resolver_candidatas("USDINR-OTC", datos, self.p), 1)
+        fila = self.leer()[0]
+        self.assertEqual(fila["resultado_hipotetico"], "")
+        self.assertEqual(fila["calidad_tiempo"], "SIN_VELA_POSTERIOR_EN_BUFFER")
+        self.assertEqual(resolver_candidatas("USDINR-OTC", datos, self.p), 0)
+
+    def test_contexto_discontinuo_no_cierra_ninguna_senal(self):
+        registrar_candidata(senal(), ctx(), self.p)
+        datos = ctx([600, 660, 780], [100, 100, 100], [101, 102, 103])
+        self.assertEqual(resolver_candidatas("USDINR-OTC", datos, self.p), 0)
+        self.assertEqual(self.leer()[0]["resultado_hipotetico"], "")
+
     def test_no_registra_senal_aprobada(self):
         s = senal()
         s["decision_unificada_accion"] = "OPERAR"
