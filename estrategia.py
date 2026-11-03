@@ -1721,6 +1721,12 @@ def evaluar_senal_candidata(activo, ctx, senal):
             motivo_cerebro_d8e7,
         )
 
+        try:
+            from auditoria_candidatas_sombra_practice import registrar_candidata
+            registrar_candidata(senal, ctx)
+        except Exception as e:
+            print("SOMBRA REGISTRO NO DISPONIBLE:", type(e).__name__, flush=True)
+
         return None
 
     if not modo_diagnostico:
@@ -1816,6 +1822,13 @@ def analizar_activo(
 
     if ctx is None:
         return None
+
+    if not modo_backtest_diagnostico:
+        try:
+            from auditoria_candidatas_sombra_practice import resolver_candidatas
+            resolver_candidatas(activo, ctx)
+        except Exception as e:
+            print("SOMBRA CIERRE NO DISPONIBLE:", type(e).__name__, flush=True)
 
     inicio_mercado_d76d = (
         _time_d76d.perf_counter()
