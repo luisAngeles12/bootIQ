@@ -83,6 +83,9 @@ def resolver_candidatas(activo, ctx, ruta=RUTA_EVENTOS):
     closes = ctx.get("closes", [])
     if not (len(froms) == len(opens) == len(closes)):
         return 0
+    if not froms or any(b - a != 60 for a, b in zip(froms, froms[1:])):
+        # Un contexto discontinuo no sirve para declarar un resultado.
+        return 0
     indices = {t: i for i, t in enumerate(froms)}
     actual = int(ctx.get("vela_senal_from") or 0)
     cambios = 0
@@ -91,7 +94,16 @@ def resolver_candidatas(activo, ctx, ruta=RUTA_EVENTOS):
             continue
         entrada_from = int(fila["vela_senal_from"]) + 60
         # La vela posterior solo se puede evaluar DESPUES de cerrar.
-        if entrada_from > actual or entrada_from not in indices:
+        if entrada_from > actual:
+            continue
+        if entrada_from < froms[0]:
+            # Resultado irrecuperable con el buffer disponible:
+            # nunca inventar WIN/LOSS ni ocultarlo entre pendientes recientes.
+            if fila["calidad_tiempo"] != "SIN_VELA_POSTERIOR_EN_BUFFER":
+                fila["calidad_tiempo"] = "SIN_VELA_POSTERIOR_EN_BUFFER"
+                cambios += 1
+            continue
+        if entrada_from not in indices:
             continue
         indice = indices[entrada_from]
         if indice == 0 or froms[indice - 1] != entrada_from - 60:
