@@ -48,6 +48,27 @@ class Independencia(unittest.TestCase):
         self.assertEqual(r["oportunidades_independientes"], 0)
         self.assertEqual(r["filas_excluidas_por_calidad_o_trazabilidad"], 1)
 
+    def test_dos_activos_mismo_minuto_no_justifican_intervalo_independiente(self):
+        r = resumen_oportunidades_independientes([
+            fila(ts=120, activo="USDINR-OTC", resultado="WIN"),
+            fila(ts=120, activo="USDBRL-OTC", resultado="WIN"),
+        ])
+        self.assertEqual(r["oportunidades_independientes"], 2)
+        self.assertEqual(r["minutos_utc_distintos"], 1)
+        self.assertEqual(r["oportunidades_simultaneas_entre_activos"], 1)
+        self.assertFalse(r["intervalo_confianza_interpretable"])
+        self.assertIsNone(r["limite_wilson_proxy_95_pct"])
+        self.assertEqual(r["resultado"], "PROXY_NO_VALIDADO")
+
+    def test_minutos_distintos_conservan_calculo_exploratorio(self):
+        r = resumen_oportunidades_independientes([
+            fila(ts=120, activo="USDINR-OTC", resultado="WIN"),
+            fila(ts=180, activo="USDBRL-OTC", resultado="LOSS"),
+        ])
+        self.assertTrue(r["intervalo_confianza_interpretable"])
+        self.assertIsNotNone(r["limite_wilson_proxy_95_pct"])
+        self.assertFalse(r["operaciones_autorizadas"])
+
     def test_senales_distintas_se_cuentan_y_sin_permiso(self):
         r = resumen_oportunidades_independientes([
             fila(ts=120, resultado="WIN"),
