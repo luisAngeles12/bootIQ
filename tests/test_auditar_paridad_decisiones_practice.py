@@ -2,11 +2,12 @@
 import csv
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from auditar_paridad_decisiones_practice import (
     COLUMNAS, cargar_captura, auditar_decisiones, resumir_contexto_temporal,
-    resumir_arbitro_flujo,
+    resumir_arbitro_flujo, evaluar_candidatos_causales,
 )
 
 
@@ -79,6 +80,56 @@ class AuditorParidadDecisionesTests(unittest.TestCase):
         self.assertEqual(reporte["cierres_flujo"], 25)
         self.assertEqual(reporte["ventanas_contexto_verificadas"], 0)
         self.assertFalse(reporte["operaciones_autorizadas"])
+
+    def test_candidato_causal_con_futuro_es_solo_hipotetico(self):
+        velas = muestra(27)
+        diagnosticos = [
+            (fin, {"arbitraje": {
+                "operable": False,
+                "estado": "CANDIDATO_SOMBRA_NO_OPERABLE"
+                if fin in (24 * 60, 25 * 60) else "NO_OPERAR",
+                "direccion": "call" if fin in (24 * 60, 25 * 60) else None,
+                "estrategias": ["RUPTURA_RETEST"] if fin in (24 * 60, 25 * 60) else [],
+            }})
+            for fin in range(60, 27 * 60 + 1, 60)
+        ]
+        with patch("auditar_paridad_decisiones_practice.evaluar_flujo",
+                   return_value=diagnosticos):
+            reporte = evaluar_candidatos_causales(
+                velas, {t: 0 for t in velas}
+            )
+        self.assertEqual(reporte["eventos_sombra_no_solapados"], 2)
+        self.assertEqual(reporte["outcomes_hipoteticos_evaluables"], 2)
+        self.assertEqual(reporte["wins_hipoteticos"], 2)
+        self.assertFalse(reporte["payout_verificado"])
+        self.assertFalse(reporte["evidencia_estadistica_validada"])
+        self.assertFalse(reporte["operaciones_autorizadas"])
+        self.assertTrue(all(not e["operable"] and
+                            e["payout_neto"] is None for e in reporte["eventos"]))
+
+    def test_candidato_sin_24_cierres_o_futuro_se_rechaza(self):
+        velas = muestra(24)
+        diag = [(60, {"arbitraje": {
+            "operable": False, "estado": "CANDIDATO_SOMBRA_NO_OPERABLE",
+            "direccion": "call", "estrategias": ["RECHAZO_ZONA"],
+        }})]
+        with patch("auditar_paridad_decisiones_practice.evaluar_flujo",
+                   return_value=diag):
+            r = evaluar_candidatos_causales(velas, {t: 0 for t in velas})
+        self.assertEqual(r["candidatos_con_contexto_insuficiente"], 1)
+        self.assertEqual(r["eventos_sombra_no_solapados"], 0)
+        diag = [(fin, {"arbitraje": {
+            "operable": False,
+            "estado": "CANDIDATO_SOMBRA_NO_OPERABLE" if fin == 24 * 60 else "NO_OPERAR",
+            "direccion": "call" if fin == 24 * 60 else None,
+            "estrategias": ["RECHAZO_ZONA"] if fin == 24 * 60 else [],
+        }}) for fin in range(60, 24 * 60 + 1, 60)]
+        with patch("auditar_paridad_decisiones_practice.evaluar_flujo",
+                   return_value=diag):
+            r = evaluar_candidatos_causales(velas, {t: 0 for t in velas})
+        self.assertEqual(r["sin_futuro"], 1)
+        self.assertEqual(r["outcomes_hipoteticos_evaluables"], 0)
+        self.assertIsNone(r["wr_hipotetico_pct"])
 
     def test_csv_valida_campos_y_rechaza_duplicados(self):
         with tempfile.TemporaryDirectory() as temp:
