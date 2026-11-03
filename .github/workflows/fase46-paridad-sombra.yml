@@ -11,6 +11,7 @@ on:
       - 'auditar_paridad_decisiones_practice.py'
       - 'tests/test_*fresco*.py'
       - 'tests/test_paridad_sombra_practice.py'
+      - 'tests/test_paridad_causal_fase46.py'
       - 'tests/test_auditar_paridad_decisiones_practice.py'
       - '.github/workflows/fase46-paridad-sombra.yml'
   workflow_dispatch:
@@ -34,3 +35,4 @@ jobs:
           python -m unittest discover -s tests -p 'test_arbitro_estrategias_frescas.py' -v
           python -m unittest discover -s tests -p 'test_paridad_sombra_practice.py' -v
           python -m unittest discover -s tests -p 'test_auditar_paridad_decisiones_practice.py' -v
+          python -m unittest discover -s tests -p 'test_paridad_causal_fase46.py' -v
