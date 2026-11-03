@@ -6,6 +6,7 @@ from pathlib import Path
 
 from auditar_paridad_decisiones_practice import (
     COLUMNAS, cargar_captura, auditar_decisiones, resumir_contexto_temporal,
+    resumir_arbitro_flujo,
 )
 
 
@@ -55,6 +56,29 @@ class AuditorParidadDecisionesTests(unittest.TestCase):
         self.assertEqual(incompleto["racha_maxima_cierres_elegibles"], 20)
         self.assertEqual(incompleto["cierres_con_contexto_temporal_verificado"], 0)
         self.assertFalse(incompleto["operaciones_autorizadas"])
+
+    def test_ventanas_validas_no_se_convierten_en_senales(self):
+        velas = muestra(26)
+        latencias = {t: 0 for t in velas}
+        reporte = resumir_arbitro_flujo(velas, latencias)
+        self.assertEqual(reporte["cierres_flujo"], 26)
+        self.assertEqual(reporte["ventanas_contexto_verificadas"], 3)
+        self.assertEqual(sum(reporte["estados_arbitro"].values()), 26)
+        self.assertEqual(sum(reporte["motivos_arbitro"].values()), 26)
+        self.assertLessEqual(reporte["candidatos_con_contexto_temporal_verificado"],
+                             reporte["ventanas_contexto_verificadas"])
+        self.assertIsNone(reporte["resultados_win_loss_verificados"])
+        self.assertIsNone(reporte["payouts_preentrada_verificados"])
+        self.assertFalse(reporte["operaciones_autorizadas"])
+
+    def test_recepcion_tardia_reinicia_contexto_del_arbitro(self):
+        velas = muestra(26)
+        latencias = {t: 0 for t in velas}
+        latencias[20 * 60 + 59] = 2
+        reporte = resumir_arbitro_flujo(velas, latencias)
+        self.assertEqual(reporte["cierres_flujo"], 25)
+        self.assertEqual(reporte["ventanas_contexto_verificadas"], 0)
+        self.assertFalse(reporte["operaciones_autorizadas"])
 
     def test_csv_valida_campos_y_rechaza_duplicados(self):
         with tempfile.TemporaryDirectory() as temp:
