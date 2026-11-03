@@ -90,6 +90,7 @@ def resumen_oportunidades_independientes(filas):
 
     total = wins = losses = empates = conflictos = agrupadas = 0
     dias = set()
+    minutos_utc = []
     por_estrategia = defaultdict(lambda: {"win": 0, "loss": 0, "empates": 0})
     for (activo, ts), candidatas in claves.items():
         direcciones = {str(f.get("direccion", "")).lower() for f in candidatas}
@@ -100,6 +101,7 @@ def resumen_oportunidades_independientes(filas):
         resultado = next(iter(resultados))
         total += 1
         dias.add(ts // 86400)
+        minutos_utc.append(ts // 60)
         agrupadas += len(candidatas) - 1
         if resultado == "WIN":
             wins += 1
@@ -118,10 +120,17 @@ def resumen_oportunidades_independientes(filas):
         "oportunidades_con_conflicto_excluidas": conflictos,
         "filas_excluidas_por_calidad_o_trazabilidad": descartadas,
         "dias_utc": len(dias),
+        "minutos_utc_distintos": len(set(minutos_utc)),
+        "oportunidades_simultaneas_entre_activos": total - len(set(minutos_utc)),
+        "intervalo_confianza_interpretable": (total > 0 and len(set(minutos_utc)) == total),
         "winrate_proxy_pct": round(100 * wins / total, 2) if total else None,
         "limite_wilson_proxy_95_pct": (
             round(100 * limite_inferior_wilson(wins, total), 2)
-            if total else None
+            if total and len(set(minutos_utc)) == total else None
+        ),
+        "motivo_intervalo_no_interpretable": (
+            "EVENTOS_SIMULTANEOS_POTENCIALMENTE_CORRELACIONADOS"
+            if total > len(set(minutos_utc)) else None
         ),
         "atribucion_estrategia_sin_ambiguedad": dict(por_estrategia),
         "resultado": "PROXY_NO_VALIDADO",
@@ -147,6 +156,7 @@ def generar_reporte(ruta=RUTA_EVENTOS):
             "No se verifican precio de ejecucion, segundo de entrada, payout ni latencia.",
             "No existe validacion OOS ni permiso para operar.",
             "Los eventos simultaneos de un activo se agrupan; conflictos CALL/PUT se excluyen.",
+            "Eventos en distintos activos durante el mismo minuto pueden estar correlacionados.",
         ],
         "operaciones_autorizadas": False,
     }
