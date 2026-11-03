@@ -31,6 +31,17 @@ class ReporteSombraPractice(unittest.TestCase):
         self.assertEqual(r["validacion_60"], "NO_VALIDADA")
         self.assertFalse(r["operaciones_autorizadas"])
 
+    def test_mismo_minuto_dos_activos_no_crean_confianza_falsa(self):
+        a = evento("PULLBACK", "WIN", 86400)
+        b = evento("PULLBACK", "WIN", 86400)
+        b["activo"] = "USDBRL-OTC"
+        r = resumen_eventos([a, b])[0]
+        self.assertEqual(r["winrate_hipotetico_pct"], 100)
+        self.assertEqual(r["minutos_utc_distintos"], 1)
+        self.assertFalse(r["intervalo_confianza_interpretable"])
+        self.assertIsNone(r["limite_inferior_wilson_95_pct"])
+        self.assertFalse(r["operaciones_autorizadas"])
+
     def test_pendientes_y_empates_no_se_ocultan(self):
         muestras = [
             evento("CHOCH", "WIN", 86400),
