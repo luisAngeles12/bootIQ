@@ -31,9 +31,9 @@ def evaluar_paridad_causal(velas, latencias):
     for t in velas:
         fin = (t // 60 + 1) * 60
         inicio = fin - 60
-        if all(k in velas and k in latencias
+        if all(t0 in velas and t0 in latencias
                and t0 + 1 + latencias[t0] <= fin
-               for t0 in range(inicio, fin) for k in (t0,)):
+               for t0 in range(inicio, fin)):
             elegibles.add(fin)
     referencia = reproducir_cierres({
         t: v for t, v in velas.items()
