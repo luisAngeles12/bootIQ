@@ -1,0 +1,28 @@
+name: Fase 4.7 - evidencia y payout sin broker
+on:
+  push:
+    branches:
+      - bootiq-v3-auditoria
+    paths:
+      - 'validar_evidencia_practice.py'
+      - 'evaluar_pago_practice.py'
+      - 'tests/test_validar_evidencia_practice.py'
+      - 'tests/test_pago_fase47_aislado.py'
+      - '.github/workflows/fase47-evidencia-pago.yml'
+  workflow_dispatch:
+jobs:
+  evidencia-sin-broker:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verificar sintaxis
+        run: python -m py_compile validar_evidencia_practice.py evaluar_pago_practice.py
+      - name: Validar criterios estadisticos y de payout
+        run: |
+          python -m unittest discover -s tests -p 'test_validar_evidencia_practice.py' -v
+          python -m unittest discover -s tests -p 'test_pago_fase47_aislado.py' -v
