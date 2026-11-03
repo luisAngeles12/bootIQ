@@ -915,13 +915,12 @@ def main():
             solo_cache=True
         )
 
-        # TOP20 es un maximo, no una cuota minima.
-        # La seleccion debe estar publicada y no superar el limite.
-        if not (0 < len(activos) <= MAX_ACTIVOS_ANALIZAR):
+        # Contrato de auditoria: TOP20 completo, nunca parcial.
+        if len(activos) != MAX_ACTIVOS_ANALIZAR:
             print(
-                "LIVE SIN MERCADOS ELEGIBLES O LIMITE EXCEDIDO | recibidos:",
+                "LIVE TOP20 INCOMPLETO | recibidos:",
                 len(activos),
-                "| maximo:",
+                "| requeridos:",
                 MAX_ACTIVOS_ANALIZAR,
             )
             estado_ronda_d76f = "OMITIDA_PREANALISIS"
@@ -944,8 +943,8 @@ def main():
                 flush=True,
             )
 
-        if not activos:
-            print("D9.98 RONDA OMITIDA | SIN BUFFERS VALIDOS", flush=True)
+        if len(activos) != MAX_ACTIVOS_ANALIZAR:
+            print("D9.98 RONDA OMITIDA | TOP20 SIN BUFFERS COMPLETOS", flush=True)
             estado_ronda_d76f = "OMITIDA_PREANALISIS"
             time.sleep(0.25)
             continue
