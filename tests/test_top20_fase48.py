@@ -1,4 +1,4 @@
-"""Regresiones sin broker del contrato TOP20 completo."""
+"""Regresiones sin broker: TOP20 es un maximo, buffers íntegros."""
 import ast
 from pathlib import Path
 from types import SimpleNamespace
@@ -31,15 +31,14 @@ class TopCompletoFase48Tests(unittest.TestCase):
         for name in ("_seleccionar_top_con_buffers", "_publicar_top_con_buffers"):
             exec(_extraer_funcion(name), self.ctx)
 
-    def test_19_candidatos_no_forman_top_completo(self):
+    def test_19_candidatos_validos_son_permitidos(self):
         items = [{"activo": str(i)} for i in range(19)]
         objetivo, top, listos = self.ctx["_seleccionar_top_con_buffers"](items)
-        self.assertEqual(objetivo, 20)
+        self.assertEqual(objetivo, 19)
         self.assertEqual(len(top), 19)
         self.assertEqual(listos, 19)
-        with self.assertRaisesRegex(ValueError, "TOP_INCOMPLETO"):
-            self.ctx["_publicar_top_con_buffers"](top)
-        self.assertEqual(self.estado.activos_cache, [])
+        self.assertEqual(len(self.ctx["_publicar_top_con_buffers"](top)), 19)
+        self.assertEqual(len(self.estado.activos_cache), 19)
 
     def test_20_candidatos_con_un_buffer_invalido_no_publican(self):
         items = [{"activo": str(i)} for i in range(20)]
@@ -51,6 +50,12 @@ class TopCompletoFase48Tests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.ctx["_publicar_top_con_buffers"](top)
 
+    def test_un_mercado_valido_se_puede_publicar(self):
+        items = [{"activo": "0"}]
+        objetivo, top, listos = self.ctx["_seleccionar_top_con_buffers"](items)
+        self.assertEqual((objetivo, len(top), listos), (1, 1, 1))
+        self.assertEqual(len(self.ctx["_publicar_top_con_buffers"](top)), 1)
+
     def test_20_validos_publican_atomicamente(self):
         items = [{"activo": str(i)} for i in range(20)]
         objetivo, top, listos = self.ctx["_seleccionar_top_con_buffers"](items)
@@ -59,16 +64,15 @@ class TopCompletoFase48Tests(unittest.TestCase):
         self.assertEqual(len(result), 20)
         self.assertEqual(len(self.estado.activos_cache), 20)
 
-    def test_bot_no_analiza_top_parcial(self):
+    def test_bot_rechaza_cero_o_mas_de_20(self):
         tree = ast.parse((ROOT / "bot.py").read_text(encoding="utf-8"))
         guards = [
             ast.unparse(node.test)
             for node in ast.walk(tree)
             if isinstance(node, ast.If)
         ]
-        self.assertGreaterEqual(
-            guards.count("len(activos) != MAX_ACTIVOS_ANALIZAR"), 2
-        )
+        self.assertIn("not 0 < len(activos) <= MAX_ACTIVOS_ANALIZAR", guards)
+        self.assertIn("not activos", guards)
 
 if __name__ == "__main__":
     unittest.main()
