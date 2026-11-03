@@ -47,8 +47,9 @@ class TopCompletoFase48Tests(unittest.TestCase):
         self.assertEqual(objetivo, 20)
         self.assertEqual(len(top), 19)
         self.assertEqual(listos, 19)
-        with self.assertRaises(ValueError):
-            self.ctx["_publicar_top_con_buffers"](top)
+        self.assertEqual(len(self.ctx["_publicar_top_con_buffers"](top)), 19)
+        with self.assertRaisesRegex(ValueError, "TOP_INCOMPLETO"):
+            self.ctx["_publicar_top_con_buffers"](items)
 
     def test_un_mercado_valido_se_puede_publicar(self):
         items = [{"activo": "0"}]
