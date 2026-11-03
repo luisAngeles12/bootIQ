@@ -47,7 +47,22 @@ def resumen_eventos(filas, campo="patron"):
         salida.append({
             campo: nombre,
             "candidatas": len(eventos),
-            "pendientes": len(eventos) - total_resueltos,
+            "pendientes": sum(
+                f.get("calidad_tiempo") == "PENDIENTE_VELA_POSTERIOR"
+                for f in eventos
+            ),
+            "sin_resultado_recuperable": sum(
+                f.get("calidad_tiempo") == "SIN_VELA_POSTERIOR_EN_BUFFER"
+                for f in eventos
+            ),
+            "otros_sin_resultado": sum(
+                f.get("resultado_hipotetico") not in VALIDOS
+                and f.get("calidad_tiempo") not in {
+                    "PENDIENTE_VELA_POSTERIOR",
+                    "SIN_VELA_POSTERIOR_EN_BUFFER",
+                }
+                for f in eventos
+            ),
             "win": wins, "loss": losses, "empates": empates,
             "evaluables": total_resueltos,
             "minutos_utc_distintos": len(set(minutos)),
@@ -171,6 +186,7 @@ def generar_reporte(ruta=RUTA_EVENTOS):
             "No existe validacion OOS ni permiso para operar.",
             "Los eventos simultaneos de un activo se agrupan; conflictos CALL/PUT se excluyen.",
             "Eventos en distintos activos durante el mismo minuto pueden estar correlacionados.",
+            "Resultados con velas fuera de cache se reportan como irrecuperables y no se imputan.",
         ],
         "operaciones_autorizadas": False,
     }
