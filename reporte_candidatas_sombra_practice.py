@@ -27,7 +27,19 @@ def resumen_eventos(filas, campo="patron"):
         # Los empates se conservan separados. La tasa incluye todos los
         # desenlaces en el denominador y nunca se confunde con rentabilidad.
         total_resueltos = len(terminados)
-        wilson = limite_inferior_wilson(wins, total_resueltos)
+        minutos = [
+            int(f["vela_senal_from"]) // 60
+            for f in terminados if str(f.get("vela_senal_from", "")).isdigit()
+        ]
+        intervalo_interpretable = (
+            total_resueltos > 0
+            and len(minutos) == total_resueltos
+            and len(set(minutos)) == total_resueltos
+        )
+        wilson = (
+            limite_inferior_wilson(wins, total_resueltos)
+            if intervalo_interpretable else None
+        )
         dias = {
             int(f["vela_senal_from"]) // 86400
             for f in terminados if str(f.get("vela_senal_from", "")).isdigit()
@@ -38,12 +50,14 @@ def resumen_eventos(filas, campo="patron"):
             "pendientes": len(eventos) - total_resueltos,
             "win": wins, "loss": losses, "empates": empates,
             "evaluables": total_resueltos,
+            "minutos_utc_distintos": len(set(minutos)),
+            "intervalo_confianza_interpretable": intervalo_interpretable,
             "winrate_hipotetico_pct": (
                 round(100 * wins / total_resueltos, 2)
                 if total_resueltos else None
             ),
             "limite_inferior_wilson_95_pct": (
-                round(100 * wilson, 2) if total_resueltos else None
+                round(100 * wilson, 2) if wilson is not None else None
             ),
             "dias_utc_con_resultados": len(dias),
             "objetivo_60_observado": (
