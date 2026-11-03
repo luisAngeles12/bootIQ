@@ -1,0 +1,36 @@
+name: Fase 4.6 - paridad sombra sin broker
+on:
+  push:
+    branches:
+      - bootiq-v3-auditoria
+    paths:
+      - 'contexto_mercado_fresco.py'
+      - 'estrategias_contexto_fresco.py'
+      - 'arbitro_estrategias_frescas.py'
+      - 'paridad_sombra_practice.py'
+      - 'auditar_paridad_decisiones_practice.py'
+      - 'tests/test_*fresco*.py'
+      - 'tests/test_paridad_sombra_practice.py'
+      - 'tests/test_auditar_paridad_decisiones_practice.py'
+      - '.github/workflows/fase46-paridad-sombra.yml'
+  workflow_dispatch:
+
+jobs:
+  paridad-sin-broker:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compilar modulos sin conexion
+        run: python -m py_compile contexto_mercado_fresco.py estrategias_contexto_fresco.py arbitro_estrategias_frescas.py paridad_sombra_practice.py auditar_paridad_decisiones_practice.py
+      - name: Ejecutar regresiones fase 4.6 sin broker
+        run: |
+          python -m unittest discover -s tests -p 'test_contexto_mercado_fresco.py' -v
+          python -m unittest discover -s tests -p 'test_estrategias_contexto_fresco.py' -v
+          python -m unittest discover -s tests -p 'test_arbitro_estrategias_frescas.py' -v
+          python -m unittest discover -s tests -p 'test_paridad_sombra_practice.py' -v
+          python -m unittest discover -s tests -p 'test_auditar_paridad_decisiones_practice.py' -v
