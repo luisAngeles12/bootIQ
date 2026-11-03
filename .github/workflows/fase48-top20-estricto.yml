@@ -1,0 +1,25 @@
+name: Fase 4.8 - TOP20 estricto sin broker
+on:
+  push:
+    branches:
+      - bootiq-v3-auditoria
+    paths:
+      - 'bot.py'
+      - 'mercado.py'
+      - 'tests/test_top20_fase48.py'
+      - '.github/workflows/fase48-top20-estricto.yml'
+  workflow_dispatch:
+jobs:
+  top20:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verificar sintaxis sin broker
+        run: python -m py_compile bot.py mercado.py
+      - name: Regresiones de TOP20
+        run: python -m unittest discover -s tests -p 'test_top20_fase48.py' -v
