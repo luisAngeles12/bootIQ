@@ -11,6 +11,9 @@ def evento(patron, resultado, ts, decision="NO_OPERAR", mercado="RANGO",
            calidad="NORMAL", accion="RECHAZO"):
     return {
         "patron": patron, "resultado_hipotetico": resultado,
+        "calidad_tiempo": ("HIPOTETICO_VELA_COMPLETA_SIN_FILL"
+                            if resultado in {"WIN", "LOSS", "EMPATE"}
+                            else "PENDIENTE_VELA_POSTERIOR"),
         "vela_senal_from": str(ts), "decision": decision,
         "tipo_mercado": mercado, "calidad_mercado": calidad,
         "accion_precio": accion, "activo": "USDINR-OTC", "direccion": "call",
