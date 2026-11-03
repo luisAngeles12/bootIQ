@@ -54,6 +54,49 @@ def cargar_captura(ruta):
     return velas, latencias
 
 
+
+def resumir_contexto_temporal(velas, latencias, profundidad=24):
+    """Cuenta cierres con historial consecutivo verdaderamente recibido a tiempo.
+
+    No declara paridad de decisiones ni convierte cierres en operaciones.
+    """
+    if type(profundidad) is not int or profundidad < 1:
+        raise ValueError("PROFUNDIDAD_INVALIDA")
+    from contexto_mercado_fresco import consolidar_minutos
+
+    minutos = consolidar_minutos(velas)
+    elegibles = set()
+    for minuto in minutos:
+        fin = minuto["end"]
+        if all(
+            t in latencias and type(latencias[t]) is int
+            and latencias[t] >= 0 and t + 1 + latencias[t] <= fin
+            for t in range(fin - 60, fin)
+        ):
+            elegibles.add(fin)
+    racha = 0
+    mayor = 0
+    con_contexto = 0
+    anterior = None
+    for minuto in minutos:
+        fin = minuto["end"]
+        if fin in elegibles:
+            racha = (racha + 1 if anterior == fin - 60 else 1)
+            mayor = max(mayor, racha)
+            if racha >= profundidad:
+                con_contexto += 1
+        else:
+            racha = 0
+        anterior = fin
+    return {
+        "profundidad_minutos": profundidad,
+        "cierres_temporalmente_elegibles": len(elegibles),
+        "racha_maxima_cierres_elegibles": mayor,
+        "cierres_con_contexto_temporal_verificado": con_contexto,
+        "operaciones_autorizadas": False,
+    }
+
+
 def auditar_decisiones(velas, latencias):
     """Compara cada cierre causal con su replay sin forzar igualdad artificial."""
     cobertura = comprobar_paridad_recepcion_1s(velas, latencias)
@@ -79,6 +122,7 @@ def auditar_decisiones(velas, latencias):
         "velas": len(velas),
         "cierres_replay": len(historico),
         "cierres_flujo": len(flujo),
+        "contexto_temporal": resumir_contexto_temporal(velas, latencias),
         "cierres_replay_excluidos": sorted(set(historico) - set(flujo)),
         "coincidencia_cierres_elegibles": cobertura["coincidencia_cierres_elegibles"],
         "decisiones_iguales_sobre_flujo": len(flujo) - len(distintos),
