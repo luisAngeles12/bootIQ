@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 from auditar_paridad_decisiones_practice import (
-    COLUMNAS, cargar_captura, auditar_decisiones,
+    COLUMNAS, cargar_captura, auditar_decisiones, resumir_contexto_temporal,
 )
 
 
@@ -41,6 +41,20 @@ class AuditorParidadDecisionesTests(unittest.TestCase):
         self.assertTrue(datos["coincidencia_cierres_elegibles"])
         self.assertGreater(datos["contextos_diferentes"], 0)
         self.assertFalse(datos["operaciones_autorizadas"])
+
+    def test_contexto_temporal_exige_24_minutos_contiguos(self):
+        velas = muestra(26)
+        latencias = {t: 0 for t in velas}
+        completo = resumir_contexto_temporal(velas, latencias)
+        self.assertEqual(completo["cierres_temporalmente_elegibles"], 26)
+        self.assertEqual(completo["racha_maxima_cierres_elegibles"], 26)
+        self.assertEqual(completo["cierres_con_contexto_temporal_verificado"], 3)
+        latencias[20 * 60 + 59] = 2
+        incompleto = resumir_contexto_temporal(velas, latencias)
+        self.assertEqual(incompleto["cierres_temporalmente_elegibles"], 25)
+        self.assertEqual(incompleto["racha_maxima_cierres_elegibles"], 20)
+        self.assertEqual(incompleto["cierres_con_contexto_temporal_verificado"], 0)
+        self.assertFalse(incompleto["operaciones_autorizadas"])
 
     def test_csv_valida_campos_y_rechaza_duplicados(self):
         with tempfile.TemporaryDirectory() as temp:
