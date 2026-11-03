@@ -154,6 +154,91 @@ def resumir_arbitro_flujo(velas, latencias, profundidad=24):
     }
 
 
+
+def evaluar_candidatos_causales(velas, latencias, profundidad=24, horizonte=60):
+    """Resultados EXCLUSIVAMENTE hipoteticos del arbitro causal.
+
+    El diagnostico se toma de evaluar_flujo (no del replay). El precio de
+    apertura de la vela futura no es una cotizacion ejecutable observada
+    antes de decidir. No infiere payout, beneficio ni operabilidad.
+    """
+    if type(profundidad) is not int or profundidad < 1:
+        raise ValueError("PROFUNDIDAD_INVALIDA")
+    if type(horizonte) is not int or horizonte < 1:
+        raise ValueError("HORIZONTE_INVALIDO")
+    llegadas = sorted(
+        ((t + 1 + latencias[t], dict(vela)) for t, vela in velas.items()),
+        key=lambda par: (par[0], int(par[1]["from"])),
+    )
+    cierres = evaluar_flujo(llegadas)
+    eventos = []
+    consecutivos = 0
+    previo = None
+    ocupado_hasta = -1
+    descartados_contexto = 0
+    descartados_solapamiento = 0
+    for fin, diagnostico in cierres:
+        consecutivos = consecutivos + 1 if previo == fin - 60 else 1
+        previo = fin
+        arbitraje = diagnostico["arbitraje"]
+        if arbitraje["operable"] is not False:
+            raise RuntimeError("ARBITRO_FLUJO_AUTORIZO_OPERACION")
+        if arbitraje["estado"] != "CANDIDATO_SOMBRA_NO_OPERABLE":
+            continue
+        if consecutivos < profundidad:
+            descartados_contexto += 1
+            continue
+        if fin < ocupado_hasta:
+            descartados_solapamiento += 1
+            continue
+        direccion = arbitraje["direccion"]
+        if direccion not in ("call", "put"):
+            raise RuntimeError("DIRECCION_CAUSAL_INVALIDA")
+        # Exigir TODO el horizonte futuro; no extrapolar un cierre faltante.
+        futuro = all(t in velas for t in range(fin, fin + horizonte))
+        if not futuro:
+            resultado = "SIN_FUTURO"
+        else:
+            entrada = float(velas[fin]["open"])
+            salida = float(velas[fin + horizonte - 1]["close"])
+            resultado = ("EMPATE" if entrada == salida else
+                         "WIN" if (salida > entrada) == (direccion == "call")
+                         else "LOSS")
+        eventos.append({
+            "timestamp_senal": fin - 1,
+            "timestamp_entrada_hipotetica": fin,
+            "timestamp_salida_hipotetica": fin + horizonte - 1,
+            "direccion": direccion,
+            "estrategias_que_coinciden": list(arbitraje["estrategias"]),
+            "resultado": resultado,
+            "calidad_tiempo": "TIEMPO_VERIFICADO",
+            "modelo_entrada": "APERTURA_FUTURA_RETROSPECTIVA_NO_EJECUTADA",
+            "payout_neto": None,
+            "payout_fuente": None,
+            "operable": False,
+        })
+        ocupado_hasta = fin + horizonte
+    evaluables = [e for e in eventos if e["resultado"] in ("WIN", "LOSS")]
+    wins = sum(e["resultado"] == "WIN" for e in evaluables)
+    return {
+        "candidatos_con_contexto_insuficiente": descartados_contexto,
+        "candidatos_descartados_por_solapamiento": descartados_solapamiento,
+        "eventos_sombra_no_solapados": len(eventos),
+        "outcomes_hipoteticos_evaluables": len(evaluables),
+        "wins_hipoteticos": wins,
+        "losses_hipoteticos": len(evaluables) - wins,
+        "wr_hipotetico_pct": round(100 * wins / len(evaluables), 2)
+        if evaluables else None,
+        "sin_futuro": sum(e["resultado"] == "SIN_FUTURO" for e in eventos),
+        "empates": sum(e["resultado"] == "EMPATE" for e in eventos),
+        "eventos": eventos,
+        "payout_verificado": False,
+        "evidencia_estadistica_validada": False,
+        "operaciones_autorizadas": False,
+        "advertencia": "APERTURA_FUTURA_NO_EJECUTABLE; NO_DEMUESTRA_RENTABILIDAD",
+    }
+
+
 def auditar_decisiones(velas, latencias):
     """Compara cada cierre causal con su replay sin forzar igualdad artificial."""
     cobertura = comprobar_paridad_recepcion_1s(velas, latencias)
@@ -181,6 +266,7 @@ def auditar_decisiones(velas, latencias):
         "cierres_flujo": len(flujo),
         "contexto_temporal": resumir_contexto_temporal(velas, latencias),
         "arbitro_flujo": resumir_arbitro_flujo(velas, latencias),
+        "candidatos_causales": evaluar_candidatos_causales(velas, latencias),
         "cierres_replay_excluidos": sorted(set(historico) - set(flujo)),
         "coincidencia_cierres_elegibles": cobertura["coincidencia_cierres_elegibles"],
         "decisiones_iguales_sobre_flujo": len(flujo) - len(distintos),
