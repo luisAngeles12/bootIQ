@@ -54,7 +54,24 @@ def registrar_candidata(senal, ctx, ruta=RUTA_EVENTOS):
         return False
     registros = _leer(ruta)
     clave = _id(activo, patron, direccion, ts)
+    # La asociacion se registra incluso ante reintentos del mismo candidato,
+    # para poder marcar pertenencias ambiguas, sin duplicar el CSV.
+    def registrar_pertenencia():
+        try:
+            import estado
+            from trazabilidad_rondas_sombra import registrar_evento
+            registrar_evento(
+                "CANDIDATA",
+                getattr(estado, "sombra_run_id", ""),
+                getattr(estado, "sombra_intento", 0),
+                getattr(estado, "sombra_vela_ronda", 0),
+                candidato_id=clave,
+            )
+        except Exception as error:
+            print("SOMBRA PERTENENCIA NO DISPONIBLE:", type(error).__name__, flush=True)
+
     if any(x["id"] == clave for x in registros):
+        registrar_pertenencia()
         return False
     fila = {campo: "" for campo in COLUMNAS}
     fila.update({
@@ -71,6 +88,7 @@ def registrar_candidata(senal, ctx, ruta=RUTA_EVENTOS):
     })
     registros.append(fila)
     _guardar(ruta, registros)
+    registrar_pertenencia()
     return True
 
 def resolver_candidatas(activo, ctx, ruta=RUTA_EVENTOS):
