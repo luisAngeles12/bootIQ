@@ -50,18 +50,29 @@ def auditar_intentos(ruta=RUTA):
             raise ValueError("EVENTO_DESCONOCIDO_EN_LINEA_" + str(numero))
         clave = (str(e["run_id"]), int(e["intento"]), int(e["vela_ronda"]))
         registro = intentos.setdefault(clave, {
-            "comienzo": 0, "cierres": [], "ids": set(),
+            "comienzo": 0, "cierres": [], "ids": set(), "orden_invalido": False,
         })
-        if e["evento"] == "INICIO":
+        evento = e["evento"]
+        if evento == "INICIO":
+            # INICIO debe preceder a toda candidata/cierre y ser unico.
+            if registro["comienzo"] or registro["cierres"] or registro["ids"]:
+                registro["orden_invalido"] = True
             registro["comienzo"] += 1
-        elif e["evento"] == "CANDIDATA":
-            registro["ids"].add(str(e["candidato_id"]))
-            referencias[str(e["candidato_id"])].add(clave)
+        elif evento == "CANDIDATA":
+            candidato = str(e.get("candidato_id") or "")
+            if registro["comienzo"] != 1 or registro["cierres"] or not candidato:
+                registro["orden_invalido"] = True
+            if candidato:
+                registro["ids"].add(candidato)
+                referencias[candidato].add(clave)
         else:
-            registro["cierres"].append(e["evento"])
+            if registro["comienzo"] != 1 or registro["cierres"]:
+                registro["orden_invalido"] = True
+            registro["cierres"].append(evento)
     estados = {}
     for clave, item in intentos.items():
-        if item["comienzo"] == 1 and len(item["cierres"]) == 1:
+        if (item["comienzo"] == 1 and len(item["cierres"]) == 1
+                and not item["orden_invalido"]):
             estados[clave] = item["cierres"][0]
         else:
             estados[clave] = "INCOMPLETO_O_AMBIGUO"
