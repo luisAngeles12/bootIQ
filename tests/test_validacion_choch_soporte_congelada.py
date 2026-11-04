@@ -59,6 +59,7 @@ class TestHipotesisCongelada(unittest.TestCase):
         c = fila("x", CORTE_UTC + 60, resultado="WIN")
         d = fila("y", CORTE_UTC + 60, resultado="LOSS")
         d["activo"] = c["activo"]
+        d["patron"] = "pullback bajista a EMA"
         d["id"] = calcular_id_sombra(
             d["activo"], d["patron"], d["direccion"], int(d["vela_senal_from"])
         )
