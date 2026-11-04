@@ -16,6 +16,14 @@ CONTEXTO = "PUT_SOPORTE_CERCA_SIN_RUPTURA"
 PATRON = "CHOCH bajista"
 
 
+def cargar_filas_opcionales(ruta):
+    """Un CSV aun no generado implica cero observaciones, nunca validacion."""
+    try:
+        return leer_csv(ruta)
+    except FileNotFoundError:
+        return []
+
+
 def evaluar(filas, ledger):
     ids = Counter(f.get("id", "") for f in filas)
     estados = ledger["ids_por_estado"]
@@ -96,6 +104,6 @@ if __name__ == "__main__":
     parser.add_argument("--ledger", default="trazabilidad_rondas_sombra.jsonl")
     args = parser.parse_args()
     print(json.dumps(
-        evaluar(leer_csv(args.archivo), auditar_intentos(args.ledger)),
+        evaluar(cargar_filas_opcionales(args.archivo), auditar_intentos(args.ledger)),
         ensure_ascii=False, indent=2,
     ))
