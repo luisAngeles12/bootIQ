@@ -22,6 +22,8 @@ on:
       - 'tests/test_trazabilidad_rondas_sombra.py'
       - 'validacion_choch_soporte_congelada.py'
       - 'tests/test_validacion_choch_soporte_congelada.py'
+      - 'diagnostico_cierre_sombra.py'
+      - 'tests/test_diagnostico_cierre_sombra.py'
       - '.github/workflows/fase49-sombra-candidatas.yml'
   workflow_dispatch:
 jobs:
@@ -35,7 +37,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Validar sintaxis
-        run: python -m py_compile auditoria_candidatas_sombra_practice.py reporte_candidatas_sombra_practice.py experimento_alineacion_sombra_practice.py validacion_prospectiva_alineacion.py diagnostico_causal_prospectivo.py trazabilidad_rondas_sombra.py auditar_trazabilidad_sombra.py validacion_choch_soporte_congelada.py estrategia.py bot.py
+        run: python -m py_compile auditoria_candidatas_sombra_practice.py reporte_candidatas_sombra_practice.py experimento_alineacion_sombra_practice.py validacion_prospectiva_alineacion.py diagnostico_causal_prospectivo.py trazabilidad_rondas_sombra.py auditar_trazabilidad_sombra.py validacion_choch_soporte_congelada.py diagnostico_cierre_sombra.py estrategia.py bot.py
       - name: Regression shadow ledger sin broker
         run: python -m unittest discover -s tests -p 'test_auditoria_candidatas_sombra_practice.py' -v
       - name: Regression reporte por estrategia y contexto
@@ -52,3 +54,5 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_trazabilidad_rondas_sombra.py' -v
       - name: Regression corte congelado CHOCH soporte sin broker
         run: python -m unittest discover -s tests -p 'test_validacion_choch_soporte_congelada.py' -v
+      - name: Regression diagnostico de cierres sin broker
+        run: python -m unittest discover -s tests -p 'test_diagnostico_cierre_sombra.py' -v
