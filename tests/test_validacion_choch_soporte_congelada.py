@@ -1,7 +1,9 @@
 """Pruebas aisladas de corte temporal y trazabilidad sin broker."""
+import tempfile
 import unittest
+from pathlib import Path
 
-from validacion_choch_soporte_congelada import CORTE_UTC, evaluar
+from validacion_choch_soporte_congelada import CORTE_UTC, evaluar, cargar_filas_opcionales
 from auditoria_candidatas_sombra_practice import _id as calcular_id_sombra
 
 ALIAS = {}
@@ -84,6 +86,15 @@ class TestHipotesisCongelada(unittest.TestCase):
         r = evaluar([registro], ledger(fecha="ANALISIS_VALIDADO"))
         self.assertEqual(r["exclusiones"]["FECHA_INVALIDA"], 1)
         self.assertEqual(r["registros_post_corte_con_ronda_validada"], 0)
+
+    def test_csv_aun_no_creado_implica_muestra_vacia(self):
+        with tempfile.TemporaryDirectory() as directorio:
+            ruta = Path(directorio) / "no-existe.csv"
+            filas = cargar_filas_opcionales(ruta)
+        self.assertEqual(filas, [])
+        r = evaluar(filas, ledger())
+        self.assertIsNone(r["objetivo_choch_bajista"]["winrate_proxy_pct"])
+        self.assertFalse(r["operaciones_autorizadas"])
 
     def test_sin_datos_no_inventa_porcentaje(self):
         r = evaluar([], ledger())
