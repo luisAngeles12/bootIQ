@@ -27,9 +27,13 @@ def evaluar(filas, ledger):
             excluidas["ID_FALTANTE_O_DUPLICADO"] += 1
             continue
         try:
+            instante = int(fila["vela_senal_from"])
+        except (KeyError, ValueError, TypeError):
+            excluidas["FECHA_INVALIDA"] += 1
+            continue
+        try:
             id_esperado = calcular_id_sombra(
-                fila["activo"], fila["patron"], fila["direccion"],
-                int(fila["vela_senal_from"]),
+                fila["activo"], fila["patron"], fila["direccion"], instante,
             )
         except (KeyError, ValueError, TypeError):
             excluidas["IDENTIDAD_CANDIDATA_INVALIDA"] += 1
@@ -39,11 +43,6 @@ def evaluar(filas, ledger):
             continue
         if estados.get(candidato_id) != "ANALISIS_VALIDADO":
             excluidas["RONDA_NO_VALIDADA"] += 1
-            continue
-        try:
-            instante = int(fila["vela_senal_from"])
-        except (KeyError, ValueError, TypeError):
-            excluidas["FECHA_INVALIDA"] += 1
             continue
         if instante < CORTE_UTC:
             excluidas["DESARROLLO_ANTES_DEL_CORTE"] += 1
