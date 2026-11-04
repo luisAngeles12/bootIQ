@@ -78,6 +78,13 @@ class TestHipotesisCongelada(unittest.TestCase):
         self.assertEqual(r["exclusiones"]["IDENTIDAD_CANDIDATA_INVALIDA"], 1)
         self.assertEqual(r["registros_post_corte_con_ronda_validada"], 0)
 
+    def test_fecha_invalida_se_clasifica_sin_crash(self):
+        registro = fila("fecha", CORTE_UTC)
+        registro["vela_senal_from"] = "fecha-no-numerica"
+        r = evaluar([registro], ledger(fecha="ANALISIS_VALIDADO"))
+        self.assertEqual(r["exclusiones"]["FECHA_INVALIDA"], 1)
+        self.assertEqual(r["registros_post_corte_con_ronda_validada"], 0)
+
     def test_sin_datos_no_inventa_porcentaje(self):
         r = evaluar([], ledger())
         self.assertIsNone(r["objetivo_choch_bajista"]["winrate_proxy_pct"])
