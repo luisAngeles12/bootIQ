@@ -56,7 +56,34 @@ def evaluar(filas, ledger):
             excluidas["DESARROLLO_ANTES_DEL_CORTE"] += 1
             continue
         elegibles.append(fila)
-    eventos, descartes = depurar(elegibles)
+    # La elegibilidad se decide por candidato, pero la observacion estadistica
+    # corresponde al ACTIVO + MINUTO. Si otro candidato de ese mismo evento
+    # fue excluido, no podemos reconstruir artificialmente un patron exclusivo.
+    ids_elegibles = {id(fila) for fila in elegibles}
+    minutos_en_cuarentena = set()
+    for fila in filas:
+        try:
+            instante = int(fila.get("vela_senal_from", ""))
+        except (TypeError, ValueError):
+            continue
+        activo = fila.get("activo", "")
+        if not activo or instante < CORTE_UTC or instante <= 0 or instante % 60:
+            continue
+        if (id(fila) not in ids_elegibles
+                or fila.get("decision") != "NO_OPERAR"
+                or fila.get("calidad_mercado") not in {"NORMAL", "LIMPIO"}
+                or fila.get("calidad_tiempo") != "HIPOTETICO_VELA_COMPLETA_SIN_FILL"
+                or fila.get("resultado_hipotetico") not in {"WIN", "LOSS", "EMPATE"}):
+            minutos_en_cuarentena.add((activo, instante))
+    elegibles_limpias = [
+        fila for fila in elegibles
+        if (fila["activo"], int(fila["vela_senal_from"])) not in minutos_en_cuarentena
+    ]
+    if len(elegibles) != len(elegibles_limpias):
+        excluidas["EVENTO_CONTAMINADO_POR_CANDIDATA_EXCLUIDA"] += (
+            len(elegibles) - len(elegibles_limpias)
+        )
+    eventos, descartes = depurar(elegibles_limpias)
     base = [
         e for e in eventos if e["direccion"] == "put"
         and e["accion_precio"] == CONTEXTO and len(e["patrones"]) == 1
