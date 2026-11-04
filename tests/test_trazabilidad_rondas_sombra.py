@@ -79,6 +79,37 @@ class TestTrazabilidadRondasSombra(unittest.TestCase):
         self.assertFalse(self.ev("CANDIDATA"))
         self.assertFalse(self.p.exists())
 
+    def test_candidata_antes_de_inicio_no_se_aprueba(self):
+        self.ev("CANDIDATA", candidato_id="a")
+        self.ev("INICIO")
+        self.ev("ANALISIS_VALIDADO")
+        r = auditar([f("a")], auditar_intentos(self.p))
+        self.assertEqual(r["filas_por_estado"]["INCOMPLETO_O_AMBIGUO"], 1)
+        self.assertEqual(r["filas_con_intento_validado_unico"], 0)
+
+    def test_candidata_despues_del_cierre_no_se_aprueba(self):
+        self.ev("INICIO")
+        self.ev("ANALISIS_VALIDADO")
+        self.ev("CANDIDATA", candidato_id="a")
+        r = auditar([f("a")], auditar_intentos(self.p))
+        self.assertEqual(r["filas_por_estado"]["INCOMPLETO_O_AMBIGUO"], 1)
+        self.assertEqual(r["filas_con_intento_validado_unico"], 0)
+
+    def test_cierre_antes_de_inicio_no_se_aprueba(self):
+        self.ev("ANALISIS_VALIDADO")
+        self.ev("INICIO")
+        self.ev("CANDIDATA", candidato_id="a")
+        r = auditar([f("a")], auditar_intentos(self.p))
+        self.assertEqual(r["filas_por_estado"]["INCOMPLETO_O_AMBIGUO"], 1)
+
+    def test_inicio_duplicado_no_se_aprueba(self):
+        self.ev("INICIO")
+        self.ev("INICIO")
+        self.ev("CANDIDATA", candidato_id="a")
+        self.ev("ANALISIS_VALIDADO")
+        r = auditar([f("a")], auditar_intentos(self.p))
+        self.assertEqual(r["filas_con_intento_validado_unico"], 0)
+
     def test_csv_id_duplicado_no_entra(self):
         self.ev("INICIO")
         self.ev("CANDIDATA", candidato_id="a")
