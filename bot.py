@@ -85,6 +85,24 @@ def main():
     diagnostico_descarte_d76f = None
     rondas_pendientes_d76f = []
 
+    # Sombra: id unico por ejecucion; intento unico incluso en reintentos.
+    # Bitacora adicional, completamente separada de trading y memoria.
+    estado.sombra_run_id = str(time.time_ns())
+    estado.sombra_intento = 0
+    estado.sombra_vela_ronda = 0
+
+    def _evento_ronda_sombra(nombre):
+        try:
+            from trazabilidad_rondas_sombra import registrar_evento
+            registrar_evento(
+                nombre,
+                estado.sombra_run_id,
+                estado.sombra_intento,
+                estado.sombra_vela_ronda,
+            )
+        except Exception as error:
+            print("SOMBRA ESTADO NO DISPONIBLE:", type(error).__name__, flush=True)
+
     # Controlar la frecuencia real de consultas al broker.
     # El balance se consulta como máximo una vez cada 10 segundos.
     #
@@ -902,6 +920,9 @@ def main():
         estado_ronda_d76f = "EN_PROCESO"
         ronda_metricas_d76f = clave_ronda_d76c
         reiniciar_metricas_ronda()
+        estado.sombra_intento = intento_id_d76f
+        estado.sombra_vela_ronda = clave_ronda_d76c
+        _evento_ronda_sombra("INICIO")
 
         # ==========================================
         # D7.6D — SOLO CACHE EN VENTANA CRITICA
@@ -924,6 +945,7 @@ def main():
                 MAX_ACTIVOS_ANALIZAR,
             )
             estado_ronda_d76f = "OMITIDA_PREANALISIS"
+            _evento_ronda_sombra("OMITIDA_PREANALISIS")
             time.sleep(0.25)
             continue
 
@@ -946,6 +968,7 @@ def main():
         if not activos:
             print("D9.98 RONDA OMITIDA | SIN BUFFERS VALIDOS", flush=True)
             estado_ronda_d76f = "OMITIDA_PREANALISIS"
+            _evento_ronda_sombra("OMITIDA_PREANALISIS")
             time.sleep(0.25)
             continue
 
@@ -1360,6 +1383,7 @@ def main():
             )
 
             estado_ronda_d76f = "DESCARTADA"
+            _evento_ronda_sombra("DESCARTADA")
             print(
                 "D7.6D RONDA DESCARTADA — "
                 "NO SE ORDENA TOP PARCIAL | segundo:",
@@ -1391,6 +1415,7 @@ def main():
             continue
 
         estado_ronda_d76f = "ANALISIS_VALIDADO"
+        _evento_ronda_sombra("ANALISIS_VALIDADO")
         print(
             (
                 "BÚSQUEDA COMPLETADA | señales finales:"
