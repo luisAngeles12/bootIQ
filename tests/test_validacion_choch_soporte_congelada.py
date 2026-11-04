@@ -103,5 +103,57 @@ class TestHipotesisCongelada(unittest.TestCase):
         self.assertFalse(r["winrate_60_validado"])
 
 
+    def test_candidato_descartado_no_convierte_evento_en_patron_exclusivo(self):
+        objetivo = fila("principal", CORTE_UTC, resultado="WIN")
+        descartada = fila("otra", CORTE_UTC, patron="pullback bajista a EMA",
+                          resultado="LOSS")
+        descartada["activo"] = objetivo["activo"]
+        descartada["id"] = calcular_id_sombra(
+            descartada["activo"], descartada["patron"],
+            descartada["direccion"], CORTE_UTC,
+        )
+        r = evaluar([objetivo, descartada], {
+            "ids_por_estado": {
+                objetivo["id"]: "ANALISIS_VALIDADO",
+                descartada["id"]: "DESCARTADA",
+            },
+        })
+        self.assertEqual(r["objetivo_choch_bajista"]["oportunidades"], 0)
+        self.assertEqual(r["exclusiones"]["RONDA_NO_VALIDADA"], 1)
+        self.assertEqual(
+            r["exclusiones"]["EVENTO_CONTAMINADO_POR_CANDIDATA_EXCLUIDA"], 1
+        )
+
+    def test_pendiente_no_permite_reconstruir_evento_exclusivo(self):
+        objetivo = fila("principal_pendiente", CORTE_UTC, resultado="WIN")
+        pendiente = fila("otro_pendiente", CORTE_UTC,
+                         patron="pullback bajista a EMA", resultado="")
+        pendiente["activo"] = objetivo["activo"]
+        pendiente["id"] = calcular_id_sombra(
+            pendiente["activo"], pendiente["patron"],
+            pendiente["direccion"], CORTE_UTC,
+        )
+        ids = {f["id"]: "ANALISIS_VALIDADO" for f in (objetivo, pendiente)}
+        r = evaluar([objetivo, pendiente], {"ids_por_estado": ids})
+        self.assertEqual(r["objetivo_choch_bajista"]["oportunidades"], 0)
+        self.assertEqual(
+            r["exclusiones"]["EVENTO_CONTAMINADO_POR_CANDIDATA_EXCLUIDA"], 2
+        )
+
+    def test_candidato_historico_no_cuarentena_evento_futuro(self):
+        pasado = fila("hist", CORTE_UTC - 60, resultado="LOSS")
+        futuro = fila("fut", CORTE_UTC, resultado="WIN")
+        futuro["activo"] = pasado["activo"]
+        futuro["id"] = calcular_id_sombra(
+            futuro["activo"], futuro["patron"],
+            futuro["direccion"], CORTE_UTC,
+        )
+        r = evaluar([pasado, futuro], {"ids_por_estado": {
+            pasado["id"]: "DESCARTADA",
+            futuro["id"]: "ANALISIS_VALIDADO",
+        }})
+        self.assertEqual(r["objetivo_choch_bajista"]["wins"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()
