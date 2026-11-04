@@ -8,6 +8,7 @@ import json
 from collections import Counter
 
 from experimento_alineacion_sombra_practice import depurar, leer_csv
+from auditoria_candidatas_sombra_practice import _id as calcular_id_sombra
 from trazabilidad_rondas_sombra import auditar_intentos
 
 CORTE_UTC = 1793836800
@@ -24,6 +25,17 @@ def evaluar(filas, ledger):
         candidato_id = fila.get("id", "")
         if not candidato_id or ids[candidato_id] != 1:
             excluidas["ID_FALTANTE_O_DUPLICADO"] += 1
+            continue
+        try:
+            id_esperado = calcular_id_sombra(
+                fila["activo"], fila["patron"], fila["direccion"],
+                int(fila["vela_senal_from"]),
+            )
+        except (KeyError, ValueError, TypeError):
+            excluidas["IDENTIDAD_CANDIDATA_INVALIDA"] += 1
+            continue
+        if candidato_id != id_esperado:
+            excluidas["IDENTIDAD_CANDIDATA_INVALIDA"] += 1
             continue
         if estados.get(candidato_id) != "ANALISIS_VALIDADO":
             excluidas["RONDA_NO_VALIDADA"] += 1
