@@ -48,6 +48,15 @@ class TestCallbacksWebsocketPorSesion(unittest.TestCase):
         self.nueva.on_close(object())
         self.assertEqual(global_value.check_websocket_if_connect, 1)
 
+    def test_close_sin_argumentos_funciona_en_sesion_actual(self):
+        # Reproduce el callback real reportado por websocket-client.
+        self.nueva.on_close()
+        self.assertEqual(global_value.check_websocket_if_connect, 0)
+
+    def test_close_sin_argumentos_de_sesion_vieja_se_ignora(self):
+        self.vieja.on_close()
+        self.assertEqual(global_value.check_websocket_if_connect, 1)
+
     def test_callbacks_actuales_siguen_funcionando(self):
         self.nueva.on_close(self.nueva.wss)
         self.assertEqual(global_value.check_websocket_if_connect, 0)
