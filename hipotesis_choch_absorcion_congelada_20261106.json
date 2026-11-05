@@ -1,0 +1,18 @@
+{
+  "tipo": "HIPOTESIS_PROSPECTIVA_CONGELADA_SOLO_LECTURA",
+  "congelada_utc": "2026-11-05T14:50:38.677216+00:00",
+  "corte_utc_inclusivo": "2026-11-06T00:00:00+00:00",
+  "hipotesis": "CHOCH bajista PUT exclusivo con ABSORCION_COMPRADORA presenta menor winrate hipotetico que otros patrones PUT exclusivos del mismo contexto",
+  "grupo_objetivo": "CHOCH bajista",
+  "grupo_comparador": "Otros patrones PUT exclusivos",
+  "direccion": "put",
+  "accion_precio": "ABSORCION_COMPRADORA",
+  "reglas": "Solo eventos posteriores al corte, rondas validadas, buffers completos, excluir eventos ambiguos o contaminados; no usar resultados del descubrimiento para validar",
+  "cuenta": "PRACTICE",
+  "autoriza_operaciones": false,
+  "commit_local": "c7c6c8dec9544f613bdf5043a3584532d793026d",
+  "sha256_evidencia_inicial": {
+    "auditoria_candidatas_sombra_practice.csv": "11fbe4749b821537f24431d2dd72799af9ab3c55fb80e1bd15151d91cbe6e112",
+    "trazabilidad_rondas_sombra.jsonl": "b554f84d6953ff6a54dfa1f5b6055fedfdb587b75c633ecdcc794d0ea5457355"
+  }
+}
