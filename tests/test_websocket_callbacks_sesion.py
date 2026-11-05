@@ -57,6 +57,27 @@ class TestCallbacksWebsocketPorSesion(unittest.TestCase):
         self.vieja.on_close()
         self.assertEqual(global_value.check_websocket_if_connect, 1)
 
+    def test_open_sin_argumentos_websocket_056(self):
+        global_value.check_websocket_if_connect = None
+        self.nueva.on_open()
+        self.assertEqual(global_value.check_websocket_if_connect, 1)
+
+    def test_error_con_un_argumento_websocket_056(self):
+        self.nueva.on_error(RuntimeError("fallo de transporte"))
+        self.assertTrue(global_value.check_websocket_if_error)
+        self.assertEqual(
+            global_value.websocket_error_reason, "fallo de transporte"
+        )
+
+    def test_open_sin_argumentos_sesion_reemplazada(self):
+        global_value.check_websocket_if_connect = None
+        self.vieja.on_open()
+        self.assertIsNone(global_value.check_websocket_if_connect)
+
+    def test_error_con_un_argumento_sesion_reemplazada(self):
+        self.vieja.on_error(RuntimeError("fallo antiguo"))
+        self.assertFalse(global_value.check_websocket_if_error)
+
     def test_callbacks_actuales_siguen_funcionando(self):
         self.nueva.on_close(self.nueva.wss)
         self.assertEqual(global_value.check_websocket_if_connect, 0)
