@@ -3,7 +3,7 @@ import unittest
 from types import SimpleNamespace
 
 from iqoptionapi.ws.client import WebsocketClient
-from iqoptionapi.ws import global_value
+import iqoptionapi.global_value as global_value
 
 
 class TestCallbacksWebsocketPorSesion(unittest.TestCase):
