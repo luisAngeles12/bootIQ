@@ -174,14 +174,18 @@ class WebsocketClient(object):
         finally:
             global_value.ssl_Mutual_exclusion = False
 
-    def _es_sesion_actual(self, wss):
-        """Ignorar callbacks tardios de un websocket reemplazado."""
+    def _es_sesion_actual(self, wss=None):
+        """Una sesion reemplazada no puede alterar los flags globales."""
         return (self.api.websocket_client is self
-                and self.wss is wss)
+                and (wss is None or self.wss is wss))
 
-    def on_error(self, wss, error):
-        """Solo el websocket vigente puede modificar el estado global."""
+    def on_error(self, *args):
+        """Admite on_error(error) en websocket-client 0.56."""
         logger = logging.getLogger(__name__)
+        # 0.56 despacha callback(*args), sin WebSocketApp inicial.
+        # Versiones nuevas pueden enviar (wss, error).
+        wss = args[0] if len(args) >= 2 else None
+        error = args[-1] if args else "WEBSOCKET_ERROR_SIN_DETALLE"
         if not self._es_sesion_actual(wss):
             logger.debug("Ignoring stale websocket error: %s", error)
             return
@@ -189,8 +193,8 @@ class WebsocketClient(object):
         global_value.websocket_error_reason = str(error)
         global_value.check_websocket_if_error = True
 
-    def on_open(self, wss):
-        """Evitar que una sesion antigua confirme la nueva conexion."""
+    def on_open(self, wss=None):
+        """Admite on_open() en websocket-client 0.56."""
         logger = logging.getLogger(__name__)
         if not self._es_sesion_actual(wss):
             logger.debug("Ignoring stale websocket open")
@@ -199,13 +203,8 @@ class WebsocketClient(object):
         global_value.check_websocket_if_connect = 1
 
     def on_close(self, wss=None, *args):
-        """Compatibilidad con cierres sin argumentos y sesiones reemplazadas."""
+        """Admite on_close() y on_close(wss, status, reason)."""
         logger = logging.getLogger(__name__)
-        # Algunas rutas de websocket-client invocan on_close sin wss.
-        # La identidad del cliente sigue siendo obligatoria para aceptar
-        # el cierre: un callback de una sesion antigua queda ignorado.
-        if wss is None:
-            wss = self.wss
         if not self._es_sesion_actual(wss):
             logger.debug("Ignoring stale websocket close")
             return
