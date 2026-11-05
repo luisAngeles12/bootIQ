@@ -1620,6 +1620,9 @@ def crear_registro_resultado(
                 False,
             )
         ),
+        "core4_motivos_selectivos_previos": _texto(
+            senal.get("core4_motivos_selectivos_previos", "")
+        ),
         "core4_mercado_valido_previo": bool(
             senal.get(
                 "core4_mercado_valido_previo",
@@ -5012,6 +5015,7 @@ def guardar_resultados(resultados):
         "core4_reglas_previas",
         "core4_invalidacion_dura_previa",
         "core4_invalidacion_selectiva_previa",
+        "core4_motivos_selectivos_previos",
         "core4_mercado_valido_previo",
         "core4_elegible_estructural_previo",
         "core4_elegible_rescate_previo",
@@ -10489,6 +10493,9 @@ def main():
         )
     guardar_resultados(resultados)
     imprimir_resumen(resultados)
+    # Reporte de auditoría descriptiva. No retroalimenta la decisión ni la memoria.
+    from auditoria_contextual_operaciones import imprimir_reporte_contextual
+    imprimir_reporte_contextual(resultados)
 
     print("Archivo generado:", SALIDA)
 if __name__ == "__main__":
