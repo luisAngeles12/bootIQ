@@ -198,9 +198,14 @@ class WebsocketClient(object):
         logger.debug("Websocket client connected.")
         global_value.check_websocket_if_connect = 1
 
-    def on_close(self, wss, *args):
-        """Una sesion reemplazada no puede desconectar la actual."""
+    def on_close(self, wss=None, *args):
+        """Compatibilidad con cierres sin argumentos y sesiones reemplazadas."""
         logger = logging.getLogger(__name__)
+        # Algunas rutas de websocket-client invocan on_close sin wss.
+        # La identidad del cliente sigue siendo obligatoria para aceptar
+        # el cierre: un callback de una sesion antigua queda ignorado.
+        if wss is None:
+            wss = self.wss
         if not self._es_sesion_actual(wss):
             logger.debug("Ignoring stale websocket close")
             return
