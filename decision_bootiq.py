@@ -455,7 +455,28 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         decision_cerebro = evaluar_decision_cerebro_unico(evidencia)
 
         validar_contrato_cerebro(decision_cerebro)
-        
+
+        # Arranque sin historial: solo falta estadistica, nunca se inventa.
+        # La excepcion es PRACTICE + entrada DIRECTA tecnicamente validada.
+        from bootstrap_practice import habilitable_sin_memoria
+        if habilitable_sin_memoria(evidencia, decision_cerebro):
+            decision_cerebro = dict(decision_cerebro)
+            decision_cerebro["decision"] = "OPERAR"
+            decision_cerebro["operar"] = True
+            decision_cerebro["requiere_protocolo"] = False
+            decision_cerebro["modo_ejecucion"] = "DIRECTA"
+            detalle_bootstrap = dict(
+                decision_cerebro.get("resultado_decision_oficial") or {}
+            )
+            detalle_bootstrap.update({
+                "decision": "OPERAR", "operar": True,
+                "requiere_protocolo": False, "modo_ejecucion": "DIRECTA",
+                "origen_autoridad": "BOOTSTRAP_PRACTICE_SIN_HISTORIAL",
+                "motivo": "PRUEBA_PRACTICE_SIN_MEMORIA_CC2: sin estadistica, con validacion tecnica.",
+            })
+            decision_cerebro["resultado_decision_oficial"] = detalle_bootstrap
+            senal["bootstrap_practice_sin_historial"] = True
+
         decision_oficial = str(
             decision_cerebro["decision"]
         ).upper().strip()
