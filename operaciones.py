@@ -265,6 +265,12 @@ def abrir_operacion(senal):
     # y puede bloquear la orden después de haber validado timing.
     balance_antes = None
 
+    if senal.get("bootstrap_practice_sin_historial"):
+        from bootstrap_practice import cuenta_practice_verificada
+        if not cuenta_practice_verificada(getattr(estado, "Iq", None)):
+            print("BOOTSTRAP BLOQUEADO: cuenta PRACTICE no confirmada", flush=True)
+            return False
+
     try:
         if tipo in ["turbo", "binary"]:
             check, order_id = estado.Iq.buy(
