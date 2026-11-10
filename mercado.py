@@ -159,8 +159,8 @@ def _buffer_velas_integro(candles):
 
 
 def _seleccionar_top_con_buffers(candidatos):
-    # TOP20 es un máximo: seleccionar entre 1 y 20 candidatos válidos.
-    objetivo = min(MAX_ACTIVOS_ANALIZAR, len(candidatos))
+    # TOP20 obligatorio: nunca publicar un conjunto parcial.
+    objetivo = MAX_ACTIVOS_ANALIZAR
     listos = [
         item
         for item in candidatos
@@ -175,7 +175,7 @@ def _seleccionar_top_con_buffers(candidatos):
 
 
 def _publicar_top_con_buffers(top):
-    if not (0 < len(top) <= MAX_ACTIVOS_ANALIZAR) or any(
+    if len(top) != MAX_ACTIVOS_ANALIZAR or any(
         not _buffer_velas_integro(estado.velas_cache.get(item["activo"], []))
         for item in top
     ):
@@ -2433,7 +2433,7 @@ def obtener_activos(
         :MAX_ACTIVOS_ANALIZAR
     ]
 
-    if 0 < len(activos) <= MAX_ACTIVOS_ANALIZAR:
+    if len(activos) == MAX_ACTIVOS_ANALIZAR:
         if not cache_previa_d76d:
             # Bootstrap:
             # el TOP ya está calculado, pero todavía
