@@ -965,8 +965,8 @@ def main():
                 flush=True,
             )
 
-        if not activos:
-            print("D9.98 RONDA OMITIDA | SIN BUFFERS VALIDOS", flush=True)
+        if len(activos) != MAX_ACTIVOS_ANALIZAR:
+            print("D9.98 RONDA OMITIDA | TOP20 SIN BUFFERS COMPLETOS", flush=True)
             estado_ronda_d76f = "OMITIDA_PREANALISIS"
             _evento_ronda_sombra("OMITIDA_PREANALISIS")
             time.sleep(0.25)
