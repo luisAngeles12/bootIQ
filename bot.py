@@ -936,8 +936,8 @@ def main():
             solo_cache=True
         )
 
-        # TOP20 íntegro obligatorio: no iniciar análisis con TOP parcial.
-        if len(activos) != MAX_ACTIVOS_ANALIZAR:
+        # TOP20 es un máximo: 1..20 mercados con datos completos.
+        if not (0 < len(activos) <= MAX_ACTIVOS_ANALIZAR):
             print(
                 "LIVE SIN MERCADOS ELEGIBLES O LIMITE EXCEDIDO | recibidos:",
                 len(activos),
@@ -965,8 +965,8 @@ def main():
                 flush=True,
             )
 
-        if len(activos) != MAX_ACTIVOS_ANALIZAR:
-            print("D9.98 RONDA OMITIDA | TOP20 SIN BUFFERS COMPLETOS", flush=True)
+        if not activos:
+            print("D9.98 RONDA OMITIDA | SIN BUFFERS VALIDOS", flush=True)
             estado_ronda_d76f = "OMITIDA_PREANALISIS"
             _evento_ronda_sombra("OMITIDA_PREANALISIS")
             time.sleep(0.25)
