@@ -545,13 +545,13 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
         self.assertEqual(result["primera"], 60)
         self.assertEqual(result["ultima"], 360)
 
-    def test_live_gate_requires_exactly_twenty_with_valid_buffers(self):
+    def test_live_gate_accepts_up_to_twenty_with_valid_buffers(self):
         import inspect
         import bot
 
         source = inspect.getsource(bot.main)
         self.assertIn(
-            "if len(activos) != MAX_ACTIVOS_ANALIZAR:",
+            "if not (0 < len(activos) <= MAX_ACTIVOS_ANALIZAR):",
             source,
         )
         self.assertIn(
@@ -563,17 +563,16 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
             source,
         )
         self.assertNotIn(
-            "if not (0 < len(activos) <= MAX_ACTIVOS_ANALIZAR):",
+            "if len(activos) != MAX_ACTIVOS_ANALIZAR:",
             source,
         )
-        self.assertIn("D9.98 RONDA OMITIDA | TOP20 SIN BUFFERS COMPLETOS", source)
-        self.assertNotIn("if not activos:", source)
+        self.assertIn("if not activos:", source)
         self.assertNotIn(
             'if item["activo"] not in faltantes_buffer_d76d',
             source,
         )
 
-    def test_fewer_than_twenty_valid_candidates_cannot_complete_top(self):
+    def test_fewer_than_twenty_valid_candidates_can_be_selected(self):
         now = int(time.time() // mercado.CANDLE_TIME) * mercado.CANDLE_TIME
         start = now - mercado.VELAS_CACHE_CERRADAS * mercado.CANDLE_TIME
         buffer = [
@@ -594,11 +593,9 @@ class CacheBootstrapRecoveryTests(unittest.TestCase):
 
         required, ready, count = mercado._seleccionar_top_con_buffers(candidates)
 
-        self.assertEqual(required, mercado.MAX_ACTIVOS_ANALIZAR)
+        self.assertEqual(required, 14)
         self.assertEqual(count, 14)
         self.assertEqual(len(ready), 14)
-        with self.assertRaisesRegex(ValueError, "TOP_INCOMPLETO_O_BUFFER_INVALIDO"):
-            mercado._publicar_top_con_buffers(ready)
 
     def test_top_target_stays_capped_at_twenty(self):
         candidates = [
