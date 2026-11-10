@@ -936,8 +936,8 @@ def main():
             solo_cache=True
         )
 
-        # TOP20 es un máximo: 1..20 mercados con datos completos.
-        if not (0 < len(activos) <= MAX_ACTIVOS_ANALIZAR):
+        # TOP20 íntegro obligatorio: no iniciar análisis con TOP parcial.
+        if len(activos) != MAX_ACTIVOS_ANALIZAR:
             print(
                 "LIVE SIN MERCADOS ELEGIBLES O LIMITE EXCEDIDO | recibidos:",
                 len(activos),
