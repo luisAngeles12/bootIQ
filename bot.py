@@ -936,8 +936,8 @@ def main():
             solo_cache=True
         )
 
-        # TOP20 estricto: nunca analizar una selección incompleta.
-        if len(activos) != MAX_ACTIVOS_ANALIZAR:
+        # TOP20 es un máximo: 1..20 mercados con datos completos.
+        if not (0 < len(activos) <= MAX_ACTIVOS_ANALIZAR):
             print(
                 "LIVE SIN MERCADOS ELEGIBLES O LIMITE EXCEDIDO | recibidos:",
                 len(activos),
@@ -952,8 +952,9 @@ def main():
         # ==========================================
         # D7.6D — AISLAR ACTIVOS SIN BUFFER
         # ==========================================
-        # Un buffer faltante invalida la ronda completa:
-        # no se autoriza un TOP20 reducido.
+        # Un buffer faltante o inválido omite solo ese
+        # activo; los demás pueden analizarse con sus
+        # datos completos, sin aceptar datos parciales.
         activos, faltantes_buffer_d76d = _filtrar_activos_con_buffer(activos)
 
         if faltantes_buffer_d76d:
@@ -964,12 +965,8 @@ def main():
                 flush=True,
             )
 
-        if len(activos) != MAX_ACTIVOS_ANALIZAR:
-            print(
-                "D9.98 RONDA OMITIDA | TOP20 INCOMPLETO O BUFFER INVALIDO |",
-                "listos:", len(activos), "| requeridos:", MAX_ACTIVOS_ANALIZAR,
-                flush=True,
-            )
+        if not activos:
+            print("D9.98 RONDA OMITIDA | SIN BUFFERS VALIDOS", flush=True)
             estado_ronda_d76f = "OMITIDA_PREANALISIS"
             _evento_ronda_sombra("OMITIDA_PREANALISIS")
             time.sleep(0.25)
