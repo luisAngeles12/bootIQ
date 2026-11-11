@@ -46,6 +46,7 @@ class BootstrapPracticeTest(unittest.TestCase):
                 {"calidad_mercado": "SUCIO"},
                 {"calidad_mercado": "CAOTICO"},
                 {"validacion_mercado_ok": False},
+                {"validacion_accion_precio_ok": False},
                 {"riesgo_estructural_critico_setup": True},
                 {"requiere_confirmacion_setup": True},
                 {"requiere_ruptura_setup": True},
@@ -56,6 +57,16 @@ class BootstrapPracticeTest(unittest.TestCase):
                     datos = evidencia()
                     datos.update(cambio)
                     self.assertFalse(b.habilitable_sin_memoria(datos, decision_sin_datos()))
+
+    def test_rechazo_explicito_pa_no_se_salta_y_ausencia_no_equivale_a_rechazo(self):
+        with patch.object(b, "MODO_CUENTA", "PRACTICE"):
+            datos = evidencia()
+            datos["validacion_accion_precio_ok"] = False
+            self.assertFalse(b.habilitable_sin_memoria(datos, decision_sin_datos()))
+            datos["validacion_accion_precio_ok"] = True
+            self.assertTrue(b.habilitable_sin_memoria(datos, decision_sin_datos()))
+            datos.pop("validacion_accion_precio_ok")
+            self.assertTrue(b.habilitable_sin_memoria(datos, decision_sin_datos()))
 
     def test_otros_motivos_no_se_saltan(self):
         with patch.object(b, "MODO_CUENTA", "PRACTICE"):
