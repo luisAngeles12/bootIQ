@@ -159,8 +159,8 @@ def _buffer_velas_integro(candles):
 
 
 def _seleccionar_top_con_buffers(candidatos):
-    # TOP20 es un máximo: seleccionar entre 1 y 20 candidatos válidos.
-    objetivo = min(MAX_ACTIVOS_ANALIZAR, len(candidatos))
+    # TOP20 estricto: no publicar un universo incompleto.
+    objetivo = MAX_ACTIVOS_ANALIZAR
     listos = [
         item
         for item in candidatos
@@ -175,7 +175,7 @@ def _seleccionar_top_con_buffers(candidatos):
 
 
 def _publicar_top_con_buffers(top):
-    if not (0 < len(top) <= MAX_ACTIVOS_ANALIZAR) or any(
+    if len(top) != MAX_ACTIVOS_ANALIZAR or any(
         not _buffer_velas_integro(estado.velas_cache.get(item["activo"], []))
         for item in top
     ):
@@ -1280,7 +1280,12 @@ def refrescar_activos_incremental():
             item for item in top_pendiente
             if item["activo"] not in descartados_gap
         ]
-        if not elegibles:
+        if len(elegibles) < MAX_ACTIVOS_ANALIZAR:
+            print(
+                "D9.98 TOP PENDIENTE RECHAZADO | compatibles:",
+                len(elegibles), "| requeridos:", MAX_ACTIVOS_ANALIZAR,
+                flush=True,
+            )
             estado.refresh_activos_top_pendiente = []
             estado.refresh_activos_buffer_indice = 0
             return []
@@ -1792,7 +1797,7 @@ def refrescar_activos_incremental():
         )
     )
 
-    if top_nuevo:
+    if len(top_nuevo) == MAX_ACTIVOS_ANALIZAR:
 
         # ==========================================
         # D7.6D — TOP COMPLETO PENDIENTE DE BUFFER
@@ -1836,7 +1841,7 @@ def refrescar_activos_incremental():
     else:
         print(
             "D7.6D REFRESH INCREMENTAL COMPLETO "
-            "SIN CANDIDATOS |",
+            "TOP_INCOMPLETO |",
             "compatibles:",
             len(candidatos),
             "| requeridos:",
