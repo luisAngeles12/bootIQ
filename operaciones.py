@@ -797,6 +797,11 @@ def abrir_operacion(senal):
                 "razon_validacion_accion_precio", ""
             ),
             "riesgos_base": senal.get("riesgos_base", ""),
+            "auditoria_riesgo_compuesto_json": (
+                json.dumps(senal["auditoria_riesgo_compuesto"], ensure_ascii=False, sort_keys=True)
+                if isinstance(senal.get("auditoria_riesgo_compuesto"), dict)
+                else ""
+            ),
 
 
             # ==========================================
