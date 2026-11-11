@@ -1771,7 +1771,7 @@ def refrescar_activos_incremental():
     print(
         "D9.98 SCAN CAUSAS TOP20 |",
         "compatibles:", len(candidatos),
-        "| requeridos:", MAX_ACTIVOS_ANALIZAR,
+        "| máximo permitido:", MAX_ACTIVOS_ANALIZAR,
         "| contadores_ronda:", resumen_descartes_d998,
         flush=True,
     )
@@ -1795,7 +1795,7 @@ def refrescar_activos_incremental():
     if top_nuevo:
 
         # ==========================================
-        # D7.6D — TOP COMPLETO PENDIENTE DE BUFFER
+        # D7.6D — TOP DISPONIBLE PENDIENTE DE BUFFER
         # ==========================================
         #
         # El universo terminó al 100%, pero todavía
@@ -1839,7 +1839,7 @@ def refrescar_activos_incremental():
             "SIN CANDIDATOS |",
             "compatibles:",
             len(candidatos),
-            "| requeridos:",
+            "| máximo permitido:",
             MAX_ACTIVOS_ANALIZAR,
             "| SE CONSERVA CACHE OFICIAL",
         )
