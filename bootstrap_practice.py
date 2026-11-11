@@ -30,6 +30,10 @@ def habilitable_sin_memoria(evidencia, decision):
         return False
     if evidencia.get("validacion_mercado_ok") is not True:
         return False
+    # Respetar el rechazo explicito del diagnostico de Price Action.
+    # No imponer un veto nuevo si el diagnostico no rechazo la entrada.
+    if evidencia.get("validacion_accion_precio_ok") is False:
+        return False
     if evidencia.get("riesgo_estructural_critico_setup"):
         return False
     if evidencia.get("requiere_confirmacion_setup"):
