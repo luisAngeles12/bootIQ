@@ -511,6 +511,10 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         if not isinstance(riesgo_compuesto, dict):
             riesgo_compuesto = {}
 
+        # Fase 4.10: snapshot del riesgo original para auditoria futura.
+        # No se utiliza para decidir ni modifica la autorizacion.
+        senal["auditoria_riesgo_compuesto"] = dict(riesgo_compuesto)
+
         motivos_riesgo = _texto_lista(
             riesgo_compuesto.get("motivos_riesgo", [])
         )
