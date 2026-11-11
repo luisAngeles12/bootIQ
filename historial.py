@@ -92,6 +92,10 @@ COLUMNAS_HISTORIAL = [
     "directa_ruta_validada",
     "validacion_mercado_ok",
     "razon_validacion_mercado",
+    # Fase 4.9: auditoria prospectiva de validacion PA; historicos quedan vacios.
+    "validacion_accion_precio_ok",
+    "razon_validacion_accion_precio",
+    "riesgos_base",
 
     # D8-E6 — TRAZABILIDAD REAL DEL PROTOCOLO LIVE
     # Solo auditoría. No modifica decisión ni ejecución.
