@@ -788,6 +788,17 @@ def abrir_operacion(senal):
                 "",
             ),
 
+            # Fase 4.9: evidencia PA y riesgos base al momento de entrada.
+            # Telemetria solamente; no participa en decisiones.
+            "validacion_accion_precio_ok": senal.get(
+                "validacion_accion_precio_ok", ""
+            ),
+            "razon_validacion_accion_precio": senal.get(
+                "razon_validacion_accion_precio", ""
+            ),
+            "riesgos_base": senal.get("riesgos_base", ""),
+
+
             # ==========================================
             # D8-E6 — TRAZABILIDAD REAL PROTOCOLO LIVE
             # Solo auditoría. No cambia ninguna decisión.
