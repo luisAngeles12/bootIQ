@@ -61,6 +61,8 @@ class BootstrapPracticeTest(unittest.TestCase):
         with patch.object(b, "MODO_CUENTA", "PRACTICE"):
             for cambio in (
                 {"bloquear_por_riesgo": True},
+                {"riesgo_compuesto": {"bloquear_por_riesgo": True, "riesgo_nivel": "ALTO"}},
+                {"riesgo_compuesto": {"bloquear_por_riesgo": True, "riesgo_nivel": "EXTREMO"}},
                 {"decision": "ERROR"},
                 {"resultado_decision_estadistica_sombra": {"decision": "NO_OPERAR_SOMBRA"}},
                 {"resultado_decision_oficial": {"motivo": "riesgo tecnico"}},
@@ -68,6 +70,19 @@ class BootstrapPracticeTest(unittest.TestCase):
                 with self.subTest(cambio=cambio):
                     decision = decision_sin_datos()
                     decision.update(cambio)
+                    self.assertFalse(b.habilitable_sin_memoria(evidencia(), decision))
+
+    def test_bootstrap_no_puede_saltarse_veto_estructural(self):
+        with patch.object(b, "MODO_CUENTA", "PRACTICE"):
+            for nivel in ("ALTO", "EXTREMO"):
+                with self.subTest(nivel=nivel):
+                    decision = decision_sin_datos()
+                    decision["riesgo_compuesto"] = {
+                        "bloquear_por_riesgo": True,
+                        "riesgo_nivel": nivel,
+                    }
+                    # El V3 oficial no propaga el veto estructural.
+                    self.assertFalse(decision["bloquear_por_riesgo"])
                     self.assertFalse(b.habilitable_sin_memoria(evidencia(), decision))
 
     def test_validacion_cuenta_justo_antes_de_compra(self):
