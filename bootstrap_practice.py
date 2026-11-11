@@ -12,6 +12,14 @@ def habilitable_sin_memoria(evidencia, decision):
         return False
     if decision.get("bloquear_por_riesgo"):
         return False
+    # El V3 estadistico puede devolver bloquear_por_riesgo=False aunque
+    # el detector estructural haya calculado un bloqueo independiente.
+    # El permiso experimental no debe saltarse ese veto ya existente.
+    riesgo_compuesto = decision.get("riesgo_compuesto") or {}
+    if not isinstance(riesgo_compuesto, dict):
+        return False
+    if riesgo_compuesto.get("bloquear_por_riesgo") is True:
+        return False
     detalle = decision.get("resultado_decision_oficial") or {}
     estadistica = decision.get("resultado_decision_estadistica_sombra") or {}
     if estadistica.get("decision") != "SIN_DATOS_ESTADISTICOS":
