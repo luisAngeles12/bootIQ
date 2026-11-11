@@ -96,6 +96,8 @@ COLUMNAS_HISTORIAL = [
     "validacion_accion_precio_ok",
     "razon_validacion_accion_precio",
     "riesgos_base",
+    # Fase 4.10: riesgo compuesto original, solo auditoria prospectiva.
+    "auditoria_riesgo_compuesto_json",
 
     # D8-E6 — TRAZABILIDAD REAL DEL PROTOCOLO LIVE
     # Solo auditoría. No modifica decisión ni ejecución.
