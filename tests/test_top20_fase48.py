@@ -1,4 +1,4 @@
-"""Regresiones sin broker: TOP20 estricto y buffers íntegros."""
+"""Regresiones sin broker: TOP20 es un maximo, buffers íntegros."""
 import ast
 from pathlib import Path
 from types import SimpleNamespace
@@ -31,15 +31,14 @@ class TopCompletoFase48Tests(unittest.TestCase):
         for name in ("_seleccionar_top_con_buffers", "_publicar_top_con_buffers"):
             exec(_extraer_funcion(name), self.ctx)
 
-    def test_19_candidatos_validos_no_se_publican(self):
+    def test_19_candidatos_validos_son_permitidos(self):
         items = [{"activo": str(i)} for i in range(19)]
         objetivo, top, listos = self.ctx["_seleccionar_top_con_buffers"](items)
-        self.assertEqual(objetivo, 20)
+        self.assertEqual(objetivo, 19)
         self.assertEqual(len(top), 19)
         self.assertEqual(listos, 19)
-        with self.assertRaisesRegex(ValueError, "TOP_INCOMPLETO"):
-            self.ctx["_publicar_top_con_buffers"](top)
-        self.assertEqual(len(self.estado.activos_cache), 0)
+        self.assertEqual(len(self.ctx["_publicar_top_con_buffers"](top)), 19)
+        self.assertEqual(len(self.estado.activos_cache), 19)
 
     def test_20_candidatos_con_un_buffer_invalido_no_publican(self):
         items = [{"activo": str(i)} for i in range(20)]
@@ -48,17 +47,15 @@ class TopCompletoFase48Tests(unittest.TestCase):
         self.assertEqual(objetivo, 20)
         self.assertEqual(len(top), 19)
         self.assertEqual(listos, 19)
-        with self.assertRaisesRegex(ValueError, "TOP_INCOMPLETO"):
-            self.ctx["_publicar_top_con_buffers"](top)
+        self.assertEqual(len(self.ctx["_publicar_top_con_buffers"](top)), 19)
         with self.assertRaisesRegex(ValueError, "TOP_INCOMPLETO"):
             self.ctx["_publicar_top_con_buffers"](items)
 
-    def test_un_mercado_valido_no_se_publica(self):
+    def test_un_mercado_valido_se_puede_publicar(self):
         items = [{"activo": "0"}]
         objetivo, top, listos = self.ctx["_seleccionar_top_con_buffers"](items)
-        self.assertEqual((objetivo, len(top), listos), (20, 1, 1))
-        with self.assertRaisesRegex(ValueError, "TOP_INCOMPLETO"):
-            self.ctx["_publicar_top_con_buffers"](top)
+        self.assertEqual((objetivo, len(top), listos), (1, 1, 1))
+        self.assertEqual(len(self.ctx["_publicar_top_con_buffers"](top)), 1)
 
     def test_20_validos_publican_atomicamente(self):
         items = [{"activo": str(i)} for i in range(20)]
@@ -75,7 +72,7 @@ class TopCompletoFase48Tests(unittest.TestCase):
             for node in ast.walk(tree)
             if isinstance(node, ast.If)
         ]
-        self.assertGreaterEqual(guards.count("len(activos) != MAX_ACTIVOS_ANALIZAR"), 2)
+        self.assertIn("not 0 < len(activos) <= MAX_ACTIVOS_ANALIZAR", guards)
         self.assertIn("not activos", guards)
 
 if __name__ == "__main__":
