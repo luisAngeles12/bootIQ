@@ -236,11 +236,10 @@ def asegurar_historial_csv():
             df.to_csv(HISTORIAL_CSV, index=False, encoding="utf-8-sig")
             return
 
-        for col in COLUMNAS_HISTORIAL:
-            if col not in df.columns:
-                df[col] = ""
-
-        df = df[COLUMNAS_HISTORIAL]
+        # Agregar columnas faltantes en una sola operacion evita
+        # fragmentacion de pandas al migrar esquemas extensos.
+        # Las columnas antiguas mantienen sus valores originales.
+        df = df.reindex(columns=COLUMNAS_HISTORIAL, fill_value="")
         df.to_csv(HISTORIAL_CSV, index=False, encoding="utf-8-sig")
 
     except Exception as e:
