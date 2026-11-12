@@ -60,9 +60,37 @@ class ProspectivaChochTests(unittest.TestCase):
         ]
         r = evaluar_choch_prospectivo(datos)
         self.assertTrue(r["muestra_minima_descriptiva_alcanzada"])
+        self.assertTrue(r["cobertura_diaria_suficiente"])
+        self.assertTrue(r["dias_con_60_y_neto_positivo"])
         self.assertTrue(r["criterio_de_constancia_observado"])
         self.assertFalse(r["evidencia_estadistica_suficiente_para_cambiar_live"])
         self.assertFalse(r["ordenes_autorizadas"])
+
+    def test_veinte_operaciones_repartidas_en_tres_dias_no_bastan(self):
+        # El algoritmo anterior permitia pasar 18+1+1 WIN
+        # como si hubiera suficiente evidencia de cada jornada.
+        datos = [
+            fila(i, "2026-11-12", 20.75) for i in range(18)
+        ] + [
+            fila(30, "2026-11-13", 20.75),
+            fila(40, "2026-11-14", 20.75),
+        ]
+        r = evaluar_choch_prospectivo(datos)
+        self.assertTrue(r["muestra_minima_descriptiva_alcanzada"])
+        self.assertFalse(r["cobertura_diaria_suficiente"])
+        self.assertEqual(r["dias_con_al_menos_20_choch"], [])
+        self.assertFalse(r["criterio_de_constancia_observado"])
+
+    def test_tres_jornadas_completas_con_un_dia_sin_rentabilidad_fallan(self):
+        datos = [
+            fila(i + 100 * d, f"2026-11-{12 + d}",
+                 -25 if d == 1 else 20.75)
+            for d in range(3) for i in range(20)
+        ]
+        r = evaluar_choch_prospectivo(datos)
+        self.assertTrue(r["cobertura_diaria_suficiente"])
+        self.assertFalse(r["dias_con_60_y_neto_positivo"])
+        self.assertFalse(r["criterio_de_constancia_observado"])
 
     def test_un_bloque_de_perdidas_invalida_constancia(self):
         datos = [
