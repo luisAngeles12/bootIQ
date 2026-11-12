@@ -12,6 +12,7 @@ on:
       - 'verificar_particion_train_valid_practice.py'
       - 'construir_memoria_train_candidata_practice.py'
       - 'preparar_particion_cronologica_fase5_practice.py'
+      - 'evaluar_memoria_candidata_oos_practice.py'
       - 'tests/test_consistencia_20_practice.py'
       - 'tests/test_experimentos_fase5_practice.py'
       - 'tests/test_diagnostico_pa_riesgo_practice.py'
@@ -20,6 +21,7 @@ on:
       - 'tests/test_particion_train_valid_practice.py'
       - 'tests/test_memoria_train_candidata_practice.py'
       - 'tests/test_particion_cronologica_fase5_practice.py'
+      - 'tests/test_evaluar_memoria_candidata_oos_practice.py'
       - '.github/workflows/fase5-diagnostico-practice.yml'
   pull_request:
     paths:
@@ -31,6 +33,7 @@ on:
       - 'verificar_particion_train_valid_practice.py'
       - 'construir_memoria_train_candidata_practice.py'
       - 'preparar_particion_cronologica_fase5_practice.py'
+      - 'evaluar_memoria_candidata_oos_practice.py'
       - 'tests/test_consistencia_20_practice.py'
       - 'tests/test_experimentos_fase5_practice.py'
       - 'tests/test_diagnostico_pa_riesgo_practice.py'
@@ -39,6 +42,7 @@ on:
       - 'tests/test_particion_train_valid_practice.py'
       - 'tests/test_memoria_train_candidata_practice.py'
       - 'tests/test_particion_cronologica_fase5_practice.py'
+      - 'tests/test_evaluar_memoria_candidata_oos_practice.py'
       - '.github/workflows/fase5-diagnostico-practice.yml'
   workflow_dispatch:
 
@@ -64,3 +68,4 @@ jobs:
           python -m unittest discover -s tests -p 'test_particion_train_valid_practice.py' -v
           python -m unittest discover -s tests -p 'test_memoria_train_candidata_practice.py' -v
           python -m unittest discover -s tests -p 'test_particion_cronologica_fase5_practice.py' -v
+          python -m unittest discover -s tests -p 'test_evaluar_memoria_candidata_oos_practice.py' -v
