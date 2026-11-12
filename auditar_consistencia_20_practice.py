@@ -67,12 +67,14 @@ def evaluar_filas(filas, tamano=TAMANO_VENTANA, objetivo=OBJETIVO):
             "pnl": pnl,
             "win": pnl > 0,
         })
-    # Comparacion por fecha, no por el orden arbitrario de las filas CSV.
+    # Ordenar por fecha de manera estable: ante timestamps identicos,
+    # conservar la secuencia de registro CSV. Los order_id son etiquetas,
+    # no una clave cronologica (su orden lexicografico altera ventanas).
     # Fechas sin zona deben provenir de la misma zona de registro.
     zonas = {x["fecha"].tzinfo is None for x in aceptadas}
     if len(zonas) > 1:
         raise ValueError("MEZCLA_FECHAS_CON_Y_SIN_ZONA")
-    aceptadas.sort(key=lambda r: (r["fecha"], r["order_id"]))
+    aceptadas.sort(key=lambda r: r["fecha"])
 
     def resumen(bloque):
         n = len(bloque)
