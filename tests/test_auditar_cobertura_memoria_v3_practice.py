@@ -33,6 +33,33 @@ class CoberturaMemoriaV3Tests(unittest.TestCase):
         self.assertFalse(r["memoria_generada"])
         self.assertFalse(r["ordenes_autorizadas"])
 
+    def test_informa_grupo_principal_sin_autorizar_ordenes(self):
+        datos = [
+            fila(i, "2026-11-10T10:00:00", 20.75)
+            for i in range(1, 24)
+        ] + [fila(24, "2026-11-12T10:00:00", -25)]
+        r = auditar_cobertura(datos)
+        grupos = r["grupo_principal_por_senal"]
+        self.assertEqual(sum(grupos.values()), 1)
+        self.assertEqual(
+            sum(r["cobertura_por_patron"]["CHOCH bajista"]["grupo_principal"].values()), 1
+        )
+        self.assertEqual(r["senales_sin_fuente_principal_segun_minimos_de_grupo"], 0)
+        self.assertFalse(r["ordenes_autorizadas"])
+        self.assertFalse(r["memoria_generada"])
+
+    def test_grupo_principal_no_utiliza_resultado_validacion(self):
+        entrenamiento = [
+            fila(i, "2026-11-10T10:00:00", 20.75)
+            for i in range(1, 18)
+        ]
+        ganadora = fila(21, "2026-11-12T10:00:00", 20.75)
+        perdedora = dict(ganadora, resultado="-25")
+        r1 = auditar_cobertura(entrenamiento + [ganadora])
+        r2 = auditar_cobertura(entrenamiento + [perdedora])
+        self.assertEqual(r1["grupo_principal_por_senal"], r2["grupo_principal_por_senal"])
+        self.assertEqual(r1["cobertura_por_patron"], r2["cobertura_por_patron"])
+
     def test_validacion_no_entrena_sus_propias_claves(self):
         datos = [fila(1, "2026-11-10T10:00:00", 20.75)] + [
             fila(i, "2026-11-12T10:00:00", 20.75) for i in range(2, 25)
