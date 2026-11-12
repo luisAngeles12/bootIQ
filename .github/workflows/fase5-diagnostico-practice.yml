@@ -14,6 +14,7 @@ on:
       - 'preparar_particion_cronologica_fase5_practice.py'
       - 'evaluar_memoria_candidata_oos_practice.py'
       - 'comparar_filtros_sombra_fase5_practice.py'
+      - 'validar_choch_bajista_prospectivo_practice.py'
       - 'tests/test_consistencia_20_practice.py'
       - 'tests/test_experimentos_fase5_practice.py'
       - 'tests/test_diagnostico_pa_riesgo_practice.py'
@@ -24,6 +25,7 @@ on:
       - 'tests/test_particion_cronologica_fase5_practice.py'
       - 'tests/test_evaluar_memoria_candidata_oos_practice.py'
       - 'tests/test_comparar_filtros_sombra_fase5_practice.py'
+      - 'tests/test_validar_choch_bajista_prospectivo_practice.py'
       - '.github/workflows/fase5-diagnostico-practice.yml'
   pull_request:
     paths:
@@ -37,6 +39,7 @@ on:
       - 'preparar_particion_cronologica_fase5_practice.py'
       - 'evaluar_memoria_candidata_oos_practice.py'
       - 'comparar_filtros_sombra_fase5_practice.py'
+      - 'validar_choch_bajista_prospectivo_practice.py'
       - 'tests/test_consistencia_20_practice.py'
       - 'tests/test_experimentos_fase5_practice.py'
       - 'tests/test_diagnostico_pa_riesgo_practice.py'
@@ -47,6 +50,7 @@ on:
       - 'tests/test_particion_cronologica_fase5_practice.py'
       - 'tests/test_evaluar_memoria_candidata_oos_practice.py'
       - 'tests/test_comparar_filtros_sombra_fase5_practice.py'
+      - 'tests/test_validar_choch_bajista_prospectivo_practice.py'
       - '.github/workflows/fase5-diagnostico-practice.yml'
   workflow_dispatch:
 
@@ -74,3 +78,4 @@ jobs:
           python -m unittest discover -s tests -p 'test_particion_cronologica_fase5_practice.py' -v
           python -m unittest discover -s tests -p 'test_evaluar_memoria_candidata_oos_practice.py' -v
           python -m unittest discover -s tests -p 'test_comparar_filtros_sombra_fase5_practice.py' -v
+          python -m unittest discover -s tests -p 'test_validar_choch_bajista_prospectivo_practice.py' -v
