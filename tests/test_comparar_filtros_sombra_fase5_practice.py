@@ -85,6 +85,22 @@ class CompararFiltrosSombraTests(unittest.TestCase):
         self.assertFalse(familia["consistencia_60_y_neto_por_dia"])
         self.assertFalse(familia["evidencia_prospectiva_suficiente"])
 
+    def test_ventanas_moviles_por_patron_no_confunden_promedio_con_constancia(self):
+        datos = [
+            fila(i, "2026-11-10", 20.75 if i < 12 else -25)
+            for i in range(20)
+        ] + [
+            fila(i + 30, "2026-11-11", -25 if i < 12 else 20.75)
+            for i in range(20)
+        ]
+        r = evaluar_filtros_sombra(datos)
+        familia = r["pa_alineada_por_patron_y_dia"][0]
+        self.assertEqual(familia["total_pa_alineada"]["n"], 40)
+        self.assertEqual(familia["ventanas_20_pa_alineada"]["total"], 21)
+        self.assertGreater(familia["ventanas_20_pa_alineada"]["bajo_60"], 0)
+        self.assertFalse(familia["ventanas_20_pa_alineada"]["todas_cumplen"])
+        self.assertFalse(familia["cambios_operativos_autorizados"])
+
     def test_no_confunde_menos_de_20_con_constancia(self):
         rows = [fila(i, "2026-11-10", 20.75) for i in range(10)] + [
             fila(i + 20, "2026-11-11", 20.75) for i in range(10)]
