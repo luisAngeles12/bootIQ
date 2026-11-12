@@ -33,7 +33,25 @@ class ProspectivaChochTests(unittest.TestCase):
         self.assertEqual(r["operaciones_nuevas_todas_familias"], 3)
         self.assertEqual(r["choch_bajista"]["n"], 2)
         self.assertEqual(r["choch_bajista_pa_alineada"]["n"], 1)
+        self.assertEqual(r["baseline_todas_las_familias"]["n"], 3)
+        self.assertEqual(r["comparador_choch_alcista"]["n"], 1)
+        self.assertEqual(r["comparacion_por_dia"]["2026-11-12"]["choch_bajista"]["n"], 2)
+        self.assertEqual(r["comparacion_por_dia"]["2026-11-12"]["choch_alcista"]["n"], 1)
         self.assertFalse(r["memoria_productiva_modificada"])
+
+    def test_dias_sin_choch_bajista_permanecen_en_baseline(self):
+        datos = [
+            fila(1, "2026-11-12", 20.75, patron="CHOCH alcista"),
+            fila(2, "2026-11-13", -25, patron="CHOCH bajista"),
+            fila(3, "2026-11-14", -25, patron="pullback alcista a EMA"),
+        ]
+        r = evaluar_choch_prospectivo(datos)
+        self.assertEqual(r["baseline_todas_las_familias"]["n"], 3)
+        self.assertEqual(r["comparador_choch_alcista"]["wins"], 1)
+        self.assertEqual(r["comparacion_por_dia"]["2026-11-12"]["choch_bajista"]["n"], 0)
+        self.assertEqual(r["comparacion_por_dia"]["2026-11-14"]["choch_bajista"]["n"], 0)
+        self.assertFalse(r["criterio_de_constancia_observado"])
+        self.assertFalse(r["ordenes_autorizadas"])
 
     def test_tres_dias_favorables_no_autorizan_live(self):
         datos = [
