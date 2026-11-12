@@ -80,6 +80,19 @@ def evaluar_filtros_sombra(filas, minimo_validacion=20):
         raise ValueError("FECHAS_CON_ZONAS_MIXTAS")
     registros.sort(key=lambda r: r["fecha"])
     dias = sorted({r["fecha"].date().isoformat() for r in registros})
+    cobertura = {
+        "total_evaluables": len(registros),
+        "con_snapshot_riesgo": sum(r["riesgo"] != "DESCONOCIDO" for r in registros),
+        "sin_snapshot_riesgo": sum(r["riesgo"] == "DESCONOCIDO" for r in registros),
+        "por_dia": {},
+    }
+    for dia in dias:
+        dia_registros = [r for r in registros if r["fecha"].date().isoformat() == dia]
+        cobertura["por_dia"][dia] = {
+            "total": len(dia_registros),
+            "con_snapshot_riesgo": sum(r["riesgo"] != "DESCONOCIDO" for r in dia_registros),
+            "sin_snapshot_riesgo": sum(r["riesgo"] == "DESCONOCIDO" for r in dia_registros),
+        }
     ultimo_dia = dias[-1] if dias else None
 
     # Hipotesis fijas: no se optimizan segun WIN/LOSS.
@@ -132,11 +145,13 @@ def evaluar_filtros_sombra(filas, minimo_validacion=20):
         "dias": dias,
         "ultimo_dia": ultimo_dia,
         "descartes": dict(sorted(descartados.items())),
+        "cobertura_riesgo": cobertura,
         "hipotesis_predefinidas": salida,
         "limitaciones": [
             "Solo observa operaciones ejecutadas; no evalua oportunidades nunca operadas.",
             "La prueba del ultimo dia no es una validacion prospectiva.",
             "Un filtro no puede garantizar ventanas futuras de 20 con 60 por ciento.",
+            "Las comparaciones de riesgo excluyen registros sin snapshot y no representan todo el historial.",
             "No modifica estrategia, thresholds, ordenes, ni memoria productiva.",
         ],
         "cambios_operativos_autorizados": False,
