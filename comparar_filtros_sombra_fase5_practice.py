@@ -141,6 +141,8 @@ def evaluar_filtros_sombra(filas, minimo_validacion=20):
         alineadas_patron = [
             r for r in universo_patron if r["alineacion"] == "ALINEADA"
         ]
+        ventanas_original = evaluar_filas(universo_patron)
+        ventanas_alineada = evaluar_filas(alineadas_patron)
         dias_con_20 = [
             dia for dia in dias
             if por_dia[dia]["pa_alineada"]["n"] >= 20
@@ -149,6 +151,16 @@ def evaluar_filtros_sombra(filas, minimo_validacion=20):
             "patron": patron,
             "total_original": resumen(universo_patron, universo_patron),
             "total_pa_alineada": resumen(alineadas_patron, universo_patron),
+            "ventanas_20_original": {
+                "total": ventanas_original["ventanas_moviles"],
+                "bajo_60": ventanas_original["ventanas_moviles_bajo_objetivo"],
+                "todas_cumplen": ventanas_original["consistencia_20_observada"],
+            },
+            "ventanas_20_pa_alineada": {
+                "total": ventanas_alineada["ventanas_moviles"],
+                "bajo_60": ventanas_alineada["ventanas_moviles_bajo_objetivo"],
+                "todas_cumplen": ventanas_alineada["consistencia_20_observada"],
+            },
             "por_dia": por_dia,
             "dias_con_al_menos_20_pa_alineadas": len(dias_con_20),
             "consistencia_60_y_neto_por_dia": (
