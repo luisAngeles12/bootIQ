@@ -77,6 +77,22 @@ def evaluar_choch_prospectivo(filas):
         and str(f.get("pa_direccion") or "").strip().upper() == "PUT"
     ]
     dias = sorted({f["fecha"][:10] for f in objetivo})
+    # Comparadores simultaneos, congelados antes de conocer nuevos cierres.
+    # No reemplazar el baseline por una familia elegida a posteriori.
+    comparador_alcista = [
+        f for f in nuevas
+        if str(f.get("patron") or "").strip().casefold() == "choch alcista"
+    ]
+    por_dia = {}
+    for dia in sorted({f["fecha"][:10] for f in nuevas}):
+        todas_dia = [f for f in nuevas if f["fecha"][:10] == dia]
+        bajistas_dia = [f for f in objetivo if f["fecha"][:10] == dia]
+        alcistas_dia = [f for f in comparador_alcista if f["fecha"][:10] == dia]
+        por_dia[dia] = {
+            "todas_las_familias": _resumen(todas_dia),
+            "choch_bajista": _resumen(bajistas_dia),
+            "choch_alcista": _resumen(alcistas_dia),
+        }
     control = evaluar_filas(objetivo)
     control_pa = evaluar_filas(alineada)
     resumen_objetivo = _resumen(objetivo)
@@ -96,6 +112,9 @@ def evaluar_choch_prospectivo(filas):
         "patron_congelado": PATRON_OBJETIVO,
         "dias_posteriores_con_choch": dias,
         "operaciones_nuevas_todas_familias": len(nuevas),
+        "baseline_todas_las_familias": _resumen(nuevas),
+        "comparador_choch_alcista": _resumen(comparador_alcista),
+        "comparacion_por_dia": por_dia,
         "choch_bajista": resumen_objetivo,
         "choch_bajista_pa_alineada": resumen_pa,
         "ventanas_20_choch": {
