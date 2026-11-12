@@ -157,16 +157,27 @@ def reconectar_iq(intentos=3, forzar=False):
 
     with _lock_reconexion:
 
-        # Tal vez otra parte ya reconectó mientras
-        # esperábamos el lock.
+        # Nunca dar por valida una sesion conectada solo por websocket.
+        # El balance debe seguir siendo PRACTICE; check_connect por si
+        # solo no comprueba en que cuenta opera la instancia.
+        if MODO_CUENTA != "PRACTICE":
+            print("Reconexión bloqueada: modo configurado distinto de PRACTICE.", flush=True)
+            return False
+
         if not forzar:
             try:
-                if (
-                    estado.Iq is not None
-                    and estado.Iq.check_connect()
-                ):
-                    return True
+                if estado.Iq is not None and estado.Iq.check_connect():
+                    modo_actual = estado.Iq.get_balance_mode()
+                    if modo_actual == "PRACTICE":
+                        return True
+                    print(
+                        "Sesion conectada sin PRACTICE confirmado; "
+                        "se exige restaurar la cuenta.",
+                        flush=True,
+                    )
             except Exception:
+                # Si IQ no confirma el modo, continuar con el flujo
+                # normal que revalida PRACTICE tras conectar.
                 pass
 
         if estado.Iq is None:
