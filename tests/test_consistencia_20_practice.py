@@ -36,6 +36,16 @@ class Consistencia20PracticeTests(unittest.TestCase):
         self.assertGreater(r["ventanas_moviles_bajo_objetivo"], 0)
         self.assertFalse(r["consistencia_20_observada"])
 
+    def test_empate_timestamp_no_ordena_ids_lexicograficamente(self):
+        # ID 10 se ordena antes que 2 como texto, aunque entro despues.
+        # La auditoria debe conservar la secuencia CSV ante fechas iguales.
+        pnls = [20.75] * 12 + [-25] * 8 + [-25] * 8 + [20.75] * 12
+        filas = [fila(i, p) for i, p in enumerate(pnls)]
+        r = evaluar_filas(filas)
+        self.assertEqual([x["wins"] for x in r["bloques_no_solapados"]], [12, 12])
+        self.assertEqual(r["bloques_completos_bajo_objetivo"], 0)
+        self.assertGreater(r["ventanas_moviles_bajo_objetivo"], 0)
+
     def test_no_inventa_prueba_con_menos_de_20(self):
         r = evaluar_filas([fila(i, 20.75) for i in range(19)])
         self.assertEqual(r["ventanas_moviles"], 0)
