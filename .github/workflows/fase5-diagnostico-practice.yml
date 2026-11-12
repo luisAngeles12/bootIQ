@@ -18,6 +18,7 @@ on:
       - 'diagnosticar_memoria_v3_practice.py'
       - 'auditar_fuente_memoria_practice.py'
       - 'auditar_cobertura_memoria_v3_practice.py'
+      - 'evaluar_memoria_efimera_oos_practice.py'
       - 'conexion.py'
       - 'tests/test_consistencia_20_practice.py'
       - 'tests/test_experimentos_fase5_practice.py'
@@ -33,6 +34,7 @@ on:
       - 'tests/test_diagnosticar_memoria_v3_practice.py'
       - 'tests/test_auditar_fuente_memoria_practice.py'
       - 'tests/test_auditar_cobertura_memoria_v3_practice.py'
+      - 'tests/test_evaluar_memoria_efimera_oos_practice.py'
       - 'tests/test_conexion_practice_fast_path.py'
       - '.github/workflows/fase5-diagnostico-practice.yml'
   pull_request:
@@ -96,4 +98,5 @@ jobs:
           python -m unittest discover -s tests -p 'test_diagnosticar_memoria_v3_practice.py' -v
           python -m unittest discover -s tests -p 'test_auditar_fuente_memoria_practice.py' -v
           python -m unittest discover -s tests -p 'test_auditar_cobertura_memoria_v3_practice.py' -v
+          python -m unittest discover -s tests -p 'test_evaluar_memoria_efimera_oos_practice.py' -v
           python -m unittest discover -s tests -p 'test_conexion_practice_fast_path.py' -v
