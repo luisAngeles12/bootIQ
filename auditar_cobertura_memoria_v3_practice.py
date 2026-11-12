@@ -16,6 +16,8 @@ from motor_aprendizaje_historico import (
     FUENTES_SIN_AUTORIDAD_PRODUCTIVA_PUT,
     MIN_MUESTRA_APORTE,
     MIN_MUESTRA_CONFIABLE,
+    _grupo_nivel,
+    _seleccionar_fuente_principal,
 )
 
 CORTE_TRAIN_INCLUSIVO = "2026-11-11"
@@ -60,15 +62,15 @@ def _registros_validos(filas):
     return validos, dict(sorted(descartes.items()))
 
 
-def _claves_admisibles(fila):
+def _items_admisibles(fila):
     es_put = str(fila.get("direccion") or "").strip().upper() == "PUT"
-    return {
-        item["clave"] for item in _claves_jerarquicas(fila)
+    return [
+        item for item in _claves_jerarquicas(fila)
         if item.get("clave")
         and not str(item.get("nivel") or "").upper().startswith("PROTOCOLO")
         and not str(item["clave"]).upper().startswith("PROTOCOLO")
         and not (es_put and item["clave"] in FUENTES_SIN_AUTORIDAD_PRODUCTIVA_PUT)
-    }
+    ]
 
 
 def auditar_cobertura(filas):
@@ -80,19 +82,42 @@ def auditar_cobertura(filas):
 
     conteos = Counter()
     for _, fila in train:
-        conteos.update(_claves_admisibles(fila))
+        conteos.update(item["clave"] for item in _items_admisibles(fila))
 
     # Las etiquetas y los resultados de VALIDACION se ignoran por completo.
     resumen = Counter()
     patrones = {}
+    grupos_principal = Counter()
+    grupos_coincidentes = Counter()
+    sin_principal = 0
     for _, fila in validacion:
-        claves = _claves_admisibles(fila)
+        items = _items_admisibles(fila)
+        claves = {item["clave"] for item in items}
         suficientes = [conteos[k] for k in claves if conteos[k] >= MIN_MUESTRA_APORTE]
         confiables = [conteos[k] for k in claves if conteos[k] >= MIN_MUESTRA_CONFIABLE]
+        grupos_esta_senal = {
+            _grupo_nivel(item["nivel"]) for item in items
+            if conteos[item["clave"]] >= MIN_MUESTRA_APORTE
+        }
+        for grupo in grupos_esta_senal:
+            grupos_coincidentes[grupo] += 1
+        candidatas = [
+            {"nivel": item["nivel"], "clave": item["clave"], "total": conteos[item["clave"]]}
+            for item in items if conteos[item["clave"]] >= MIN_MUESTRA_APORTE
+        ]
+        principal = _seleccionar_fuente_principal(candidatas)
+        if principal:
+            grupo_principal = _grupo_nivel(principal["nivel"])
+            grupos_principal[grupo_principal] += 1
+        else:
+            grupo_principal = "SIN_PRINCIPAL"
+            sin_principal += 1
         patron = str(fila.get("patron") or "").strip() or "SIN_PATRON"
         item = patrones.setdefault(patron, {
             "n": 0, "con_fuente_minima": 0, "con_fuente_confiable": 0,
+            "grupo_principal": {},
         })
+        item["grupo_principal"][grupo_principal] = item["grupo_principal"].get(grupo_principal, 0) + 1
         item["n"] += 1
         resumen["evaluadas"] += 1
         if suficientes:
@@ -119,10 +144,15 @@ def auditar_cobertura(filas):
         "validacion_con_fuente_minima": resumen["con_fuente_minima"],
         "validacion_con_fuente_confiable": resumen["con_fuente_confiable"],
         "cobertura_por_patron": dict(sorted(patrones.items())),
+        "grupos_con_alguna_coincidencia_por_senal": dict(sorted(grupos_coincidentes.items())),
+        "grupo_principal_por_senal": dict(sorted(grupos_principal.items())),
+        "senales_sin_fuente_principal_segun_minimos_de_grupo": sin_principal,
+        "principal_calculada_solo_por_claves_y_muestra": True,
         "descartes": descartes,
         "nota": (
-            "Cobertura estructural no implica fuente productiva autorizada: "
-            "faltan evaluar pesos, estabilidad, sesgo de seleccion y pruebas OOS."
+            "La fuente principal se calcula por grupo y n usando la funcion oficial; "
+            "NO se han estimado pesos, rentabilidad, estabilidad ni autoridad "
+            "productiva. El histórico ejecutado tiene sesgo de selección."
         ),
         "resultado_validacion_usado_para_entrenar": False,
         "memoria_generada": False,
