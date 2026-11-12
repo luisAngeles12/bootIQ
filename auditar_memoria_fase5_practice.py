@@ -21,7 +21,11 @@ def _asignaciones_constantes(path):
         if len(destinos) != 1 or not isinstance(destinos[0], ast.Name):
             continue
         try:
-            valores[destinos[0].id] = ast.literal_eval(nodo.value)
+            if isinstance(nodo.value, ast.Name):
+                if nodo.value.id in valores:
+                    valores[destinos[0].id] = valores[nodo.value.id]
+            else:
+                valores[destinos[0].id] = ast.literal_eval(nodo.value)
         except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
             pass
     return valores
