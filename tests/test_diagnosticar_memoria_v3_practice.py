@@ -38,14 +38,14 @@ class DiagnosticoMemoriaV3Tests(unittest.TestCase):
     def test_csv_sin_clave_no_equivale_a_memoria_usable(self):
         with tempfile.TemporaryDirectory() as carpeta:
             destino = Path(carpeta) / "incompatible.csv"
-            destino.write_text("patron,wins\\nCHOCH,10\\n", encoding="utf-8")
+            destino.write_text("patron,wins\nCHOCH,10\n", encoding="utf-8")
             resultado = diagnosticar_memoria(str(destino))
             self.assertEqual(resultado["estado"], "CABECERA_INCOMPATIBLE_SIN_CLAVE")
 
     def test_ruta_custom_por_entorno_tiene_precedencia(self):
         with tempfile.TemporaryDirectory() as carpeta:
             destino = Path(carpeta) / "custom.csv"
-            destino.write_text("clave,wins\\nX,3\\n", encoding="utf-8")
+            destino.write_text("clave,wins\nX,3\n", encoding="utf-8")
             with patch.dict(os.environ, {"BOOTIQ_RUTA_APRENDIZAJE": str(destino)}):
                 resultado = diagnosticar_memoria()
             self.assertTrue(resultado["variable_entorno_personalizada"])
