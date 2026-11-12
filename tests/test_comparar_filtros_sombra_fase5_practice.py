@@ -53,6 +53,38 @@ class CompararFiltrosSombraTests(unittest.TestCase):
         self.assertEqual(cobertura["por_dia"]["2026-11-11"]["con_snapshot_riesgo"], 1)
         self.assertFalse(r["cambios_operativos_autorizados"])
 
+    def test_por_patron_dia_conserva_ambas_familias_y_denominador(self):
+        datos = [
+            fila(1, "2026-11-10", 20.75, pa="CALL"),
+            fila(2, "2026-11-10", -25, pa="PUT"),
+            fila(3, "2026-11-11", 20.75, pa="CALL"),
+        ]
+        datos[2]["patron"] = "RETEST"
+        r = evaluar_filtros_sombra(datos, minimo_validacion=1)
+        familias = {x["patron"]: x for x in r["pa_alineada_por_patron_y_dia"]}
+        self.assertEqual(set(familias), {"CHOCH", "RETEST"})
+        choch = familias["CHOCH"]
+        self.assertEqual(choch["total_original"]["n"], 2)
+        self.assertEqual(choch["total_pa_alineada"]["n"], 1)
+        self.assertEqual(choch["por_dia"]["2026-11-10"]["original"]["n"], 2)
+        self.assertEqual(choch["por_dia"]["2026-11-10"]["pa_alineada"]["n"], 1)
+        self.assertEqual(choch["por_dia"]["2026-11-11"]["pa_alineada"]["n"], 0)
+        self.assertFalse(choch["consistencia_60_y_neto_por_dia"])
+        self.assertFalse(choch["evidencia_prospectiva_suficiente"])
+        self.assertFalse(choch["cambios_operativos_autorizados"])
+
+    def test_dos_dias_de_ganancias_no_prueban_estabilidad(self):
+        datos = [
+            fila(i, "2026-11-10", 20.75) for i in range(20)
+        ] + [
+            fila(i + 30, "2026-11-11", 20.75) for i in range(20)
+        ]
+        r = evaluar_filtros_sombra(datos)
+        familia = r["pa_alineada_por_patron_y_dia"][0]
+        self.assertEqual(familia["dias_con_al_menos_20_pa_alineadas"], 2)
+        self.assertFalse(familia["consistencia_60_y_neto_por_dia"])
+        self.assertFalse(familia["evidencia_prospectiva_suficiente"])
+
     def test_no_confunde_menos_de_20_con_constancia(self):
         rows = [fila(i, "2026-11-10", 20.75) for i in range(10)] + [
             fila(i + 20, "2026-11-11", 20.75) for i in range(10)]
