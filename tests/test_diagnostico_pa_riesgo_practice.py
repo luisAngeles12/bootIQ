@@ -43,6 +43,14 @@ class DiagnosticoPaRiesgoPracticeTests(unittest.TestCase):
         self.assertEqual(r["descartes"]["EMPATE"], 1)
         self.assertEqual(r["descartes"]["NO_CERRADA"], 1)
 
+    def test_resultado_numerico_cero_es_empate(self):
+        # Los CSV devuelven strings; otras fuentes pueden traer numeros.
+        row = fila(1)
+        row["resultado"] = 0
+        r = analizar_pa_riesgo([row])
+        self.assertEqual(r["descartes"]["EMPATE"], 1)
+        self.assertEqual(r["grupos"], [])
+
     def test_json_invalido_no_rompe_lectura(self):
         row = fila(1)
         row["auditoria_riesgo_compuesto_json"] = "{mal"
