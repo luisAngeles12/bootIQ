@@ -13,6 +13,7 @@ from pathlib import Path
 def analizar_pa_riesgo(filas):
     grupos = defaultdict(list)
     dias = defaultdict(lambda: defaultdict(list))
+    estrategias = defaultdict(lambda: defaultdict(list))
     rechazados = defaultdict(int)
     ids = set()
     for r in filas:
@@ -57,6 +58,8 @@ def analizar_pa_riesgo(filas):
             riesgo = "SIN_SNAPSHOT"
         clave = (alineacion, riesgo)
         grupos[clave].append(pnl)
+        patron = str(r.get("patron") or "SIN_PATRON").strip()
+        estrategias[patron][clave].append(pnl)
         fecha = str(r.get("fecha") or "")[:10]
         dias[fecha][clave].append(pnl)
 
@@ -85,6 +88,13 @@ def analizar_pa_riesgo(filas):
                 for (pa, riesgo), xs in sorted(subgrupos.items())
             ]
             for dia, subgrupos in sorted(dias.items())
+        },
+        "estrategias": {
+            patron: [
+                {"alineacion_pa": pa, "riesgo": riesgo, **resumen(xs)}
+                for (pa, riesgo), xs in sorted(subgrupos.items())
+            ]
+            for patron, subgrupos in sorted(estrategias.items())
         },
         "descartes": dict(sorted(rechazados.items())),
         "cambios_operativos_autorizados": False,
