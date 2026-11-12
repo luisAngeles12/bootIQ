@@ -8,10 +8,12 @@ on:
       - 'experimentos_fase5_practice.py'
       - 'diagnostico_pa_riesgo_practice.py'
       - 'reporte_fase5_practice.py'
+      - 'auditar_memoria_fase5_practice.py'
       - 'tests/test_consistencia_20_practice.py'
       - 'tests/test_experimentos_fase5_practice.py'
       - 'tests/test_diagnostico_pa_riesgo_practice.py'
       - 'tests/test_reporte_fase5_practice.py'
+      - 'tests/test_auditar_memoria_fase5_practice.py'
       - '.github/workflows/fase5-diagnostico-practice.yml'
   pull_request:
     paths:
@@ -19,10 +21,12 @@ on:
       - 'experimentos_fase5_practice.py'
       - 'diagnostico_pa_riesgo_practice.py'
       - 'reporte_fase5_practice.py'
+      - 'auditar_memoria_fase5_practice.py'
       - 'tests/test_consistencia_20_practice.py'
       - 'tests/test_experimentos_fase5_practice.py'
       - 'tests/test_diagnostico_pa_riesgo_practice.py'
       - 'tests/test_reporte_fase5_practice.py'
+      - 'tests/test_auditar_memoria_fase5_practice.py'
       - '.github/workflows/fase5-diagnostico-practice.yml'
   workflow_dispatch:
 
@@ -44,3 +48,4 @@ jobs:
           python -m unittest discover -s tests -p 'test_experimentos_fase5_practice.py' -v
           python -m unittest discover -s tests -p 'test_diagnostico_pa_riesgo_practice.py' -v
           python -m unittest discover -s tests -p 'test_reporte_fase5_practice.py' -v
+          python -m unittest discover -s tests -p 'test_auditar_memoria_fase5_practice.py' -v
