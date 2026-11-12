@@ -43,6 +43,17 @@ class DiagnosticoPaRiesgoPracticeTests(unittest.TestCase):
         self.assertEqual(r["descartes"]["EMPATE"], 1)
         self.assertEqual(r["descartes"]["NO_CERRADA"], 1)
 
+    def test_diagnostico_separa_familias_sin_mezclar_pa(self):
+        a = fila(1, "CALL", "CALL", 20.75, "BAJO")
+        b = fila(2, "CALL", "CALL", -25, "BAJO")
+        a["patron"] = "CHOCH"
+        b["patron"] = "LIQUIDITY_SWEEP"
+        r = analizar_pa_riesgo([a, b])
+        self.assertEqual(r["estrategias"]["CHOCH"][0]["wins"], 1)
+        self.assertEqual(r["estrategias"]["LIQUIDITY_SWEEP"][0]["losses"], 1)
+        self.assertEqual(r["grupos"][0]["n"], 2)
+        self.assertFalse(r["cambios_operativos_autorizados"])
+
     def test_resultado_numerico_cero_es_empate(self):
         # Los CSV devuelven strings; otras fuentes pueden traer numeros.
         row = fila(1)
