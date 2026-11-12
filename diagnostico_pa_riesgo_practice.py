@@ -24,7 +24,8 @@ def analizar_pa_riesgo(filas):
             rechazados["ID_AUSENTE_O_DUPLICADO"] += 1
             continue
         try:
-            pnl = float(str(r.get("resultado") or "").strip())
+            valor = r.get("resultado")
+            pnl = float(str(valor).strip()) if valor is not None else float("")
         except ValueError:
             rechazados["RESULTADO_INVALIDO"] += 1
             continue
