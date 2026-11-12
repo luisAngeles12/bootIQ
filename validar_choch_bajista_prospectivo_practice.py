@@ -97,10 +97,26 @@ def evaluar_choch_prospectivo(filas):
     control_pa = evaluar_filas(alineada)
     resumen_objetivo = _resumen(objetivo)
     resumen_pa = _resumen(alineada)
-    # El cumplimiento de una sola ventana nunca certifica estabilidad.
+    # Una muestra conjunta de 20 en tres dias puede contener 18+1+1.
+    # Para estudiar constancia no basta: cada uno de al menos tres dias
+    # DEBE contener 20 CHOCH bajistas, y no puede omitirse un dia flojo.
     completo = len(dias) >= MINIMO_DIAS and len(objetivo) >= MINIMO_OPERACIONES
+    dias_con_muestra = [
+        dia for dia in dias
+        if por_dia[dia]["choch_bajista"]["n"] >= MINIMO_OPERACIONES
+    ]
+    cobertura_diaria_suficiente = (
+        len(dias) >= MINIMO_DIAS and len(dias_con_muestra) == len(dias)
+    )
+    dias_rentables_y_60 = cobertura_diaria_suficiente and all(
+        por_dia[dia]["choch_bajista"]["winrate_pct"] >= 60
+        and por_dia[dia]["choch_bajista"]["neto"] > 0
+        for dia in dias
+    )
     criterio_observado = (
         completo
+        and cobertura_diaria_suficiente
+        and dias_rentables_y_60
         and resumen_objetivo["winrate_pct"] >= 60
         and resumen_objetivo["neto"] > 0
         and control["ventanas_moviles"] > 0
@@ -127,6 +143,9 @@ def evaluar_choch_prospectivo(filas):
         },
         "descartes": dict(sorted(descartes.items())),
         "muestra_minima_descriptiva_alcanzada": completo,
+        "dias_con_al_menos_20_choch": dias_con_muestra,
+        "cobertura_diaria_suficiente": cobertura_diaria_suficiente,
+        "dias_con_60_y_neto_positivo": dias_rentables_y_60,
         "criterio_de_constancia_observado": criterio_observado,
         "evidencia_estadistica_suficiente_para_cambiar_live": False,
         "ordenes_autorizadas": False,
