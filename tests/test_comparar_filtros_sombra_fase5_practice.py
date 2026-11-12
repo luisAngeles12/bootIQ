@@ -40,6 +40,19 @@ class CompararFiltrosSombraTests(unittest.TestCase):
         grupos = {x["hipotesis"]: x for x in r["hipotesis_predefinidas"]}
         self.assertEqual(grupos["RIESGO_BAJO_CONOCIDO"]["total"]["n"], 1)
 
+    def test_cobertura_riesgo_expone_ausentes_por_fecha(self):
+        datos = [fila(1, "2026-11-10", 20.75),
+                 fila(2, "2026-11-11", -25)]
+        datos[0]["auditoria_riesgo_compuesto_json"] = ""
+        r = evaluar_filtros_sombra(datos)
+        cobertura = r["cobertura_riesgo"]
+        self.assertEqual(cobertura["total_evaluables"], 2)
+        self.assertEqual(cobertura["sin_snapshot_riesgo"], 1)
+        self.assertEqual(cobertura["con_snapshot_riesgo"], 1)
+        self.assertEqual(cobertura["por_dia"]["2026-11-10"]["sin_snapshot_riesgo"], 1)
+        self.assertEqual(cobertura["por_dia"]["2026-11-11"]["con_snapshot_riesgo"], 1)
+        self.assertFalse(r["cambios_operativos_autorizados"])
+
     def test_no_confunde_menos_de_20_con_constancia(self):
         rows = [fila(i, "2026-11-10", 20.75) for i in range(10)] + [
             fila(i + 20, "2026-11-11", 20.75) for i in range(10)]
