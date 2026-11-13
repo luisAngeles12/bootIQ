@@ -52,6 +52,17 @@ class AuditoriaCandidatasSombra(unittest.TestCase):
         self.assertEqual(len(filas), 1)
         self.assertEqual(filas[0]["resultado_hipotetico"], "")
 
+    def test_motivo_largo_conserva_causa_final(self):
+        s = senal()
+        motivo = "DIAGNOSTICO: " + ("x" * 600) + " | CAUSA_FINAL: SIN_DATOS_ESTADISTICOS"
+        s["motivo_decision_unificada"] = motivo
+        s["razon"] = "FALLBACK_NO_DEBE_USARSE"
+        self.assertTrue(registrar_candidata(s, ctx(), self.p))
+        fila = self.leer()[0]
+        self.assertEqual(fila["motivo"], motivo)
+        self.assertTrue(fila["motivo"].endswith("CAUSA_FINAL: SIN_DATOS_ESTADISTICOS"))
+        self.assertEqual(fila["decision"], "NO_OPERAR")
+
     def test_sin_vela_futura_no_inventa_resultado(self):
         registrar_candidata(senal(), ctx(), self.p)
         self.assertEqual(resolver_candidatas("USDINR-OTC", ctx(), self.p), 0)
