@@ -35,6 +35,9 @@ La columna inferior de Wilson 95% es una aproximación **sin corrección por dep
 
 Payout de equilibrio para 83%: **54.64%**. En el mejor grupo, reacción vendedora en resistencia, el winrate proxy 55.46% supera marginalmente el equilibrio, pero su Wilson inferior ingenuo es 48.98%, claramente inferior. Sin fill, sin payout real por señal y con correlaciones, ni siquiera ese grupo demuestra ventaja.
 
+## Comprobación estadística adicional (exploratoria)
+La prueba binomial unilateral contra el punto de equilibrio de payout 83%, para la mejor familia sombra (127 WIN / 229), da `p ≈ 0.429` bajo el supuesto idealizado de ensayos Bernoulli independientes. **No rechaza** la hipótesis de ausencia de ventaja. La dependencia de señales y la selección de la mejor entre diez familias vuelven menos fiable aún esa inferencia idealizada. Ningún resultado es una señal operativa validada.
+
 ## Sensibilidad: 60 escenarios aritméticos (10 familias × 6 payouts)
 Estas son **60 evaluaciones algebraicas**, no 60 backtests ni 60 experimentos independientes. EV proxy = pWIN × payout − (1 − pWIN); empate y latencia no modelados.
 
