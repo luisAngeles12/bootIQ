@@ -1365,6 +1365,9 @@ def evaluar_senal_candidata(activo, ctx, senal):
     senal["razon_mercado"] = ctx.get("razon_mercado", "")
     senal["calidad_mercado"] = ctx.get("calidad_mercado", "SIN_DATOS")
     senal["score_mercado"] = ctx.get("score_mercado", 0)
+    # Telemetria del regimen ya calculado; no altera validaciones ni decisiones.
+    senal["regimen_mercado"] = ctx.get("regimen_mercado", "SIN_DATOS")
+    senal["razon_regimen"] = ctx.get("razon_regimen", "")
     senal["estado_tendencia"] = ctx.get("estado_tendencia", "INDEFINIDA")
     senal["fuerza_tendencia"] = ctx.get("fuerza_tendencia", 0)
     senal["direccion_tendencia"] = ctx.get("direccion_tendencia", "INDEFINIDA")
