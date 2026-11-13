@@ -424,6 +424,8 @@ def abrir_operacion(senal):
             "tipo_mercado": senal.get("tipo_mercado", ""),
             "calidad_mercado": senal.get("calidad_mercado", ""),
             "score_mercado": senal.get("score_mercado", ""),
+            "regimen_mercado": senal.get("regimen_mercado", ""),
+            "razon_regimen": senal.get("razon_regimen", ""),
             "estado_tendencia": senal.get("estado_tendencia", ""),
             "fuerza_tendencia": senal.get("fuerza_tendencia", ""),
             "direccion_tendencia": senal.get(
@@ -724,6 +726,8 @@ def abrir_operacion(senal):
             "tipo_mercado": senal.get("tipo_mercado", ""),
             "calidad_mercado": senal.get("calidad_mercado", ""),
             "score_mercado": senal.get("score_mercado", ""),
+            "regimen_mercado": senal.get("regimen_mercado", ""),
+            "razon_regimen": senal.get("razon_regimen", ""),
             "estado_tendencia": senal.get("estado_tendencia", ""),
             "fuerza_tendencia": senal.get("fuerza_tendencia", ""),
             "direccion_tendencia": senal.get(
