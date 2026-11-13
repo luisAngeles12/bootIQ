@@ -78,8 +78,10 @@ def registrar_candidata(senal, ctx, ruta=RUTA_EVENTOS):
         "id": clave, "activo": activo, "patron": patron,
         "direccion": direccion, "vela_senal_from": str(ts),
         "decision": "NO_OPERAR",
+        # Conservar íntegro el motivo oficial para diagnóstico causal.
+        # No cambia la decisión ni la autorización operativa.
         "motivo": str(senal.get("motivo_decision_unificada") or
-                      senal.get("razon") or "")[:500],
+                      senal.get("razon") or ""),
         "tipo_mercado": str(ctx.get("tipo_mercado") or ""),
         "calidad_mercado": str(ctx.get("calidad_mercado") or ""),
         "accion_precio": str(senal.get("accion_precio") or ""),
