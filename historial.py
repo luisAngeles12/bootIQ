@@ -70,6 +70,9 @@ COLUMNAS_HISTORIAL = [
     "tipo_mercado",
     "calidad_mercado",
     "score_mercado",
+    # Solo auditoria prospectiva; no interviene en autorizaciones.
+    "regimen_mercado",
+    "razon_regimen",
     "estado_tendencia",
     "fuerza_tendencia",
     "direccion_tendencia",
