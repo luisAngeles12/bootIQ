@@ -556,6 +556,12 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         if not isinstance(resultado_oficial_detalle, dict):
             resultado_oficial_detalle = {}
 
+        # Telemetria: persistir el motivo de la decision oficial, no la
+        # explicacion preliminar de estrategia. No altera la autoridad.
+        senal["motivo_decision_unificada"] = str(
+            resultado_oficial_detalle.get("motivo") or motivos_texto or ""
+        )
+
         senal["origen_autoridad"] = str(
             resultado_oficial_detalle.get(
                 "origen_autoridad",
@@ -1062,6 +1068,7 @@ def aplicar_decision_unificada_a_senal(senal, ctx=None):
         senal["decision_unificada_razones"] = ""
         senal["decision_unificada_advertencias"] = mensaje_error
         senal["decision_unificada_bloqueos"] = "error"
+        senal["motivo_decision_unificada"] = mensaje_error
 
         # El fallo del Cerebro también cierra el modo sombra de forma segura.
         senal["modo_probabilidad"] = "SOMBRA"
