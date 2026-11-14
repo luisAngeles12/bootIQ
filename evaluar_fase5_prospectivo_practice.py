@@ -9,7 +9,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
-NOMBRE = "pullback alcista a EMA"
+NOMBRE = "pullback alcista a ema"
 LIMPIA = "TENDENCIA_LIMPIA"
 SUCIA = "TENDENCIA_SUCIA"
 
