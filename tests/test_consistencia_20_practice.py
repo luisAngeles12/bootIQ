@@ -61,6 +61,26 @@ class Consistencia20PracticeTests(unittest.TestCase):
         self.assertEqual(r["descartes"]["EMPATE"], 1)
         self.assertEqual(r["descartes"]["NO_CERRADA"], 1)
 
+    def test_60_global_no_disfraza_familia_debajo_de_60(self):
+        filas = (
+            [fila(i, 20.75, patron="fuerte") for i in range(20)]
+            + [fila(20 + i, 20.75 if i < 8 else -25, patron="debil")
+               for i in range(20)]
+        )
+        r = evaluar_filas(filas)
+        self.assertTrue(r["consistencia_20_por_estrategia"]["fuerte"]["consistencia_observada"])
+        self.assertFalse(r["consistencia_20_por_estrategia"]["debil"]["consistencia_observada"])
+        self.assertEqual(r["consistencia_20_por_estrategia"]["debil"]["ventanas_bajo_objetivo"], 1)
+        self.assertFalse(r["operaciones_autorizadas"])
+
+    def test_familia_con_menos_de_20_no_se_declara_constante(self):
+        filas = [fila(i, 20.75, patron="escasa") for i in range(19)]
+        r = evaluar_filas(filas)
+        d = r["consistencia_20_por_estrategia"]["escasa"]
+        self.assertEqual(d["ventanas_moviles"], 0)
+        self.assertFalse(d["consistencia_observada"])
+        self.assertFalse(d["evidencia_prospectiva_suficiente"])
+
     def test_orden_temporal_y_estrategias_sin_autorizacion(self):
         filas = [
             fila(2, -25, "2026-11-11 10:00:00", "sweep"),
