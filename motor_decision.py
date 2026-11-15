@@ -143,6 +143,11 @@ def evaluar_veto_tecnico_sombra(evidencia):
     # no modifica la decisión oficial.
     # ========================================================
 
+    # El cooldown preexistente ahora llega como evidencia estructurada.
+    # Diagnostico solamente; no veta ni altera el Cerebro oficial.
+    if evidencia.get("estrategia_en_cooldown") is True:
+        detectados.append("ESTRATEGIA_EN_COOLDOWN")
+
     if bool(
         evidencia.get(
             "competencia_conflicto_con_mayoria",
