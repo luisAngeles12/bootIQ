@@ -287,6 +287,11 @@ def construir_evidencia_operacion(senal, ctx=None):
             ctx.get("fuerza_ultima", 0.0),
         ),
 
+        # Conserva el estado de cooldown detectado aguas arriba.
+        # Telemetria pura: nunca implica bloqueo por este transporte.
+        "estrategia_en_cooldown": bool(
+            senal.get("estrategia_en_cooldown", False)
+        ),
         "prioridad": senal.get("prioridad", 0),
         "score_final": senal.get("score_final", 0),
         "estado_operativo_setup": normalizar(
