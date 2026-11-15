@@ -179,6 +179,11 @@ def construir_evidencia_operacion(senal, ctx=None):
             "rsi",
             ctx.get("rsi", 0)
         ),
+        # Snapshot RSI opcional y finito: el valor legado 0 por
+        # ausencia NO se interpreta como RSI de sobreventa.
+        "rsi_indicador": _indicador_finito(
+            senal.get("rsi", ctx.get("rsi"))
+        ),
 
         # Indicadores calculados en estrategia.py a partir de la
         # ventana causal de velas. Transporte numerico opcional:
