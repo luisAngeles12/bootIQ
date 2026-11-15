@@ -27,7 +27,7 @@ def diagnosticar_indicadores_sombra(evidencia):
     inferior = _finito(valores.get("bb_inferior"))
     # El campo legacy ultima_close puede tener cero por defecto;
     # usar solo el snapshot opcional que no inventa ese valor.
-    precio = _finito(valores.get("ultima_close"))
+    precio = _finito(evidencia.get("precio_cierre_indicadores"))
     direccion = str(evidencia.get("direccion") or "").lower().strip()
 
     diagnostico = {
