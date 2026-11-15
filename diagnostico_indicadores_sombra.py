@@ -74,6 +74,10 @@ def diagnosticar_indicadores_sombra(evidencia):
     ):
         if not inferior <= media <= superior:
             diagnostico["alertas_calidad"].append("BOLLINGER_ORDEN_INVALIDO")
+        elif superior == inferior:
+            # Bandas colapsadas: no existe rango util para interpretar posicion.
+            # Solo alerta de calidad, sin cambiar la decision operativa.
+            diagnostico["alertas_calidad"].append("BOLLINGER_ANCHO_NULO")
         elif precio is not None:
             if precio > superior:
                 diagnostico["posicion_bollinger"] = "SOBRE_BANDA_SUPERIOR"
