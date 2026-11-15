@@ -162,11 +162,16 @@ def evaluar_veto_tecnico_sombra(evidencia):
         set(detectados)
     )
 
+    # Interpretacion tecnica adicional, sin nuevos vetos ni cambios de decision.
+    from diagnostico_indicadores_sombra import diagnosticar_indicadores_sombra
+    indicadores_sombra = diagnosticar_indicadores_sombra(evidencia)
+
     return {
         "veto_tecnico_sombra": bool(detectados),
         "cantidad_vetos_tecnicos_sombra": len(detectados),
         "vetos_tecnicos_sombra": detectados,
         "modo_veto_tecnico": "DIAGNOSTICO",
+        "indicadores_sombra": indicadores_sombra,
     }
 # ============================================================
 # ESPECIALISTAS INTERNOS DEL CEREBRO ÚNICO
