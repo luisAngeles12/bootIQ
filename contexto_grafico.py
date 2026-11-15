@@ -149,8 +149,12 @@ def detectar_cambio_estructura_choch(highs, lows, closes, opens=None, lookback=1
         if len(closes) < lookback + 4:
             return 0, "sin datos suficientes para CHOCH"
 
-        highs_previos = highs[-lookback-2:-2]
-        lows_previos = lows[-lookback-2:-2]
+        # CHOCH causal: las referencias incluyen la vela cerrada
+        # inmediatamente anterior (-2), nunca la vela actual (-1).
+        # Antes la ventana terminaba en -2 (exclusivo) y podia
+        # volver a detectar una ruptura que ya sucedio en -2.
+        highs_previos = highs[-lookback-1:-1]
+        lows_previos = lows[-lookback-1:-1]
 
         ultimo_open = opens[-1] if opens else closes[-2]
         ultimo_close = closes[-1]
