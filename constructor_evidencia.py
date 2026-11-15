@@ -189,7 +189,8 @@ def construir_evidencia_operacion(senal, ctx=None):
                 senal.get(nombre, ctx.get(nombre))
             )
             for nombre in (
-                "ema9", "ema21", "bb_superior", "bb_media", "bb_inferior"
+                "ema9", "ema21", "bb_superior", "bb_media", "bb_inferior",
+                "ultima_close",
             )
         },
 
