@@ -28,6 +28,7 @@ def diagnosticar_indicadores_sombra(evidencia):
     # El campo legacy ultima_close puede tener cero por defecto;
     # usar solo el snapshot opcional que no inventa ese valor.
     precio = _finito(evidencia.get("precio_cierre_indicadores"))
+    rsi = _finito(evidencia.get("rsi_indicador"))
     direccion = str(evidencia.get("direccion") or "").lower().strip()
 
     diagnostico = {
@@ -36,6 +37,7 @@ def diagnosticar_indicadores_sombra(evidencia):
         "bloquea": False,
         "alineacion_ema": "SIN_DATOS",
         "posicion_bollinger": "SIN_DATOS",
+        "estado_rsi": "SIN_DATOS",
         "direccion": direccion,
         "alertas_calidad": [],
     }
@@ -87,5 +89,17 @@ def diagnosticar_indicadores_sombra(evidencia):
                 diagnostico["posicion_bollinger"] = "MITAD_SUPERIOR"
             else:
                 diagnostico["posicion_bollinger"] = "MITAD_INFERIOR"
+
+    # RSI calculado sobre la vela cerrada, sin interpretar cero
+    # por ausencia como sobreventa. No otorga bonos ni vetos.
+    if rsi is not None:
+        if not 0 <= rsi <= 100:
+            diagnostico["alertas_calidad"].append("RSI_FUERA_DE_RANGO")
+        elif rsi > 70:
+            diagnostico["estado_rsi"] = "SOBRECOMPRA"
+        elif rsi < 30:
+            diagnostico["estado_rsi"] = "SOBREVENTA"
+        else:
+            diagnostico["estado_rsi"] = "NEUTRO"
 
     return diagnostico
