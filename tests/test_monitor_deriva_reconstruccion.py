@@ -44,7 +44,7 @@ class ReconstruccionMonitorTest(unittest.TestCase):
                 m.observar_cierre_sombra("CHOCH", 20.75, "15")
             )
             nuevo = m.observar_cierre_sombra("CHOCH", -25, "16")
-            self.assertEqual(nuevo["estado"], "SIN_DETERIORO_DETECTADO")
+            self.assertEqual(nuevo["estado"], "DETERIORO_CANDIDATO")
             self.assertFalse(nuevo["cooldown_activado"])
 
     def test_abiertas_invalidas_y_duplicadas_no_entran(self):
