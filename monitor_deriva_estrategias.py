@@ -5,7 +5,9 @@ Recibe exclusivamente cierres ya persistidos; no consulta el historial
 en cada orden ni presume que una ventana corta demuestre ventaja.
 """
 from collections import defaultdict, deque
+import csv
 import math
+from pathlib import Path
 
 VENTANA_DIAGNOSTICA = 8
 
@@ -71,3 +73,24 @@ _MONITOR = MonitorDerivaSombra()
 def observar_cierre_sombra(patron, resultado, order_id):
     """Actualiza memoria diagnostica tras persistir el cierre oficial."""
     return _MONITOR.registrar_cierre(patron, resultado, order_id)
+
+def reconstruir_monitor_desde_historial(ruta):
+    """Reconstruye una sola vez, fuera de la ventana operativa.
+
+    La fuente de verdad son cierres ya persistidos en historial_bot.csv.
+    Un replay nunca escribe ni cambia autorizaciones. Se sustituye el
+    monitor global solo despues de leer todo el archivo exitosamente.
+    """
+    global _MONITOR
+    candidato = MonitorDerivaSombra()
+    cantidad = 0
+    with Path(ruta).open(encoding="utf-8-sig", newline="") as archivo:
+        for fila in csv.DictReader(archivo):
+            if str(fila.get("estado", "")).strip().upper() != "CERRADA":
+                continue
+            if candidato.registrar_cierre(
+                fila.get("patron"), fila.get("resultado"), fila.get("order_id")
+            ) is not None:
+                cantidad += 1
+    _MONITOR = candidato
+    return cantidad
