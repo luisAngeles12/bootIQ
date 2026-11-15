@@ -189,10 +189,13 @@ def construir_evidencia_operacion(senal, ctx=None):
                 senal.get(nombre, ctx.get(nombre))
             )
             for nombre in (
-                "ema9", "ema21", "bb_superior", "bb_media", "bb_inferior",
-                "ultima_close",
+                "ema9", "ema21", "bb_superior", "bb_media", "bb_inferior"
             )
         },
+        # Precio de vela cerrado disponible, sin fallback legacy a cero.
+        "precio_cierre_indicadores": _indicador_finito(
+            senal.get("ultima_close", ctx.get("ultima_close"))
+        ),
 
         # D7.12 — transporte técnico para R4.
         # No decide: conserva la dirección EMA ya calculada
