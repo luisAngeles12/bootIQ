@@ -138,7 +138,15 @@ def master_candle(highs, lows, lookback=4):
 
 
 def ruptura_master_candle(closes, highs, lows):
-    es_master, h_master, l_master, _ = master_candle(highs, lows, 4)
+    # La vela de ruptura NO pertenece a las cuatro velas interiores.
+    # Antes se incluia highs[-1]/lows[-1] en la contencion, haciendo
+    # imposible detectar una ruptura con OHLC validos.
+    # Necesitamos master + 4 interiores + vela actual cerrada.
+    if min(len(closes), len(highs), len(lows)) < 6:
+        return 0, "sin datos suficientes para ruptura master"
+    es_master, h_master, l_master, _ = master_candle(
+        highs[:-1], lows[:-1], 4
+    )
     if not es_master:
         return 0, "sin ruptura master"
     if closes[-1] > h_master:
