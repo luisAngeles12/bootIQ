@@ -55,6 +55,17 @@ class DiagnosticoIndicadoresSombraTest(unittest.TestCase):
         self.assertIn("BOLLINGER_ORDEN_INVALIDO", d["alertas_calidad"])
         self.assertEqual(d["posicion_bollinger"], "SIN_DATOS")
 
+    def test_bollinger_ancho_nulo_no_inventa_posicion(self):
+        e = self.evidencia(
+            bb_superior=100, bb_media=100, bb_inferior=100,
+            ultima_close=100,
+        )
+        d = diagnosticar_indicadores_sombra(e)
+        self.assertIn("BOLLINGER_ANCHO_NULO", d["alertas_calidad"])
+        self.assertEqual(d["posicion_bollinger"], "SIN_DATOS")
+        self.assertFalse(d["autoriza"])
+        self.assertFalse(d["bloquea"])
+
     def test_diagnostico_del_cerebro_no_agrega_vetos(self):
         e = self.evidencia()
         antes = dict(e)
