@@ -60,6 +60,18 @@ def main():
     asegurar_historial_csv()
     cargar_operaciones_pendientes()
 
+    # Reconstruccion SHADOW desde cierres oficiales, solo una vez
+    # al iniciar y antes de las ventanas operativas.
+    # Fallos de telemetria nunca autorizan ni bloquean trades.
+    try:
+        from config import MODO_CUENTA, HISTORIAL_CSV
+        if MODO_CUENTA == "PRACTICE":
+            from monitor_deriva_estrategias import reconstruir_monitor_desde_historial
+            n_sombra = reconstruir_monitor_desde_historial(HISTORIAL_CSV)
+            print("DERIVA_ESTRATEGIA_SHADOW_RECONSTRUIDA:", n_sombra)
+    except Exception as exc:
+        print("DERIVA_ESTRATEGIA_SHADOW_RECONSTRUCCION_ERROR:", type(exc).__name__)
+
     ronda_estadisticas = 0
     operaciones_desde_resumen_mercado = 0
 
