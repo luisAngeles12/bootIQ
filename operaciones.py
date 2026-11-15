@@ -13,6 +13,7 @@ from config import (
     VENTANA_ENTRADA_FIN,
     MARGEN_ENVIO_IQ_SEGUNDOS,
     HISTORIAL_CSV,
+    MODO_CUENTA,
 )
 from historial import (
     guardar_operaciones_pendientes,
@@ -1533,6 +1534,19 @@ def revisar_operaciones_abiertas():
                 )
                 pendientes.append(op)
                 continue
+
+            # Registrar solo cierres confirmados y persistidos.
+            # O(1) por orden; no relectura del CSV ni autoridad operativa.
+            if MODO_CUENTA == "PRACTICE":
+                try:
+                    from monitor_deriva_estrategias import observar_cierre_sombra
+                    diagnostico = observar_cierre_sombra(
+                        op.get("patron", ""), resultado, op.get("order_id")
+                    )
+                    if diagnostico and diagnostico["estado"] == "DETERIORO_CANDIDATO":
+                        print("DERIVA_ESTRATEGIA_SHADOW:", diagnostico)
+                except Exception as exc:
+                    print("DERIVA_ESTRATEGIA_SHADOW_ERROR:", type(exc).__name__)
 
             bloqueo_activo_aplicado = False
 
