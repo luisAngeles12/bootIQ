@@ -1541,7 +1541,8 @@ def revisar_operaciones_abiertas():
                 try:
                     from monitor_deriva_estrategias import observar_cierre_sombra
                     diagnostico = observar_cierre_sombra(
-                        op.get("patron", ""), resultado, op.get("order_id")
+                        op.get("patron", ""), resultado, op.get("order_id"),
+                        regimen_mercado=op.get("regimen_mercado"),
                     )
                     if diagnostico and diagnostico["estado"] == "DETERIORO_CANDIDATO":
                         print("DERIVA_ESTRATEGIA_SHADOW:", diagnostico)
