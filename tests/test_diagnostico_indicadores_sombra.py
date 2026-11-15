@@ -66,6 +66,37 @@ class DiagnosticoIndicadoresSombraTest(unittest.TestCase):
         self.assertFalse(d["autoriza"])
         self.assertFalse(d["bloquea"])
 
+    def test_rsi_cerrado_y_valido_es_diagnostico_no_operativo(self):
+        for valor, esperado in (
+            (20, "SOBREVENTA"),
+            (30, "NEUTRO"),
+            (70, "NEUTRO"),
+            (80, "SOBRECOMPRA"),
+        ):
+            with self.subTest(rsi=valor):
+                e = self.evidencia(rsi=valor)
+                d = diagnosticar_indicadores_sombra(e)
+                self.assertEqual(d["estado_rsi"], esperado)
+                self.assertFalse(d["autoriza"])
+                self.assertFalse(d["bloquea"])
+
+    def test_rsi_ausente_no_se_convierte_en_sobreventa(self):
+        e = self.evidencia()
+        self.assertIsNone(e["rsi_indicador"])
+        self.assertEqual(
+            diagnosticar_indicadores_sombra(e)["estado_rsi"], "SIN_DATOS"
+        )
+
+    def test_rsi_invalido_se_separa_de_decision(self):
+        for valor in (-1, 101):
+            with self.subTest(rsi=valor):
+                d = diagnosticar_indicadores_sombra(self.evidencia(rsi=valor))
+                self.assertIn("RSI_FUERA_DE_RANGO", d["alertas_calidad"])
+                self.assertEqual(d["estado_rsi"], "SIN_DATOS")
+                self.assertFalse(d["autoriza"])
+        d = diagnosticar_indicadores_sombra(self.evidencia(rsi=float("nan")))
+        self.assertEqual(d["estado_rsi"], "SIN_DATOS")
+
     def test_diagnostico_del_cerebro_no_agrega_vetos(self):
         e = self.evidencia()
         antes = dict(e)
