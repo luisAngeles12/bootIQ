@@ -1544,7 +1544,10 @@ def revisar_operaciones_abiertas():
                         op.get("patron", ""), resultado, op.get("order_id"),
                         regimen_mercado=op.get("regimen_mercado"),
                     )
-                    if diagnostico and diagnostico["estado"] == "DETERIORO_CANDIDATO":
+                    if diagnostico and (
+                        diagnostico["estado"] == "DETERIORO_CANDIDATO"
+                        or diagnostico.get("estado_regimen") == "DETERIORO_CANDIDATO"
+                    ):
                         print("DERIVA_ESTRATEGIA_SHADOW:", diagnostico)
                 except Exception as exc:
                     print("DERIVA_ESTRATEGIA_SHADOW_ERROR:", type(exc).__name__)
