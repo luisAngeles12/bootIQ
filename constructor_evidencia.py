@@ -43,6 +43,18 @@ def normalizar_lista_evidencias(evidencias, modulo_defecto="desconocido"):
 
     return resultado
 
+
+def _indicador_finito(valor):
+    """Conservar indicadores validos; ausencia o NaN no son cero."""
+    import math
+    if isinstance(valor, bool) or valor is None or isinstance(valor, str) and not valor.strip():
+        return None
+    try:
+        numero = float(valor)
+    except (ValueError, TypeError, OverflowError):
+        return None
+    return numero if math.isfinite(numero) else None
+
 def construir_evidencia_operacion(senal, ctx=None):
     """
     Convierte una señal del bot en un formato estándar para Fase 4.
@@ -167,6 +179,19 @@ def construir_evidencia_operacion(senal, ctx=None):
             "rsi",
             ctx.get("rsi", 0)
         ),
+
+        # Indicadores calculados en estrategia.py a partir de la
+        # ventana causal de velas. Transporte numerico opcional:
+        # ausencia = None (nunca inventar precios/indicadores 0).
+        # NO autoriza, penaliza ni bloquea operaciones.
+        "indicadores_tecnicos": {
+            nombre: _indicador_finito(
+                senal.get(nombre, ctx.get(nombre))
+            )
+            for nombre in (
+                "ema9", "ema21", "bb_superior", "bb_media", "bb_inferior"
+            )
+        },
 
         # D7.12 — transporte técnico para R4.
         # No decide: conserva la dirección EMA ya calculada
