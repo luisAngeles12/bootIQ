@@ -98,6 +98,25 @@ def evaluar_filas(filas, tamano=TAMANO_VENTANA, objetivo=OBJETIVO):
     for r in aceptadas:
         dias[r["dia"]].append(r)
         patrones[r["patron"]].append(r)
+    # Fase 5/12: la meta de 60% en cada ventana de 20 se mide
+    # por familia ademas del conjunto. Una familia sin 20 cierres
+    # permanece SIN_EVIDENCIA, no se considera ganadora.
+    por_estrategia_20 = {}
+    for patron, registros in sorted(patrones.items()):
+        ventanas_patron = [
+            resumen(registros[i:i + tamano])
+            for i in range(max(0, len(registros) - tamano + 1))
+        ]
+        bajo_objetivo = sum(
+            ventana["cumple_60"] is False for ventana in ventanas_patron
+        )
+        por_estrategia_20[patron] = {
+            "total_evaluables": len(registros),
+            "ventanas_moviles": len(ventanas_patron),
+            "ventanas_bajo_objetivo": bajo_objetivo,
+            "consistencia_observada": bool(ventanas_patron) and bajo_objetivo == 0,
+            "evidencia_prospectiva_suficiente": False,
+        }
     return {
         "modo": "AUDITORIA_SOLO_LECTURA",
         "objetivo_pct": round(objetivo * 100, 2),
@@ -107,6 +126,7 @@ def evaluar_filas(filas, tamano=TAMANO_VENTANA, objetivo=OBJETIVO):
         "global": resumen(aceptadas),
         "dias": {k: resumen(v) for k, v in sorted(dias.items())},
         "estrategias": {k: resumen(v) for k, v in sorted(patrones.items())},
+        "consistencia_20_por_estrategia": por_estrategia_20,
         "bloques_no_solapados": bloques,
         "bloques_completos": len(completos),
         "bloques_completos_bajo_objetivo": sum(
