@@ -721,7 +721,12 @@ def abrir_operacion(senal):
         
             "puntaje": puntaje,
             "patron": patron,
-            "rsi": rsi,
+            # Conservar el RSI antiguo de la senal si existe; de lo
+            # contrario usar exclusivamente el snapshot pre-entrada.
+            "rsi": (
+                rsi if rsi not in (None, "")
+                else indicadores_fase5.get("rsi", "")
+            ),
             "ema9": indicadores_fase5.get("ema9", ""),
             "ema21": indicadores_fase5.get("ema21", ""),
             "bb_superior": indicadores_fase5.get("bb_superior", ""),
