@@ -1342,6 +1342,17 @@ def evaluar_senal_candidata(activo, ctx, senal):
         ctx.get("vela_senal_from", 0) or 0
     )
 
+    # F5: snapshot de indicadores de la MISMA vela cerrada.
+    # Telemetria exclusivamente; NO altera claves operativas ni decision.
+    senal["indicadores_tecnicos_snapshot_fase5"] = {
+        clave: ctx.get(clave)
+        for clave in (
+            "ema9", "ema21", "bb_superior",
+            "bb_media", "bb_inferior", "rsi",
+            "ultima_close",
+        )
+    }
+
     # OHLC exacto de la vela que originó la señal.
     # Solo diagnóstico de paridad; no modifica ninguna decisión.
     senal["vela_senal_open"] = float(
