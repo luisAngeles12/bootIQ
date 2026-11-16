@@ -57,6 +57,9 @@ def evaluar_separacion_temporal(
     zonas = {r["fecha"].tzinfo is None for r in registros}
     if len(zonas) > 1:
         raise ValueError("MEZCLA_FECHAS_CON_Y_SIN_ZONA")
+    # Orden temporal estable antes de formar ventanas moviles.
+    # Ante timestamps iguales conserva la secuencia de registro CSV.
+    registros.sort(key=lambda r: r["fecha"])
     dias = sorted({r["dia"] for r in registros})
     # Ninguna eleccion de familias puede usar el ultimo dia de evaluacion.
     if len(dias) < 2:
@@ -85,25 +88,51 @@ def evaluar_separacion_temporal(
             "neto": round(sum(valores), 2),
         }
 
+    def consistencia_20(valores):
+        # La meta de 60% se evalua en CADA ventana de 20, no
+        # solamente en el promedio global del periodo.
+        ventanas = [
+            valores[i:i + 20]
+            for i in range(max(0, len(valores) - 19))
+        ]
+        deficientes = sum(
+            sum(valor > 0 for valor in ventana) < 20 * objetivo
+            for ventana in ventanas
+        )
+        return {
+            "ventanas": len(ventanas),
+            "ventanas_bajo_objetivo": deficientes,
+            "todas_cumplen": bool(ventanas) and deficientes == 0,
+        }
+
     experimentos = []
     for estrategia in sorted(set(grupos_train) | set(grupos_test)):
-        train = estadistica(grupos_train[estrategia])
-        test = estadistica(grupos_test[estrategia])
+        train_valores = grupos_train[estrategia]
+        test_valores = grupos_test[estrategia]
+        train = estadistica(train_valores)
+        test = estadistica(test_valores)
+        train_20 = consistencia_20(train_valores)
+        test_20 = consistencia_20(test_valores)
         # Preseleccion congelada ANTES de observar el ultimo dia.
         elegida_train = (
             train["n"] >= minimo_train
             and train["winrate_pct"] >= 100 * objetivo
             and train["neto"] > 0
+            and train_20["todas_cumplen"]
         )
         evaluable_test = test["n"] >= minimo_test
         experimentos.append({
             "estrategia": estrategia,
             "train": train,
             "test": test,
+            "train_ventanas_20": train_20,
+            "test_ventanas_20": test_20,
             "seleccion_train": elegida_train,
             "test_muestra_suficiente": evaluable_test,
             "test_cumple_objetivo": (
-                test["winrate_pct"] >= 100 * objetivo and test["neto"] > 0
+                test["winrate_pct"] >= 100 * objetivo
+                and test["neto"] > 0
+                and test_20["todas_cumplen"]
                 if elegida_train and evaluable_test else None
             ),
         })
@@ -121,6 +150,10 @@ def evaluar_separacion_temporal(
         "experimentos": experimentos,
         "cambios_live_autorizados": False,
         "evidencia_prospectiva_suficiente": False,
+        "limitacion": (
+            "OOS es un unico dia historico; superar todas las ventanas "
+            "de 20 no garantiza resultados futuros ni habilita trading."
+        ),
     }
 
 
