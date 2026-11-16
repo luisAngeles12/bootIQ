@@ -84,6 +84,24 @@ class SnapshotPersistenciaFase5Tests(unittest.TestCase):
                 )
                 self.assertEqual(valor, esperado)
 
+    def test_rsi_historial_prioriza_senal_y_recupera_snapshot(self):
+        writer = extraer_columnas_writer()
+        expr = compile(
+            ast.Expression(writer["rsi"]), "rsi_writer", "eval"
+        )
+        self.assertEqual(
+            eval(expr, {"rsi": "", "indicadores_fase5": {"rsi": 48}}),
+            48,
+        )
+        self.assertEqual(
+            eval(expr, {"rsi": 53, "indicadores_fase5": {"rsi": 48}}),
+            53,
+        )
+        self.assertEqual(
+            eval(expr, {"rsi": "", "indicadores_fase5": {}}),
+            "",
+        )
+
     def test_comparador_reconoce_columnas_futuras(self):
         filas = [{
             "estado": "CERRADA", "order_id": "1",
