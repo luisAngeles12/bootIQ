@@ -9,10 +9,26 @@ def normalizar(valor, defecto="SIN_DATO"):
 
     return valor
 def normalizar_numero(valor, defecto=0):
-    try:
-        return float(valor)
-    except Exception:
+    """Nunca propagar NaN/infinito a las ponderaciones del Cerebro."""
+    import math
+    if isinstance(valor, bool):
         return defecto
+    try:
+        numero = float(valor)
+    except (TypeError, ValueError, OverflowError):
+        return defecto
+    return numero if math.isfinite(numero) else defecto
+
+
+def normalizar_confirmacion(valor):
+    """Evitar bool("False") == True al leer evidencia serializada."""
+    if isinstance(valor, bool):
+        return valor
+    if isinstance(valor, str):
+        return valor.strip().lower() in ("true", "1")
+    if isinstance(valor, (int, float)):
+        return valor == 1
+    return False
 
 
 def normalizar_evidencia_item(ev, modulo_defecto="desconocido"):
@@ -26,7 +42,7 @@ def normalizar_evidencia_item(ev, modulo_defecto="desconocido"):
         "peso": normalizar_numero(ev.get("peso", 0)),
         "confianza": normalizar_numero(ev.get("confianza", 50)),
         "fuerza": normalizar_numero(ev.get("fuerza", 0)),
-        "confirmada": bool(ev.get("confirmada", False)),
+        "confirmada": normalizar_confirmacion(ev.get("confirmada", False)),
         "razon": normalizar(ev.get("razon"), ""),
         "categoria": normalizar(ev.get("categoria"), "GENERAL"),
         "datos": ev.get("datos", {}),
