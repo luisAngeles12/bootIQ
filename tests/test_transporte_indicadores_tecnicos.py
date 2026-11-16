@@ -40,6 +40,46 @@ class TransporteIndicadoresTest(unittest.TestCase):
             valor is None for valor in evidencia["indicadores_tecnicos"].values()
         ))
 
+    def test_evidencia_no_propaga_nan_o_infinito_a_ponderaciones(self):
+        senal = {
+            "pa_evidencias": [{
+                "tipo": "rechazo",
+                "direccion": "CALL",
+                "peso": float("nan"),
+                "confianza": float("inf"),
+                "fuerza": float("-inf"),
+                "confirmada": True,
+            }],
+        }
+        e = construir_evidencia_operacion(senal, {})
+        pa = e["pa_evidencias"][0]
+        self.assertEqual(pa["peso"], 0)
+        self.assertEqual(pa["confianza"], 50)
+        self.assertEqual(pa["fuerza"], 0)
+        self.assertTrue(pa["confirmada"])
+
+    def test_confirmacion_textual_false_no_se_convierte_en_true(self):
+        senal = {
+            "pa_evidencias": [{
+                "tipo": "rechazo", "direccion": "CALL",
+                "peso": 5, "confirmada": "False",
+            }],
+            "estrategia_evidencias": [{
+                "tipo": "patron", "confirmada": "true",
+            }],
+        }
+        e = construir_evidencia_operacion(senal, {})
+        self.assertFalse(e["pa_evidencias"][0]["confirmada"])
+        self.assertTrue(e["estrategia_evidencias"][0]["confirmada"])
+
+    def test_confirmacion_invalida_no_equivale_a_confirmada(self):
+        e = construir_evidencia_operacion({
+            "pa_evidencias": [{
+                "tipo": "impulso", "confirmada": "no",
+            }],
+        }, {})
+        self.assertFalse(e["pa_evidencias"][0]["confirmada"])
+
     def test_evidencia_tecnica_no_reescribe_decision(self):
         senal = {
             "cerebro_unico_decision": "OPERAR_CON_PROTOCOLO",
