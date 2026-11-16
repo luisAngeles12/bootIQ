@@ -143,16 +143,35 @@ def evaluar_confluencia(filas, minimo_test=20):
 
     train = [x for x in registros if x["fecha"].date().isoformat() != ultimo_dia]
     test = [x for x in registros if x["fecha"].date().isoformat() == ultimo_dia]
+    # Congelar el universo de familias ANTES de aplicar cada filtro.
+    # Nunca ocultar un patron perdedor o insuficiente por baja retencion.
+    patrones = sorted({x["patron"] for x in registros})
 
     escenarios = []
     for nombre, regla in reglas:
         seleccion_train = [x for x in train if regla(x)]
         seleccion_test = [x for x in test if regla(x)]
+        por_patron = []
+        for patron in patrones:
+            train_patron = [x for x in train if x["patron"] == patron]
+            test_patron = [x for x in test if x["patron"] == patron]
+            train_elegido = [x for x in train_patron if regla(x)]
+            test_elegido = [x for x in test_patron if regla(x)]
+            por_patron.append({
+                "patron": patron,
+                "train": resumen(train_elegido, train_patron),
+                "ultimo_dia_oos_descriptivo": resumen(test_elegido, test_patron),
+                "muestra_test_suficiente": (
+                    len(dias) >= 2 and len(test_elegido) >= minimo_test
+                ),
+                "habilita_cambios": False,
+            })
         escenarios.append({
             "hipotesis_fija": nombre,
             "train": resumen(seleccion_train, train),
             "ultimo_dia_oos_descriptivo": resumen(seleccion_test, test),
             "muestra_test_suficiente": len(dias) >= 2 and len(seleccion_test) >= minimo_test,
+            "por_patron": por_patron,
             "habilita_cambios": False,
         })
 
@@ -170,6 +189,7 @@ def evaluar_confluencia(filas, minimo_test=20):
             "Sin snapshots de indicadores no se imputan valores ni se evaluan confluencias.",
             "Seleccion de operaciones ejecutadas, no simulacion causal de alternativas.",
             "El ultimo dia es historico OOS descriptivo, no validacion prospectiva.",
+            "Cada patron conserva su propio denominador y ventanas; las muestras menores de 20 no se consideran aprobadas.",
             "No ajusta filtros, thresholds, estrategia, memoria ni autoriza operaciones.",
         ],
         "operaciones_autorizadas": False,
