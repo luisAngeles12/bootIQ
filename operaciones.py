@@ -700,6 +700,14 @@ def abrir_operacion(senal):
             "salud_fuente_ultimas10_wr": "",
         }
 
+        # F5: solo lectura de snapshot ya calculado en estrategia.
+        # Nunca usar velas posteriores ni volver a calcular indicadores.
+        indicadores_fase5 = senal.get(
+            "indicadores_tecnicos_snapshot_fase5"
+        )
+        if not isinstance(indicadores_fase5, dict):
+            indicadores_fase5 = {}
+
         guardar_historial({
             "fecha": datetime.now().strftime(
                 "%Y-%m-%d %H:%M:%S"
@@ -714,6 +722,12 @@ def abrir_operacion(senal):
             "puntaje": puntaje,
             "patron": patron,
             "rsi": rsi,
+            "ema9": indicadores_fase5.get("ema9", ""),
+            "ema21": indicadores_fase5.get("ema21", ""),
+            "bb_superior": indicadores_fase5.get("bb_superior", ""),
+            "bb_media": indicadores_fase5.get("bb_media", ""),
+            "bb_inferior": indicadores_fase5.get("bb_inferior", ""),
+            "precio_cierre_indicadores": indicadores_fase5.get("ultima_close", ""),
             "razon": razon,
         
             # D8-E8 — CONTEXTO PRE-ENTRADA
