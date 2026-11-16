@@ -531,15 +531,17 @@ def _banda_fuerza_evidencia(valor):
     distinta por cada pequeño cambio de fuerza.
     """
 
-    if valor in (None, ""):
+    if valor is None or isinstance(valor, bool) or valor == "":
         return ""
 
-    fuerza = _numero(
-        valor,
-        -1.0,
-    )
+    # Una evidencia no finita jamas puede representar fuerza alta.
+    # No modificar las bandas ya existentes para valores validos.
+    try:
+        fuerza = float(valor)
+    except (TypeError, ValueError, OverflowError):
+        return ""
 
-    if fuerza < 0:
+    if not math.isfinite(fuerza) or fuerza < 0:
         return ""
 
     if fuerza < 40:
