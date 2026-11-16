@@ -44,6 +44,28 @@ class BandaFuerzaAprendizajeFase5Test(unittest.TestCase):
                 self.assertIn("DIR_CALL", token)
                 self.assertIn("CONF_NO", token)
 
+    def test_confirmacion_cruda_invalida_no_fabrica_memoria_confirmada(self):
+        for confirmada in ("False", "no", "invalida", 2, float("nan"),
+                           float("inf"), None):
+            with self.subTest(confirmada=str(confirmada)):
+                token = _token_evidencia_enriquecida({
+                    "tipo": "IMPULSO",
+                    "modulo": "price_action",
+                    "direccion": "CALL",
+                    "confirmada": confirmada,
+                })
+                self.assertIn("CONF_NO", token)
+                self.assertNotIn("CONF_SI", token)
+
+    def test_confirmacion_cruda_valida_conserva_semantica(self):
+        for confirmada in (True, 1, "true", "1", "sí", "yes"):
+            with self.subTest(confirmada=str(confirmada)):
+                token = _token_evidencia_enriquecida({
+                    "tipo": "IMPULSO", "direccion": "PUT",
+                    "confirmada": confirmada,
+                })
+                self.assertIn("CONF_SI", token)
+
     def test_pa_valido_sigue_convirtiendo_escala_a_porcentaje(self):
         token = _token_evidencia_enriquecida({
             "tipo": "IMPULSO", "modulo": "price_action",
