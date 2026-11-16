@@ -15,6 +15,8 @@ def columnas_historial():
         "puntaje",
         "patron",
         "rsi",
+        "ema9", "ema21", "bb_superior", "bb_media", "bb_inferior",
+        "precio_cierre_indicadores",
         "resultado",
         "razon",
 
@@ -58,6 +60,9 @@ COLUMNAS_HISTORIAL = [
     "puntaje",
     "patron",
     "rsi",
+    # F5: fotografia previa al resultado, sin recalculo a posteriori.
+    "ema9", "ema21", "bb_superior", "bb_media", "bb_inferior",
+    "precio_cierre_indicadores",
     "resultado",
     "razon",
 
