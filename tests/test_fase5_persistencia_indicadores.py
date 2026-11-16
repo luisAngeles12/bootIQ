@@ -5,17 +5,38 @@ iniciar el bot o escribir historial de usuario durante las pruebas.
 """
 import ast
 import csv
+import importlib.util
 from pathlib import Path
+import sys
 import tempfile
+import types
 import unittest
 from unittest.mock import patch
 
-import historial
-from historial import COLUMNAS_HISTORIAL
 from comparar_confluencia_indicadores_fase5_practice import evaluar_confluencia
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _cargar_historial_aislado():
+    """Importar solo persistencia, sin credenciales locales ni broker."""
+    config_prueba = types.ModuleType("config")
+    config_prueba.HISTORIAL_CSV = "historial_prueba_no_usar.csv"
+    config_prueba.OPERACIONES_PENDIENTES_JSON = "pendientes_prueba_no_usar.json"
+    estado_prueba = types.ModuleType("estado")
+    estado_prueba.operaciones_abiertas = []
+    spec = importlib.util.spec_from_file_location(
+        "_historial_fase5_aislado", ROOT / "historial.py"
+    )
+    modulo = importlib.util.module_from_spec(spec)
+    with patch.dict(sys.modules, {"config": config_prueba, "estado": estado_prueba}):
+        spec.loader.exec_module(modulo)
+    return modulo
+
+
+historial = _cargar_historial_aislado()
+COLUMNAS_HISTORIAL = historial.COLUMNAS_HISTORIAL
 NOMBRES = (
     "ema9", "ema21", "bb_superior", "bb_media", "bb_inferior",
 )
