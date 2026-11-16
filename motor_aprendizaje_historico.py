@@ -659,27 +659,23 @@ def _token_evidencia_enriquecida(item):
             "confirmada"
         )
 
+        # El aprendizaje puede recibir registros crudos sin pasar por
+        # constructor_evidencia. No inferir True a partir de cualquier
+        # cadena no vacia, numero 2 o NaN.
         if isinstance(confirmada, str):
-            confirmada_txt = (
-                confirmada
-                .strip()
-                .lower()
-            )
-
-            confirmada = (
-                confirmada_txt
-                in {
-                    "true",
-                    "1",
-                    "si",
-                    "sí",
-                    "yes",
-                }
-            )
+            confirmada = confirmada.strip().lower() in {
+                "true", "1", "si", "sí", "yes",
+            }
+        elif isinstance(confirmada, bool):
+            pass
+        elif isinstance(confirmada, (int, float)):
+            confirmada = math.isfinite(confirmada) and confirmada == 1
+        else:
+            confirmada = False
 
         componentes.append(
             "CONF_SI"
-            if bool(confirmada)
+            if confirmada
             else "CONF_NO"
         )
 
