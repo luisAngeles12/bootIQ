@@ -151,16 +151,22 @@ def evaluar_confluencia(filas, minimo_test=20):
     for nombre, regla in reglas:
         seleccion_train = [x for x in train if regla(x)]
         seleccion_test = [x for x in test if regla(x)]
+        # La meta es CADA ventana movil. Las ventanas que cruzan
+        # train/test no pueden desaparecer por la particion temporal.
+        seleccion_total = [x for x in registros if regla(x)]
         por_patron = []
         for patron in patrones:
             train_patron = [x for x in train if x["patron"] == patron]
             test_patron = [x for x in test if x["patron"] == patron]
             train_elegido = [x for x in train_patron if regla(x)]
             test_elegido = [x for x in test_patron if regla(x)]
+            total_patron = [x for x in registros if x["patron"] == patron]
+            total_elegido = [x for x in total_patron if regla(x)]
             por_patron.append({
                 "patron": patron,
                 "train": resumen(train_elegido, train_patron),
                 "ultimo_dia_oos_descriptivo": resumen(test_elegido, test_patron),
+                "total_historico_ventanas_20": resumen(total_elegido, total_patron),
                 "muestra_test_suficiente": (
                     len(dias) >= 2 and len(test_elegido) >= minimo_test
                 ),
@@ -170,6 +176,7 @@ def evaluar_confluencia(filas, minimo_test=20):
             "hipotesis_fija": nombre,
             "train": resumen(seleccion_train, train),
             "ultimo_dia_oos_descriptivo": resumen(seleccion_test, test),
+            "total_historico_ventanas_20": resumen(seleccion_total, registros),
             "muestra_test_suficiente": len(dias) >= 2 and len(seleccion_test) >= minimo_test,
             "por_patron": por_patron,
             "habilita_cambios": False,
@@ -190,6 +197,7 @@ def evaluar_confluencia(filas, minimo_test=20):
             "Seleccion de operaciones ejecutadas, no simulacion causal de alternativas.",
             "El ultimo dia es historico OOS descriptivo, no validacion prospectiva.",
             "Cada patron conserva su propio denominador y ventanas; las muestras menores de 20 no se consideran aprobadas.",
+            "Las ventanas totales incluyen cruces entre dias y entre train/test; son descriptivas, nunca una evaluacion OOS independiente.",
             "No ajusta filtros, thresholds, estrategia, memoria ni autoriza operaciones.",
         ],
         "operaciones_autorizadas": False,
