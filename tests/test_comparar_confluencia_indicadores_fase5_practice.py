@@ -153,6 +153,37 @@ class ConfluenciaFase5Tests(unittest.TestCase):
         self.assertFalse(sweep["consistencia_20_observada"])
         self.assertFalse(patron["SWEEP"]["muestra_test_suficiente"])
 
+    def test_ventanas_entre_train_y_test_no_quedan_ocultas(self):
+        # Cada dia por separado registra 12W/8L (60%) y neto positivo;
+        # el cruce contiene 8L consecutivas a ambos lados.
+        train = [20.75] * 12 + [-25] * 8
+        test = [-25] * 8 + [20.75] * 12
+        filas = [
+            fila(i, "2026-11-10", pnl, patron="CHOCH")
+            for i, pnl in enumerate(train)
+        ] + [
+            fila(i + 20, "2026-11-11", pnl, patron="CHOCH")
+            for i, pnl in enumerate(test)
+        ]
+        resultado = evaluar_confluencia(filas)
+        escenario = resultado["escenarios"][0]
+        self.assertTrue(escenario["train"]["consistencia_20_observada"])
+        self.assertTrue(
+            escenario["ultimo_dia_oos_descriptivo"]["consistencia_20_observada"]
+        )
+        total = escenario["total_historico_ventanas_20"]
+        self.assertEqual(total["winrate_pct"], 60)
+        self.assertEqual(total["ventanas_20"], 21)
+        self.assertGreater(total["ventanas_20_bajo_60"], 0)
+        self.assertFalse(total["consistencia_20_observada"])
+        patron = escenario["por_patron"][0]
+        self.assertEqual(patron["patron"], "CHOCH")
+        self.assertEqual(
+            patron["total_historico_ventanas_20"]["ventanas_20_bajo_60"],
+            total["ventanas_20_bajo_60"],
+        )
+        self.assertFalse(escenario["habilita_cambios"])
+
     def test_no_acepta_test_menor_20(self):
         with self.assertRaises(ValueError):
             evaluar_confluencia([], minimo_test=19)
