@@ -70,10 +70,13 @@ def _txt(v):
 
 
 def _num(v, default=0.0):
+    """No propagar NaN/infinito a confianza, probabilidad o diagnosticos."""
+    import math
     try:
-        return float(v if v is not None else default)
-    except (TypeError, ValueError):
+        numero = float(v if v is not None else default)
+    except (TypeError, ValueError, OverflowError):
         return float(default)
+    return numero if math.isfinite(numero) else float(default)
 
 # ============================================================
 # F5.7-C2A — CANDIDATOS A VETO TÉCNICO EN SOMBRA
