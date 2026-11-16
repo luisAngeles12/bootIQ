@@ -104,6 +104,55 @@ class ConfluenciaFase5Tests(unittest.TestCase):
         self.assertEqual(r["cobertura"]["rsi_disponible"], 1)
         self.assertEqual(r["cobertura"]["bb_disponible"], 1)
 
+    def test_patron_perdedor_no_queda_oculto_por_agregado(self):
+        # Dos familias: agregado de 60% con una familia en 20%.
+        train = [
+            fila(i, "2026-11-10", 20.75, patron="CHOCH")
+            for i in range(20)
+        ]
+        test = [
+            fila(i + 20, "2026-11-11", 20.75, patron="CHOCH")
+            for i in range(20)
+        ] + [
+            fila(i + 40, "2026-11-11", 20.75 if i < 4 else -25,
+                 patron="RETEST")
+            for i in range(20)
+        ]
+        r = evaluar_confluencia(train + test)
+        escenario = r["escenarios"][0]
+        global_test = escenario["ultimo_dia_oos_descriptivo"]
+        self.assertEqual(global_test["winrate_pct"], 60)
+        familias = {p["patron"]: p for p in escenario["por_patron"]}
+        self.assertEqual(set(familias), {"CHOCH", "RETEST"})
+        self.assertEqual(
+            familias["RETEST"]["ultimo_dia_oos_descriptivo"]["winrate_pct"],
+            20,
+        )
+        self.assertFalse(
+            familias["RETEST"]["ultimo_dia_oos_descriptivo"]["consistencia_20_observada"]
+        )
+        self.assertEqual(
+            familias["RETEST"]["ultimo_dia_oos_descriptivo"]["ventanas_20_bajo_60"],
+            1,
+        )
+        self.assertFalse(r["operaciones_autorizadas"])
+
+    def test_filtro_no_desaparece_patron_sin_datos_ema(self):
+        filas = [
+            fila(1, "2026-11-10", patron="CHOCH"),
+            fila(2, "2026-11-11", patron="CHOCH"),
+            fila(3, "2026-11-11", patron="SWEEP", ema9="", ema21=""),
+        ]
+        r = evaluar_confluencia(filas)
+        grupos = {e["hipotesis_fija"]: e for e in r["escenarios"]}
+        patron = {p["patron"]: p for p in grupos["EMA_ALINEADA"]["por_patron"]}
+        self.assertEqual(set(patron), {"CHOCH", "SWEEP"})
+        sweep = patron["SWEEP"]["ultimo_dia_oos_descriptivo"]
+        self.assertEqual(sweep["universo"], 1)
+        self.assertEqual(sweep["n"], 0)
+        self.assertFalse(sweep["consistencia_20_observada"])
+        self.assertFalse(patron["SWEEP"]["muestra_test_suficiente"])
+
     def test_no_acepta_test_menor_20(self):
         with self.assertRaises(ValueError):
             evaluar_confluencia([], minimo_test=19)
