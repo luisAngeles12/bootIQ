@@ -4,9 +4,13 @@ Se verifica el codigo real mediante AST para evitar importar IQ Option,
 iniciar el bot o escribir historial de usuario durante las pruebas.
 """
 import ast
+import csv
 from pathlib import Path
+import tempfile
 import unittest
+from unittest.mock import patch
 
+import historial
 from historial import COLUMNAS_HISTORIAL
 from comparar_confluencia_indicadores_fase5_practice import evaluar_confluencia
 
@@ -101,6 +105,31 @@ class SnapshotPersistenciaFase5Tests(unittest.TestCase):
             eval(expr, {"rsi": "", "indicadores_fase5": {}}),
             "",
         )
+
+    def test_migracion_y_cierre_preservan_order_id_con_ceros(self):
+        with tempfile.TemporaryDirectory() as temporal:
+            ruta = Path(temporal) / "historico.csv"
+            with ruta.open("w", encoding="utf-8", newline="") as archivo:
+                writer = csv.DictWriter(
+                    archivo,
+                    fieldnames=["fecha", "estado", "order_id", "resultado"],
+                )
+                writer.writeheader()
+                writer.writerow({
+                    "fecha": "2026-11-16 10:00:00", "estado": "ABIERTA",
+                    "order_id": "000123", "resultado": "",
+                })
+            with patch.object(historial, "HISTORIAL_CSV", str(ruta)):
+                historial.asegurar_historial_csv()
+                self.assertTrue(historial.actualizar_historial_cierre("000123", 20.75))
+            with ruta.open(encoding="utf-8-sig", newline="") as archivo:
+                filas = list(csv.DictReader(archivo))
+            self.assertEqual(len(filas), 1)
+            self.assertEqual(filas[0]["order_id"], "000123")
+            self.assertEqual(filas[0]["estado"], "CERRADA")
+            self.assertEqual(float(filas[0]["resultado"]), 20.75)
+            self.assertIn("ema9", filas[0])
+            self.assertEqual(filas[0]["ema9"], "")
 
     def test_comparador_reconoce_columnas_futuras(self):
         filas = [{
