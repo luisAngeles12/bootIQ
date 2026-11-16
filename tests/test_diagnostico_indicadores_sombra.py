@@ -3,7 +3,7 @@ import unittest
 
 from constructor_evidencia import construir_evidencia_operacion
 from diagnostico_indicadores_sombra import diagnosticar_indicadores_sombra
-from motor_decision import evaluar_veto_tecnico_sombra
+from motor_decision import evaluar_veto_tecnico_sombra, _num, evaluar_price_action_decision
 
 
 class DiagnosticoIndicadoresSombraTest(unittest.TestCase):
@@ -96,6 +96,25 @@ class DiagnosticoIndicadoresSombraTest(unittest.TestCase):
                 self.assertFalse(d["autoriza"])
         d = diagnosticar_indicadores_sombra(self.evidencia(rsi=float("nan")))
         self.assertEqual(d["estado_rsi"], "SIN_DATOS")
+
+    def test_conversion_numero_cerebro_rechaza_no_finitos(self):
+        for valor in (float("nan"), float("inf"), float("-inf"), "NaN", "Infinity"):
+            with self.subTest(valor=str(valor)):
+                self.assertEqual(_num(valor, 50.0), 50.0)
+        self.assertEqual(_num("63.5", 50.0), 63.5)
+
+    def test_pa_no_propaga_nan_ni_infinito_a_ajuste(self):
+        evidencia = {
+            "direccion": "call",
+            "pa_evidencias": [
+                {"tipo": "rechazo", "direccion": "CALL",
+                 "peso": float("nan"), "fuerza": float("inf"),
+                 "confirmada": False},
+            ],
+        }
+        r = evaluar_price_action_decision(evidencia)
+        self.assertEqual(r["ajuste"], 0.5)
+        self.assertFalse(r["ajuste"] != r["ajuste"])
 
     def test_diagnostico_del_cerebro_no_agrega_vetos(self):
         e = self.evidencia()
