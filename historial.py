@@ -246,10 +246,9 @@ def asegurar_historial_csv():
         columnas_actuales = list(df.columns)
 
         if "order_id" not in columnas_actuales:
-            print("Historial viejo detectado. Se recreará con columnas correctas.")
-            df = pd.DataFrame(columns=COLUMNAS_HISTORIAL)
-            df.to_csv(HISTORIAL_CSV, index=False, encoding="utf-8-sig")
-            return
+            # Un historial sin identidad verificable NO se puede migrar
+            # reescribiendolo a cero: conservar bytes para recuperacion.
+            raise ValueError("HISTORIAL_SIN_ORDER_ID_NO_MIGRAR")
 
         # Agregar columnas faltantes en una sola operacion evita
         # fragmentacion de pandas al migrar esquemas extensos.
@@ -258,9 +257,10 @@ def asegurar_historial_csv():
         df.to_csv(HISTORIAL_CSV, index=False, encoding="utf-8-sig")
 
     except Exception as e:
-        print("Historial dañado. Se recreará:", e)
-        df = pd.DataFrame(columns=COLUMNAS_HISTORIAL)
-        df.to_csv(HISTORIAL_CSV, index=False, encoding="utf-8-sig")
+        # Fallar preservando el CSV; el reinicio vacio destruia ordenes
+        # historicas cuando faltaban campos o existian filas mal formadas.
+        print("Historial no migrado: archivo original conservado:", e)
+        raise
 
 
 def actualizar_historial_cierre(order_id, resultado):
