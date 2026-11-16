@@ -116,6 +116,46 @@ class DiagnosticoIndicadoresSombraTest(unittest.TestCase):
         self.assertEqual(r["ajuste"], 0.5)
         self.assertFalse(r["ajuste"] != r["ajuste"])
 
+    def test_evidencia_pa_duplicada_no_duplica_ajuste(self):
+        observacion = {
+            "tipo": "RECHAZO_CONFIRMADO", "direccion": "CALL",
+            "peso": 30, "fuerza": 0.8, "confirmada": True,
+        }
+        simple = evaluar_price_action_decision({
+            "direccion": "call", "pa_evidencias": [observacion],
+        })
+        doble = evaluar_price_action_decision({
+            "direccion": "call", "pa_evidencias": [observacion, dict(observacion)],
+        })
+        self.assertEqual(simple["ajuste"], doble["ajuste"])
+        self.assertEqual(doble["evidencias_validas"], 1)
+        self.assertEqual(doble["evidencias_duplicadas"], 1)
+        self.assertEqual(doble["total_evidencias"], 2)
+
+    def test_pa_confirmacion_false_en_texto_no_otorga_bono(self):
+        base = {
+            "direccion": "call",
+            "pa_evidencias": [{
+                "tipo": "IMPULSO", "direccion": "CALL",
+                "peso": 18, "fuerza": 0.8, "confirmada": "False",
+            }],
+        }
+        r = evaluar_price_action_decision(base)
+        self.assertEqual(r["ajuste"], 1.8)
+        self.assertEqual(r["evidencias_duplicadas"], 0)
+
+    def test_pa_distintos_hechos_se_conservan(self):
+        r = evaluar_price_action_decision({
+            "direccion": "call", "pa_evidencias": [
+                {"tipo": "RECHAZO", "direccion": "CALL",
+                 "peso": 30, "fuerza": .8, "confirmada": True},
+                {"tipo": "IMPULSO", "direccion": "CALL",
+                 "peso": 18, "fuerza": .8, "confirmada": True},
+            ],
+        })
+        self.assertEqual(r["evidencias_validas"], 2)
+        self.assertEqual(r["evidencias_duplicadas"], 0)
+
     def test_diagnostico_del_cerebro_no_agrega_vetos(self):
         e = self.evidencia()
         antes = dict(e)
