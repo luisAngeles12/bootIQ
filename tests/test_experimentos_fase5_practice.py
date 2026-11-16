@@ -42,6 +42,45 @@ class ExperimentosFase5Tests(unittest.TestCase):
         self.assertTrue(r["experimentos"][0]["test_cumple_objetivo"])
         self.assertFalse(r["cambios_live_autorizados"])
 
+    def test_promedio_60_no_oculta_ventanas_moviles_deficientes(self):
+        # Train con 20/20; test agregado 24/40 = 60%, pero
+        # las ocho perdidas finales del primer bloque y las ocho
+        # iniciales del segundo crean una ventana intermedia debil.
+        train = [
+            fila(i, "2026-11-10", 20.75, "A") for i in range(20)
+        ]
+        pnls = [20.75] * 12 + [-25] * 8 + [-25] * 8 + [20.75] * 12
+        test = [
+            fila(i + 20, "2026-11-11", pnl, "A")
+            for i, pnl in enumerate(pnls)
+        ]
+        r = evaluar_separacion_temporal(train + test)
+        a = r["experimentos"][0]
+        self.assertEqual(a["test"]["winrate_pct"], 60.0)
+        self.assertGreater(a["test"]["neto"], 0)
+        self.assertGreater(a["test_ventanas_20"]["ventanas_bajo_objetivo"], 0)
+        self.assertFalse(a["test_ventanas_20"]["todas_cumplen"])
+        self.assertFalse(a["test_cumple_objetivo"])
+        self.assertFalse(r["cambios_live_autorizados"])
+
+    def test_train_fuerte_en_promedio_pero_ventanas_debiles_no_se_selecciona(self):
+        pnls = [20.75] * 12 + [-25] * 8 + [-25] * 8 + [20.75] * 12
+        train = [
+            fila(i, "2026-11-10", pnl, "A")
+            for i, pnl in enumerate(pnls)
+        ]
+        test = [
+            fila(i + 40, "2026-11-11", 20.75, "A")
+            for i in range(20)
+        ]
+        r = evaluar_separacion_temporal(train + test)
+        a = r["experimentos"][0]
+        self.assertEqual(a["train"]["winrate_pct"], 60.0)
+        self.assertGreater(a["train"]["neto"], 0)
+        self.assertFalse(a["train_ventanas_20"]["todas_cumplen"])
+        self.assertFalse(a["seleccion_train"])
+        self.assertIsNone(a["test_cumple_objetivo"])
+
     def test_una_fecha_no_crea_evidencia(self):
         r = evaluar_separacion_temporal([fila(i, "2026-11-10", 20.75) for i in range(20)])
         self.assertEqual(r["estado"], "SIN_SEPARACION_TEMPORAL")
