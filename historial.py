@@ -231,7 +231,12 @@ def asegurar_historial_csv():
         return
 
     try:
-        df = pd.read_csv(HISTORIAL_CSV, encoding="utf-8-sig")
+        # Una migracion de esquema no debe convertir order_id
+        # en entero: "00123" y "123" no son la misma identidad.
+        df = pd.read_csv(
+            HISTORIAL_CSV, encoding="utf-8-sig",
+            dtype={"order_id": "string"}, keep_default_na=False,
+        )
 
         if df.empty:
             df = pd.DataFrame(columns=COLUMNAS_HISTORIAL)
@@ -266,7 +271,11 @@ def actualizar_historial_cierre(order_id, resultado):
         asegurar_historial_csv()
 
     try:
-        df = pd.read_csv(HISTORIAL_CSV, encoding="utf-8-sig")
+        # Preservar IDs de broker textuales al conciliar el cierre.
+        df = pd.read_csv(
+            HISTORIAL_CSV, encoding="utf-8-sig",
+            dtype={"order_id": "string"}, keep_default_na=False,
+        )
 
         if "order_id" not in df.columns:
             print("Historial sin order_id. No se puede actualizar cierre.")
