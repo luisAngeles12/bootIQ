@@ -152,6 +152,27 @@ class SnapshotPersistenciaFase5Tests(unittest.TestCase):
             self.assertIn("ema9", filas[0])
             self.assertEqual(filas[0]["ema9"], "")
 
+    def test_historial_sin_order_id_no_pierde_datos(self):
+        with tempfile.TemporaryDirectory() as temporal:
+            ruta = Path(temporal) / "antiguo.csv"
+            original = b"fecha,estado,resultado\\n2026-11-16,ABIERTA,\\n"
+            ruta.write_bytes(original)
+            with patch.object(historial, "HISTORIAL_CSV", str(ruta)):
+                with self.assertRaisesRegex(ValueError, "HISTORIAL_SIN_ORDER_ID"):
+                    historial.asegurar_historial_csv()
+            self.assertEqual(ruta.read_bytes(), original)
+
+    def test_error_lectura_migracion_no_reemplaza_csv(self):
+        with tempfile.TemporaryDirectory() as temporal:
+            ruta = Path(temporal) / "datos.csv"
+            original = b"fecha,estado,order_id\\n2026-11-16,ABIERTA,0001\\n"
+            ruta.write_bytes(original)
+            with patch.object(historial, "HISTORIAL_CSV", str(ruta)):
+                with patch.object(historial.pd, "read_csv", side_effect=RuntimeError("LECTURA_FALLIDA")):
+                    with self.assertRaisesRegex(RuntimeError, "LECTURA_FALLIDA"):
+                        historial.asegurar_historial_csv()
+            self.assertEqual(ruta.read_bytes(), original)
+
     def test_comparador_reconoce_columnas_futuras(self):
         filas = [{
             "estado": "CERRADA", "order_id": "1",
