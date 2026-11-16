@@ -199,18 +199,35 @@ def evaluar_price_action_decision(evidencia):
     ajuste_evidencias = 0.0
     motivos = []
     evidencias_validas = 0
+    evidencias_duplicadas = 0
+    firmas_vistas = set()
 
     for ev in pa_evidencias:
         if not isinstance(ev, dict):
             continue
 
-        evidencias_validas += 1
-
         tipo = _txt(ev.get("tipo", ""))
         direccion_ev = _txt(ev.get("direccion", ""))
         peso = _num(ev.get("peso", 0))
         fuerza = _num(ev.get("fuerza", 0))
-        confirmada = bool(ev.get("confirmada", False))
+        # El Cerebro tambien admite evidencias que evitan el constructor.
+        # bool("False") no representa una confirmacion real.
+        valor_confirmada = ev.get("confirmada", False)
+        if isinstance(valor_confirmada, str):
+            confirmada = valor_confirmada.strip().lower() in ("true", "1", "si", "sí", "yes")
+        elif isinstance(valor_confirmada, bool):
+            confirmada = valor_confirmada
+        else:
+            confirmada = valor_confirmada == 1
+
+        # La misma observacion exacta no debe votar dos veces.
+        # No agrupar tipos/direcciones distintos: pueden ser hechos independientes.
+        firma = (tipo, direccion_ev, peso, fuerza, confirmada)
+        if firma in firmas_vistas:
+            evidencias_duplicadas += 1
+            continue
+        firmas_vistas.add(firma)
+        evidencias_validas += 1
 
         if tipo == "contradiccion_pa":
             ajuste_evidencias -= 6
@@ -244,6 +261,7 @@ def evaluar_price_action_decision(evidencia):
         "motivos": motivos,
         "total_evidencias": len(pa_evidencias),
         "evidencias_validas": evidencias_validas,
+        "evidencias_duplicadas": evidencias_duplicadas,
     }
 
 
