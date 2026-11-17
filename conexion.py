@@ -130,10 +130,19 @@ def conectar():
     # No cambiamos timeouts ni añadimos esperas adicionales.
     try:
         print("Obteniendo balance inicial...", flush=True)
-        estado.balance_inicial = float(estado.Iq.get_balance())
+        balance_inicial = float(estado.Iq.get_balance())
+        if not __import__("math").isfinite(balance_inicial) or balance_inicial < 0:
+            raise ValueError("balance inicial invalido")
+        estado.balance_inicial = balance_inicial
     except Exception as e:
         print("No se pudo obtener balance inicial:", e, flush=True)
         estado.balance_inicial = None
+        # Sin baseline no se pueden calcular los stops de sesion.
+        # Fallar antes del scanner y de cualquier orden, sin añadir
+        # consultas al broker durante la ventana critica de entrada.
+        raise RuntimeError(
+            "ARRANQUE BLOQUEADO: balance inicial PRACTICE no disponible."
+        ) from e
 
     print("Balance inicial:", estado.balance_inicial, flush=True)
 
