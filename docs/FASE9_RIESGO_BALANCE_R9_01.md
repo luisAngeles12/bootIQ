@@ -85,3 +85,11 @@ Estado: **abierto; evidencia estática del código, sin confirmación prospectiv
 - No se agregaron umbrales de frescura, stops nuevos ni llamadas `get_balance`; no se modificaron autorización, secuencia de cierres, ventanas críticas ni límites de exposición.
 - `tests/test_antiguedad_balance_fase9.py` agrega cuatro pruebas (valor monotónico, valores inválidos, orden de telemetría anterior a pendientes y aceptación únicamente de respuestas válidas).
 - **Pruebas locales todavía pendientes**: última suite confirmada 441 OK. No extrapolar a capacidad de reacción del Stop Loss antes de la próxima entrada ni a desempeño PRACTICE.
+
+## R9-03B — lectura no finita en el mismo ciclo
+
+- Causa: la protección original en `bot.main` se ejecutaba antes de la consulta de mantenimiento. Si esta devolvía `NaN` o `Inf`, se asignaba a `balance_actual` y las comparaciones de los stops con `NaN` no activaban el bloqueo durante esa misma vuelta, mientras el bucle todavía podía llegar a entradas directas.
+- Corrección: una comprobación sin llamadas al broker después de la consulta de mantenimiento detiene la vuelta con `break` si el balance es negativo o no finito; aplica antes de recorrer señales directas.
+- Prueba agregada a `tests/test_antiguedad_balance_fase9.py`: asegura la posición de esta defensa en el recorrido y comprueba la condición numérica. No representa una prueba completa de extremo a extremo con el broker.
+- R9-03 sigue abierto para observaciones de antigüedad en PRACTICE; esta defensa no garantiza frescura del último balance válido.
+- **Estado de validación:** cambios de código y regresiones subidos, suite local pendiente. Última suite confirmada: 441/441.
