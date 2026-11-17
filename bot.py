@@ -424,6 +424,24 @@ def main():
 
                     continue
 
+        # R9-03: un valor numérico inválido recibido en mantenimiento
+        # no debe alcanzar las entradas directas de esta misma vuelta.
+        # El guardia previo a pendientes cubrirá la siguiente vuelta,
+        # pero esta protección cierra el intervalo actual sin pedir IQ.
+        if (
+            balance_actual is not None
+            and (
+                not math.isfinite(balance_actual)
+                or balance_actual < 0
+            )
+        ):
+            print(
+                "R9-03 BALANCE INVALIDO TRAS MANTENIMIENTO: "
+                "deteniendo nuevas entradas",
+                flush=True,
+            )
+            break
+
         if (
             balance_actual is not None
             and estado.balance_inicial is not None
