@@ -93,3 +93,10 @@ Estado: **abierto; evidencia estática del código, sin confirmación prospectiv
 - Prueba agregada a `tests/test_antiguedad_balance_fase9.py`: asegura la posición de esta defensa en el recorrido y comprueba la condición numérica. No representa una prueba completa de extremo a extremo con el broker.
 - R9-03 sigue abierto para observaciones de antigüedad en PRACTICE; esta defensa no garantiza frescura del último balance válido.
 - **Estado de validación:** cambios de código y regresiones subidos, suite local pendiente. Última suite confirmada: 441/441.
+
+## R9-03C — respuesta vacía de balance
+
+- Evidencia de código: `estado.Iq.get_balance()` puede devolver `None`; en ese caso `balance_actual` conserva la lectura previa y no se reinicia el reloj de observación.
+- Se añadió **solo telemetría** `R9-03 SOMBRA CONSULTA BALANCE SIN RESPUESTA` cuando se recibe `None`, diferenciando silencio del broker y una observación válida. No se alteran la frecuencia de consultas, la ventana ni la autorización.
+- Regresión adicional en `tests/test_antiguedad_balance_fase9.py`. **Última suite local confirmada 441 OK; seis pruebas nuevas de R9-03 pendientes de ejecución.**
+- Las lecturas con excepción ya eran visibles por `No se pudo actualizar balance`. La antigüedad sigue siendo de la última respuesta recibida, no de la liquidación contable.
