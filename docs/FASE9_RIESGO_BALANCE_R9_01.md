@@ -100,3 +100,11 @@ Estado: **abierto; evidencia estática del código, sin confirmación prospectiv
 - Se añadió **solo telemetría** `R9-03 SOMBRA CONSULTA BALANCE SIN RESPUESTA` cuando se recibe `None`, diferenciando silencio del broker y una observación válida. No se alteran la frecuencia de consultas, la ventana ni la autorización.
 - Regresión adicional en `tests/test_antiguedad_balance_fase9.py`. **Última suite local confirmada 441 OK; seis pruebas nuevas de R9-03 pendientes de ejecución.**
 - Las lecturas con excepción ya eran visibles por `No se pudo actualizar balance`. La antigüedad sigue siendo de la última respuesta recibida, no de la liquidación contable.
+
+## Validación local de R9-03 (17-11-2026)
+
+- `git pull --ff-only origin bootiq-v3-auditoria` actualizó `32ac6e2..3457af1` mediante fast-forward.
+- `python -m unittest tests.test_antiguedad_balance_fase9 -v`: **6/6 OK**, 0.008 s.
+- `python -m unittest discover -s tests -p 'test_*.py' -q`: **447/447 OK**, 21.787 s.
+- La corrección de la prueba `test_telemetria_antes_de_pendientes_y_sin_veto_por_edad` evitó detectar como veto el operador ternario usado para imprimir la edad.
+- Esto valida regresiones unitarias y estructurales, **no** una medición LIVE PRACTICE de antigüedad real ni el cumplimiento prospectivo del stop bajo fallos del broker. El hallazgo R9-03 permanece abierto a esa evidencia.
