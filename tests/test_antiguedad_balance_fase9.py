@@ -33,6 +33,21 @@ class AntiguedadBalanceFase9Tests(unittest.TestCase):
         self.assertIn("ultimo_bucket_telemetria_balance", main)
         self.assertNotIn("if edad_balance", main)
 
+    def test_lectura_invalida_de_mantenimiento_detiene_antes_de_directas(self):
+        codigo = (Path(__file__).resolve().parents[1] / "bot.py").read_text(
+            encoding="utf-8"
+        )
+        main = codigo[codigo.index("def main():"):]
+        self.assertLess(
+            main.index("balance_actual = nuevo_balance"),
+            main.index("R9-03 BALANCE INVALIDO TRAS MANTENIMIENTO"),
+        )
+        self.assertLess(
+            main.index("R9-03 BALANCE INVALIDO TRAS MANTENIMIENTO"),
+            main.index("for senal in senales:"),
+        )
+        self.assertIn("not math.isfinite(balance_actual)", main)
+
     def test_solo_lectura_correcta_actualiza_instante(self):
         codigo = (Path(__file__).resolve().parents[1] / "bot.py").read_text(
             encoding="utf-8"
