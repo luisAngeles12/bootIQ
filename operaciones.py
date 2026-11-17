@@ -1600,7 +1600,18 @@ def revisar_operaciones_abiertas():
             )
             
             print("Resultado real por order_id:", resultado)
-            
+
+            # R9-04 SOMBRA: marca de conciliación persistida.
+            # No participa en saldo, decisiones ni envíos al broker.
+            estado.ultima_conciliacion_cierre_monotonic = time.monotonic()
+            print(
+                "R9-04 SOMBRA CIERRE CONCILIADO | order_id:",
+                op["order_id"],
+                "| monotonic:",
+                round(estado.ultima_conciliacion_cierre_monotonic, 3),
+                flush=True,
+            )
+
             if not bloqueo_activo_aplicado:
                 estado.cooldown_activos[op["activo"]] = time.time()
             
