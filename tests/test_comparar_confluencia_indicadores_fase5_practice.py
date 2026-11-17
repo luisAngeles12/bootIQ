@@ -209,6 +209,34 @@ class ConfluenciaFase5Tests(unittest.TestCase):
         self.assertEqual(resumen["ventanas_20_neto_no_positivo"], 0)
         self.assertFalse(resumen["consistencia_20_y_neto_observada"])
 
+    def test_operaciones_real_no_entran_en_reporte_practice(self):
+        registros = [
+            fila(1, "2026-11-10", modo_cuenta_configurado="REAL", pnl=-25),
+            fila(2, "2026-11-10", modo_cuenta_configurado="PRACTICE"),
+            fila(3, "2026-11-11", modo_cuenta_configurado=""),
+        ]
+        reporte = evaluar_confluencia(registros)
+        self.assertEqual(reporte["descartes"]["MODO_REAL_EXCLUIDO"], 1)
+        self.assertEqual(reporte["total_cerradas_evaluables"], 2)
+        self.assertEqual(
+            reporte["cobertura_modo_cuenta"]["PRACTICE_CONFIGURADO"], 1
+        )
+        self.assertEqual(
+            reporte["cobertura_modo_cuenta"]["SIN_MODO_LEGACY"], 1
+        )
+        self.assertFalse(reporte["todos_los_registros_con_modo_practice"])
+
+    def test_solo_modo_practice_configurado_se_declara_completo(self):
+        registros = [
+            fila(1, "2026-11-10", modo_cuenta_configurado="PRACTICE"),
+            fila(2, "2026-11-11", modo_cuenta_configurado="PRACTICE"),
+        ]
+        reporte = evaluar_confluencia(registros)
+        self.assertTrue(reporte["todos_los_registros_con_modo_practice"])
+        self.assertEqual(reporte["total_cerradas_evaluables"], 2)
+        self.assertEqual(reporte["descartes"].get("MODO_REAL_EXCLUIDO", 0), 0)
+        self.assertFalse(reporte["operaciones_autorizadas"])
+
     def test_no_acepta_test_menor_20(self):
         with self.assertRaises(ValueError):
             evaluar_confluencia([], minimo_test=19)
