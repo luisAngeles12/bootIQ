@@ -40,7 +40,7 @@ def normalizar_evidencia_item(ev, modulo_defecto="desconocido"):
         "tipo": normalizar(ev.get("tipo")),
         "direccion": normalizar(ev.get("direccion", "NEUTRA")).upper(),
         "peso": normalizar_numero(ev.get("peso", 0)),
-        "confianza": normalizar_numero(ev.get("confianza", 50)),
+        "confianza": normalizar_numero(ev.get("confianza", 50), defecto=50),
         "fuerza": normalizar_numero(ev.get("fuerza", 0)),
         "confirmada": normalizar_confirmacion(ev.get("confirmada", False)),
         "razon": normalizar(ev.get("razon"), ""),
