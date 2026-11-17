@@ -159,6 +159,49 @@ class SnapshotPersistenciaFase5Tests(unittest.TestCase):
             self.assertIn("ema9", filas[0])
             self.assertEqual(filas[0]["ema9"], "")
 
+    def test_cierre_no_depende_de_pandas_y_preserva_otras_filas(self):
+        with tempfile.TemporaryDirectory() as temporal:
+            ruta = Path(temporal) / "historial.csv"
+            original = (
+                "fecha,estado,order_id,resultado,ema9\n"
+                "2026-11-16,ABIERTA,000123,,101\n"
+                "2026-11-16,CERRADA,000124,-25,99\n"
+            )
+            ruta.write_text(original, encoding="utf-8")
+            with patch.object(historial, "HISTORIAL_CSV", str(ruta)):
+                with patch.object(
+                    historial.pd, "read_csv",
+                    side_effect=TypeError("_NoValueType"),
+                ):
+                    self.assertTrue(
+                        historial.actualizar_historial_cierre("000123", 20.75)
+                    )
+            with ruta.open(encoding="utf-8-sig", newline="") as archivo:
+                filas = list(csv.DictReader(archivo))
+            self.assertEqual(len(filas), 2)
+            self.assertEqual(filas[0]["order_id"], "000123")
+            self.assertEqual(filas[0]["estado"], "CERRADA")
+            self.assertEqual(float(filas[0]["resultado"]), 20.75)
+            self.assertEqual(filas[0]["ema9"], "101")
+            self.assertEqual(filas[1]["order_id"], "000124")
+            self.assertEqual(filas[1]["resultado"], "-25")
+
+    def test_cierre_fallido_no_reemplaza_archivo_original(self):
+        with tempfile.TemporaryDirectory() as temporal:
+            ruta = Path(temporal) / "historial.csv"
+            original = b"estado,order_id,resultado\nABIERTA,000123,\n"
+            ruta.write_bytes(original)
+            with patch.object(historial, "HISTORIAL_CSV", str(ruta)):
+                with patch.object(
+                    historial.os, "replace",
+                    side_effect=OSError("REEMPLAZO_INTERRUMPIDO"),
+                ):
+                    self.assertFalse(
+                        historial.actualizar_historial_cierre("000123", 20.75)
+                    )
+            self.assertEqual(ruta.read_bytes(), original)
+            self.assertEqual(list(Path(temporal).iterdir()), [ruta])
+
     def test_migracion_legacy_no_depende_de_dataframe_reindex(self):
         # Regresion para TypeError _NoValueType de pandas/NumPy reportado
         # en Windows al ampliar un CSV antiguo con columnas faltantes.
