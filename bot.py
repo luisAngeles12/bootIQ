@@ -215,6 +215,24 @@ def main():
         ):
             revisar_operaciones_abiertas()
 
+        # F9-R9-01B: impedir que una señal pendiente se envíe
+        # antes de revisar los stops con el último balance conocido.
+        # No se realizan llamadas al broker en la ventana de entrada.
+        from riesgo_sesion import motivo_bloqueo_sesion
+        bloqueo_previo_sesion = motivo_bloqueo_sesion(
+            estado.balance_inicial,
+            balance_actual,
+            STOP_LOSS,
+            STOP_WIN,
+        )
+        if bloqueo_previo_sesion is not None:
+            print(
+                "R9-01 PROTECCION SESION ANTES DE PENDIENTES:",
+                bloqueo_previo_sesion,
+                flush=True,
+            )
+            break
+
         # Las señales pendientes/protocolo sí deben
         # conservar su evaluación temporal normal.
         inicio_protocolos_d76d = (
