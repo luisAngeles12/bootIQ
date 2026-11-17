@@ -108,3 +108,12 @@ Estado: **abierto; evidencia estática del código, sin confirmación prospectiv
 - `python -m unittest discover -s tests -p 'test_*.py' -q`: **447/447 OK**, 21.787 s.
 - La corrección de la prueba `test_telemetria_antes_de_pendientes_y_sin_veto_por_edad` evitó detectar como veto el operador ternario usado para imprimir la edad.
 - Esto valida regresiones unitarias y estructurales, **no** una medición LIVE PRACTICE de antigüedad real ni el cumplimiento prospectivo del stop bajo fallos del broker. El hallazgo R9-03 permanece abierto a esa evidencia.
+
+## R9-04 — cronología cierre conciliado y balance (sombra)
+
+- En `operaciones.revisar_operaciones_abiertas`, después de persistir con éxito el cierre de una orden, se marca `estado.ultima_conciliacion_cierre_monotonic` y se imprime `R9-04 SOMBRA CIERRE CONCILIADO` con el `order_id`. El control de cierre existente no se altera.
+- En el reporte de balance, como máximo una vez por minuto, `bot.main` muestra `R9-04 SOMBRA SECUENCIA CIERRE BALANCE` y clasifica si la última respuesta válida al balance fue antes o después de la última conciliación, sin hacer llamadas extra.
+- `riesgo_sesion.secuencia_balance_tras_cierre` es una función pura. El resultado `RESPUESTA_BALANCE_POSTERIOR_AL_CIERRE` **no acredita** que IQ Option haya contabilizado el resultado; únicamente compara horas locales de los eventos.
+- `tests/test_secuencia_balance_cierre_fase9.py`: cuatro pruebas unitarias/estructurales, sin operaciones ni red.
+- No se modificaron stops, TOP20, estrategia, límite de cinco posiciones, monto, expiración ni horario de llamadas a IQ. Aún no se ha demostrado frescura contable del broker.
+- **Validación local pendiente**; la última suite ejecutada y aprobada fue de 447 pruebas.
