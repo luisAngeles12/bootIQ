@@ -714,6 +714,8 @@ def abrir_operacion(senal):
             ),
             "estado": "ABIERTA",
             "order_id": order_id,
+            # Evidencia del modo CONFIGURADO (no reemplaza verificar IQ).
+            "modo_cuenta_configurado": MODO_CUENTA,
             "estado_operacion": estado_operacion,
             "activo": activo,
             "tipo": tipo,
