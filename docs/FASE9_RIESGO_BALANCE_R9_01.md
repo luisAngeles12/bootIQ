@@ -36,3 +36,12 @@ Estado: **abierto; evidencia estática del código, sin confirmación prospectiv
 - Regresión añadida: `tests/test_balance_inicial_fase9.py`, commit `d1ddd4b`, con fallos de `get_balance`, `None`, `NaN`, negativo y lectura válida.
 - **Validación automatizada local pendiente**. No declarar cierre hasta que las pruebas se ejecuten y pasen.
 - La posible antigüedad del balance durante la sesión y el orden de comprobación respecto a señales pendientes permanecen **abiertos**. No se modificaron otros límites ni autorizaciones.
+
+## Intervención puntual R9-01B — guardia antes de señales pendientes
+
+- `riesgo_sesion.py`: evaluador puro de `STOP_LOSS` y `STOP_WIN` sobre el último balance conocido, con rechazo de balances ausentes/no finitos o negativos; no llama al broker.
+- `bot.py`: ejecuta el evaluador en el bucle después de confirmar conectividad y **antes** de `procesar_senales_pendientes`. Así evita saltar los stops conocidos al procesar pendientes. Los stops originales posteriores continúan intactos para comprobar los balances recién consultados.
+- `tests/test_riesgo_sesion_fase9.py`: cinco regresiones para límites, datos inválidos, ausencia de consultas al broker y orden anterior a pendientes.
+- `tests/test_balance_inicial_fase9.py`: ampliada cobertura a infinito positivo y negativo.
+- Limitación **abierta**: un último balance formalmente válido puede estar desactualizado respecto al broker. El guardia no detecta pérdidas posteriores a la última consulta y no certifica que el stop nunca se sobrepase. No se añadió `get_balance()` en la ventana crítica.
+- **Pendiente de ejecutar**: las nuevas pruebas aisladas y toda la suite local antes de cerrar R9-01A/B.
