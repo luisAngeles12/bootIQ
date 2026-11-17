@@ -1,6 +1,7 @@
 import time
 import sys
 import threading
+import math
 from iqoptionapi.stable_api import IQ_Option
 
 import estado
@@ -131,7 +132,7 @@ def conectar():
     try:
         print("Obteniendo balance inicial...", flush=True)
         balance_inicial = float(estado.Iq.get_balance())
-        if not __import__("math").isfinite(balance_inicial) or balance_inicial < 0:
+        if not math.isfinite(balance_inicial) or balance_inicial < 0:
             raise ValueError("balance inicial invalido")
         estado.balance_inicial = balance_inicial
     except Exception as e:
