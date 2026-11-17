@@ -383,6 +383,12 @@ def main():
                     balance_actual = nuevo_balance
                     if math.isfinite(nuevo_balance) and nuevo_balance >= 0:
                         ultima_observacion_balance_monotonic = time.monotonic()
+                else:
+                    print(
+                        "R9-03 SOMBRA CONSULTA BALANCE SIN RESPUESTA | "
+                        "se conserva ultima observacion",
+                        flush=True,
+                    )
 
                 ultima_consulta_balance = ahora
 
