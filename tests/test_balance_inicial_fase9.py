@@ -3,6 +3,7 @@
 No hay conexion real, orden ni consulta de red.
 """
 import unittest
+import math
 from unittest.mock import Mock, patch
 
 import conexion
@@ -31,7 +32,7 @@ class BalanceInicialFase9Tests(unittest.TestCase):
         ), patch.object(
             conexion, "actualizar_activos_opcode", return_value=True
         ) as opcode:
-            if isinstance(balance, Exception) or balance is None or balance != balance or balance < 0:
+            if isinstance(balance, Exception) or balance is None or not math.isfinite(float(balance)) or balance < 0:
                 with self.assertRaisesRegex(RuntimeError, "ARRANQUE BLOQUEADO: balance inicial"):
                     conexion.conectar()
                 opcode.assert_not_called()
@@ -45,7 +46,7 @@ class BalanceInicialFase9Tests(unittest.TestCase):
         self.assertIsNone(estado.balance_inicial)
 
     def test_balance_none_y_nan_no_se_interpretan_como_cero(self):
-        for balance in (None, float("nan"), -1):
+        for balance in (None, float("nan"), float("inf"), float("-inf"), -1):
             with self.subTest(balance=balance):
                 self._ejecutar(balance)
                 self.assertIsNone(estado.balance_inicial)
