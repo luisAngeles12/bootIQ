@@ -117,3 +117,11 @@ Estado: **abierto; evidencia estática del código, sin confirmación prospectiv
 - `tests/test_secuencia_balance_cierre_fase9.py`: cuatro pruebas unitarias/estructurales, sin operaciones ni red.
 - No se modificaron stops, TOP20, estrategia, límite de cinco posiciones, monto, expiración ni horario de llamadas a IQ. Aún no se ha demostrado frescura contable del broker.
 - **Validación local pendiente**; la última suite ejecutada y aprobada fue de 447 pruebas.
+
+## Validación local R9-04 (17-11-2026)
+
+- Fast-forward `3457af1..6eab92d` confirmado.
+- `python -m unittest tests.test_secuencia_balance_cierre_fase9 -v`: **4/4 OK**, 0.006 s.
+- `python -m unittest discover -s tests -p 'test_*.py' -q`: **451/451 OK**, 21.341 s.
+- Se observó `R9-04 SOMBRA CIERRE CONCILIADO` en un test simulado; **no prueba conciliación de IQ real**.
+- Próxima evidencia requerida: sesión `python bot.py` con cuenta PRACTICE confirmada; examinar R9-03/R9-04 y relación entre cierre persistido, respuesta balance y nueva entrada. El hallazgo no se declara cerrado todavía.
