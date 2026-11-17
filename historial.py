@@ -251,10 +251,17 @@ def asegurar_historial_csv():
             # reescribiendolo a cero: conservar bytes para recuperacion.
             raise ValueError("HISTORIAL_SIN_ORDER_ID_NO_MIGRAR")
 
-        # Agregar columnas faltantes en una sola operacion evita
-        # fragmentacion de pandas al migrar esquemas extensos.
-        # Las columnas antiguas mantienen sus valores originales.
-        df = df.reindex(columns=COLUMNAS_HISTORIAL, fill_value="")
+        # Reconstruir las columnas una sola vez sin DataFrame.reindex:
+        # algunas combinaciones NumPy/pandas fallan al migrar CSV legacy
+        # con muchas columnas ausentes (_NoValueType). Se conserva el
+        # order_id textual y los valores de todas las columnas existentes.
+        df = pd.DataFrame(
+            {
+                columna: df[columna] if columna in df.columns else ""
+                for columna in COLUMNAS_HISTORIAL
+            },
+            index=df.index,
+        )
         df.to_csv(HISTORIAL_CSV, index=False, encoding="utf-8-sig")
 
     except Exception as e:
