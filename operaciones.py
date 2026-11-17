@@ -272,6 +272,19 @@ def abrir_operacion(senal):
             print("BOOTSTRAP BLOQUEADO: cuenta PRACTICE no confirmada", flush=True)
             return False
 
+    # F9: defensa final compartida por la entrada directa y la
+    # pendiente. Las comprobaciones previas pueden quedar obsoletas
+    # antes del envío, por eso el límite se revalida aquí.
+    # No se consulta balance ni se cambia la ventana de entrada.
+    from config import MAX_OPERACIONES_ABIERTAS
+    from utils import contar_operaciones_activas, activo_con_operacion_activa
+    if contar_operaciones_activas() >= MAX_OPERACIONES_ABIERTAS:
+        print("OPERACION BLOQUEADA POR CAPACIDAD LIVE:", activo, flush=True)
+        return False
+    if activo_con_operacion_activa(activo):
+        print("OPERACION BLOQUEADA POR ACTIVO YA ABIERTO:", activo, flush=True)
+        return False
+
     try:
         if tipo in ["turbo", "binary"]:
             check, order_id = estado.Iq.buy(
