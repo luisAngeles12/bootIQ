@@ -1,4 +1,5 @@
 import time
+import math
 import estado
 from motor_candidatos import ordenar_candidatas_v3
 from config import (
@@ -139,6 +140,15 @@ def main():
         else None
     )
 
+    # R9-03 SOMBRA: instante de la última observación válida.
+    # Nunca se utiliza para autorizar ni bloquear operaciones.
+    ultima_observacion_balance_monotonic = (
+        time.monotonic()
+        if balance_actual is not None and math.isfinite(balance_actual)
+        else None
+    )
+    ultimo_bucket_telemetria_balance = None
+
     # Nuevo: reporte general de mercados cada 5 minutos.
     if not hasattr(estado, "ultimo_reporte_mercados"):
         estado.ultimo_reporte_mercados = 0
@@ -218,7 +228,25 @@ def main():
         # F9-R9-01B: impedir que una señal pendiente se envíe
         # antes de revisar los stops con el último balance conocido.
         # No se realizan llamadas al broker en la ventana de entrada.
-        from riesgo_sesion import motivo_bloqueo_sesion
+        from riesgo_sesion import (
+            motivo_bloqueo_sesion,
+            antiguedad_observacion_balance,
+        )
+        # Una sola observación sombra por minuto, antes de pendientes.
+        # No introduce solicitudes IQ ni un nuevo filtro de entradas.
+        bucket_telemetria_balance = int(time.monotonic() // CANDLE_TIME)
+        if bucket_telemetria_balance != ultimo_bucket_telemetria_balance:
+            ultimo_bucket_telemetria_balance = bucket_telemetria_balance
+            edad_balance = antiguedad_observacion_balance(
+                ultima_observacion_balance_monotonic,
+                time.monotonic(),
+            )
+            print(
+                "R9-03 SOMBRA ANTIGUEDAD BALANCE | segundos:",
+                edad_balance if edad_balance is not None else "SIN_LECTURA",
+                "| origen: ultima_lectura_correcta",
+                flush=True,
+            )
         bloqueo_previo_sesion = motivo_bloqueo_sesion(
             estado.balance_inicial,
             balance_actual,
@@ -353,6 +381,8 @@ def main():
                         )
 
                     balance_actual = nuevo_balance
+                    if math.isfinite(nuevo_balance) and nuevo_balance >= 0:
+                        ultima_observacion_balance_monotonic = time.monotonic()
 
                 ultima_consulta_balance = ahora
 
