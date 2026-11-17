@@ -45,3 +45,10 @@ Estado: **abierto; evidencia estática del código, sin confirmación prospectiv
 - `tests/test_balance_inicial_fase9.py`: ampliada cobertura a infinito positivo y negativo.
 - Limitación **abierta**: un último balance formalmente válido puede estar desactualizado respecto al broker. El guardia no detecta pérdidas posteriores a la última consulta y no certifica que el stop nunca se sobrepase. No se añadió `get_balance()` en la ventana crítica.
 - **Pendiente de ejecutar**: las nuevas pruebas aisladas y toda la suite local antes de cerrar R9-01A/B.
+
+## Validación local reportada (17-11-2026)
+
+- Fast-forward desde `4062a85` hasta `aeb24bc` confirmado.
+- `python -m unittest tests.test_balance_inicial_fase9 tests.test_riesgo_sesion_fase9 -v`: **8/8 OK**.
+- `python -m unittest discover -s tests -p 'test_*.py' -q`: **436/436 OK**, 21.697 s.
+- No es una prueba LIVE PRACTICE ni certifica stops de sesión bajo balance desactualizado; R9-01 sigue parcialmente abierto.
