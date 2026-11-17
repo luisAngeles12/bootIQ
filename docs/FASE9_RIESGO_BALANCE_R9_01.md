@@ -68,3 +68,10 @@ Estado: **abierto; evidencia estática del código, sin confirmación prospectiv
 - `python -m unittest tests.test_capacidad_gateway_fase9 -v`: **5/5 OK**.
 - `python -m unittest discover -s tests -p 'test_*.py' -q`: **441/441 OK**, 21.556 s.
 - Estos resultados confirman la regresión con mocks; no sustituyen una prueba prospectiva PRACTICE. El riesgo de balance desactualizado continúa abierto.
+
+## Secuencia temporal observada al revisar R9-03
+
+- `bot.main`: `revisar_operaciones_abiertas()` corre en segundos 40–44 y precede a `get_balance()` dentro del mismo ciclo, mientras que la consulta de balance se permite en segundos 35–45 con intervalo mínimo de 10 s.
+- Una lectura de balance anterior a liquidar un resultado puede permanecer como última fuente conocida durante la siguiente entrada; no se puede cuantificar retraso máximo real sin trazas de tiempo y broker.
+- `riesgo_sesion.motivo_bloqueo_sesion` no afirma que la observación sea fresca: evalúa stops sobre la última observación válida. Ningún nuevo umbral de antigüedad está autorizado con la evidencia actual.
+- **Decisión:** no modificar los stops, el calendario de llamadas a `get_balance` ni el calendario de cierre; obtener primero datos de antigüedad y comprobar si las consultas realmente quedan retrasadas. No declarar la fase 9 cerrada por 441 pruebas.
