@@ -75,3 +75,13 @@ Estado: **abierto; evidencia estática del código, sin confirmación prospectiv
 - Una lectura de balance anterior a liquidar un resultado puede permanecer como última fuente conocida durante la siguiente entrada; no se puede cuantificar retraso máximo real sin trazas de tiempo y broker.
 - `riesgo_sesion.motivo_bloqueo_sesion` no afirma que la observación sea fresca: evalúa stops sobre la última observación válida. Ningún nuevo umbral de antigüedad está autorizado con la evidencia actual.
 - **Decisión:** no modificar los stops, el calendario de llamadas a `get_balance` ni el calendario de cierre; obtener primero datos de antigüedad y comprobar si las consultas realmente quedan retrasadas. No declarar la fase 9 cerrada por 441 pruebas.
+
+## Intervención R9-03 — antigüedad observada (solo sombra)
+
+- `riesgo_sesion.antiguedad_observacion_balance()` calcula una edad desde timestamps monotónicos, devuelve `None` si faltan valores o son inválidos y no consulta al broker.
+- `bot.main` inicia la referencia monotónica tras el arranque con balance conocido y la actualiza solo tras lecturas de balance válidas. No se actualiza si el request lanza excepción o entrega `None`.
+- Antes de procesar pendientes, se emite una línea `R9-03 SOMBRA ANTIGUEDAD BALANCE` como máximo una vez por bucket de 60 segundos monotónicos. La etiqueta `SIN_LECTURA` significa que no existe una observación aceptable.
+- Esta edad representa **antigüedad de la respuesta recibida**, no la fecha de liquidación contable ni el instante en que el broker hizo efectivo un cierre. Tampoco refleja garantías de frescura del backend.
+- No se agregaron umbrales de frescura, stops nuevos ni llamadas `get_balance`; no se modificaron autorización, secuencia de cierres, ventanas críticas ni límites de exposición.
+- `tests/test_antiguedad_balance_fase9.py` agrega cuatro pruebas (valor monotónico, valores inválidos, orden de telemetría anterior a pendientes y aceptación únicamente de respuestas válidas).
+- **Pruebas locales todavía pendientes**: última suite confirmada 441 OK. No extrapolar a capacidad de reacción del Stop Loss antes de la próxima entrada ni a desempeño PRACTICE.
