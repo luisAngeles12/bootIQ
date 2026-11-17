@@ -29,6 +29,9 @@ def auditar_fuente_memoria(filas):
         if str(fila.get("estado_operacion") or "").strip().upper() != "OPERADA_DIRECTA":
             descartes["NO_DIRECTA_EJECUTADA"] += 1
             continue
+        if str(fila.get("modo_cuenta_configurado") or "").strip().upper() != "PRACTICE":
+            descartes["PROCEDENCIA_PRACTICE_NO_VERIFICADA"] += 1
+            continue
         oid = str(fila.get("order_id") or "").strip()
         if not oid or oid in ids:
             descartes["ID_AUSENTE_O_DUPLICADO"] += 1
