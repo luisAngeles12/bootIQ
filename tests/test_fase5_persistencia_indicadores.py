@@ -159,6 +159,39 @@ class SnapshotPersistenciaFase5Tests(unittest.TestCase):
             self.assertIn("ema9", filas[0])
             self.assertEqual(filas[0]["ema9"], "")
 
+    def test_migracion_legacy_no_depende_de_dataframe_reindex(self):
+        # Regresion para TypeError _NoValueType de pandas/NumPy reportado
+        # en Windows al ampliar un CSV antiguo con columnas faltantes.
+        with tempfile.TemporaryDirectory() as temporal:
+            ruta = Path(temporal) / "legacy.csv"
+            with ruta.open("w", encoding="utf-8", newline="") as archivo:
+                writer = csv.DictWriter(
+                    archivo,
+                    fieldnames=["fecha", "estado", "order_id", "resultado"],
+                )
+                writer.writeheader()
+                writer.writerow({
+                    "fecha": "2026-11-16 10:00:00",
+                    "estado": "ABIERTA",
+                    "order_id": "000123",
+                    "resultado": "",
+                })
+            with patch.object(historial, "HISTORIAL_CSV", str(ruta)):
+                with patch.object(
+                    historial.pd.DataFrame,
+                    "reindex",
+                    side_effect=TypeError("_NoValueType"),
+                ):
+                    historial.asegurar_historial_csv()
+            with ruta.open("r", encoding="utf-8-sig", newline="") as archivo:
+                filas = list(csv.DictReader(archivo))
+            self.assertEqual(len(filas), 1)
+            self.assertEqual(filas[0]["order_id"], "000123")
+            self.assertEqual(filas[0]["estado"], "ABIERTA")
+            self.assertEqual(filas[0]["resultado"], "")
+            self.assertEqual(filas[0]["ema9"], "")
+            self.assertEqual(filas[0]["modo_cuenta_configurado"], "")
+
     def test_historial_sin_order_id_no_pierde_datos(self):
         with tempfile.TemporaryDirectory() as temporal:
             ruta = Path(temporal) / "antiguo.csv"
