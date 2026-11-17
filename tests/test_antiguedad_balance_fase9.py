@@ -48,6 +48,23 @@ class AntiguedadBalanceFase9Tests(unittest.TestCase):
         )
         self.assertIn("not math.isfinite(balance_actual)", main)
 
+    def test_respuesta_none_es_visible_y_no_actualiza_reloj(self):
+        codigo = (Path(__file__).resolve().parents[1] / "bot.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            "R9-03 SOMBRA CONSULTA BALANCE SIN RESPUESTA", codigo
+        )
+        self.assertIn(
+            "if nuevo_balance is not None:\n"
+            "                    nuevo_balance = float(", codigo
+        )
+        self.assertIn(
+            "else:\n"
+            "                    print(\n"
+            "                        \"R9-03 SOMBRA CONSULTA BALANCE SIN RESPUESTA", codigo
+        )
+
     def test_solo_lectura_correcta_actualiza_instante(self):
         codigo = (Path(__file__).resolve().parents[1] / "bot.py").read_text(
             encoding="utf-8"
