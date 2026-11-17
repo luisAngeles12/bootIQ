@@ -61,3 +61,10 @@ Estado: **abierto; evidencia estática del código, sin confirmación prospectiv
 - `tests/test_capacidad_gateway_fase9.py`: cinco casos de regresión para quinto cupo, duplicado de activo, ruta de protocolo, posiciones expiradas y cuarto cupo permitiendo el quinto. Utiliza mocks, no opera.
 - Limitación: la revalidación no pretende garantizar atomicidad frente a múltiples hilos que llamen simultáneamente a `abrir_operacion`; el recorrido ordinario de envío del bot está secuenciado y esta modificación no introduce cerraduras en la ruta crítica.
 - **Validación local de regresiones y suite pendiente**. No declarar el límite probado en runtime hasta obtener resultados.
+
+## Validación local reportada R9-02 (17-11-2026)
+
+- Fast-forward `aeb24bc..cb73947` confirmado en Git Bash.
+- `python -m unittest tests.test_capacidad_gateway_fase9 -v`: **5/5 OK**.
+- `python -m unittest discover -s tests -p 'test_*.py' -q`: **441/441 OK**, 21.556 s.
+- Estos resultados confirman la regresión con mocks; no sustituyen una prueba prospectiva PRACTICE. El riesgo de balance desactualizado continúa abierto.
