@@ -9,6 +9,7 @@ def fila(oid, fecha, resultado, patron="CHOCH bajista"):
         "fecha": fecha,
         "estado": "CERRADA",
         "estado_operacion": "OPERADA_DIRECTA",
+        "modo_cuenta_configurado": "PRACTICE",
         "order_id": str(oid),
         "resultado": str(resultado),
         "activo": "EURUSD-OTC",
