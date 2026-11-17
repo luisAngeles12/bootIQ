@@ -31,7 +31,10 @@ class AntiguedadBalanceFase9Tests(unittest.TestCase):
             main.index("procesar_senales_pendientes("),
         )
         self.assertIn("ultimo_bucket_telemetria_balance", main)
-        # Buscar únicamente un if de control de flujo, no el ternario\n        # de presentación: edad_balance if edad_balance is not None.\n        import re\n        self.assertIsNone(re.search(r"(?m)^\\s*if\\s+edad_balance\\b", main))
+        # Identificar únicamente un if de control de flujo.
+        # El ternario del mensaje de registro no bloquea entradas.
+        import re
+        self.assertIsNone(re.search(r"(?m)^\s*if\s+edad_balance\b", main))
 
     def test_lectura_invalida_de_mantenimiento_detiene_antes_de_directas(self):
         codigo = (Path(__file__).resolve().parents[1] / "bot.py").read_text(
