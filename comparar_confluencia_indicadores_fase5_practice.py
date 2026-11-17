@@ -122,6 +122,10 @@ def evaluar_confluencia(filas, minimo_test=20):
         wins = sum(x["pnl"] > 0 for x in subconjunto)
         ventanas = [subconjunto[i:i + 20] for i in range(max(0, n - 19))]
         fallidas = sum(sum(x["pnl"] > 0 for x in ventana) < 12 for ventana in ventanas)
+        # WR suficiente no equivale a rentabilidad con payouts variables.
+        ventanas_neto_no_positivo = sum(
+            sum(x["pnl"] for x in ventana) <= 0 for ventana in ventanas
+        )
         return {
             "n": n, "universo": len(universo), "wins": wins,
             "losses": n - wins,
@@ -130,7 +134,11 @@ def evaluar_confluencia(filas, minimo_test=20):
             "retencion_pct": round(100 * n / len(universo), 2) if universo else None,
             "ventanas_20": len(ventanas),
             "ventanas_20_bajo_60": fallidas,
+            "ventanas_20_neto_no_positivo": ventanas_neto_no_positivo,
             "consistencia_20_observada": bool(ventanas) and fallidas == 0,
+            "consistencia_20_y_neto_observada": (
+                bool(ventanas) and fallidas == 0 and ventanas_neto_no_positivo == 0
+            ),
         }
 
     reglas = (
