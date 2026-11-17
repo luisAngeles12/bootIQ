@@ -9,6 +9,7 @@ def fila(oid, dia, resultado, estado_operacion="OPERADA_DIRECTA"):
         "fecha": f"{dia}T12:00:00",
         "estado": "CERRADA",
         "estado_operacion": estado_operacion,
+        "modo_cuenta_configurado": "PRACTICE",
         "order_id": str(oid),
         "resultado": str(resultado),
         "patron": "CHOCH bajista",
@@ -47,6 +48,20 @@ class AuditoriaFuenteMemoriaTests(unittest.TestCase):
         self.assertEqual(r["train"]["n"], 1)
         self.assertEqual(r["descartes"]["NO_DIRECTA_EJECUTADA"], 1)
         self.assertFalse(r["memoria_experimental_generada"])
+
+    def test_procedencia_sin_practice_no_entrena_ni_valida(self):
+        filas = [
+            fila(1, "2026-11-10", 20.75),
+            dict(fila(2, "2026-11-11", -25), modo_cuenta_configurado=""),
+            dict(fila(3, "2026-11-12", 20.75), modo_cuenta_configurado="REAL"),
+            fila(4, "2026-11-12", -25),
+        ]
+        r = auditar_fuente_memoria(filas)
+        self.assertEqual(r["train"]["n"], 1)
+        self.assertEqual(r["validacion_reservada"]["n"], 1)
+        self.assertEqual(r["descartes"]["PROCEDENCIA_PRACTICE_NO_VERIFICADA"], 2)
+        self.assertFalse(r["aprendizaje_activado"])
+        self.assertFalse(r["operaciones_autorizadas"])
 
     def test_no_asume_zona_ni_convierte_a_epoch(self):
         r = auditar_fuente_memoria([
