@@ -58,6 +58,22 @@ class TransporteIndicadoresTest(unittest.TestCase):
         self.assertEqual(pa["fuerza"], 0)
         self.assertTrue(pa["confirmada"])
 
+    def test_confianza_invalida_conserva_neutralidad_sin_bonos(self):
+        for invalida in (float("inf"), float("-inf"), float("nan"), "invalida", None, False):
+            with self.subTest(confianza=repr(invalida)):
+                e = construir_evidencia_operacion({
+                    "pa_evidencias": [{
+                        "tipo": "rechazo", "direccion": "PUT",
+                        "peso": "NaN", "confianza": invalida,
+                        "fuerza": float("inf"), "confirmada": False,
+                    }]
+                }, {})
+                pa = e["pa_evidencias"][0]
+                self.assertEqual(pa["confianza"], 50)
+                self.assertEqual(pa["peso"], 0)
+                self.assertEqual(pa["fuerza"], 0)
+                self.assertFalse(pa["confirmada"])
+
     def test_confirmacion_textual_false_no_se_convierte_en_true(self):
         senal = {
             "pa_evidencias": [{
