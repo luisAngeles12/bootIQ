@@ -79,6 +79,13 @@ def extraer_columnas_writer():
 class SnapshotPersistenciaFase5Tests(unittest.TestCase):
     def test_esquema_y_escritor_cubren_mismos_campos(self):
         writer = extraer_columnas_writer()
+        self.assertIn("modo_cuenta_configurado", COLUMNAS_HISTORIAL)
+        self.assertIn("modo_cuenta_configurado", writer)
+        modo = eval(
+            compile(ast.Expression(writer["modo_cuenta_configurado"]), "modo", "eval"),
+            {"MODO_CUENTA": "PRACTICE"},
+        )
+        self.assertEqual(modo, "PRACTICE")
         for nombre in CAMPOS:
             with self.subTest(campo=nombre):
                 self.assertIn(nombre, COLUMNAS_HISTORIAL)
