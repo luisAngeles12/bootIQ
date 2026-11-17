@@ -61,9 +61,19 @@ def evaluar_confluencia(filas, minimo_test=20):
     registros = []
     ids = set()
     descartes = Counter()
+    cobertura_modo = Counter()
     for fila in filas:
         if str(fila.get("estado") or "").strip().upper() != "CERRADA":
             descartes["NO_CERRADA"] += 1
+            continue
+        # No mezclar operaciones REAL con una evaluacion PRACTICE.
+        # Un CSV legacy sin modo permanece observable, pero no certificable.
+        modo = str(fila.get("modo_cuenta_configurado") or "").strip().upper()
+        if modo == "REAL":
+            descartes["MODO_REAL_EXCLUIDO"] += 1
+            continue
+        if modo not in ("PRACTICE", ""):
+            descartes["MODO_DESCONOCIDO_EXCLUIDO"] += 1
             continue
         oid = str(fila.get("order_id") or "").strip()
         if not oid or oid in ids:
@@ -97,6 +107,7 @@ def evaluar_confluencia(filas, minimo_test=20):
         bb = [ind[k] for k in ("bb_inferior", "bb_media", "bb_superior")]
         bb_valida = all(x is not None for x in bb) and bb[0] < bb[2] and bb[0] <= bb[1] <= bb[2]
         bb_dentro = bb_valida and ind["precio"] is not None and bb[0] <= ind["precio"] <= bb[2]
+        cobertura_modo["PRACTICE_CONFIGURADO" if modo == "PRACTICE" else "SIN_MODO_LEGACY"] += 1
         registros.append({
             "order_id": oid, "fecha": fecha, "pnl": pnl,
             "patron": str(fila.get("patron") or "SIN_PATRON").strip(),
@@ -195,6 +206,11 @@ def evaluar_confluencia(filas, minimo_test=20):
         "dias": dias, "dia_test": ultimo_dia,
         "total_cerradas_evaluables": len(registros),
         "descartes": dict(sorted(descartes.items())),
+        "cobertura_modo_cuenta": dict(sorted(cobertura_modo.items())),
+        "todos_los_registros_con_modo_practice": (
+            bool(registros)
+            and cobertura_modo["SIN_MODO_LEGACY"] == 0
+        ),
         "cobertura": {
             campo: sum(bool(x[campo]) for x in registros)
             for campo in ("pa_disponible", "ema_disponible", "rsi_disponible", "bb_disponible")
@@ -202,6 +218,9 @@ def evaluar_confluencia(filas, minimo_test=20):
         "escenarios": escenarios,
         "limitaciones": [
             "Sin snapshots de indicadores no se imputan valores ni se evaluan confluencias.",
+            "Modo PRACTICE corresponde al valor configurado y no prueba por si solo la cuenta activa del broker.",
+            "Historial legacy sin modo se conserva para observacion pero no certifica rendimiento PRACTICE.",
+            "Filas etiquetadas REAL se excluyen completamente de todos los resultados.",
             "Seleccion de operaciones ejecutadas, no simulacion causal de alternativas.",
             "El ultimo dia es historico OOS descriptivo, no validacion prospectiva.",
             "Cada patron conserva su propio denominador y ventanas; las muestras menores de 20 no se consideran aprobadas.",
