@@ -52,3 +52,12 @@ Estado: **abierto; evidencia estática del código, sin confirmación prospectiv
 - `python -m unittest tests.test_balance_inicial_fase9 tests.test_riesgo_sesion_fase9 -v`: **8/8 OK**.
 - `python -m unittest discover -s tests -p 'test_*.py' -q`: **436/436 OK**, 21.697 s.
 - No es una prueba LIVE PRACTICE ni certifica stops de sesión bajo balance desactualizado; R9-01 sigue parcialmente abierto.
+
+## Intervención R9-02 — defensa final de exposición
+
+- Evidencia: `bot.py` y `entrada.py` verifican cupos/activo antes de la llamada, pero `operaciones.abrir_operacion()` enviaba la orden sin revalidar esos límites. Ambos caminos terminan en esa función.
+- `operaciones.py` ahora vuelve a consultar `contar_operaciones_activas()` y `activo_con_operacion_activa()` inmediatamente antes de `estado.Iq.buy(...)` o `buy_digital_spot_v2(...)`.
+- No se modifican `MAX_OPERACIONES_ABIERTAS`, `MONTO_BASE`, expiración, estrategia, stop, TOP20 ni temporización. No se introduce una llamada de balance.
+- `tests/test_capacidad_gateway_fase9.py`: cinco casos de regresión para quinto cupo, duplicado de activo, ruta de protocolo, posiciones expiradas y cuarto cupo permitiendo el quinto. Utiliza mocks, no opera.
+- Limitación: la revalidación no pretende garantizar atomicidad frente a múltiples hilos que llamen simultáneamente a `abrir_operacion`; el recorrido ordinario de envío del bot está secuenciado y esta modificación no introduce cerraduras en la ruta crítica.
+- **Validación local de regresiones y suite pendiente**. No declarar el límite probado en runtime hasta obtener resultados.
