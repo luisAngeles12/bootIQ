@@ -36,6 +36,9 @@ def _registros_validos(filas):
         if str(fila.get("estado_operacion") or "").strip().upper() != "OPERADA_DIRECTA":
             descartes["NO_DIRECTA"] += 1
             continue
+        if str(fila.get("modo_cuenta_configurado") or "").strip().upper() != "PRACTICE":
+            descartes["PROCEDENCIA_PRACTICE_NO_VERIFICADA"] += 1
+            continue
         oid = str(fila.get("order_id") or "").strip()
         if not oid or oid in ids:
             descartes["ID_INVALIDO_O_REPETIDO"] += 1
