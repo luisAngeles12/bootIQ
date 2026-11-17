@@ -231,6 +231,7 @@ def main():
         from riesgo_sesion import (
             motivo_bloqueo_sesion,
             antiguedad_observacion_balance,
+            secuencia_balance_tras_cierre,
         )
         # Una sola observación sombra por minuto, antes de pendientes.
         # No introduce solicitudes IQ ni un nuevo filtro de entradas.
@@ -245,6 +246,14 @@ def main():
                 "R9-03 SOMBRA ANTIGUEDAD BALANCE | segundos:",
                 edad_balance if edad_balance is not None else "SIN_LECTURA",
                 "| origen: ultima_lectura_correcta",
+                flush=True,
+            )
+            print(
+                "R9-04 SOMBRA SECUENCIA CIERRE BALANCE:",
+                secuencia_balance_tras_cierre(
+                    getattr(estado, "ultima_conciliacion_cierre_monotonic", None),
+                    ultima_observacion_balance_monotonic,
+                ),
                 flush=True,
             )
         bloqueo_previo_sesion = motivo_bloqueo_sesion(
