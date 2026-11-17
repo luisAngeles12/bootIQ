@@ -28,3 +28,11 @@ Estado: **abierto; evidencia estática del código, sin confirmación prospectiv
 - Evaluar por separado la antigüedad del balance, sin confundir la falta de balance con balance desactualizado.
 
 **Decisión actual:** no modificar código de compra ni umbrales hasta disponer de regresiones que cubran tanto pendientes como directas. Ninguna de las pruebas existentes acredita rentabilidad, 60% sostenido ni ausencia real de cruces de stop.
+
+## Intervención puntual R9-01A — arranque sin baseline
+
+- Commit de producción: `0a19dd4` (ajuste de importación `52bd95b`).
+- `conexion.conectar()` ahora falla antes del escáner si el balance inicial no puede obtenerse o no es un valor finito/no negativo. No envía órdenes ni consulta balance dentro de la ventana crítica.
+- Regresión añadida: `tests/test_balance_inicial_fase9.py`, commit `d1ddd4b`, con fallos de `get_balance`, `None`, `NaN`, negativo y lectura válida.
+- **Validación automatizada local pendiente**. No declarar cierre hasta que las pruebas se ejecuten y pasen.
+- La posible antigüedad del balance durante la sesión y el orden de comprobación respecto a señales pendientes permanecen **abiertos**. No se modificaron otros límites ni autorizaciones.
