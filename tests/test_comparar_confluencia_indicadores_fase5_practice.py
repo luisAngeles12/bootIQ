@@ -184,6 +184,31 @@ class ConfluenciaFase5Tests(unittest.TestCase):
         )
         self.assertFalse(escenario["habilita_cambios"])
 
+    def test_60_por_ciento_puede_tener_neto_negativo(self):
+        # El porcentaje cumple, pero 12 ganancias pequenas no cubren 8 perdidas.
+        train = [fila(i, "2026-11-10", 20.75) for i in range(20)]
+        test = [
+            fila(i + 20, "2026-11-11", 1 if i < 12 else -25)
+            for i in range(20)
+        ]
+        reporte = evaluar_confluencia(train + test)
+        resumen_test = reporte["escenarios"][0]["ultimo_dia_oos_descriptivo"]
+        self.assertEqual(resumen_test["wins"], 12)
+        self.assertEqual(resumen_test["winrate_pct"], 60)
+        self.assertTrue(resumen_test["consistencia_20_observada"])
+        self.assertEqual(resumen_test["ventanas_20_bajo_60"], 0)
+        self.assertEqual(resumen_test["ventanas_20_neto_no_positivo"], 1)
+        self.assertFalse(resumen_test["consistencia_20_y_neto_observada"])
+        self.assertLess(resumen_test["neto"], 0)
+        self.assertFalse(reporte["operaciones_autorizadas"])
+
+    def test_muestra_menor_de_20_no_demuestra_neto_ni_consistencia(self):
+        reporte = evaluar_confluencia([fila(i) for i in range(19)])
+        resumen = reporte["escenarios"][0]["total_historico_ventanas_20"]
+        self.assertEqual(resumen["ventanas_20"], 0)
+        self.assertEqual(resumen["ventanas_20_neto_no_positivo"], 0)
+        self.assertFalse(resumen["consistencia_20_y_neto_observada"])
+
     def test_no_acepta_test_menor_20(self):
         with self.assertRaises(ValueError):
             evaluar_confluencia([], minimo_test=19)
