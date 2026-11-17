@@ -1,5 +1,8 @@
 import os
 import json
+import csv
+import math
+import tempfile
 import pandas as pd
 import estado
 from config import HISTORIAL_CSV, OPERACIONES_PENDIENTES_JSON
@@ -278,37 +281,65 @@ def actualizar_historial_cierre(order_id, resultado):
     ):
         asegurar_historial_csv()
 
+    # La conciliacion de cierres no necesita operaciones vectorizadas.
+    # Evita un fallo reproducido con NumPy/pandas en Windows y conserva
+    # order_id como texto exacto, incluidos ceros iniciales.
+    ruta_temporal = None
     try:
-        # Preservar IDs de broker textuales al conciliar el cierre.
-        df = pd.read_csv(
-            HISTORIAL_CSV, encoding="utf-8-sig",
-            dtype={"order_id": "string"}, keep_default_na=False,
-        )
-
-        if "order_id" not in df.columns:
-            print("Historial sin order_id. No se puede actualizar cierre.")
-            return False
-
-        df["order_id"] = df["order_id"].astype(str)
+        resultado_num = float(resultado)
+        if not math.isfinite(resultado_num):
+            raise ValueError("RESULTADO_CIERRE_NO_FINITO")
+        resultado_num = round(resultado_num, 2)
         order_id = str(order_id)
 
-        mask = df["order_id"] == order_id
+        with open(HISTORIAL_CSV, "r", encoding="utf-8-sig", newline="") as archivo:
+            lector = csv.DictReader(archivo)
+            columnas = lector.fieldnames
+            if not columnas or "order_id" not in columnas:
+                print("Historial sin order_id. No se puede actualizar cierre.")
+                return False
+            if len(columnas) != len(set(columnas)):
+                raise ValueError("COLUMNAS_HISTORIAL_DUPLICADAS")
 
-        if not mask.any():
+            filas = list(lector)
+            if any(None in fila for fila in filas):
+                raise ValueError("FILA_HISTORIAL_CON_COLUMNAS_EXTRA")
+
+        encontradas = 0
+        for fila in filas:
+            if fila["order_id"] == order_id:
+                fila["estado"] = "CERRADA"
+                fila["resultado"] = resultado_num
+                encontradas += 1
+
+        if encontradas == 0:
             print("No existe historial para actualizar:", order_id)
             return False
 
-        df.loc[mask, "estado"] = "CERRADA"
-        df.loc[mask, "resultado"] = round(float(resultado), 2)
+        # Escribir y cerrar el archivo temporal antes del reemplazo.
+        # Una excepcion deja intacto el CSV existente.
+        carpeta = os.path.dirname(os.path.abspath(HISTORIAL_CSV))
+        with tempfile.NamedTemporaryFile(
+            mode="w", newline="", encoding="utf-8-sig",
+            dir=carpeta, prefix=".historial_cierre_", suffix=".csv",
+            delete=False,
+        ) as temporal:
+            ruta_temporal = temporal.name
+            escritor = csv.DictWriter(temporal, fieldnames=columnas)
+            escritor.writeheader()
+            escritor.writerows(filas)
 
-        df.to_csv(HISTORIAL_CSV, index=False, encoding="utf-8-sig")
-
-        print("Historial actualizado:", order_id, round(float(resultado), 2))
+        os.replace(ruta_temporal, HISTORIAL_CSV)
+        ruta_temporal = None
+        print("Historial actualizado:", order_id, resultado_num)
         return True
 
     except Exception as e:
         print("Error actualizando historial:", e)
         return False
+    finally:
+        if ruta_temporal and os.path.exists(ruta_temporal):
+            os.unlink(ruta_temporal)
 
 
 def cargar_historial():
