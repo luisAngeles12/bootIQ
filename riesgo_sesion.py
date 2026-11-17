@@ -49,3 +49,25 @@ def antiguedad_observacion_balance(ultima_observacion_monotonic, ahora_monotonic
     if ultima < 0 or ahora < ultima:
         return None
     return round(ahora - ultima, 3)
+
+
+def secuencia_balance_tras_cierre(cierre_monotonic, balance_monotonic):
+    """Orden temporal de marcas locales, sin inferir liquidación en IQ.
+
+    Solo diagnóstico: una respuesta posterior al cierre NO certifica
+    que el broker ya haya reflejado el resultado en su balance.
+    """
+    if cierre_monotonic is None:
+        return "SIN_CIERRE_CONCILIADO"
+    if balance_monotonic is None:
+        return "SIN_LECTURA_BALANCE"
+    try:
+        cierre = float(cierre_monotonic)
+        balance = float(balance_monotonic)
+    except (TypeError, ValueError, OverflowError):
+        return "MARCAS_INVALIDAS"
+    if not all(math.isfinite(x) and x >= 0 for x in (cierre, balance)):
+        return "MARCAS_INVALIDAS"
+    if balance < cierre:
+        return "BALANCE_ANTERIOR_AL_CIERRE"
+    return "RESPUESTA_BALANCE_POSTERIOR_AL_CIERRE"
