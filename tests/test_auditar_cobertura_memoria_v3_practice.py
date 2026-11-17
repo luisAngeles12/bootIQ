@@ -9,6 +9,7 @@ def fila(oid, fecha, resultado, patron="CHOCH bajista"):
         "fecha": fecha,
         "estado": "CERRADA",
         "estado_operacion": "OPERADA_DIRECTA",
+        "modo_cuenta_configurado": "PRACTICE",
         "order_id": str(oid),
         "resultado": str(resultado),
         "activo": "EURUSD-OTC",
@@ -80,6 +81,20 @@ class CoberturaMemoriaV3Tests(unittest.TestCase):
         self.assertEqual(r["validacion_n"], 1)
         self.assertEqual(r["descartes"]["EMPATE"], 1)
         self.assertEqual(r["descartes"]["ID_INVALIDO_O_REPETIDO"], 1)
+
+    def test_excluye_procedencia_sin_practice_en_train_y_validacion(self):
+        filas = [
+            fila(1, "2026-11-10T10:00:00", 20.75),
+            dict(fila(2, "2026-11-10T11:00:00", -25), modo_cuenta_configurado=""),
+            dict(fila(3, "2026-11-12T10:00:00", 20.75), modo_cuenta_configurado="REAL"),
+            fila(4, "2026-11-12T11:00:00", -25),
+        ]
+        r = auditar_cobertura(filas)
+        self.assertEqual(r["train_n"], 1)
+        self.assertEqual(r["validacion_n"], 1)
+        self.assertEqual(r["descartes"]["PROCEDENCIA_PRACTICE_NO_VERIFICADA"], 2)
+        self.assertFalse(r["memoria_generada"])
+        self.assertFalse(r["ordenes_autorizadas"])
 
     def test_prohibe_fechas_naive_y_aware_mezcladas(self):
         with self.assertRaisesRegex(ValueError, "FECHAS_MIXTAS"):
