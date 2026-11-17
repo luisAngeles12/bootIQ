@@ -53,6 +53,7 @@ COLUMNAS_HISTORIAL = [
     "fecha",
     "estado",
     "order_id",
+    "modo_cuenta_configurado",
     "estado_operacion",
     "activo",
     "tipo",
