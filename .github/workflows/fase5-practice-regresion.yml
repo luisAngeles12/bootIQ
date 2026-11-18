@@ -29,7 +29,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Instalar dependencia de persistencia
-        run: python -m pip install 'pandas>=2,<3'
+        run: python -m pip install 'numpy>=1.26,<2' 'pandas>=2.1,<2.3'
       - name: Verificar sintaxis sin importar bot
         run: |
           python -m py_compile historial.py estrategia.py operaciones.py comparar_confluencia_indicadores_fase5_practice.py
