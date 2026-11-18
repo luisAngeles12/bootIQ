@@ -1,6 +1,8 @@
 """Comparador de backtests F5.9: todos los datos son artificiales."""
 import ast
 import copy
+import csv
+import io
 from pathlib import Path
 import unittest
 from datetime import datetime, timedelta, timezone
@@ -163,6 +165,22 @@ class ComparadorBacktestTest(unittest.TestCase):
             comparar(a, b)
         b = copy.deepcopy(a)
         del b[2]["fecha_senal"]
+        with self.assertRaisesRegex(ValueError, "COLUMNAS_INSUFICIENTES"):
+            comparar(a, b)
+
+    def test_csv_truncado_dictreader_no_se_acepta_como_paridad(self):
+        a = registros(2)
+        columnas = list(a[0])
+        buffer = io.StringIO()
+        writer = csv.DictWriter(buffer, fieldnames=columnas, lineterminator="\\n")
+        writer.writeheader()
+        writer.writerow(a[0])
+        # Emular un registro CSV truncado: DictReader asigna None
+        # a los campos del encabezado sin valor en esa fila.
+        buffer.write(",".join(str(a[1][k]) for k in columnas[:7]) + "\\n")
+        buffer.seek(0)
+        b = list(csv.DictReader(buffer))
+        self.assertIsNone(b[1]["resultado"])
         with self.assertRaisesRegex(ValueError, "COLUMNAS_INSUFICIENTES"):
             comparar(a, b)
 
