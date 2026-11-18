@@ -16,8 +16,9 @@ ESTADOS_CONOCIDOS = ESTADOS_OPERADOS | {
     "NO_OPERADA", "NO_OPERAR", "RECHAZADA", "CANCELADA_PROTOCOLO",
     "CANCELADA_CEREBRO", "CANCELADA", "DESCARTADA",
 }
-COLUMNAS = ("activo", "fecha", "direccion", "patron",
-            "estado_operacion", "resultado_hipotetico")
+COLUMNAS = ("activo", "fecha_senal", "fecha", "direccion", "patron",
+            "estado_operacion", "resultado_hipotetico", "resultado",
+            "idx_entrada", "precio_entrada", "precio_cierre")
 KEYS = ("activo", "fecha", "direccion", "patron")
 ETIQUETAS = {"WIN", "LOSS", "EMPATE"}
 
@@ -55,8 +56,10 @@ def _normalizar(filas):
         patron = str(fila["patron"] or "").strip()
         if not nombre or direccion not in {"CALL", "PUT"} or not patron:
             raise ValueError("IDENTIDAD_SENAL_INVALIDA")
-        instante = _fecha_utc(fila["fecha"])
-        # ISO/UTC evita colisiones de fechas equivalentes con offset diferente.
+        instante = _fecha_utc(fila["fecha_senal"])
+        instante_entrada = _fecha_utc(fila["fecha"])
+        # Identidad causal: la vela que GENERO la senal, no la vela
+        # de entrada, que puede variar por cambios de protocolo.
         clave = (nombre, instante.isoformat(), direccion, patron)
         if clave in registros:
             raise ValueError("SENAL_DUPLICADA_IDENTIDAD: " + repr(clave))
@@ -66,13 +69,18 @@ def _normalizar(filas):
         etiqueta = str(fila["resultado_hipotetico"] or "").strip().upper()
         if etiqueta not in ETIQUETAS:
             raise ValueError("RESULTADO_HIPOTETICO_NO_RECONOCIDO")
+        resultado_real = str(fila["resultado"] or "").strip().upper()
+        if estado in ESTADOS_OPERADOS and resultado_real not in ETIQUETAS:
+            raise ValueError("RESULTADO_OPERADO_INVALIDO")
         registros[clave] = {
-            "fecha": instante, "dia": instante.date().isoformat(),
+            "fecha": instante, "fecha_entrada": instante_entrada,
+            "dia": instante.date().isoformat(),
             "estado": estado, "operada": estado in ESTADOS_OPERADOS,
-            "etiqueta": etiqueta,
+            "etiqueta_hipotetica": etiqueta,
+            "etiqueta": resultado_real if estado in ESTADOS_OPERADOS else None,
             "idx_entrada": str(fila.get("idx_entrada") or "").strip(),
-            "precio_entrada": str(fila.get("precio_entrada_hipotetico") or "").strip(),
-            "precio_cierre": str(fila.get("precio_cierre_hipotetico") or "").strip(),
+            "precio_entrada": str(fila.get("precio_entrada") or "").strip(),
+            "precio_cierre": str(fila.get("precio_cierre") or "").strip(),
         }
     if not registros:
         raise ValueError("BACKTEST_VACIO")
@@ -125,7 +133,7 @@ def comparar(antes, despues, ganancia_win=None, perdida_loss=None):
     keys_a, keys_b = set(a), set(b)
     comunes = keys_a & keys_b
     diferencias_resultado = sum(
-        a[k]["etiqueta"] != b[k]["etiqueta"] for k in comunes
+        a[k]["etiqueta_hipotetica"] != b[k]["etiqueta_hipotetica"] for k in comunes
     )
     # Una etiqueta WIN comun no acredita igualdad de precio o instante
     # simulado. Solo cotejar estos valores cuando ambas politicas operan.
@@ -133,11 +141,14 @@ def comparar(antes, despues, ganancia_win=None, perdida_loss=None):
     # incertidumbre, nunca evidencia de paridad.
     entradas_divergentes = 0
     entradas_sin_verificacion = 0
+    resultados_operados_divergentes = 0
     for clave in comunes:
         x, y = a[clave], b[clave]
         if not (x["operada"] and y["operada"]):
             continue
-        campos = ("idx_entrada", "precio_entrada", "precio_cierre")
+        if x["etiqueta"] != y["etiqueta"]:
+            resultados_operados_divergentes += 1
+        campos = ("idx_entrada", "precio_entrada", "precio_cierre", "fecha_entrada")
         if any(not x[k] or not y[k] for k in campos):
             entradas_sin_verificacion += 1
         elif any(x[k] != y[k] for k in campos):
@@ -145,6 +156,7 @@ def comparar(antes, despues, ganancia_win=None, perdida_loss=None):
     universos_iguales = (
         keys_a == keys_b and diferencias_resultado == 0
         and entradas_divergentes == 0 and entradas_sin_verificacion == 0
+        and resultados_operados_divergentes == 0
     )
     resumen = {
         "modo": "COMPARACION_BACKTEST_CRONOLOGICO_SOLO_PRACTICE_NO_OPERATIVO",
@@ -155,6 +167,7 @@ def comparar(antes, despues, ganancia_win=None, perdida_loss=None):
             "solo_despues": len(keys_b-keys_a),
             "etiquetas_distintas_en_comunes": diferencias_resultado,
             "entradas_operadas_divergentes": entradas_divergentes,
+            "resultados_ejecutados_divergentes": resultados_operados_divergentes,
             "entradas_operadas_sin_precio_o_indice_verificable": entradas_sin_verificacion,
             "comparable_estrictamente": universos_iguales,
         },
