@@ -35,6 +35,17 @@ class InventarioDatasetTest(unittest.TestCase):
         self.assertEqual(r["superan_minimo_200"], 2)
         self.assertEqual(len(r["duplicados_identicos"]), 1)
 
+    def test_encabezados_sin_velas_no_son_datasets_duplicados(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.crear(d, "vacio_a.csv", n=0)
+            self.crear(d, "vacio_b.csv", n=0)
+            r = inventariar(d)
+        self.assertEqual(r["total_csv"], 2)
+        self.assertEqual(r["cargables_minimo"], 0)
+        self.assertEqual(r["duplicados_velas"], [])
+        self.assertEqual(len(r["duplicados_identicos"]), 1)
+        self.assertTrue(all(f["sha256_velas"] is None for f in r["archivos"]))
+
     def test_detecta_duplicados_velas_con_distinto_formato_csv(self):
         with tempfile.TemporaryDirectory() as d:
             original = self.crear(d, "original.csv")
