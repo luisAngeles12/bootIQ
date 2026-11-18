@@ -115,6 +115,15 @@ class WalkForwardV3Test(unittest.TestCase):
         self.assertEqual(r["diagnostico_rechazos_v3"]["probabilidad_observada_pct"]["min"], 54.0)
         self.assertEqual(r["diagnostico_rechazos_v3"]["muestra_observada"]["max"], 20)
         self.assertEqual(sum(x["n"] for x in r["fuentes_principales_oos"]), 80)
+        self.assertEqual(sum(x["n"] for x in r["fuentes_por_dia_oos"]), 80)
+        self.assertTrue(all(
+            0 <= x["brier_v3"] <= 1 and 0 <= x["brier_prior"] <= 1
+            for x in r["fuentes_por_dia_oos"]
+        ))
+        self.assertEqual(
+            set(x["dia_test"] for x in r["fuentes_por_dia_oos"]),
+            set(x["dia_test"] for x in r["cortes"])
+        )
         self.assertEqual(r["fuentes_principales_oos"][0]["nivel"], "SIN_NIVEL")
         self.assertEqual(r["fuentes_principales_oos"][0]["n"], 80)
         self.assertEqual(
