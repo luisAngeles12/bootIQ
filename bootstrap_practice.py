@@ -38,6 +38,8 @@ def habilitable_sin_memoria(evidencia, decision):
         return False
     if evidencia.get("validacion_zona_sr_ok") is not True:
         return False
+    if evidencia.get("accion_precio_requiere_pendiente") is True:
+        return False
     # Fase 5.5: en un bloque PRACTICE fallido se observaron entradas PUT
     # con soporte cercano sin ruptura, autorizadas exclusivamente por
     # bootstrap sin muestra V3. La excepcion no puede anular este riesgo
