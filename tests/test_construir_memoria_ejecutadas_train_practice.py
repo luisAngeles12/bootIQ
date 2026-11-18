@@ -87,5 +87,38 @@ class MemoriaCandidataTest(unittest.TestCase):
             self.assertNotEqual(a["test_oos"], b["test_oos"])
 
 
+    def test_calibracion_oos_no_se_reentrena_con_resultados_test(self):
+        rows = [row(day*100+k, day, 20.75 if k%2 else -25)
+                for day in range(10, 20) for k in range(10)]
+        def evaluacion(_senal, memoria=None):
+            self.assertIsInstance(memoria, dict)
+            return {
+                "fuente_probabilidad_principal": {"nivel": "FAMILIA", "clave": "FAMILIA|CONTINUACION"},
+                "probabilidad_estimada": 70.0, "muestra_historica": 25,
+            }
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.object(c.mah, "evaluar_aprendizaje_historico", side_effect=evaluacion):
+                resultado = c.preparar_candidata(rows, carpeta=tmp)
+        self.assertEqual(resultado["calibracion_oos_solo_ejecutadas"]["n"], 30)
+        self.assertEqual(resultado["hipotesis_probabilidad_oos"]["operaciones_que_superan_ambos"]["n"], 30)
+        self.assertEqual(resultado["hipotesis_probabilidad_oos"]["operaciones_que_superan_ambos"]["neto"], -63.75)
+        self.assertFalse(resultado["hipotesis_probabilidad_oos"]["no_autoriza_operaciones"] is False)
+        self.assertFalse(resultado["calibracion_oos_solo_ejecutadas"]["mejora_brier_contra_prior"])
+
+    def test_sin_fuente_no_inventa_calibracion(self):
+        rows = [row(day*100+k, day, -25)
+                for day in range(10, 20) for k in range(10)]
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.object(c.mah, "evaluar_aprendizaje_historico", return_value={
+                "fuente_probabilidad_principal": None,
+                "probabilidad_estimada": 49.25,
+                "muestra_historica": 0,
+            }):
+                resultado = c.preparar_candidata(rows, carpeta=tmp)
+        self.assertIsNone(resultado["calibracion_oos_solo_ejecutadas"]["brier_v3"])
+        self.assertEqual(resultado["hipotesis_probabilidad_oos"]["operaciones_que_superan_ambos"]["n"], 0)
+        self.assertFalse(resultado["autoriza_operaciones"])
+
+
 if __name__ == "__main__":
     unittest.main()
