@@ -41,10 +41,29 @@ class Bloque20Tests(unittest.TestCase):
 
     def test_solo_practice_y_sin_permiso_real(self):
         self.assertFalse(b.iniciar("REAL", True))
-        self.assertTrue(b.admite_apertura())
+        self.assertFalse(b.admite_apertura())
         self.assertFalse(b.registrar_apertura("100"))
         self.assertFalse(b.cupo_alcanzado())
         self.assertTrue(b.iniciar("PRACTICE", True))
+
+    def test_sesion_sin_inicializar_o_flag_desactivado_nunca_autoriza(self):
+        self.assertFalse(b.iniciar("PRACTICE", False))
+        self.assertFalse(b.admite_apertura())
+        self.assertFalse(b.iniciar("REAL", True))
+        self.assertFalse(b.admite_apertura())
+        self.assertFalse(b.iniciar("REAL", False))
+        self.assertFalse(b.admite_apertura())
+        self.assertTrue(b.iniciar("PRACTICE", True))
+        self.assertTrue(b.admite_apertura())
+
+    def test_bot_no_continua_si_control_no_inicia(self):
+        root = Path(__file__).resolve().parents[1]
+        bot = (root / "bot.py").read_text(encoding="utf-8")
+        self.assertIn(
+            "if not iniciar_bloque20(MODO_CUENTA, CONTROL_BLOQUES_20_PRACTICE):",
+            bot,
+        )
+        self.assertIn("ARRANQUE BLOQUEADO: PRACTICE", bot)
 
     def test_cupo_exactamente_20_y_prohibicion_de_21(self):
         for i in range(1, 21):
