@@ -114,6 +114,13 @@ class WalkForwardV3Test(unittest.TestCase):
         self.assertEqual(r["seleccion_probabilidad_v3_diagnostica"]["n"], 20)
         self.assertEqual(r["diagnostico_rechazos_v3"]["probabilidad_observada_pct"]["min"], 54.0)
         self.assertEqual(r["diagnostico_rechazos_v3"]["muestra_observada"]["max"], 20)
+        self.assertEqual(sum(x["n"] for x in r["fuentes_principales_oos"]), 80)
+        self.assertEqual(r["fuentes_principales_oos"][0]["nivel"], "SIN_NIVEL")
+        self.assertEqual(r["fuentes_principales_oos"][0]["n"], 80)
+        self.assertEqual(
+            r["fuentes_principales_oos"][0]["wins"] +
+            r["fuentes_principales_oos"][0]["losses"], 80
+        )
 
     def test_real_y_abiertas_no_entran_en_test(self):
         registros = rows() + [
