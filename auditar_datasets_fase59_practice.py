@@ -3,8 +3,8 @@ import argparse
 import csv
 import hashlib
 import json
+import math
 import os
-from collections import Counter
 from pathlib import Path
 
 COLUMNAS = {"from", "open", "close", "max", "min"}
@@ -27,9 +27,14 @@ def inspeccionar_archivo(ruta):
             for fila in lector:
                 if None in fila or any(fila[k] in (None, "") for k in COLUMNAS):
                     raise ValueError("FILA_INCOMPLETA")
-                tiempos.append(int(float(fila["from"])))
+                timestamp = float(fila["from"])
+                if not math.isfinite(timestamp) or not timestamp.is_integer():
+                    raise ValueError("TIMESTAMP_NO_FINITO_O_FRACCIONARIO")
+                tiempos.append(int(timestamp))
                 for k in ("open", "close", "max", "min"):
-                    float(fila[k])
+                    valor = float(fila[k])
+                    if not math.isfinite(valor):
+                        raise ValueError("PRECIO_NO_FINITO")
         if any(b <= a for a, b in zip(tiempos, tiempos[1:])):
             error = "ORDEN_O_TIMESTAMP_DUPLICADO"
     except (ValueError, KeyError, UnicodeError, OSError, csv.Error) as exc:
