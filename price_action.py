@@ -184,7 +184,7 @@ def diagnostico_accion_precio_zona(
         if len(closes) < 5:
             return {
                 "accion": "SIN_DATOS",
-                "permite": True,
+                "permite": False,
                 "razon": "acción precio: velas insuficientes"
             }
 
@@ -205,7 +205,7 @@ def diagnostico_accion_precio_zona(
         if rango <= 0:
             return {
                 "accion": "RANGO_INVALIDO",
-                "permite": True,
+                "permite": False,
                 "razon": "acción precio: rango inválido"
             }
 
@@ -343,14 +343,14 @@ def diagnostico_accion_precio_zona(
 
         return {
             "accion": "DIRECCION_INVALIDA",
-            "permite": True,
+            "permite": False,
             "razon": "acción precio: dirección inválida"
         }
 
     except Exception as e:
         return {
             "accion": "ERROR",
-            "permite": True,
+            "permite": False,
             "razon": "acción precio: error " + str(e)
         }
 
