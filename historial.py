@@ -274,7 +274,7 @@ def asegurar_historial_csv():
         raise
 
 
-def actualizar_historial_cierre(order_id, resultado):
+def actualizar_historial_cierre(order_id, resultado, auditoria_orden_iq_json=""):
     if (
         not os.path.exists(HISTORIAL_CSV)
         or os.path.getsize(HISTORIAL_CSV) == 0
@@ -310,6 +310,13 @@ def actualizar_historial_cierre(order_id, resultado):
             if fila["order_id"] == order_id:
                 fila["estado"] = "CERRADA"
                 fila["resultado"] = resultado_num
+                # Telemetria de precio SOLO si la cache devolvio evidencia
+                # validada y la columna ya existe. Sin datos no se inventa.
+                if (
+                    auditoria_orden_iq_json
+                    and "auditoria_orden_iq_json" in columnas
+                ):
+                    fila["auditoria_orden_iq_json"] = auditoria_orden_iq_json
                 encontradas += 1
 
         if encontradas == 0:
