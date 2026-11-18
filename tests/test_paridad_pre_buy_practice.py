@@ -60,6 +60,34 @@ class ParidadAntesDeBuyTest(unittest.TestCase):
             with self.subTest(server=server, inicio=inicio, final=final):
                 self.assertFalse(self.check(server, inicio, final, self.vela))
 
+    def test_guardia_practice_no_depende_de_origen_bootstrap(self):
+        fn = next(
+            n for n in self.ast.body
+            if isinstance(n, ast.FunctionDef) and n.name == "abrir_operacion"
+        )
+        guardias = [
+            n for n in ast.walk(fn) if isinstance(n, ast.Call)
+            and isinstance(n.func, ast.Name)
+            and n.func.id == "cuenta_practice_verificada"
+        ]
+        self.assertEqual(len(guardias), 1)
+        guardia = guardias[0]
+        # Ninguna ruta condicional basada en bootstrap debe rodear la
+        # comprobacion de cuenta: aplica a directa y protocolo.
+        for nodo in ast.walk(fn):
+            if isinstance(nodo, ast.If) and guardia in ast.walk(nodo):
+                self.assertNotIn(
+                    "bootstrap_practice_sin_historial",
+                    ast.unparse(nodo.test)
+                )
+        buy_lines = [
+            n.lineno for n in ast.walk(fn) if isinstance(n, ast.Call)
+            and ast.unparse(n.func) in (
+                "estado.Iq.buy", "estado.Iq.buy_digital_spot_v2"
+            )
+        ]
+        self.assertTrue(all(guardia.lineno < ln for ln in buy_lines))
+
     def test_integracion_revalida_despues_de_cuenta_y_antes_de_buy(self):
         fn = next(
             n for n in self.ast.body
