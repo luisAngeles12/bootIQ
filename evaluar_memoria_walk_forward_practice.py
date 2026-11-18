@@ -1,0 +1,112 @@
+"""Walk-forward V3 en cierres PRACTICE con entrenamiento cronologico.
+
+Cada dia TEST usa exclusivamente cierres anteriores. No elige estrategias
+a partir del test, no altera memoria oficial ni envia ordenes.
+"""
+import argparse
+import csv
+import json
+import math
+import tempfile
+from collections import Counter
+from pathlib import Path
+
+import motor_aprendizaje_historico as mah
+from construir_memoria_ejecutadas_train_practice import _limpiar, _resumen
+from motor_decision import UMBRAL_PROBABILIDAD_OPERAR, MIN_MUESTRA_PROBABILIDAD
+
+
+def evaluar_walk_forward(filas, minimo_train=20, minimo_test_total=20):
+    if minimo_train < 20 or minimo_test_total < 20:
+        raise ValueError("MINIMOS_REQUIEREN_20")
+    validos, descartes = _limpiar(filas)
+    dias = sorted({x[0].date().isoformat() for x in validos})
+    cortes = []
+    evaluados = []
+    seleccionados = []
+    predicciones = []
+    for dia in dias:
+        train = [x for x in validos if x[0].date().isoformat() < dia]
+        test = [x for x in validos if x[0].date().isoformat() == dia]
+        if len(train) < minimo_train:
+            continue
+        # El test no puede influir en la construccion de su propia memoria.
+        datos = []
+        for fecha, _oid, pnl, fila in train:
+            registro = dict(fila)
+            registro["resultado"] = "WIN" if pnl > 0 else "LOSS"
+            registro["fecha"] = str(fecha.timestamp())
+            registro["es_hipotetico"] = False
+            datos.append(registro)
+        with tempfile.TemporaryDirectory(prefix="bootiq_wf_") as temp:
+            ruta = str(Path(temp) / "train.csv")
+            mah.generar_aprendizaje_desde_resultados(
+                datos, ruta=ruta, incluir_hipoteticos=False
+            )
+            memoria = mah.cargar_aprendizaje(ruta)
+        evaluados.extend(test)
+        seleccion_dia = []
+        con_fuente = 0
+        for item in test:
+            diagnostico = mah.evaluar_aprendizaje_historico(item[3], memoria=memoria)
+            principal = diagnostico.get("fuente_probabilidad_principal")
+            muestra = diagnostico.get("muestra_historica", 0)
+            prob = diagnostico.get("probabilidad_estimada")
+            if not principal or not isinstance(prob, (int, float)) or not math.isfinite(prob):
+                continue
+            con_fuente += 1
+            observado = 1 if item[2] > 0 else 0
+            predicciones.append((prob/100, observado))
+            if prob >= UMBRAL_PROBABILIDAD_OPERAR and muestra >= MIN_MUESTRA_PROBABILIDAD:
+                seleccion_dia.append(item)
+                seleccionados.append(item)
+        cortes.append({
+            "dia_test": dia, "train_n": len(train),
+            "test": _resumen(test),
+            "con_fuente": con_fuente,
+            "seleccion_v3_diagnostica": _resumen(seleccion_dia),
+        })
+    baseline = _resumen(evaluados)
+    hipotesis = _resumen(seleccionados)
+    brier = (sum((p-y)**2 for p,y in predicciones)/len(predicciones)
+             if predicciones else None)
+    brier_prior = (sum((mah.PRIOR_WINRATE/100-y)**2 for p,y in predicciones)
+                   /len(predicciones) if predicciones else None)
+    suficiente = len(seleccionados) >= minimo_test_total
+    return {
+        "modo": "WALK_FORWARD_V3_PRACTICE_SOLO_EJECUTADAS",
+        "dias_disponibles": len(dias),
+        "dias_test_evaluados": len(cortes),
+        "cortes": cortes,
+        "baseline_dias_test": baseline,
+        "seleccion_probabilidad_v3_diagnostica": hipotesis,
+        "retencion_pct": round(100*len(seleccionados)/len(evaluados),2)
+                         if evaluados else None,
+        "brier_v3": round(brier,6) if brier is not None else None,
+        "brier_prior": round(brier_prior,6) if brier_prior is not None else None,
+        "muestra_seleccion_suficiente": suficiente,
+        "supera_60_y_neto": bool(suficiente and hipotesis["winrate_pct"] >= 60
+                                 and hipotesis["neto"] > 0),
+        "descartes": descartes,
+        "limitaciones": [
+            "La muestra contiene solo ordenes ejecutadas: sesgo de seleccion.",
+            "No estima el rendimiento contrafactual de senales no ejecutadas.",
+            "Seleccion V3 es diagnostica: no replica todos los vetos ni protocolos.",
+            "Superar 60 en este analisis no demuestra consistencia futura.",
+        ],
+        "autoriza_operaciones": False,
+        "memoria_productiva_modificada": False,
+    }
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("historial", nargs="?", default="historial_bot.csv")
+    args = ap.parse_args()
+    with Path(args.historial).open(encoding="utf-8-sig", newline="") as f:
+        print(json.dumps(evaluar_walk_forward(csv.DictReader(f)),
+                         ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    main()
