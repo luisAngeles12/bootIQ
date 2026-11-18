@@ -1,0 +1,27 @@
+name: BootIQ - bloques de 20 operaciones PRACTICE
+on:
+  push:
+    branches: [bootiq-v3-auditoria]
+    paths:
+      - 'control_bloques_20_practice.py'
+      - 'bot.py'
+      - 'operaciones.py'
+      - 'config.py'
+      - 'tests/test_control_bloques_20_practice.py'
+      - '.github/workflows/bloques-20-practice.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bloque20:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validar sintaxis de codigo operativo
+        run: python -m py_compile control_bloques_20_practice.py bot.py operaciones.py config.py
+      - name: Ejecutar pruebas sin broker ni credenciales
+        run: python -m unittest discover -s tests -p 'test_control_bloques_20_practice.py' -v
