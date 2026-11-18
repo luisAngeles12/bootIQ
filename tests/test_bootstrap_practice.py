@@ -68,6 +68,26 @@ class BootstrapPracticeTest(unittest.TestCase):
             datos.pop("validacion_accion_precio_ok")
             self.assertTrue(b.habilitable_sin_memoria(datos, decision_sin_datos()))
 
+    def test_put_soporte_cerca_sin_ruptura_no_puede_saltarse_por_bootstrap(self):
+        # Caso reproducido en bloque 2: permiso sin muestra V3 pese a PA
+        # identificando soporte cercano sin ruptura para una venta.
+        with patch.object(b, "MODO_CUENTA", "PRACTICE"):
+            datos = evidencia()
+            datos.update({
+                "direccion": "put",
+                "accion_precio": "PUT_SOPORTE_CERCA_SIN_RUPTURA",
+                "validacion_accion_precio_ok": True,
+            })
+            self.assertFalse(b.habilitable_sin_memoria(datos, decision_sin_datos()))
+            datos["validacion_accion_precio_ok"] = None
+            self.assertFalse(b.habilitable_sin_memoria(datos, decision_sin_datos()))
+            # El cambio es exclusivo del riesgo probado; no veta cualquier PUT.
+            datos["accion_precio"] = "RECHAZO_VENDEDOR_RESISTENCIA"
+            self.assertTrue(b.habilitable_sin_memoria(datos, decision_sin_datos()))
+            datos["accion_precio"] = "PUT_SOPORTE_CERCA_SIN_RUPTURA"
+            datos["direccion"] = "call"
+            self.assertTrue(b.habilitable_sin_memoria(datos, decision_sin_datos()))
+
     def test_otros_motivos_no_se_saltan(self):
         with patch.object(b, "MODO_CUENTA", "PRACTICE"):
             for cambio in (
