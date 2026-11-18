@@ -61,6 +61,18 @@ def main():
     asegurar_historial_csv()
     cargar_operaciones_pendientes()
 
+    # Una ejecucion = un bloque PRACTICE de 20 aperturas confirmadas.
+    # Nunca elimina historial previo ni afecta la cuenta REAL.
+    from config import MODO_CUENTA, HISTORIAL_CSV, CONTROL_BLOQUES_20_PRACTICE
+    from control_bloques_20_practice import (
+        iniciar as iniciar_bloque20,
+        cupo_alcanzado as cupo_bloque20,
+        finalizar_si_corresponde as cerrar_bloque20,
+        progreso as progreso_bloque20,
+    )
+    if iniciar_bloque20(MODO_CUENTA, CONTROL_BLOQUES_20_PRACTICE):
+        print("BLOQUE20 PRACTICE | sesión nueva: 0/20 confirmadas", flush=True)
+
     # Reconstruccion SHADOW desde cierres oficiales, solo una vez
     # al iniciar y antes de las ventanas operativas.
     # Fallos de telemetria nunca autorizan ni bloquean trades.
@@ -224,6 +236,26 @@ def main():
             <= 44
         ):
             revisar_operaciones_abiertas()
+
+        # Una vez confirmadas 20 aperturas, NO procesar pendientes,
+        # NO escanear mercados y NO enviar la orden 21.
+        # Mantener la conexión y la conciliación en segundos 40-44.
+        # Al cerrarse todas las posiciones, guardar el informe y salir.
+        if cupo_bloque20():
+            if not estado.operaciones_abiertas:
+                informe_bloque20 = cerrar_bloque20(
+                    HISTORIAL_CSV, estado.operaciones_abiertas
+                )
+                if informe_bloque20 is not None:
+                    print("BLOQUE20 PRACTICE | fin de sesión. "
+                          "Revisa el informe antes de continuar.", flush=True)
+                    break
+            if segundo_loop_d76d in (40, 41, 42, 43, 44):
+                print("BLOQUE20 PRACTICE | conciliando cierres:",
+                      progreso_bloque20(),
+                      "| pendientes:", len(estado.operaciones_abiertas), flush=True)
+            time.sleep(0.25)
+            continue
 
         # F9-R9-01B: impedir que una señal pendiente se envíe
         # antes de revisar los stops con el último balance conocido.
