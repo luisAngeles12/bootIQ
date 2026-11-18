@@ -75,6 +75,7 @@ def comparar_bloques(documentos):
     """documentos: pares (ruta, JSON). Ninguna ruta es modificada."""
     candidatos = []
     excluidos = []
+    filas_por_sesion = {}
     ids_vistos = set()
     sesiones = set()
     for ruta, reporte in sorted(documentos, key=lambda x: str(x[0])):
@@ -95,6 +96,8 @@ def comparar_bloques(documentos):
             "archivo": str(ruta), "bloque_inicio": sesion,
             **{k: v for k, v in bloque.items() if k != "ids"}
         })
+        # El desglose solo usa informes aceptados; no incluye duplicados.
+        filas_por_sesion[sesion] = reporte["operaciones"]
     candidatos.sort(key=lambda x: x["bloque_inicio"])
     n = len(candidatos)
     wins = sum(x["wins"] for x in candidatos)
@@ -103,6 +106,39 @@ def comparar_bloques(documentos):
     neto = round(sum(x["neto"] for x in candidatos), 2)
     n_ordenes = 20*n
     bloques_cumplen = sum(x["objetivo"] for x in candidatos)
+
+    def desglose_campo(campo):
+        grupos = {}
+        for bloque in candidatos:
+            sesion = bloque["bloque_inicio"]
+            for fila in filas_por_sesion[sesion]:
+                clave = str(fila.get(campo) or "").strip() or "SIN_DATO"
+                grupo = grupos.setdefault(clave, {
+                    "valor": clave, "n": 0, "wins": 0, "losses": 0,
+                    "empates": 0, "neto": 0.0,
+                    "bloques_con_operaciones": set(),
+                })
+                pnl = float(fila["pnl_numerico"])
+                grupo["n"] += 1
+                grupo["wins"] += pnl > 0
+                grupo["losses"] += pnl < 0
+                grupo["empates"] += pnl == 0
+                grupo["neto"] += pnl
+                grupo["bloques_con_operaciones"].add(sesion)
+        return [
+            {
+                "valor": g["valor"], "n": g["n"],
+                "wins": g["wins"], "losses": g["losses"],
+                "empates": g["empates"],
+                "winrate_pct": round(
+                    100*g["wins"]/(g["wins"]+g["losses"]), 2
+                ) if g["wins"]+g["losses"] else None,
+                "neto": round(g["neto"], 2),
+                "bloques_con_operaciones": len(g["bloques_con_operaciones"]),
+            }
+            for g in sorted(grupos.values(), key=lambda x: (x["neto"], x["valor"]))
+        ]
+
     return {
         "modo": "COMPARACION_BLOQUES_20_PRACTICE_SOLO_LECTURA",
         "bloques_validos": n,
@@ -117,6 +153,9 @@ def comparar_bloques(documentos):
         "bloques_no_cumplen": n-bloques_cumplen,
         "todos_los_bloques_cumplen": bool(n) and bloques_cumplen == n,
         "bloques": candidatos,
+        "desglose_estrategias": desglose_campo("patron"),
+        "desglose_accion_precio": desglose_campo("accion_precio"),
+        "desglose_autoridades": desglose_campo("origen_autoridad"),
         "excluidos": excluidos,
         "nota": "El rendimiento historico observado no garantiza resultados futuros.",
         "autoriza_operaciones": False,
