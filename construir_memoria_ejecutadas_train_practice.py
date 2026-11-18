@@ -18,7 +18,7 @@ import motor_aprendizaje_historico as mah
 
 
 def _limpiar(filas):
-    vistos, descartes, validos = set(), Counter(), []
+    vistos, duplicados, descartes, validos = set(), set(), Counter(), []
     for fila in filas:
         if str(fila.get("modo_cuenta_configurado") or "").strip().upper() != "PRACTICE":
             descartes["NO_PRACTICE"] += 1
@@ -30,7 +30,11 @@ def _limpiar(filas):
             descartes["NO_EJECUTADA"] += 1
             continue
         oid = str(fila.get("order_id") or "").strip()
-        if not oid or oid in vistos:
+        if not oid:
+            descartes["ID_INVALIDO_O_DUPLICADO"] += 1
+            continue
+        if oid in vistos:
+            duplicados.add(oid)
             descartes["ID_INVALIDO_O_DUPLICADO"] += 1
             continue
         vistos.add(oid)
@@ -50,6 +54,11 @@ def _limpiar(filas):
             descartes["SIN_DIRECCION"] += 1
             continue
         validos.append((fecha, oid, pnl, fila))
+    # Dos filas cerradas para el mismo order_id son ambiguas incluso si
+    # una parece valida: excluir TODAS sus apariciones del entrenamiento.
+    if duplicados:
+        validos = [fila for fila in validos if fila[1] not in duplicados]
+        descartes["ORDENES_AMBIGUAS_EXCLUIDAS"] = len(duplicados)
     if len({fecha.tzinfo is None for fecha, *_ in validos}) > 1:
         raise ValueError("ZONAS_HORARIAS_MIXTAS")
     validos.sort(key=lambda x: (x[0], x[1]))
