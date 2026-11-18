@@ -45,6 +45,33 @@ class ComparacionBloquesTest(unittest.TestCase):
         self.assertFalse(resultado["todos_los_bloques_cumplen"])
         self.assertFalse(resultado["autoriza_operaciones"])
 
+    def test_estrategia_y_accion_precio_acumuladas_en_dos_bloques(self):
+        primero = bloque("20261118T100000Z", 100, 12, 20.75)
+        segundo = bloque("20261118T120000Z", 200, 10, 20.75)
+        for informe, indices in ((primero, (0, 1, 16)),
+                                 (segundo, (0, 18, 19))):
+            for i in indices:
+                fila = informe["operaciones"][i]
+                fila["patron"] = "pullback alcista a EMA"
+                fila["accion_precio"] = "PUT_SOPORTE_CERCA_SIN_RUPTURA"
+                fila["origen_autoridad"] = "BOOTSTRAP_PRACTICE_SIN_HISTORIAL"
+        resultado = comparar.comparar_bloques([
+            ("primero.json", primero), ("segundo.json", segundo)
+        ])
+        self.assertEqual(resultado["bloques_validos"], 2)
+        for campo, valor in (
+            ("desglose_estrategias", "pullback alcista a EMA"),
+            ("desglose_accion_precio", "PUT_SOPORTE_CERCA_SIN_RUPTURA"),
+            ("desglose_autoridades", "BOOTSTRAP_PRACTICE_SIN_HISTORIAL"),
+        ):
+            grupo = next(x for x in resultado[campo] if x["valor"] == valor)
+            self.assertEqual(grupo["n"], 6)
+            self.assertEqual(grupo["wins"], 3)
+            self.assertEqual(grupo["losses"], 3)
+            self.assertEqual(grupo["neto"], -12.75)
+            self.assertEqual(grupo["bloques_con_operaciones"], 2)
+        self.assertEqual(sum(x["n"] for x in resultado["desglose_estrategias"]), 40)
+
     def test_excluye_repetidos_incompletos_y_real(self):
         valido = bloque("sesion_A", 100)
         doble = bloque("sesion_B", 100)
