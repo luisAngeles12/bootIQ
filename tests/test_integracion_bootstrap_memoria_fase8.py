@@ -13,6 +13,7 @@ def evidencia_valida():
     return {
         "calidad_mercado": "NORMAL",
         "validacion_mercado_ok": True,
+        "validacion_zona_sr_ok": True,
         "validacion_accion_precio_ok": True,
         "riesgo_estructural_critico_setup": False,
         "requiere_confirmacion_setup": False,
