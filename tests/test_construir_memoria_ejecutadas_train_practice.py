@@ -21,6 +21,36 @@ def row(i, day, pnl, modo="PRACTICE", estado="CERRADA"):
 
 
 class MemoriaCandidataTest(unittest.TestCase):
+    def test_legado_usuario_declarado_solo_fechas_y_firma_conocidas(self):
+        antigua = row("14463350071", 10, 20.75, modo="")
+        antigua["origen_autoridad"] = "BOOTSTRAP_PRACTICE_SIN_HISTORIAL"
+        fuera = {**antigua, "order_id": "14463350072", "fecha": "2026-11-09 12:00:00"}
+        sin_autoridad = {**antigua, "order_id": "14463350073",
+                         "origen_autoridad": "OTRA"}
+        real = {**antigua, "order_id": "14463350074", "modo_cuenta_configurado": "REAL"}
+        practice = row("14463350075", 11, -25)
+        validos, descartes = c._limpiar(
+            [antigua, fuera, sin_autoridad, real, practice]
+        )
+        self.assertEqual(len(validos), 2)
+        self.assertEqual(descartes["LEGADO_PRACTICE_DECLARADO_INCLUIDO"], 1)
+        self.assertEqual(descartes["NO_PRACTICE"], 3)
+        self.assertEqual(
+            validos[0][3]["_procedencia_practice_auditoria"],
+            "USUARIO_DECLARADO_LEGADO_SIN_MODO"
+        )
+        self.assertEqual(antigua["modo_cuenta_configurado"], "")
+
+    def test_legado_no_acepta_order_id_corto_o_modo_real(self):
+        antigua = row("14463350071", 14, 20, modo="")
+        antigua["origen_autoridad"] = "BOOTSTRAP_PRACTICE_SIN_HISTORIAL"
+        invalida = {**antigua, "order_id": "1234"}
+        real = {**antigua, "order_id": "14463350072",
+                "modo_cuenta_configurado": "REAL"}
+        validos, desc = c._limpiar([invalida, real])
+        self.assertEqual(len(validos), 0)
+        self.assertEqual(desc["NO_PRACTICE"], 2)
+
     def test_no_genera_si_no_hay_dias_independientes(self):
         r = c.preparar_candidata([row(i, 15, 20) for i in range(50)])
         self.assertEqual(r["estado"], "SIN_DIAS_INDEPENDIENTES")
