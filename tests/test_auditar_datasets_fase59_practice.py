@@ -32,6 +32,7 @@ class InventarioDatasetTest(unittest.TestCase):
             r = inventariar(d)
         self.assertEqual(r["total_csv"], 3)
         self.assertEqual(r["cargables_minimo"], 2)
+        self.assertEqual(r["superan_minimo_200"], 2)
         self.assertEqual(len(r["duplicados_identicos"]), 1)
 
     def test_gap_detectado_sin_eliminar_archivo_cargable(self):
@@ -50,6 +51,7 @@ class InventarioDatasetTest(unittest.TestCase):
             p.write_text("\n".join(filas) + "\n", encoding="utf-8")
             r = inventariar(d)
         self.assertEqual(r["cargables_minimo"], 0)
+        self.assertEqual(r["superan_minimo_200"], 0)
         self.assertIn("PRECIO_NO_FINITO", r["archivos"][0]["error"])
 
     def test_rechaza_timestamp_no_finito(self):
