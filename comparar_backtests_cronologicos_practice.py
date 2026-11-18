@@ -43,14 +43,13 @@ def _fecha_utc(valor):
 
 def _normalizar(filas):
     registros = {}
-    columnas_completas = False
     for fila in filas:
         if not isinstance(fila, dict):
             raise ValueError("FILA_NO_DICT")
-        if not columnas_completas:
-            if not set(COLUMNAS).issubset(fila):
-                raise ValueError("COLUMNAS_INSUFICIENTES")
-            columnas_completas = True
+        # DictReader conserva filas con columnas faltantes; validar cada
+        # registro impide comparar una muestra parcialmente malformada.
+        if not set(COLUMNAS).issubset(fila):
+            raise ValueError("COLUMNAS_INSUFICIENTES")
         nombre = str(fila["activo"] or "").strip()
         direccion = str(fila["direccion"] or "").strip().upper()
         patron = str(fila["patron"] or "").strip()
