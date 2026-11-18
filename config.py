@@ -6,6 +6,9 @@ from credenciales_local import EMAIL, PASSWORD
 
 
 MODO_CUENTA = "PRACTICE"  # PRACTICE o REAL
+# Sesion PRACTICE: maximo 20 aperturas IQ confirmadas, luego conciliar
+# cierres, emitir informe y detener el proceso antes de otra orden.
+CONTROL_BLOQUES_20_PRACTICE = True
 TIPOS_MERCADO = ["turbo"]  # Tipos de mercado a operar
 MONTO_BASE = 25
 TIEMPO_EXPIRACION = 1
