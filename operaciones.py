@@ -1,4 +1,5 @@
 import time
+import math
 import queue
 import threading
 import json
@@ -67,6 +68,34 @@ def obtener_auditoria_orden_async(
         time.sleep(0.05)
 
     return None
+
+def _paridad_causal_sigue_vigente(
+    timestamp_servidor, monotonic_inicio, monotonic_actual,
+    vela_cerrada_esperada,
+):
+    """Defensa previa a buy: la latencia local no puede caducar la señal.
+
+    La muestra inicial procede del reloj IQ (o su fallback ya existente).
+    Se extrapola con monotonic: no añade llamadas de red ni altera
+    umbrales/ventanas. Ante datos invalidos se bloquea el envio.
+    """
+    try:
+        servidor = float(timestamp_servidor)
+        transcurrido = float(monotonic_actual) - float(monotonic_inicio)
+        if (not math.isfinite(servidor) or not math.isfinite(transcurrido)
+                or servidor <= 0 or transcurrido < 0):
+            return False
+        ahora_estimado = servidor + transcurrido
+        segundo = int(ahora_estimado % CANDLE_TIME)
+        ultimo = VENTANA_ENTRADA_FIN - MARGEN_ENVIO_IQ_SEGUNDOS
+        ultima_cerrada = (int(ahora_estimado // CANDLE_TIME) - 1) * CANDLE_TIME
+        return (
+            VENTANA_ENTRADA_INICIO <= segundo < ultimo
+            and ultima_cerrada == vela_cerrada_esperada
+        )
+    except (TypeError, ValueError, OverflowError, ZeroDivisionError):
+        return False
+
 
 def abrir_operacion(senal):
     # ==========================================
@@ -167,6 +196,7 @@ def abrir_operacion(senal):
      # Usar primero el reloj del broker.
     # La expiración de IQ se calcula contra este reloj,
     # no contra el reloj local de Windows.
+    monotonic_paridad_inicio = time.monotonic()
     try:
         ahora_paridad = float(
             estado.Iq.get_server_timestamp()
@@ -289,6 +319,19 @@ def abrir_operacion(senal):
         return False
     if activo_con_operacion_activa(activo):
         print("OPERACION BLOQUEADA POR ACTIVO YA ABIERTO:", activo, flush=True)
+        return False
+
+    # Verificar de nuevo despues de los controles que pueden bloquear,
+    # en especial la comprobacion de cuenta PRACTICE de bootstrap.
+    # No consulta IQ: solo descarta una vela/ventana caducada.
+    if not _paridad_causal_sigue_vigente(
+        ahora_paridad, monotonic_paridad_inicio, time.monotonic(),
+        vela_cerrada_esperada,
+    ):
+        print(
+            "OPERACION NO ENVIADA: PARIDAD CADUCADA ANTES DE BUY:",
+            activo, "| vela:", vela_referencia, flush=True,
+        )
         return False
 
     try:
