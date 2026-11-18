@@ -70,8 +70,11 @@ def main():
         finalizar_si_corresponde as cerrar_bloque20,
         progreso as progreso_bloque20,
     )
-    if iniciar_bloque20(MODO_CUENTA, CONTROL_BLOQUES_20_PRACTICE):
-        print("BLOQUE20 PRACTICE | sesión nueva: 0/20 confirmadas", flush=True)
+    if not iniciar_bloque20(MODO_CUENTA, CONTROL_BLOQUES_20_PRACTICE):
+        raise RuntimeError(
+            "ARRANQUE BLOQUEADO: PRACTICE y CONTROL_BLOQUES_20_PRACTICE=True requeridos"
+        )
+    print("BLOQUE20 PRACTICE | sesión nueva: 0/20 confirmadas", flush=True)
 
     # Reconstruccion SHADOW desde cierres oficiales, solo una vez
     # al iniciar y antes de las ventanas operativas.
