@@ -1,0 +1,24 @@
+name: BootIQ - Fase 5.9 backtest cronologico PRACTICE
+on:
+  push:
+    branches: [bootiq-v3-auditoria]
+    paths:
+      - 'comparar_backtests_cronologicos_practice.py'
+      - 'tests/test_comparar_backtests_cronologicos_practice.py'
+      - '.github/workflows/backtest-cronologico-fase59-practice.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fase59:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Sintaxis
+        run: python -m py_compile comparar_backtests_cronologicos_practice.py tests/test_comparar_backtests_cronologicos_practice.py
+      - name: Comparaciones cronologicas sinteticas sin broker
+        run: python -m unittest discover -s tests -p 'test_comparar_backtests_cronologicos_practice.py' -v
