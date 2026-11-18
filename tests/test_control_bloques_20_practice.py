@@ -88,9 +88,12 @@ class Bloque20Tests(unittest.TestCase):
                              "EMA9_BAJO_EMA21")
             self.assertEqual(reporte["operaciones"][0]["patron"],"CHOCH BAJISTA")
             self.assertEqual(reporte["operaciones"][0]["precio_cierre_indicadores"],"99")
+            self.assertEqual(reporte["operaciones"][0]["riesgo_compuesto"],"SIN_SNAPSHOT")
+            self.assertEqual(reporte["operaciones"][0]["vela_senal_estructura"],"SIN_SNAPSHOT")
             for clave in ("estrategias","activos","mercados",
                           "price_action","rsi_zona","ema_alineacion",
-                          "bollinger_ubicacion","autoridad","protocolo"):
+                          "bollinger_ubicacion","autoridad","protocolo",
+                          "riesgo_compuesto","vela_senal_estructura"):
                 self.assertIn(clave, reporte["analisis"])
             files = list(out.glob("bloque20_*.json"))
             self.assertEqual(len(files),1)
@@ -108,6 +111,20 @@ class Bloque20Tests(unittest.TestCase):
             self.assertEqual(reporte["estado"], "INFORME_INCOMPLETO_NO_CONCLUYENTE")
             self.assertFalse(reporte["reanudacion_automatica"])
             self.assertNotIn("objetivo_60_pct_y_neto", reporte)
+
+    def test_riesgo_y_vela_son_snapshots_no_reconstrucciones(self):
+        registro = fila(1,20.75)
+        registro.update({
+            "auditoria_riesgo_compuesto_json": '{"riesgo_nivel":"MEDIO","riesgo_puntos":3}',
+            "precio_senal_open":"100", "precio_senal_close":"102",
+            "precio_senal_high":"103", "precio_senal_low":"99",
+        })
+        self.assertEqual(b._riesgo_guardado(registro),"MEDIO")
+        self.assertEqual(b._vela_guardada(registro),"ALCISTA_CUERPO_MODERADO")
+        registro["precio_senal_high"] = ""
+        self.assertEqual(b._vela_guardada(registro),"SIN_SNAPSHOT")
+        registro["auditoria_riesgo_compuesto_json"] = "{roto"
+        self.assertEqual(b._riesgo_guardado(registro),"SNAPSHOT_INVALIDO")
 
     def test_duplicado_o_real_no_se_declaran_cierres_validos(self):
         rows = [fila(i,20.75) for i in range(1,21)]
