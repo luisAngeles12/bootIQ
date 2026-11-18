@@ -73,6 +73,27 @@ def evaluar_walk_forward(filas, minimo_train=20, minimo_test_total=20):
     brier_prior = (sum((mah.PRIOR_WINRATE/100-y)**2 for p,y in predicciones)
                    /len(predicciones) if predicciones else None)
     suficiente = len(seleccionados) >= minimo_test_total
+    # La meta pide constancia, no solo 60% global. Las ventanas son de
+    # veinte ordenes SELECCIONADAS en orden cronologico OOS.
+    ventanas_20 = []
+    for i in range(max(0, len(seleccionados) - 19)):
+        ventana = seleccionados[i:i + 20]
+        resumen = _resumen(ventana)
+        ventanas_20.append({
+            "desde": ventana[0][0].isoformat(),
+            "hasta": ventana[-1][0].isoformat(),
+            "winrate_pct": resumen["winrate_pct"],
+            "neto": resumen["neto"],
+            "cumple_objetivo": resumen["winrate_pct"] >= 60 and resumen["neto"] > 0,
+        })
+    dias_con_entradas = sum(
+        corte["seleccion_v3_diagnostica"]["n"] > 0 for corte in cortes
+    )
+    ventanas_fallidas = sum(not x["cumple_objetivo"] for x in ventanas_20)
+    consistencia_observada = (
+        suficiente and bool(ventanas_20) and ventanas_fallidas == 0
+        and hipotesis["winrate_pct"] >= 60 and hipotesis["neto"] > 0
+    )
     return {
         "modo": "WALK_FORWARD_V3_PRACTICE_SOLO_EJECUTADAS",
         "dias_disponibles": len(dias),
@@ -85,8 +106,11 @@ def evaluar_walk_forward(filas, minimo_train=20, minimo_test_total=20):
         "brier_v3": round(brier,6) if brier is not None else None,
         "brier_prior": round(brier_prior,6) if brier_prior is not None else None,
         "muestra_seleccion_suficiente": suficiente,
-        "supera_60_y_neto": bool(suficiente and hipotesis["winrate_pct"] >= 60
-                                 and hipotesis["neto"] > 0),
+        "dias_con_seleccion": dias_con_entradas,
+        "ventanas_moviles_20": len(ventanas_20),
+        "ventanas_moviles_20_bajo_objetivo": ventanas_fallidas,
+        "consistencia_20_y_neto_observada": consistencia_observada,
+        "supera_60_y_neto": consistencia_observada,
         "descartes": descartes,
         "limitaciones": [
             "La muestra contiene solo ordenes ejecutadas: sesgo de seleccion.",
