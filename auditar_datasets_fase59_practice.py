@@ -46,7 +46,7 @@ def inspeccionar_archivo(ruta):
                         or not precios["min"] <= precios["open"] <= precios["max"]
                         or not precios["min"] <= precios["close"] <= precios["max"]):
                     raise ValueError("OHLC_INCONSISTENTE")
-                # Huella canonica: mismo contenido OHLC y activo, aunque
+                # Huella canonica: mismo contenido OHLCV y activo, aunque
                 # difieran orden de columnas, saltos de linea o formato decimal.
                 activo = str(fila.get("activo") or "").strip().upper()
                 tipo = str(fila.get("tipo") or "").strip().upper()
@@ -59,8 +59,14 @@ def inspeccionar_archivo(ruta):
                         str(Decimal(fila[k]).normalize())
                         for k in ("open", "close", "max", "min")
                     )
+                    # El backtest lee volume y usa 0 para valores vacios.
+                    # Diferente volumen puede cambiar indicadores y senales.
+                    volumen = Decimal(fila.get("volume") or "0")
+                    if not volumen.is_finite():
+                        raise ValueError("VOLUMEN_NO_FINITO")
+                    valores = (*valores, str(volumen.normalize()))
                 except InvalidOperation as exc:
-                    raise ValueError("PRECIO_DECIMAL_INVALIDO") from exc
+                    raise ValueError("PRECIO_O_VOLUMEN_DECIMAL_INVALIDO") from exc
                 huella_velas.update(repr((int(timestamp), identidad, valores)).encode("utf-8"))
                 huella_velas.update(b"\\n")
         if any(b <= a for a, b in zip(tiempos, tiempos[1:])):
