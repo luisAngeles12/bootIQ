@@ -276,6 +276,12 @@ def abrir_operacion(senal):
     # pendiente. Las comprobaciones previas pueden quedar obsoletas
     # antes del envío, por eso el límite se revalida aquí.
     # No se consulta balance ni se cambia la ventana de entrada.
+    # Cupo de 20 aperturas confirmadas: defensa final compartida por
+    # entradas directas y protocolos. Ninguna orden 21 llega al broker.
+    from control_bloques_20_practice import admite_apertura, registrar_apertura
+    if not admite_apertura():
+        print("BLOQUE20 PRACTICE: cupo completo, orden no enviada", flush=True)
+        return False
     from config import MAX_OPERACIONES_ABIERTAS
     from utils import contar_operaciones_activas, activo_con_operacion_activa
     if contar_operaciones_activas() >= MAX_OPERACIONES_ABIERTAS:
@@ -316,6 +322,11 @@ def abrir_operacion(senal):
                 activo
             ] = time.time()
             return False
+        # Contabilizar en el MISMO instante de confirmacion IQ,
+        # antes de grabar el CSV. Si luego falla persistencia, el
+        # cupo sigue cerrado (nunca se envian ordenes adicionales).
+        registrar_apertura(order_id)
+
         
         
         # ============================================================
