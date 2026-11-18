@@ -460,6 +460,10 @@ def construir_evidencia_operacion(senal, ctx=None):
             ""
         ),
 
+        "accion_precio_requiere_pendiente": senal.get(
+            "accion_precio_requiere_pendiente",
+            ctx.get("accion_precio_requiere_pendiente")
+        ),
         "validacion_zona_sr_ok": senal.get(
             "validacion_zona_sr_ok",
             ctx.get("validacion_zona_sr_ok")
