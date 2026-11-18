@@ -70,6 +70,9 @@ def _normalizar(filas):
             "fecha": instante, "dia": instante.date().isoformat(),
             "estado": estado, "operada": estado in ESTADOS_OPERADOS,
             "etiqueta": etiqueta,
+            "idx_entrada": str(fila.get("idx_entrada") or "").strip(),
+            "precio_entrada": str(fila.get("precio_entrada_hipotetico") or "").strip(),
+            "precio_cierre": str(fila.get("precio_cierre_hipotetico") or "").strip(),
         }
     if not registros:
         raise ValueError("BACKTEST_VACIO")
@@ -124,7 +127,25 @@ def comparar(antes, despues, ganancia_win=None, perdida_loss=None):
     diferencias_resultado = sum(
         a[k]["etiqueta"] != b[k]["etiqueta"] for k in comunes
     )
-    universos_iguales = keys_a == keys_b and diferencias_resultado == 0
+    # Una etiqueta WIN comun no acredita igualdad de precio o instante
+    # simulado. Solo cotejar estos valores cuando ambas politicas operan.
+    # Los campos son opcionales en registros antiguos: su ausencia es
+    # incertidumbre, nunca evidencia de paridad.
+    entradas_divergentes = 0
+    entradas_sin_verificacion = 0
+    for clave in comunes:
+        x, y = a[clave], b[clave]
+        if not (x["operada"] and y["operada"]):
+            continue
+        campos = ("idx_entrada", "precio_entrada", "precio_cierre")
+        if any(not x[k] or not y[k] for k in campos):
+            entradas_sin_verificacion += 1
+        elif any(x[k] != y[k] for k in campos):
+            entradas_divergentes += 1
+    universos_iguales = (
+        keys_a == keys_b and diferencias_resultado == 0
+        and entradas_divergentes == 0 and entradas_sin_verificacion == 0
+    )
     resumen = {
         "modo": "COMPARACION_BACKTEST_CRONOLOGICO_SOLO_PRACTICE_NO_OPERATIVO",
         "universo": {
@@ -133,10 +154,12 @@ def comparar(antes, despues, ganancia_win=None, perdida_loss=None):
             "solo_antes": len(keys_a-keys_b),
             "solo_despues": len(keys_b-keys_a),
             "etiquetas_distintas_en_comunes": diferencias_resultado,
+            "entradas_operadas_divergentes": entradas_divergentes,
+            "entradas_operadas_sin_precio_o_indice_verificable": entradas_sin_verificacion,
             "comparable_estrictamente": universos_iguales,
         },
         "estado": ("COMPARABLE_DESCRIPTIVO" if universos_iguales
-                   else "NO_COMPARABLE_UNIVERSO_O_ETIQUETAS"),
+                   else "NO_COMPARABLE_UNIVERSO_ETIQUETAS_O_EJECUCION"),
         "por_dia": [],
         "transiciones": {},
         "supuestos_pnl": (
