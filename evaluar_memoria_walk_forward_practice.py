@@ -29,6 +29,7 @@ def evaluar_walk_forward(filas, minimo_train=20, minimo_test_total=20):
     probabilidades = []
     muestras = []
     fuentes_principales = {}
+    fuentes_por_dia = {}
     for dia in dias:
         train = [x for x in validos if x[0].date().isoformat() < dia]
         test = [x for x in validos if x[0].date().isoformat() == dia]
@@ -80,6 +81,15 @@ def evaluar_walk_forward(filas, minimo_train=20, minimo_test_total=20):
             fuente_stats["wins"] += observado
             fuente_stats["neto"] += item[2]
             fuente_stats["probabilidades"].append(prob)
+            grupo_dia = fuentes_por_dia.setdefault(
+                (dia, nivel), {"n": 0, "wins": 0, "neto": 0.0,
+                              "probabilidades": [], "observados": []}
+            )
+            grupo_dia["n"] += 1
+            grupo_dia["wins"] += observado
+            grupo_dia["neto"] += item[2]
+            grupo_dia["probabilidades"].append(prob)
+            grupo_dia["observados"].append(observado)
             if isinstance(muestra, (int, float)) and not isinstance(muestra, bool) and math.isfinite(muestra):
                 fuente_stats["muestras"].append(muestra)
             muestra_valida = (
@@ -157,6 +167,27 @@ def evaluar_walk_forward(filas, minimo_train=20, minimo_test_total=20):
                 ) if datos["muestras"] else None,
             }
             for nivel, datos in sorted(fuentes_principales.items())
+        ],
+        "fuentes_por_dia_oos": [
+            {
+                "dia_test": dia, "nivel": nivel, "n": datos["n"],
+                "wins": datos["wins"], "losses": datos["n"] - datos["wins"],
+                "winrate_pct": round(100 * datos["wins"] / datos["n"], 2),
+                "neto": round(datos["neto"], 2),
+                "probabilidad_promedio_pct": round(
+                    sum(datos["probabilidades"]) / datos["n"], 2
+                ),
+                "brier_v3": round(sum(
+                    (p / 100 - y) ** 2 for p, y in zip(
+                        datos["probabilidades"], datos["observados"]
+                    )
+                ) / datos["n"], 6),
+                "brier_prior": round(sum(
+                    (mah.PRIOR_WINRATE / 100 - y) ** 2
+                    for y in datos["observados"]
+                ) / datos["n"], 6),
+            }
+            for (dia, nivel), datos in sorted(fuentes_por_dia.items())
         ],
         "diagnostico_rechazos_v3": {
             "umbrales_no_modificados": {
