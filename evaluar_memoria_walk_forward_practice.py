@@ -25,6 +25,9 @@ def evaluar_walk_forward(filas, minimo_train=20, minimo_test_total=20):
     evaluados = []
     seleccionados = []
     predicciones = []
+    rechazos = Counter()
+    probabilidades = []
+    muestras = []
     for dia in dias:
         train = [x for x in validos if x[0].date().isoformat() < dia]
         test = [x for x in validos if x[0].date().isoformat() == dia]
@@ -52,14 +55,37 @@ def evaluar_walk_forward(filas, minimo_train=20, minimo_test_total=20):
             principal = diagnostico.get("fuente_probabilidad_principal")
             muestra = diagnostico.get("muestra_historica", 0)
             prob = diagnostico.get("probabilidad_estimada")
-            if not principal or not isinstance(prob, (int, float)) or not math.isfinite(prob):
+            if not principal:
+                rechazos["SIN_FUENTE_PRINCIPAL"] += 1
+                continue
+            if isinstance(prob, bool) or not isinstance(prob, (int, float)) or not math.isfinite(prob) or not (0 <= prob <= 100):
+                rechazos["PROBABILIDAD_INVALIDA"] += 1
                 continue
             con_fuente += 1
+            probabilidades.append(prob)
             observado = 1 if item[2] > 0 else 0
             predicciones.append((prob/100, observado))
-            if prob >= UMBRAL_PROBABILIDAD_OPERAR and muestra >= MIN_MUESTRA_PROBABILIDAD:
+            muestra_valida = (
+                not isinstance(muestra, bool)
+                and isinstance(muestra, (int, float))
+                and math.isfinite(muestra)
+                and muestra >= 0
+            )
+            if muestra_valida:
+                muestras.append(muestra)
+            prob_ok = prob >= UMBRAL_PROBABILIDAD_OPERAR
+            muestra_ok = muestra_valida and muestra >= MIN_MUESTRA_PROBABILIDAD
+            if prob_ok and muestra_ok:
                 seleccion_dia.append(item)
                 seleccionados.append(item)
+            elif not muestra_valida:
+                rechazos["MUESTRA_INVALIDA"] += 1
+            elif not prob_ok and not muestra_ok:
+                rechazos["PROBABILIDAD_Y_MUESTRA_INSUFICIENTES"] += 1
+            elif not prob_ok:
+                rechazos["SOLO_PROBABILIDAD_INSUFICIENTE"] += 1
+            else:
+                rechazos["SOLO_MUESTRA_INSUFICIENTE"] += 1
         cortes.append({
             "dia_test": dia, "train_n": len(train),
             "test": _resumen(test),
@@ -101,6 +127,23 @@ def evaluar_walk_forward(filas, minimo_train=20, minimo_test_total=20):
         "cortes": cortes,
         "baseline_dias_test": baseline,
         "seleccion_probabilidad_v3_diagnostica": hipotesis,
+        "diagnostico_rechazos_v3": {
+            "umbrales_no_modificados": {
+                "probabilidad_minima_pct": UMBRAL_PROBABILIDAD_OPERAR,
+                "muestra_minima": MIN_MUESTRA_PROBABILIDAD,
+            },
+            "motivos_exclusivos": dict(sorted(rechazos.items())),
+            "probabilidad_observada_pct": {
+                "min": round(min(probabilidades), 2) if probabilidades else None,
+                "max": round(max(probabilidades), 2) if probabilidades else None,
+                "promedio": round(sum(probabilidades)/len(probabilidades), 2) if probabilidades else None,
+            },
+            "muestra_observada": {
+                "min": min(muestras) if muestras else None,
+                "max": max(muestras) if muestras else None,
+                "promedio": round(sum(muestras)/len(muestras), 2) if muestras else None,
+            },
+        },
         "retencion_pct": round(100*len(seleccionados)/len(evaluados),2)
                          if evaluados else None,
         "brier_v3": round(brier,6) if brier is not None else None,
