@@ -1,0 +1,89 @@
+"""F5.9: inventario de velas locales, SOLO LECTURA y SIN BROKER."""
+import argparse
+import csv
+import hashlib
+import json
+import os
+from collections import Counter
+from pathlib import Path
+
+COLUMNAS = {"from", "open", "close", "max", "min"}
+MIN_VELAS_CARGA = 200
+SEGUNDOS_VELA = 60  # config.py: CANDLE_TIME; no importar credenciales locales
+
+
+def inspeccionar_archivo(ruta):
+    huella = hashlib.sha256()
+    tiempos = []
+    error = None
+    try:
+        with ruta.open("rb") as archivo:
+            for bloque in iter(lambda: archivo.read(65536), b""):
+                huella.update(bloque)
+        with ruta.open(encoding="utf-8-sig", newline="") as archivo:
+            lector = csv.DictReader(archivo)
+            if not lector.fieldnames or not COLUMNAS.issubset(lector.fieldnames):
+                raise ValueError("COLUMNAS_VELAS_INSUFICIENTES")
+            for fila in lector:
+                if None in fila or any(fila[k] in (None, "") for k in COLUMNAS):
+                    raise ValueError("FILA_INCOMPLETA")
+                tiempos.append(int(float(fila["from"])))
+                for k in ("open", "close", "max", "min"):
+                    float(fila[k])
+        if any(b <= a for a, b in zip(tiempos, tiempos[1:])):
+            error = "ORDEN_O_TIMESTAMP_DUPLICADO"
+    except (ValueError, KeyError, UnicodeError, OSError, csv.Error) as exc:
+        error = type(exc).__name__ + ":" + str(exc)
+    gaps = sum(b - a != SEGUNDOS_VELA for a, b in zip(tiempos, tiempos[1:]))
+    return {
+        "archivo": ruta.name,
+        "velas": len(tiempos),
+        "inicio_epoch": min(tiempos) if tiempos else None,
+        "fin_epoch": max(tiempos) if tiempos else None,
+        "carga_minima_200": len(tiempos) >= MIN_VELAS_CARGA and error is None,
+        "saltos_temporales": gaps,
+        "continuidad_completa": bool(tiempos) and gaps == 0 and error is None,
+        "error": error,
+        "sha256": huella.hexdigest(),
+    }
+
+
+def inventariar(carpeta):
+    ruta = Path(carpeta)
+    if not ruta.is_dir():
+        return {"estado": "SIN_DATOS_ACTUALES", "carpeta": str(ruta),
+                "total_csv": 0, "archivos": [], "duplicados_identicos": [],
+                "cargables_minimo": 0, "con_continuidad_completa": 0}
+    # El backtest oficial lee solo .csv en el primer nivel, no recursivamente.
+    archivos = [inspeccionar_archivo(p) for p in sorted(ruta.iterdir())
+                if p.is_file() and p.name.endswith(".csv")]
+    por_hash = {}
+    duplicados = []
+    for f in archivos:
+        if f["sha256"] in por_hash:
+            duplicados.append({"archivo": f["archivo"],
+                               "identico_a": por_hash[f["sha256"]]})
+        else:
+            por_hash[f["sha256"]] = f["archivo"]
+    return {
+        "estado": "INVENTARIO_NO_VALIDACION_RENTABILIDAD",
+        "carpeta": str(ruta),
+        "total_csv": len(archivos),
+        "cargables_minimo": sum(f["carga_minima_200"] for f in archivos),
+        "con_continuidad_completa": sum(f["continuidad_completa"] for f in archivos),
+        "duplicados_identicos": duplicados,
+        "archivos": archivos,
+        "advertencia": "La continuidad completa no sustituye la seleccion causal del backtest. "
+                       "No hay operaciones, fill ni PnL verificado.",
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--data-dir", default=os.getenv("BOOTIQ_DATASET_DIR", "data_backtest_actual"))
+    args = parser.parse_args()
+    print(json.dumps(inventariar(args.data_dir), ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    main()
