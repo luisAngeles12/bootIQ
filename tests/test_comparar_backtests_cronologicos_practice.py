@@ -61,6 +61,33 @@ class ComparadorBacktestTest(unittest.TestCase):
         self.assertNotIn("antes", r)
         self.assertFalse(r["autoriza_operaciones"])
 
+    def test_universos_distintos_muestran_estadisticas_sin_afirmar_mejora(self):
+        a = registros(40)
+        b = copy.deepcopy(a)
+        b.pop()
+        for i in (0, 1, 2):
+            b[i]["estado_operacion"] = "CANCELADA_CEREBRO"
+        r = comparar(a, b, 20.75, 25)
+        self.assertEqual(r["estado"], "NO_COMPARABLE_UNIVERSO_ETIQUETAS_O_EJECUCION")
+        self.assertNotIn("antes", r)
+        self.assertEqual(r["descriptivo_no_pareado"]["antes"]["operaciones"]["n"], 40)
+        self.assertEqual(r["descriptivo_no_pareado"]["despues"]["operaciones"]["n"], 36)
+        self.assertEqual(r["descriptivo_no_pareado"]["antes"]["ventanas_20"]["total"], 21)
+        self.assertEqual(r["descriptivo_no_pareado"]["despues"]["ventanas_20"]["total"], 17)
+        self.assertFalse(r["descriptivo_no_pareado"]["comparacion_causal_permitida"])
+        self.assertFalse(r["validacion_rentabilidad_futura"])
+        self.assertFalse(r["autoriza_operaciones"])
+
+    def test_precios_divergentes_siguen_mostrando_solo_descriptivos(self):
+        a = registros(20)
+        b = copy.deepcopy(a)
+        b[0]["precio_entrada"] = "999"
+        r = comparar(a, b)
+        self.assertEqual(r["universo"]["entradas_operadas_divergentes"], 1)
+        self.assertEqual(r["descriptivo_no_pareado"]["antes"]["operaciones"]["n"], 20)
+        self.assertEqual(r["descriptivo_no_pareado"]["despues"]["operaciones"]["n"], 20)
+        self.assertNotIn("neto_teorico", r["descriptivo_no_pareado"]["antes"]["operaciones"])
+
     def test_etiquetas_hipoteticas_distintas_bloquean_conclusion(self):
         a = registros()
         b = copy.deepcopy(a)
