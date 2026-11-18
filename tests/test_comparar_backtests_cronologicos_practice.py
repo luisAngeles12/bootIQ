@@ -153,6 +153,19 @@ class ComparadorBacktestTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "FECHA_INVALIDA_O_SIN_ZONA"):
             comparar(a, b)
 
+    def test_rechaza_filas_posteriores_con_columnas_incompletas(self):
+        a = registros(3)
+        b = copy.deepcopy(a)
+        # La primera fila es valida; no se debe omitir la verificacion
+        # del esquema en las siguientes filas.
+        del b[1]["resultado"]
+        with self.assertRaisesRegex(ValueError, "COLUMNAS_INSUFICIENTES"):
+            comparar(a, b)
+        b = copy.deepcopy(a)
+        del b[2]["fecha_senal"]
+        with self.assertRaisesRegex(ValueError, "COLUMNAS_INSUFICIENTES"):
+            comparar(a, b)
+
     def test_no_acepta_orden_sin_clasificacion_ni_etiqueta(self):
         a = registros()
         b = copy.deepcopy(a)
