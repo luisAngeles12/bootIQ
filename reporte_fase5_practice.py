@@ -11,6 +11,7 @@ from pathlib import Path
 from auditar_consistencia_20_practice import evaluar_filas
 from experimentos_fase5_practice import evaluar_separacion_temporal
 from diagnostico_pa_riesgo_practice import analizar_pa_riesgo
+from evaluar_combinaciones_contexto_practice import analizar_contextos
 
 
 def generar_informe(filas):
@@ -19,6 +20,7 @@ def generar_informe(filas):
     consistencia = evaluar_filas(registros)
     temporal = evaluar_separacion_temporal(registros)
     pa = analizar_pa_riesgo(registros)
+    contextos = analizar_contextos(registros)
 
     # Los diagnosticos tienen criterios de exclusion equivalentes en el
     # historial canonico. Si divergen, no emitir comparaciones concluyentes.
@@ -57,11 +59,13 @@ def generar_informe(filas):
             e["estrategia"] for e in candidatos
         ],
         "pa_riesgo": pa["grupos"],
+        "oportunidades_estrategia_contexto": contextos,
         "limitaciones": [
             "Datos retrospectivos; no equivalen a validacion prospectiva",
             "Los resultados no son prueba causal de una estrategia o filtro",
             "El diagnostico temporal usa el ultimo dia como test; no constituye validacion independiente repetida",
             "Un objetivo del 60 por ciento no garantiza ganancias futuras",
+            "La comparacion de contexto usa solo operaciones PRACTICE verificadas",
         ],
         "evidencia_suficiente_para_cambio_operativo": False,
         "cambios_operativos_autorizados": False,
