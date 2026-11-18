@@ -20,6 +20,9 @@ def registros(n=60):
             "patron": "CHOCH alcista" if i % 2 else "CHOCH bajista",
             "estado_operacion": "OPERADA_DIRECTA",
             "resultado_hipotetico": "WIN" if i % 5 < 3 else "LOSS",
+            "idx_entrada": str(i + 181),
+            "precio_entrada_hipotetico": str(100 + i / 100),
+            "precio_cierre_hipotetico": str(100 + i / 100 + 0.01),
         })
     return filas
 
@@ -51,7 +54,7 @@ class ComparadorBacktestTest(unittest.TestCase):
         b = copy.deepcopy(a)
         b.pop()
         r = comparar(a, b)
-        self.assertEqual(r["estado"], "NO_COMPARABLE_UNIVERSO_O_ETIQUETAS")
+        self.assertEqual(r["estado"], "NO_COMPARABLE_UNIVERSO_ETIQUETAS_O_EJECUCION")
         self.assertEqual(r["universo"]["solo_antes"], 1)
         self.assertNotIn("antes", r)
         self.assertFalse(r["autoriza_operaciones"])
@@ -63,6 +66,26 @@ class ComparadorBacktestTest(unittest.TestCase):
         r = comparar(a, b)
         self.assertEqual(r["universo"]["etiquetas_distintas_en_comunes"], 1)
         self.assertNotIn("despues", r)
+
+    def test_mismo_win_pero_otro_precio_no_demuestra_mejora(self):
+        a = registros()
+        b = copy.deepcopy(a)
+        b[0]["precio_entrada_hipotetico"] = "999.5"
+        r = comparar(a, b)
+        self.assertEqual(r["universo"]["entradas_operadas_divergentes"], 1)
+        self.assertEqual(r["estado"], "NO_COMPARABLE_UNIVERSO_ETIQUETAS_O_EJECUCION")
+        self.assertNotIn("antes", r)
+        self.assertFalse(r["autoriza_operaciones"])
+
+    def test_falta_precio_de_entrada_no_se_asume_paridad(self):
+        a = registros()
+        b = copy.deepcopy(a)
+        b[0]["idx_entrada"] = ""
+        r = comparar(a, b)
+        self.assertEqual(
+            r["universo"]["entradas_operadas_sin_precio_o_indice_verificable"], 1
+        )
+        self.assertFalse(r["universo"]["comparable_estrictamente"])
 
     def test_no_acepta_identidad_repetida_ni_fecha_sin_zona(self):
         a = registros()
