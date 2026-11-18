@@ -66,6 +66,24 @@ class IntegracionBootstrapMemoriaFase8Tests(unittest.TestCase):
         self.assertEqual(r["senal"]["decision_estadistica_sombra"], "SIN_DATOS_ESTADISTICOS")
         self.assertFalse(r["senal"]["operar_estadistico_sombra"])
 
+    def test_put_a_soporte_sin_ruptura_permanece_rechazado_por_cerebro(self):
+        datos = evidencia_valida()
+        datos.update({
+            "direccion": "put",
+            "accion_precio": "PUT_SOPORTE_CERCA_SIN_RUPTURA",
+        })
+        with patch.object(bootstrap_practice, "MODO_CUENTA", "PRACTICE"):
+            r = self.evaluar(datos)
+        self.assertFalse(r["permitida"])
+        self.assertEqual(r["senal"]["cerebro_unico_decision"], "NO_OPERAR")
+        self.assertFalse(r["senal"].get("bootstrap_practice_sin_historial", False))
+        # Caso de control: rechazo vendedor en resistencia no queda
+        # bloqueado por esta condicion especifica.
+        datos["accion_precio"] = "RECHAZO_VENDEDOR_RESISTENCIA"
+        with patch.object(bootstrap_practice, "MODO_CUENTA", "PRACTICE"):
+            control = self.evaluar(datos)
+        self.assertTrue(control["permitida"])
+
     def test_sin_bootstrap_persiste_no_operar(self):
         datos = evidencia_valida()
         datos["validacion_mercado_ok"] = False
