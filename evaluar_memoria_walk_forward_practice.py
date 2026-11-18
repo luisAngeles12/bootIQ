@@ -115,6 +115,14 @@ def evaluar_walk_forward(filas, minimo_train=20, minimo_test_total=20):
                 rechazos["SOLO_MUESTRA_INSUFICIENTE"] += 1
         cortes.append({
             "dia_test": dia, "train_n": len(train),
+            "train_por_procedencia": dict(sorted(Counter(
+                item[3].get("_procedencia_practice_auditoria", "SIN_DATO")
+                for item in train
+            ).items())),
+            "test_por_procedencia": dict(sorted(Counter(
+                item[3].get("_procedencia_practice_auditoria", "SIN_DATO")
+                for item in test
+            ).items())),
             "test": _resumen(test),
             "con_fuente": con_fuente,
             "seleccion_v3_diagnostica": _resumen(seleccion_dia),
