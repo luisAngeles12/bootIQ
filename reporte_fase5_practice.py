@@ -12,6 +12,7 @@ from auditar_consistencia_20_practice import evaluar_filas
 from experimentos_fase5_practice import evaluar_separacion_temporal
 from diagnostico_pa_riesgo_practice import analizar_pa_riesgo
 from evaluar_combinaciones_contexto_practice import analizar_contextos
+from diagnosticar_uso_memoria_v3_practice import auditar as auditar_uso_memoria
 
 
 def generar_informe(filas):
@@ -21,6 +22,7 @@ def generar_informe(filas):
     temporal = evaluar_separacion_temporal(registros)
     pa = analizar_pa_riesgo(registros)
     contextos = analizar_contextos(registros)
+    cobertura_v3 = auditar_uso_memoria(registros)
 
     # Los diagnosticos tienen criterios de exclusion equivalentes en el
     # historial canonico. Si divergen, no emitir comparaciones concluyentes.
@@ -60,6 +62,7 @@ def generar_informe(filas):
         ],
         "pa_riesgo": pa["grupos"],
         "oportunidades_estrategia_contexto": contextos,
+        "cobertura_y_rentabilidad_memoria_v3": cobertura_v3,
         "limitaciones": [
             "Datos retrospectivos; no equivalen a validacion prospectiva",
             "Los resultados no son prueba causal de una estrategia o filtro",
