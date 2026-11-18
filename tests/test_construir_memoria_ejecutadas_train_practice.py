@@ -30,11 +30,26 @@ class MemoriaCandidataTest(unittest.TestCase):
                 row(3, 12, -25, estado="ABIERTA"), row(1, 12, 20),
                 row(4, 12, 0)]
         v, descartes = c._limpiar(rows)
-        self.assertEqual(len(v), 1)
+        self.assertEqual(len(v), 0)
+        self.assertEqual(descartes["ORDENES_AMBIGUAS_EXCLUIDAS"], 1)
         self.assertEqual(descartes["NO_PRACTICE"], 1)
         self.assertEqual(descartes["NO_CERRADA"], 1)
         self.assertEqual(descartes["ID_INVALIDO_O_DUPLICADO"], 1)
         self.assertEqual(descartes["EMPATE"], 1)
+
+    def test_duplicado_con_pnl_contradictorio_no_entrena_ningun_cierre(self):
+        rows = [row("000123", 10, 20.75), row("000123", 10, -25),
+                row("000124", 11, 20.75)]
+        v, descartes = c._limpiar(rows)
+        self.assertEqual([x[1] for x in v], ["000124"])
+        self.assertEqual(descartes["ORDENES_AMBIGUAS_EXCLUIDAS"], 1)
+
+    def test_duplicado_antes_de_validacion_no_contamina_entrenamiento(self):
+        rows = [row("000123", 10, 20.75),
+                {**row("000123", 11, -25), "resultado": "NO_NUMERICO"},
+                row("000124", 12, 20.75)]
+        v, _ = c._limpiar(rows)
+        self.assertEqual([x[1] for x in v], ["000124"])
 
     def test_entrenamiento_solo_anterior_y_resultados_convertidos(self):
         rows = []
