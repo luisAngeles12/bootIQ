@@ -51,10 +51,11 @@ def habilitable_sin_memoria(evidencia, decision):
     # bootstrap sin muestra V3. La excepcion no puede anular este riesgo
     # direccional que el detector ya identifico explicitamente.
     # No cambia el Cerebro, las estrategias ni otras autoridades.
+    direccion = str(evidencia.get("direccion") or "").strip().lower()
+    accion = str(evidencia.get("accion_precio") or "").strip().upper()
     if (
-        str(evidencia.get("direccion") or "").strip().lower() == "put"
-        and str(evidencia.get("accion_precio") or "").strip().upper()
-        == "PUT_SOPORTE_CERCA_SIN_RUPTURA"
+        (direccion == "put" and accion == "PUT_SOPORTE_CERCA_SIN_RUPTURA")
+        or (direccion == "call" and accion == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA")
     ):
         return False
     if evidencia.get("riesgo_estructural_critico_setup"):
