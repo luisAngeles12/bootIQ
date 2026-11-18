@@ -28,6 +28,7 @@ def evaluar_walk_forward(filas, minimo_train=20, minimo_test_total=20):
     rechazos = Counter()
     probabilidades = []
     muestras = []
+    fuentes_principales = {}
     for dia in dias:
         train = [x for x in validos if x[0].date().isoformat() < dia]
         test = [x for x in validos if x[0].date().isoformat() == dia]
@@ -65,6 +66,22 @@ def evaluar_walk_forward(filas, minimo_train=20, minimo_test_total=20):
             probabilidades.append(prob)
             observado = 1 if item[2] > 0 else 0
             predicciones.append((prob/100, observado))
+            # Diagnostico estrictamente OOS: agrupar por nivel principal,
+            # sin elegir ni promover fuentes en funcion del TEST.
+            if isinstance(principal, dict):
+                nivel = str(principal.get("nivel") or "SIN_NIVEL").strip()
+            else:
+                nivel = "FUENTE_NO_DICT"
+            fuente_stats = fuentes_principales.setdefault(
+                nivel, {"n": 0, "wins": 0, "neto": 0.0,
+                        "probabilidades": [], "muestras": []}
+            )
+            fuente_stats["n"] += 1
+            fuente_stats["wins"] += observado
+            fuente_stats["neto"] += item[2]
+            fuente_stats["probabilidades"].append(prob)
+            if isinstance(muestra, (int, float)) and not isinstance(muestra, bool) and math.isfinite(muestra):
+                fuente_stats["muestras"].append(muestra)
             muestra_valida = (
                 not isinstance(muestra, bool)
                 and isinstance(muestra, (int, float))
@@ -127,6 +144,20 @@ def evaluar_walk_forward(filas, minimo_train=20, minimo_test_total=20):
         "cortes": cortes,
         "baseline_dias_test": baseline,
         "seleccion_probabilidad_v3_diagnostica": hipotesis,
+        "fuentes_principales_oos": [
+            {
+                "nivel": nivel, "n": datos["n"],
+                "wins": datos["wins"], "losses": datos["n"] - datos["wins"],
+                "winrate_pct": round(100 * datos["wins"] / datos["n"], 2),
+                "neto": round(datos["neto"], 2),
+                "probabilidad_promedio_pct": round(
+                    sum(datos["probabilidades"]) / datos["n"], 2),
+                "muestra_promedio": round(
+                    sum(datos["muestras"]) / len(datos["muestras"]), 2
+                ) if datos["muestras"] else None,
+            }
+            for nivel, datos in sorted(fuentes_principales.items())
+        ],
         "diagnostico_rechazos_v3": {
             "umbrales_no_modificados": {
                 "probabilidad_minima_pct": UMBRAL_PROBABILIDAD_OPERAR,
