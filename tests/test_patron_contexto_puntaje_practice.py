@@ -40,8 +40,10 @@ def contexto(direccion, con_soporte):
     ctx.update({
         "activo": "TEST-OTC", "rsi": 50,
         "direccion_presion": "NEUTRA", "razon_presion": "",
-        "opens": [100.0]*25, "closes": [precio]*25,
-        "highs": [100.4]*25, "lows": [99.6]*25,
+        "opens": ([99.6]*25 if direccion == "call" else [100.4]*25),
+        "closes": [precio]*25,
+        "highs": ([100.05]*25 if direccion == "call" else [101.2]*25),
+        "lows": ([98.8]*25 if direccion == "call" else [99.95]*25),
         "soporte": precio if con_soporte else 90.0,
         "resistencia": 110.0 if con_soporte else 100.0,
         "vol": 1.0, "nombre_patron": "martillo alcista" if direccion == "call"
