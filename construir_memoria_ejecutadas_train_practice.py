@@ -17,10 +17,34 @@ from pathlib import Path
 import motor_aprendizaje_historico as mah
 
 
+# Declaracion explicita del usuario, 18-11-2026:
+# todas las operaciones historicas de BootIQ fueron PRACTICE, nunca REAL.
+# Alcance deliberadamente cerrado a los 431 cierres del 10-14 de noviembre
+# identificados en la auditoria. No reescribir CSV ni inferir de futuros vacios.
+LEGADO_FECHAS_DECLARADAS = {
+    "2026-11-10", "2026-11-11", "2026-11-12",
+    "2026-11-13", "2026-11-14",
+}
+AUTORIDAD_LEGADA = "BOOTSTRAP_PRACTICE_SIN_HISTORIAL"
+
+
+def _es_practice_declarado(fila):
+    if str(fila.get("modo_cuenta_configurado") or "").strip():
+        return False
+    if str(fila.get("fecha") or "")[:10] not in LEGADO_FECHAS_DECLARADAS:
+        return False
+    if str(fila.get("origen_autoridad") or "").strip().upper() != AUTORIDAD_LEGADA:
+        return False
+    oid = str(fila.get("order_id") or "").strip()
+    return len(oid) == 11 and oid.isascii() and oid.isdigit()
+
+
 def _limpiar(filas):
     vistos, duplicados, descartes, validos = set(), set(), Counter(), []
     for fila in filas:
-        if str(fila.get("modo_cuenta_configurado") or "").strip().upper() != "PRACTICE":
+        modo = str(fila.get("modo_cuenta_configurado") or "").strip().upper()
+        declarado = modo == "" and _es_practice_declarado(fila)
+        if modo != "PRACTICE" and not declarado:
             descartes["NO_PRACTICE"] += 1
             continue
         if str(fila.get("estado") or "").strip().upper() != "CERRADA":
@@ -53,7 +77,15 @@ def _limpiar(filas):
         if str(fila.get("direccion") or "").lower().strip() not in ("call", "put"):
             descartes["SIN_DIRECCION"] += 1
             continue
-        validos.append((fecha, oid, pnl, fila))
+        # La procedencia declarada nunca se presenta como marca del broker.
+        copia = dict(fila)
+        copia["_procedencia_practice_auditoria"] = (
+            "USUARIO_DECLARADO_LEGADO_SIN_MODO"
+            if declarado else "CSV_MODO_PRACTICE"
+        )
+        validos.append((fecha, oid, pnl, copia))
+        if declarado:
+            descartes["LEGADO_PRACTICE_DECLARADO_INCLUIDO"] += 1
     # Dos filas cerradas para el mismo order_id son ambiguas incluso si
     # una parece valida: excluir TODAS sus apariciones del entrenamiento.
     if duplicados:
@@ -62,6 +94,12 @@ def _limpiar(filas):
     if len({fecha.tzinfo is None for fecha, *_ in validos}) > 1:
         raise ValueError("ZONAS_HORARIAS_MIXTAS")
     validos.sort(key=lambda x: (x[0], x[1]))
+    # Separar recuento de inclusion de las causas de descarte.
+    atribuidos = sum(
+        x[3]["_procedencia_practice_auditoria"] == "USUARIO_DECLARADO_LEGADO_SIN_MODO"
+        for x in validos
+    )
+    descartes["LEGADO_PRACTICE_DECLARADO_INCLUIDO"] = atribuidos
     return validos, dict(sorted(descartes.items()))
 
 
@@ -90,7 +128,16 @@ def preparar_candidata(filas, carpeta="experimentos_fase5", minimo_train=20,
     reporte = {"modo": "MEMORIA_CANDIDATA_DE_CIERRES_REALES_PRACTICE",
                "corte_train_inclusivo": corte,
                "train": _resumen(train), "test_oos": _resumen(test),
-               "descartes": descartes, "memoria_productiva_modificada": False,
+               "descartes": descartes,
+               "procedencia_legado": {
+                   "tipo": "PRACTICE_DECLARADO_POR_USUARIO_NO_VERIFICADO_BROKER",
+                   "fechas": sorted(LEGADO_FECHAS_DECLARADAS),
+                   "incluidas_validas": descartes.get(
+                       "LEGADO_PRACTICE_DECLARADO_INCLUIDO", 0
+                   ),
+                   "csv_original_modificado": False,
+               },
+               "memoria_productiva_modificada": False,
                "autoriza_operaciones": False}
     if len(train) < minimo_train or len(test) < minimo_test:
         return {**reporte, "estado": "MUESTRA_TEMPORAL_INSUFICIENTE"}
