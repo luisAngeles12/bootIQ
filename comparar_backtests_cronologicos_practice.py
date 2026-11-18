@@ -48,7 +48,9 @@ def _normalizar(filas):
             raise ValueError("FILA_NO_DICT")
         # DictReader conserva filas con columnas faltantes; validar cada
         # registro impide comparar una muestra parcialmente malformada.
-        if not set(COLUMNAS).issubset(fila):
+        if not set(COLUMNAS).issubset(fila) or any(
+            fila[columna] is None for columna in COLUMNAS
+        ):
             raise ValueError("COLUMNAS_INSUFICIENTES")
         nombre = str(fila["activo"] or "").strip()
         direccion = str(fila["direccion"] or "").strip().upper()
