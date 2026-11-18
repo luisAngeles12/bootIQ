@@ -15,6 +15,7 @@ def evidencia_valida():
         "validacion_mercado_ok": True,
         "validacion_zona_sr_ok": True,
         "validacion_accion_precio_ok": True,
+        "accion_precio": "CALL_ZONA_NEUTRA",
         "riesgo_estructural_critico_setup": False,
         "requiere_confirmacion_setup": False,
         "requiere_ruptura_setup": False,
