@@ -32,7 +32,11 @@ def habilitable_sin_memoria(evidencia, decision):
         return False
     # Respetar el rechazo explicito del diagnostico de Price Action.
     # No imponer un veto nuevo si el diagnostico no rechazo la entrada.
-    if evidencia.get("validacion_accion_precio_ok") is False:
+    # El bootstrap no tiene estadistica que compense evidencia estructural
+    # ausente. Exigir validacion explicita, no tratar None como permiso.
+    if evidencia.get("validacion_accion_precio_ok") is not True:
+        return False
+    if evidencia.get("validacion_zona_sr_ok") is not True:
         return False
     # Fase 5.5: en un bloque PRACTICE fallido se observaron entradas PUT
     # con soporte cercano sin ruptura, autorizadas exclusivamente por
