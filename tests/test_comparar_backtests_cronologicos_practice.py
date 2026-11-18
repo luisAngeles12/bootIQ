@@ -15,14 +15,16 @@ def registros(n=60):
         instante = BASE+timedelta(minutes=60*i)
         filas.append({
             "activo": "EURUSD-OTC" if i % 2 else "GBPUSD-OTC",
-            "fecha": instante.isoformat(),
+            "fecha_senal": instante.isoformat(),
+            "fecha": (instante+timedelta(minutes=1)).isoformat(),
             "direccion": "CALL" if i % 2 else "PUT",
             "patron": "CHOCH alcista" if i % 2 else "CHOCH bajista",
             "estado_operacion": "OPERADA_DIRECTA",
             "resultado_hipotetico": "WIN" if i % 5 < 3 else "LOSS",
+            "resultado": "WIN" if i % 4 == 0 else "LOSS",
             "idx_entrada": str(i + 181),
-            "precio_entrada_hipotetico": str(100 + i / 100),
-            "precio_cierre_hipotetico": str(100 + i / 100 + 0.01),
+            "precio_entrada": str(100 + i / 100),
+            "precio_cierre": str(100 + i / 100 + 0.01),
         })
     return filas
 
@@ -70,7 +72,7 @@ class ComparadorBacktestTest(unittest.TestCase):
     def test_mismo_win_pero_otro_precio_no_demuestra_mejora(self):
         a = registros()
         b = copy.deepcopy(a)
-        b[0]["precio_entrada_hipotetico"] = "999.5"
+        b[0]["precio_entrada"] = "999.5"
         r = comparar(a, b)
         self.assertEqual(r["universo"]["entradas_operadas_divergentes"], 1)
         self.assertEqual(r["estado"], "NO_COMPARABLE_UNIVERSO_ETIQUETAS_O_EJECUCION")
@@ -94,7 +96,7 @@ class ComparadorBacktestTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "SENAL_DUPLICADA"):
             comparar(a, b)
         b = copy.deepcopy(a)
-        b[0]["fecha"] = "2026-11-10 00:00:00"
+        b[0]["fecha_senal"] = "2026-11-10 00:00:00"
         with self.assertRaisesRegex(ValueError, "FECHA_INVALIDA_O_SIN_ZONA"):
             comparar(a, b)
 
@@ -108,6 +110,26 @@ class ComparadorBacktestTest(unittest.TestCase):
         b[0]["resultado_hipotetico"] = ""
         with self.assertRaisesRegex(ValueError, "RESULTADO_HIPOTETICO"):
             comparar(a, b)
+
+    def test_resumen_operado_usa_resultado_no_resultado_hipotetico(self):
+        a = registros(20)
+        r = comparar(a, copy.deepcopy(a))
+        wins_reales = sum(x["resultado"] == "WIN" for x in a)
+        wins_hipoteticos = sum(x["resultado_hipotetico"] == "WIN" for x in a)
+        self.assertNotEqual(wins_reales, wins_hipoteticos)
+        self.assertEqual(r["antes"]["wins"], wins_reales)
+        self.assertEqual(r["despues"]["wins"], wins_reales)
+
+    def test_fechas_de_entrada_diferentes_no_rompen_identidad_causal(self):
+        a = registros()
+        b = copy.deepcopy(a)
+        b[0]["fecha"] = (BASE+timedelta(minutes=2)).isoformat()
+        r = comparar(a, b)
+        self.assertEqual(r["universo"]["comunes"], len(a))
+        self.assertEqual(r["universo"]["solo_antes"], 0)
+        self.assertEqual(r["universo"]["solo_despues"], 0)
+        self.assertEqual(r["universo"]["entradas_operadas_divergentes"], 1)
+        self.assertFalse(r["universo"]["comparable_estrictamente"])
 
     def test_no_inventa_neto_sin_supuestos_explicitos(self):
         a = registros()
@@ -124,7 +146,7 @@ class ComparadorBacktestTest(unittest.TestCase):
             comparar([], [])
         a = registros(1)
         b = copy.deepcopy(a)
-        b.append(dict(b[0], fecha="2026-11-09T20:00:00-04:00"))
+        b.append(dict(b[0], fecha_senal="2026-11-09T20:00:00-04:00"))
         with self.assertRaisesRegex(ValueError, "SENAL_DUPLICADA"):
             comparar(a, b)
 
