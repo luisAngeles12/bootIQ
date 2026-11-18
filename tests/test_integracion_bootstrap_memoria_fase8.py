@@ -12,6 +12,7 @@ from decision_bootiq import aplicar_decision_unificada_a_senal
 def evidencia_valida():
     return {
         "calidad_mercado": "NORMAL",
+        "direccion": "call",
         "validacion_mercado_ok": True,
         "validacion_zona_sr_ok": True,
         "validacion_accion_precio_ok": True,
