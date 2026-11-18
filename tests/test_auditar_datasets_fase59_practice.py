@@ -64,6 +64,17 @@ class InventarioDatasetTest(unittest.TestCase):
         self.assertEqual(r["cargables_minimo"], 0)
         self.assertIn("TIMESTAMP_NO_FINITO", r["archivos"][0]["error"])
 
+    def test_rechaza_ohlc_inconsistente(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = self.crear(d, "ohlc_invalido.csv")
+            filas = p.read_text(encoding="utf-8").splitlines()
+            # max=0.5 queda por debajo de apertura=1 y cierre=2.
+            filas[2] = ",".join(filas[2].split(",")[:3] + ["0.5", "0"])
+            p.write_text("\n".join(filas) + "\n", encoding="utf-8")
+            r = inventariar(d)
+        self.assertEqual(r["cargables_minimo"], 0)
+        self.assertIn("OHLC_INCONSISTENTE", r["archivos"][0]["error"])
+
     def test_fila_truncada_se_rechaza(self):
         with tempfile.TemporaryDirectory() as d:
             p = self.crear(d, "incompleto.csv")
