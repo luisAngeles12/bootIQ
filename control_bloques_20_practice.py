@@ -211,18 +211,19 @@ def preparar_informe(filas, ids, inicio):
         ),
         "analisis": {nombre: _segmentar(evaluadas, campo)
                      for nombre, campo in segmentos.items()},
+        # Copiar cada snapshot original completo: RSI, EMA, Bollinger,
+        # velas, protocolos, fuentes, mercado, autoridad y riesgos.
+        # Nunca recalcular con informacion posterior al cierre.
         "operaciones": [
-            {"order_id": oid, "fecha": fila.get("fecha"),
-             "resultado": fila["_pnl"], "patron": fila.get("patron"),
-             "activo": fila.get("activo"), "direccion": fila.get("direccion"),
-             "tipo_mercado": fila.get("tipo_mercado"),
-             "calidad_mercado": fila.get("calidad_mercado"),
-             "pa_tipo": fila.get("pa_tipo"), "rsi": fila.get("rsi"),
-             "ema9": fila.get("ema9"), "ema21": fila.get("ema21"),
-             "bb_superior": fila.get("bb_superior"),
-             "bb_media": fila.get("bb_media"),
-             "bb_inferior": fila.get("bb_inferior")}
-            for oid, fila in zip(ids, evaluadas)
+            {
+                **{clave: valor for clave, valor in fila.items()
+                   if not clave.startswith("_")},
+                "pnl_numerico": fila["_pnl"],
+                "rsi_zona": fila["_zona_rsi"],
+                "ema_alineacion": fila["_ema_relativa"],
+                "bollinger_ubicacion": fila["_bb_ubicacion"],
+            }
+            for fila in evaluadas
         ],
         "trayectoria": trayectoria,
         "advertencias": [
