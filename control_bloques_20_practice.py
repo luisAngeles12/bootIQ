@@ -33,7 +33,9 @@ def iniciar(modo="PRACTICE", habilitado=True):
 
 
 def admite_apertura():
-    return not _CUENTA["habilitado"] or len(_CUENTA["ids"]) < LIMITE
+    # PRACTICE exclusivamente: una sesion no inicializada, un modo REAL
+    # o un control deshabilitado nunca deben abrir operaciones.
+    return _CUENTA["habilitado"] and len(_CUENTA["ids"]) < LIMITE
 
 
 def registrar_apertura(order_id):
