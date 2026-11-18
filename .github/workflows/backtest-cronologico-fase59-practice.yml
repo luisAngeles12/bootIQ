@@ -4,6 +4,8 @@ on:
     branches: [bootiq-v3-auditoria]
     paths:
       - 'comparar_backtests_cronologicos_practice.py'
+      - 'auditar_datasets_fase59_practice.py'
+      - 'tests/test_auditar_datasets_fase59_practice.py'
       - 'tests/test_comparar_backtests_cronologicos_practice.py'
       - '.github/workflows/backtest-cronologico-fase59-practice.yml'
   workflow_dispatch:
@@ -19,6 +21,8 @@ jobs:
         with:
           python-version: '3.11'
       - name: Sintaxis
-        run: python -m py_compile comparar_backtests_cronologicos_practice.py tests/test_comparar_backtests_cronologicos_practice.py
+        run: python -m py_compile comparar_backtests_cronologicos_practice.py tests/test_comparar_backtests_cronologicos_practice.py auditar_datasets_fase59_practice.py tests/test_auditar_datasets_fase59_practice.py
       - name: Comparaciones cronologicas sinteticas sin broker
         run: python -m unittest discover -s tests -p 'test_comparar_backtests_cronologicos_practice.py' -v
+      - name: Inventario de datasets sinteticos sin broker
+        run: python -m unittest discover -s tests -p 'test_auditar_datasets_fase59_practice.py' -v
