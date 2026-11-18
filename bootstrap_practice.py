@@ -34,6 +34,17 @@ def habilitable_sin_memoria(evidencia, decision):
     # No imponer un veto nuevo si el diagnostico no rechazo la entrada.
     if evidencia.get("validacion_accion_precio_ok") is False:
         return False
+    # Fase 5.5: en un bloque PRACTICE fallido se observaron entradas PUT
+    # con soporte cercano sin ruptura, autorizadas exclusivamente por
+    # bootstrap sin muestra V3. La excepcion no puede anular este riesgo
+    # direccional que el detector ya identifico explicitamente.
+    # No cambia el Cerebro, las estrategias ni otras autoridades.
+    if (
+        str(evidencia.get("direccion") or "").strip().lower() == "put"
+        and str(evidencia.get("accion_precio") or "").strip().upper()
+        == "PUT_SOPORTE_CERCA_SIN_RUPTURA"
+    ):
+        return False
     if evidencia.get("riesgo_estructural_critico_setup"):
         return False
     if evidencia.get("requiere_confirmacion_setup"):
