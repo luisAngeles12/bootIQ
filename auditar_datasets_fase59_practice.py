@@ -45,6 +45,9 @@ def inspeccionar_archivo(ruta):
         "velas": len(tiempos),
         "inicio_epoch": min(tiempos) if tiempos else None,
         "fin_epoch": max(tiempos) if tiempos else None,
+        # Este conteo es diagnostico: el cargador oficial solo exige >=200
+        # filas parseables; los errores se informan por separado.
+        "supera_minimo_200": len(tiempos) >= MIN_VELAS_CARGA,
         "carga_minima_200": len(tiempos) >= MIN_VELAS_CARGA and error is None,
         "saltos_temporales": gaps,
         "continuidad_completa": bool(tiempos) and gaps == 0 and error is None,
@@ -58,7 +61,8 @@ def inventariar(carpeta):
     if not ruta.is_dir():
         return {"estado": "SIN_DATOS_ACTUALES", "carpeta": str(ruta),
                 "total_csv": 0, "archivos": [], "duplicados_identicos": [],
-                "cargables_minimo": 0, "con_continuidad_completa": 0}
+                "cargables_minimo": 0, "superan_minimo_200": 0,
+                "con_continuidad_completa": 0}
     # El backtest oficial lee solo .csv en el primer nivel, no recursivamente.
     archivos = [inspeccionar_archivo(p) for p in sorted(ruta.iterdir())
                 if p.is_file() and p.name.endswith(".csv")]
@@ -74,11 +78,14 @@ def inventariar(carpeta):
         "estado": "INVENTARIO_NO_VALIDACION_RENTABILIDAD",
         "carpeta": str(ruta),
         "total_csv": len(archivos),
+        "superan_minimo_200": sum(f["supera_minimo_200"] for f in archivos),
         "cargables_minimo": sum(f["carga_minima_200"] for f in archivos),
         "con_continuidad_completa": sum(f["continuidad_completa"] for f in archivos),
         "duplicados_identicos": duplicados,
         "archivos": archivos,
-        "advertencia": "La continuidad completa no sustituye la seleccion causal del backtest. "
+        "advertencia": "superan_minimo_200 solo cuenta filas examinadas, no garantiza "
+                       "compatibilidad con el cargador oficial ni validez causal. "
+                       "cargables_minimo incorpora controles extra del auditor. "
                        "No hay operaciones, fill ni PnL verificado.",
     }
 
