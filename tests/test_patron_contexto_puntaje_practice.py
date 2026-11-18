@@ -21,6 +21,7 @@ def cargar_motor_aislado():
     ambito = {
         "validar_patron_con_contexto": validar_patron_con_contexto,
         "activos_bloqueables": lambda: set(),
+        "evaluar_reaccion_en_zona": lambda *args: (False, "SIN_REACCION"),
         "crear_senal_profesional": lambda activo, direccion, estrategia, puntaje,
                                        rsi, razones, ctx: {
             "activo": activo, "direccion": direccion, "patron": estrategia,
