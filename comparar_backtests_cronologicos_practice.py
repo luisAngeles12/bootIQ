@@ -191,7 +191,31 @@ def comparar(antes, despues, ganancia_win=None, perdida_loss=None):
             "Las ventanas de 20 corresponden a simulacion, no a sesiones PRACTICE.",
         ],
     }
+    # Los cambios de generacion/entrada suelen alterar el universo.
+    # Conservar las estadisticas de cada version sin atribuir causalidad.
+    # No se confunden estas estadisticas con la comparacion pareada.
     if not universos_iguales:
+        def describir_politica(registros):
+            orden = sorted(registros.items(), key=lambda par: (par[1]["fecha"], par[0]))
+            operadas = [r for _, r in orden if r["operada"]]
+            return {
+                "operaciones": _resumen(operadas, ganancia_win, perdida_loss),
+                "ventanas_20": _ventanas_20(operadas, ganancia_win, perdida_loss),
+                "senales_generadas": len(registros),
+                "dias": len({r["dia"] for r in registros.values()}),
+            }
+
+        resumen["descriptivo_no_pareado"] = {
+            "antes": describir_politica(a),
+            "despues": describir_politica(b),
+            "senales_comunes": len(comunes),
+            "misma_serie_causal": False,
+            "comparacion_causal_permitida": False,
+            "advertencia": (
+                "Las versiones generan o ejecutan universos distintos; "
+                "no interpretar variaciones de winrate como mejora causal."
+            ),
+        }
         return resumen
 
     ordenadas = sorted(comunes, key=lambda k: (a[k]["fecha"], k))
