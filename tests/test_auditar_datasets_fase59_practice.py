@@ -42,6 +42,26 @@ class InventarioDatasetTest(unittest.TestCase):
         self.assertEqual(r["con_continuidad_completa"], 0)
         self.assertEqual(r["archivos"][0]["saltos_temporales"], 199)
 
+    def test_rechaza_precios_no_finitos_en_dataset(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = self.crear(d, "precio_invalido.csv")
+            filas = p.read_text(encoding="utf-8").splitlines()
+            filas[2] = filas[2].replace(",2,3,0", ",NaN,3,0")
+            p.write_text("\n".join(filas) + "\n", encoding="utf-8")
+            r = inventariar(d)
+        self.assertEqual(r["cargables_minimo"], 0)
+        self.assertIn("PRECIO_NO_FINITO", r["archivos"][0]["error"])
+
+    def test_rechaza_timestamp_no_finito(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = self.crear(d, "timestamp_invalido.csv")
+            filas = p.read_text(encoding="utf-8").splitlines()
+            filas[2] = "inf,1,2,3,0"
+            p.write_text("\n".join(filas) + "\n", encoding="utf-8")
+            r = inventariar(d)
+        self.assertEqual(r["cargables_minimo"], 0)
+        self.assertIn("TIMESTAMP_NO_FINITO", r["archivos"][0]["error"])
+
     def test_fila_truncada_se_rechaza(self):
         with tempfile.TemporaryDirectory() as d:
             p = self.crear(d, "incompleto.csv")
