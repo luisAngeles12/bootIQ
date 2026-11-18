@@ -81,7 +81,8 @@ def inspeccionar_archivo(ruta):
         "continuidad_completa": bool(tiempos) and gaps == 0 and error is None,
         "error": error,
         "sha256": huella.hexdigest(),
-        "sha256_velas": huella_velas.hexdigest() if velas_completas and error is None else None,
+        "sha256_velas": (huella_velas.hexdigest()
+                          if velas_completas and tiempos and error is None else None),
     }
 
 
