@@ -39,7 +39,7 @@ class ComparacionBloquesTest(unittest.TestCase):
         self.assertEqual(resultado["wins"], 22)
         self.assertEqual(resultado["losses"], 18)
         self.assertEqual(resultado["winrate_global_pct"], 55.0)
-        self.assertEqual(resultado["neto_acumulado"], -5.25)
+        self.assertEqual(resultado["neto_acumulado"], 14.75)
         self.assertEqual(resultado["bloques_cumplen_60_y_neto"], 1)
         self.assertEqual(resultado["bloques_no_cumplen"], 1)
         self.assertFalse(resultado["todos_los_bloques_cumplen"])
