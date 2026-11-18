@@ -5,8 +5,11 @@ on:
     paths:
       - 'analizar_oportunidades_integrales_practice.py'
       - 'evaluar_combinaciones_contexto_practice.py'
+      - 'diagnosticar_uso_memoria_v3_practice.py'
+      - 'reporte_fase5_practice.py'
       - 'tests/test_analizar_oportunidades_integrales_practice.py'
       - 'tests/test_evaluar_combinaciones_contexto_practice.py'
+      - 'tests/test_diagnosticar_uso_memoria_v3_practice.py'
       - '.github/workflows/contextos-estrategias-practice.yml'
   workflow_dispatch:
 
@@ -23,8 +26,9 @@ jobs:
         with:
           python-version: '3.11'
       - name: Comprobar sintaxis
-        run: python -m py_compile analizar_oportunidades_integrales_practice.py evaluar_combinaciones_contexto_practice.py
+        run: python -m py_compile analizar_oportunidades_integrales_practice.py evaluar_combinaciones_contexto_practice.py diagnosticar_uso_memoria_v3_practice.py reporte_fase5_practice.py
       - name: Pruebas aisladas sin broker
         run: |
           python -m unittest discover -s tests -p 'test_analizar_oportunidades_integrales_practice.py' -v
           python -m unittest discover -s tests -p 'test_evaluar_combinaciones_contexto_practice.py' -v
+          python -m unittest discover -s tests -p 'test_diagnosticar_uso_memoria_v3_practice.py' -v
