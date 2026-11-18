@@ -1,5 +1,6 @@
 """Pruebas de permiso bootstrap PRACTICE (sin ordenes ni red)."""
 import unittest
+from itertools import product
 from unittest.mock import Mock, patch
 
 import bootstrap_practice as b
@@ -103,6 +104,63 @@ class BootstrapPracticeTest(unittest.TestCase):
             datos["accion_precio"] = "PUT_SOPORTE_CERCA_SIN_RUPTURA"
             datos["direccion"] = "call"
             self.assertTrue(b.habilitable_sin_memoria(datos, decision_sin_datos()))
+
+    def test_call_resistencia_sin_ruptura_no_se_convierte_en_directa(self):
+        with patch.object(b, "MODO_CUENTA", "PRACTICE"):
+            datos = evidencia()
+            datos.update({
+                "direccion": "call",
+                "accion_precio": "CALL_RESISTENCIA_CERCA_SIN_RUPTURA",
+                "accion_precio_requiere_pendiente": None,
+            })
+            self.assertFalse(b.habilitable_sin_memoria(datos, decision_sin_datos()))
+            datos["accion_precio"] = "RECHAZO_COMPRADOR_SOPORTE"
+            self.assertTrue(b.habilitable_sin_memoria(datos, decision_sin_datos()))
+
+    def test_matriz_2400_combinaciones_sin_bypasses(self):
+        """Cruza 5 zonas, 5 PA, 3 pendientes, 8 acciones, 2 direcciones,
+        2 prioridades y 2 cuentas: 4,800 casos, sin red ni broker.
+        """
+        zonas = (True, False, None, "True", 1)
+        pa_vals = (True, False, None, "True", 1)
+        pendientes = (False, True, None)
+        acciones = (
+            "CALL_ZONA_NEUTRA", "PUT_ZONA_NEUTRA",
+            "PUT_SOPORTE_CERCA_SIN_RUPTURA",
+            "CALL_RESISTENCIA_CERCA_SIN_RUPTURA",
+            "SIN_DATOS", "RANGO_INVALIDO", "ERROR",
+            "DIRECCION_INVALIDA",
+        )
+        esperado_casos = 0
+        for modo in ("PRACTICE", "REAL"):
+            with patch.object(b, "MODO_CUENTA", modo):
+                for zona, pa_ok, pendiente, accion, direccion, prioridad in product(
+                    zonas, pa_vals, pendientes, acciones,
+                    ("call", "put"), (1, 3)
+                ):
+                    datos = evidencia()
+                    datos.update({
+                        "validacion_zona_sr_ok": zona,
+                        "validacion_accion_precio_ok": pa_ok,
+                        "accion_precio_requiere_pendiente": pendiente,
+                        "accion_precio": accion, "direccion": direccion,
+                        "prioridad": prioridad,
+                    })
+                    valido = (
+                        modo == "PRACTICE"
+                        and zona is True and pa_ok is True
+                        and pendiente is not True and prioridad == 3
+                        and accion in ("CALL_ZONA_NEUTRA", "PUT_ZONA_NEUTRA")
+                    )
+                    resultado = b.habilitable_sin_memoria(
+                        datos, decision_sin_datos()
+                    )
+                    self.assertEqual(
+                        resultado, valido,
+                        (modo, zona, pa_ok, pendiente, accion, direccion, prioridad)
+                    )
+                    esperado_casos += 1
+        self.assertEqual(esperado_casos, 4800)
 
     def test_otros_motivos_no_se_saltan(self):
         with patch.object(b, "MODO_CUENTA", "PRACTICE"):
