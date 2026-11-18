@@ -54,6 +54,11 @@ def habilitable_sin_memoria(evidencia, decision):
     direccion = str(evidencia.get("direccion") or "").strip().lower()
     accion = str(evidencia.get("accion_precio") or "").strip().upper()
     if (
+        (accion.startswith("PUT_") and direccion != "put")
+        or (accion.startswith("CALL_") and direccion != "call")
+    ):
+        return False
+    if (
         (direccion == "put" and accion == "PUT_SOPORTE_CERCA_SIN_RUPTURA")
         or (direccion == "call" and accion == "CALL_RESISTENCIA_CERCA_SIN_RUPTURA")
     ):
