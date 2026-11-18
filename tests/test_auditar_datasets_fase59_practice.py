@@ -35,6 +35,26 @@ class InventarioDatasetTest(unittest.TestCase):
         self.assertEqual(r["superan_minimo_200"], 2)
         self.assertEqual(len(r["duplicados_identicos"]), 1)
 
+    def test_detecta_duplicados_velas_con_distinto_formato_csv(self):
+        with tempfile.TemporaryDirectory() as d:
+            original = self.crear(d, "original.csv")
+            with original.open(encoding="utf-8", newline="") as f:
+                filas = list(csv.DictReader(f))
+            segunda = Path(d) / "otro_formato.csv"
+            with segunda.open("w", encoding="utf-8", newline="") as f:
+                columnas = ["min", "max", "close", "open", "from"]
+                w = csv.DictWriter(f, fieldnames=columnas, lineterminator="\n")
+                w.writeheader()
+                for fila in filas:
+                    fila["open"] = "1.00"
+                    fila["close"] = "2.0"
+                    w.writerow(fila)
+            r = inventariar(d)
+        self.assertEqual(r["total_csv"], 2)
+        self.assertEqual(r["duplicados_identicos"], [])
+        self.assertEqual(len(r["duplicados_velas"]), 1)
+        self.assertEqual(r["cargables_minimo"], 2)
+
     def test_gap_detectado_sin_eliminar_archivo_cargable(self):
         with tempfile.TemporaryDirectory() as d:
             self.crear(d, "gaps.csv", paso=120)
