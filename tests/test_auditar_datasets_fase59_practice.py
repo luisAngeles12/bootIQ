@@ -66,6 +66,28 @@ class InventarioDatasetTest(unittest.TestCase):
         self.assertEqual(len(r["duplicados_velas"]), 1)
         self.assertEqual(r["cargables_minimo"], 2)
 
+    def test_mismo_ohlc_distinto_volumen_no_es_duplicado(self):
+        with tempfile.TemporaryDirectory() as d:
+            for nombre, volumen in (("volumen_a.csv", 5), ("volumen_b.csv", 15)):
+                ruta = Path(d) / nombre
+                with ruta.open("w", encoding="utf-8", newline="") as archivo:
+                    writer = csv.DictWriter(
+                        archivo, fieldnames=["from", "open", "close", "max", "min", "volume"]
+                    )
+                    writer.writeheader()
+                    for i in range(200):
+                        writer.writerow({
+                            "from": 1760000000 + i * 60, "open": 1,
+                            "close": 2, "max": 3, "min": 0, "volume": volumen,
+                        })
+            resultado = inventariar(d)
+        self.assertEqual(resultado["cargables_minimo"], 2)
+        self.assertEqual(resultado["duplicados_velas"], [])
+        self.assertNotEqual(
+            resultado["archivos"][0]["sha256_velas"],
+            resultado["archivos"][1]["sha256_velas"],
+        )
+
     def test_gap_detectado_sin_eliminar_archivo_cargable(self):
         with tempfile.TemporaryDirectory() as d:
             self.crear(d, "gaps.csv", paso=120)
