@@ -137,6 +137,36 @@ def _indicadores(fila):
     return zona_rsi, ema, bollinger
 
 
+def _riesgo_guardado(fila):
+    dato = str(fila.get("auditoria_riesgo_compuesto_json") or "").strip()
+    if not dato:
+        return "SIN_SNAPSHOT"
+    try:
+        riesgo = json.loads(dato)
+    except (TypeError, ValueError):
+        return "SNAPSHOT_INVALIDO"
+    if not isinstance(riesgo, dict):
+        return "SNAPSHOT_INVALIDO"
+    return str(riesgo.get("riesgo_nivel") or "SIN_NIVEL").strip().upper()
+
+
+def _vela_guardada(fila):
+    apertura = _numero(fila.get("precio_senal_open"))
+    cierre = _numero(fila.get("precio_senal_close"))
+    high = _numero(fila.get("precio_senal_high"))
+    low = _numero(fila.get("precio_senal_low"))
+    if None in (apertura, cierre, high, low):
+        return "SIN_SNAPSHOT"
+    rango = high - low
+    if rango <= 0 or high < max(apertura, cierre) or low > min(apertura, cierre):
+        return "OHLC_INVALIDO"
+    proporcion = abs(cierre - apertura) / rango
+    if proporcion <= 0.10:
+        return "CUERPO_PEQUENO"
+    tipo = "ALCISTA" if cierre > apertura else "BAJISTA"
+    return tipo + ("_CUERPO_FUERTE" if proporcion >= 0.60 else "_CUERPO_MODERADO")
+
+
 def preparar_informe(filas, ids, inicio):
     """Falla sin emitir resultado conclusivo si falta alguna de las 20 órdenes."""
     ids = [str(x) for x in ids]
@@ -171,6 +201,8 @@ def preparar_informe(filas, ids, inicio):
             errores.append({"order_id": oid, "causa": "PNL_INVALIDO"})
             continue
         fila["_pnl"] = pnl
+        fila["_riesgo_nivel"] = _riesgo_guardado(fila)
+        fila["_vela_senal"] = _vela_guardada(fila)
         zona, ema, bb = _indicadores(fila)
         fila["_zona_rsi"], fila["_ema_relativa"], fila["_bb_ubicacion"] = zona, ema, bb
         evaluadas.append(fila)
@@ -198,6 +230,11 @@ def preparar_informe(filas, ids, inicio):
         "direccion": "direccion",
         "rsi_zona": "_zona_rsi", "ema_alineacion": "_ema_relativa",
         "bollinger_ubicacion": "_bb_ubicacion",
+        "riesgo_compuesto": "_riesgo_nivel",
+        "vela_senal_estructura": "_vela_senal",
+        "riesgos_base": "riesgos_base",
+        "core4_reglas": "core4_reglas",
+        "nivel_consenso": "nivel_consenso",
     }
     return {
         "estado": "BLOQUE_20_CERRADO",
@@ -222,6 +259,8 @@ def preparar_informe(filas, ids, inicio):
                 "rsi_zona": fila["_zona_rsi"],
                 "ema_alineacion": fila["_ema_relativa"],
                 "bollinger_ubicacion": fila["_bb_ubicacion"],
+                "riesgo_compuesto": fila["_riesgo_nivel"],
+                "vela_senal_estructura": fila["_vela_senal"],
             }
             for fila in evaluadas
         ],
