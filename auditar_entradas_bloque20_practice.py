@@ -27,6 +27,43 @@ def _resumen(ops):
             if wins+losses else None, "neto": neto}
 
 
+def _precios_iq_verificados(fila):
+    bruto = fila.get("auditoria_orden_iq_json")
+    if not bruto:
+        return {"estado": "SIN_PRECIO_IQ"}
+    try:
+        dato = json.loads(bruto)
+    except (TypeError, ValueError):
+        return {"estado": "METADATOS_INVALIDOS"}
+    if not isinstance(dato, dict):
+        return {"estado": "METADATOS_INVALIDOS"}
+    if (
+        str(dato.get("order_id") or "").strip()
+        != str(fila.get("order_id") or "").strip()
+        or dato.get("fuente") != "IQ_ORDER_ASYNC_EVENTOS_CACHE"
+    ):
+        return {"estado": "PROCEDENCIA_NO_VERIFICADA"}
+    precios = dato.get("precios")
+    if not isinstance(precios, dict):
+        return {"estado": "METADATOS_INVALIDOS"}
+    salida = {"estado": "PRECIOS_IQ_EN_CACHE",
+              "unidad_verificada": dato.get("unidades_confirmadas") is True}
+    for campo in ("precio_apertura_iq", "precio_cierre_iq"):
+        valor = precios.get(campo)
+        if isinstance(valor, bool):
+            continue
+        try:
+            num = float(valor)
+        except (TypeError, ValueError, OverflowError):
+            continue
+        if math.isfinite(num) and num > 0:
+            salida[campo] = num
+    if not any(k in salida for k in ("precio_apertura_iq", "precio_cierre_iq")):
+        return {"estado": "SIN_PRECIO_IQ"}
+    # No comparar precios IQ con OHLC hasta confirmar unidades de escala.
+    return salida
+
+
 def auditar(reporte):
     validado, error = _evaluar_bloque(reporte)
     if error:
@@ -54,6 +91,7 @@ def auditar(reporte):
             "origen_autoridad": origen or "SIN_DATO",
             "riesgo_zona": riesgo_zona,
             "bootstrap_sin_memoria": origen == "BOOTSTRAP_PRACTICE_SIN_HISTORIAL",
+            "precio_ejecucion_iq": _precios_iq_verificados(original),
             "pnl": pnl,
         })
     grupos = {}
@@ -88,7 +126,19 @@ def auditar(reporte):
         },
         "desglose": grupos,
         "operaciones": ops,
+        "cobertura_precio_iq": {
+            "con_apertura": sum(
+                "precio_apertura_iq" in x["precio_ejecucion_iq"] for x in ops
+            ),
+            "con_cierre": sum(
+                "precio_cierre_iq" in x["precio_ejecucion_iq"] for x in ops
+            ),
+            "sin_apertura": sum(
+                "precio_apertura_iq" not in x["precio_ejecucion_iq"] for x in ops
+            ),
+        },
         "limitaciones": [
+            "Los precios IQ se presentan sin calcular distancias con OHLC hasta verificar las unidades.",
             "Asociacion retrospectiva; no demuestra que el nivel provocara cada resultado.",
             "No se puede inferir el resultado de las operaciones hipoteticamente omitidas.",
             "La captura grafica y el snapshot almacenado pueden corresponder a momentos distintos.",
