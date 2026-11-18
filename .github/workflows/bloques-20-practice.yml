@@ -21,6 +21,7 @@ on:
       - 'motor_estrategias.py'
       - 'tests/test_patron_contexto_puntaje_practice.py'
       - 'tests/test_paridad_pre_buy_practice.py'
+      - 'tests/test_price_action_fallo_cerrado_practice.py'
       - 'tests/test_comparar_bloques_20_practice.py'
       - 'tests/test_auditar_entradas_bloque20_practice.py'
       - '.github/workflows/bloques-20-practice.yml'
@@ -50,5 +51,6 @@ jobs:
           python -m unittest discover -s tests -p 'test_bootstrap_price_action_context.py' -v
           python -m unittest discover -s tests -p 'test_patron_contexto_puntaje_practice.py' -v
           python -m unittest discover -s tests -p 'test_paridad_pre_buy_practice.py' -v
+          python -m unittest discover -s tests -p 'test_price_action_fallo_cerrado_practice.py' -v
           python -m unittest discover -s tests -p 'test_comparar_bloques_20_practice.py' -v
           python -m unittest discover -s tests -p 'test_auditar_entradas_bloque20_practice.py' -v
