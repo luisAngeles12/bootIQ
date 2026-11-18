@@ -162,6 +162,8 @@ def motor_estrategias_profesional(
         ctx["vol"]
     )
 
+    # Una forma de vela aislada no confirma el setup: la bonificacion
+    # solo procede cuando la direccion y la ubicacion fueron validadas.
     patron_put_ok, razon_patron_put = validar_patron_con_contexto(
         "put",
         ctx["nombre_patron"],
@@ -201,7 +203,7 @@ def motor_estrategias_profesional(
             puntaje += 2
             razones.append(ctx["nombre_rechazo"])
 
-        if ctx["patron"] == 1:
+        if ctx["patron"] == 1 and patron_call_ok:
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
 
@@ -245,7 +247,7 @@ def motor_estrategias_profesional(
             puntaje += 2
             razones.append(ctx["nombre_rechazo"])
 
-        if ctx["patron"] == -1:
+        if ctx["patron"] == -1 and patron_put_ok:
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
 
@@ -287,7 +289,7 @@ def motor_estrategias_profesional(
             puntaje += 2
             razones.append(ctx.get("nombre_rechazo", "rechazo comprador"))
 
-        if ctx.get("patron", 0) == 1:
+        if ctx.get("patron", 0) == 1 and patron_call_ok:
             puntaje += ctx.get("puntos_patron_vela", 0)
             razones.append(ctx.get("nombre_patron", "patrón alcista"))
 
@@ -325,7 +327,7 @@ def motor_estrategias_profesional(
             puntaje += 2
             razones.append(ctx.get("nombre_rechazo", "rechazo vendedor"))
 
-        if ctx.get("patron", 0) == -1:
+        if ctx.get("patron", 0) == -1 and patron_put_ok:
             puntaje += ctx.get("puntos_patron_vela", 0)
             razones.append(ctx.get("nombre_patron", "patrón bajista"))
 
@@ -373,7 +375,7 @@ def motor_estrategias_profesional(
             puntaje += 2
             razones.append(ctx["nombre_rechazo"])
 
-        if ctx["patron"] == 1:
+        if ctx["patron"] == 1 and patron_call_ok:
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
 
@@ -425,7 +427,7 @@ def motor_estrategias_profesional(
             puntaje += 2
             razones.append(ctx["nombre_rechazo"])
 
-        if ctx["patron"] == -1:
+        if ctx["patron"] == -1 and patron_put_ok:
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
 
@@ -478,7 +480,7 @@ def motor_estrategias_profesional(
             puntaje += 3
             razones.append("rechazo comprador histórico confirmado")
 
-        if ctx["patron"] == 1:
+        if ctx["patron"] == 1 and patron_call_ok:
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
 
@@ -534,7 +536,7 @@ def motor_estrategias_profesional(
             puntaje += 3
             razones.append("rechazo vendedor histórico confirmado")
 
-        if ctx["patron"] == -1:
+        if ctx["patron"] == -1 and patron_put_ok:
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
 
@@ -583,7 +585,7 @@ def motor_estrategias_profesional(
             puntaje += 2
             razones.append(ctx["nombre_rechazo"])
 
-        if ctx["patron"] == 1:
+        if ctx["patron"] == 1 and patron_call_ok:
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
 
@@ -624,7 +626,7 @@ def motor_estrategias_profesional(
             puntaje += 2
             razones.append(ctx["nombre_rechazo"])
 
-        if ctx["patron"] == -1:
+        if ctx["patron"] == -1 and patron_put_ok:
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
 
@@ -668,7 +670,7 @@ def motor_estrategias_profesional(
             puntaje += 2
             razones.append(ctx["nombre_rechazo"])
 
-        if ctx["patron"] == 1:
+        if ctx["patron"] == 1 and patron_call_ok:
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
 
@@ -708,7 +710,7 @@ def motor_estrategias_profesional(
             puntaje += 2
             razones.append(ctx["nombre_rechazo"])
 
-        if ctx["patron"] == -1:
+        if ctx["patron"] == -1 and patron_put_ok:
             puntaje += ctx["puntos_patron_vela"]
             razones.append(ctx["nombre_patron"])
 
