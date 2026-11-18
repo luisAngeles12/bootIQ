@@ -82,6 +82,12 @@ class Bloque20Tests(unittest.TestCase):
             self.assertEqual(reporte["resultado"]["winrate_pct"],60)
             self.assertEqual(reporte["resultado"]["neto"],49)
             self.assertTrue(reporte["objetivo_60_pct_y_neto"])
+            self.assertEqual(len(reporte["operaciones"]),20)
+            self.assertEqual(reporte["operaciones"][0]["rsi_zona"],"60_70")
+            self.assertEqual(reporte["operaciones"][0]["ema_alineacion"],
+                             "EMA9_BAJO_EMA21")
+            self.assertEqual(reporte["operaciones"][0]["patron"],"CHOCH BAJISTA")
+            self.assertEqual(reporte["operaciones"][0]["precio_cierre_indicadores"],"99")
             for clave in ("estrategias","activos","mercados",
                           "price_action","rsi_zona","ema_alineacion",
                           "bollinger_ubicacion","autoridad","protocolo"):
