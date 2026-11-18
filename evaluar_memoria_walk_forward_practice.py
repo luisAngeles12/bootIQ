@@ -12,7 +12,7 @@ from collections import Counter
 from pathlib import Path
 
 import motor_aprendizaje_historico as mah
-from construir_memoria_ejecutadas_train_practice import _limpiar, _resumen
+from construir_memoria_ejecutadas_train_practice import _limpiar, _resumen, LEGADO_FECHAS_DECLARADAS
 from motor_decision import UMBRAL_PROBABILIDAD_OPERAR, MIN_MUESTRA_PROBABILIDAD
 
 
@@ -217,7 +217,16 @@ def evaluar_walk_forward(filas, minimo_train=20, minimo_test_total=20):
         "consistencia_20_y_neto_observada": consistencia_observada,
         "supera_60_y_neto": consistencia_observada,
         "descartes": descartes,
+        "procedencia_legado": {
+            "tipo": "PRACTICE_DECLARADO_POR_USUARIO_NO_VERIFICADO_BROKER",
+            "fechas": sorted(LEGADO_FECHAS_DECLARADAS),
+            "incluidas_validas": descartes.get(
+                "LEGADO_PRACTICE_DECLARADO_INCLUIDO", 0
+            ),
+            "csv_original_modificado": False,
+        },
         "limitaciones": [
+            "Las operaciones antiguas sin campo de cuenta se incluyen por declaracion explicita del usuario, no por evidencia independiente del broker.",
             "La muestra contiene solo ordenes ejecutadas: sesgo de seleccion.",
             "No estima el rendimiento contrafactual de senales no ejecutadas.",
             "Seleccion V3 es diagnostica: no replica todos los vetos ni protocolos.",
