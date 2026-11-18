@@ -1,5 +1,7 @@
 """Comparador de backtests F5.9: todos los datos son artificiales."""
+import ast
 import copy
+from pathlib import Path
 import unittest
 from datetime import datetime, timedelta, timezone
 
@@ -30,6 +32,30 @@ def registros(n=60):
 
 
 class ComparadorBacktestTest(unittest.TestCase):
+    def test_contrato_campos_backtest_canonico_con_comparador(self):
+        # La identidad se ancla a la vela senal y la metrica de una
+        # orden ejecutada al resultado real simulado, nunca al contrafactual.
+        origen = Path(__file__).resolve().parents[1] / "backtest_bot_real.py"
+        arbol = ast.parse(origen.read_text(encoding="utf-8"))
+        registros = [
+            n for n in ast.walk(arbol)
+            if isinstance(n, ast.Dict)
+            and any(
+                isinstance(k, ast.Constant) and k.value == "fecha_senal"
+                for k in n.keys
+            )
+            and any(
+                isinstance(k, ast.Constant) and k.value == "resultado_hipotetico"
+                for k in n.keys
+            )
+        ]
+        self.assertTrue(registros, "backtest oficial debe conservar snapshot causal")
+        representacion = ast.unparse(registros[0])
+        self.assertIn("velas[idx]['from']", representacion)
+        self.assertIn("velas[idx_entrada]['from']", representacion)
+        self.assertIn("info_resultado['resultado']", representacion)
+        self.assertIn("info_hipotetico['resultado']", representacion)
+
     def test_mismo_universo_descartes_y_ventanas_20(self):
         a = registros()
         b = copy.deepcopy(a)
