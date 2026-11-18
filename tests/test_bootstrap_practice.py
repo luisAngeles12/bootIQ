@@ -22,6 +22,8 @@ def evidencia():
     return {
         "calidad_mercado": "NORMAL",
         "validacion_mercado_ok": True,
+        "validacion_zona_sr_ok": True,
+        "validacion_accion_precio_ok": True,
         "riesgo_estructural_critico_setup": False,
         "requiere_confirmacion_setup": False,
         "requiere_ruptura_setup": False,
@@ -46,6 +48,9 @@ class BootstrapPracticeTest(unittest.TestCase):
                 {"calidad_mercado": "SUCIO"},
                 {"calidad_mercado": "CAOTICO"},
                 {"validacion_mercado_ok": False},
+                {"validacion_zona_sr_ok": False},
+                {"validacion_zona_sr_ok": None},
+                {"validacion_accion_precio_ok": None},
                 {"validacion_accion_precio_ok": False},
                 {"riesgo_estructural_critico_setup": True},
                 {"requiere_confirmacion_setup": True},
@@ -58,7 +63,7 @@ class BootstrapPracticeTest(unittest.TestCase):
                     datos.update(cambio)
                     self.assertFalse(b.habilitable_sin_memoria(datos, decision_sin_datos()))
 
-    def test_rechazo_explicito_pa_no_se_salta_y_ausencia_no_equivale_a_rechazo(self):
+    def test_pa_ausente_y_zona_sin_validar_no_autorizan_bootstrap(self):
         with patch.object(b, "MODO_CUENTA", "PRACTICE"):
             datos = evidencia()
             datos["validacion_accion_precio_ok"] = False
@@ -66,7 +71,10 @@ class BootstrapPracticeTest(unittest.TestCase):
             datos["validacion_accion_precio_ok"] = True
             self.assertTrue(b.habilitable_sin_memoria(datos, decision_sin_datos()))
             datos.pop("validacion_accion_precio_ok")
-            self.assertTrue(b.habilitable_sin_memoria(datos, decision_sin_datos()))
+            self.assertFalse(b.habilitable_sin_memoria(datos, decision_sin_datos()))
+            datos["validacion_accion_precio_ok"] = True
+            datos.pop("validacion_zona_sr_ok")
+            self.assertFalse(b.habilitable_sin_memoria(datos, decision_sin_datos()))
 
     def test_put_soporte_cerca_sin_ruptura_no_puede_saltarse_por_bootstrap(self):
         # Caso reproducido en bloque 2: permiso sin muestra V3 pese a PA
@@ -83,6 +91,7 @@ class BootstrapPracticeTest(unittest.TestCase):
             self.assertFalse(b.habilitable_sin_memoria(datos, decision_sin_datos()))
             # El cambio es exclusivo del riesgo probado; no veta cualquier PUT.
             datos["accion_precio"] = "RECHAZO_VENDEDOR_RESISTENCIA"
+            datos["validacion_accion_precio_ok"] = True
             self.assertTrue(b.habilitable_sin_memoria(datos, decision_sin_datos()))
             datos["accion_precio"] = "PUT_SOPORTE_CERCA_SIN_RUPTURA"
             datos["direccion"] = "call"
