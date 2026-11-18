@@ -14,7 +14,7 @@ from pathlib import Path
 ESTADOS_OPERADOS = {"OPERADA_DIRECTA", "OPERADA_PROTOCOLO"}
 ESTADOS_CONOCIDOS = ESTADOS_OPERADOS | {
     "NO_OPERADA", "NO_OPERAR", "RECHAZADA", "CANCELADA_PROTOCOLO",
-    "CANCELADA", "DESCARTADA",
+    "CANCELADA_CEREBRO", "CANCELADA", "DESCARTADA",
 }
 COLUMNAS = ("activo", "fecha", "direccion", "patron",
             "estado_operacion", "resultado_hipotetico")
