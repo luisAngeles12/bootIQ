@@ -1038,6 +1038,11 @@ def evaluar_senal_candidata(activo, ctx, senal):
 
     senal["accion_precio"] = diagnostico_pa.get("accion", "SIN_DATOS")
     senal["razon_accion_precio"] = diagnostico_pa.get("razon", "")
+    # El detector puede permitir un contexto solo con orden pendiente.
+    # No degradar esa condicion a entrada directa en bootstrap PRACTICE.
+    senal["accion_precio_requiere_pendiente"] = (
+        diagnostico_pa.get("requiere_pendiente") is True
+    )
 
     riesgos_previos = str(senal.get("riesgos_base", "")).strip("|")
     fortalezas_previas = str(senal.get("fortalezas_base", "")).strip("|")
