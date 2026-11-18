@@ -90,6 +90,31 @@ class WalkForwardV3Test(unittest.TestCase):
         self.assertEqual(resultado["ventanas_moviles_20_bajo_objetivo"],0)
         self.assertFalse(resultado["autoriza_operaciones"])
 
+    def test_diagnostico_distingue_muestra_y_probabilidad(self):
+        registros = rows()
+        evaluaciones = iter(
+            [
+                {"fuente_probabilidad_principal": {"clave": "X"},
+                 "probabilidad_estimada": 54.0, "muestra_historica": 5},
+                {"fuente_probabilidad_principal": {"clave": "X"},
+                 "probabilidad_estimada": 56.0, "muestra_historica": 5},
+                {"fuente_probabilidad_principal": {"clave": "X"},
+                 "probabilidad_estimada": 54.0, "muestra_historica": 20},
+                {"fuente_probabilidad_principal": {"clave": "X"},
+                 "probabilidad_estimada": 56.0, "muestra_historica": 20},
+            ] * 20
+        )
+        with patch.object(wf.mah, "evaluar_aprendizaje_historico",
+                          side_effect=lambda *args, **kw: next(evaluaciones)):
+            r = wf.evaluar_walk_forward(registros)
+        motivos = r["diagnostico_rechazos_v3"]["motivos_exclusivos"]
+        self.assertEqual(motivos["PROBABILIDAD_Y_MUESTRA_INSUFICIENTES"], 20)
+        self.assertEqual(motivos["SOLO_MUESTRA_INSUFICIENTE"], 20)
+        self.assertEqual(motivos["SOLO_PROBABILIDAD_INSUFICIENTE"], 20)
+        self.assertEqual(r["seleccion_probabilidad_v3_diagnostica"]["n"], 20)
+        self.assertEqual(r["diagnostico_rechazos_v3"]["probabilidad_observada_pct"]["min"], 54.0)
+        self.assertEqual(r["diagnostico_rechazos_v3"]["muestra_observada"]["max"], 20)
+
     def test_real_y_abiertas_no_entran_en_test(self):
         registros = rows() + [
             {**row(19,100,-25), "modo_cuenta_configurado":"REAL"},
