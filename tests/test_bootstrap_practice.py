@@ -22,6 +22,7 @@ def decision_sin_datos():
 def evidencia():
     return {
         "calidad_mercado": "NORMAL",
+        "direccion": "call",
         "validacion_mercado_ok": True,
         "validacion_zona_sr_ok": True,
         "validacion_accion_precio_ok": True,
@@ -103,7 +104,7 @@ class BootstrapPracticeTest(unittest.TestCase):
             self.assertTrue(b.habilitable_sin_memoria(datos, decision_sin_datos()))
             datos["accion_precio"] = "PUT_SOPORTE_CERCA_SIN_RUPTURA"
             datos["direccion"] = "call"
-            self.assertTrue(b.habilitable_sin_memoria(datos, decision_sin_datos()))
+            self.assertFalse(b.habilitable_sin_memoria(datos, decision_sin_datos()))
 
     def test_call_resistencia_sin_ruptura_no_se_convierte_en_directa(self):
         with patch.object(b, "MODO_CUENTA", "PRACTICE"):
@@ -150,7 +151,8 @@ class BootstrapPracticeTest(unittest.TestCase):
                         modo == "PRACTICE"
                         and zona is True and pa_ok is True
                         and pendiente is not True and prioridad == 3
-                        and accion in ("CALL_ZONA_NEUTRA", "PUT_ZONA_NEUTRA")
+                        and accion == ("CALL_ZONA_NEUTRA" if direccion == "call"
+                                       else "PUT_ZONA_NEUTRA")
                     )
                     resultado = b.habilitable_sin_memoria(
                         datos, decision_sin_datos()
