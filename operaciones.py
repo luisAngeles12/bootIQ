@@ -296,11 +296,14 @@ def abrir_operacion(senal):
     # y puede bloquear la orden después de haber validado timing.
     balance_antes = None
 
-    if senal.get("bootstrap_practice_sin_historial"):
-        from bootstrap_practice import cuenta_practice_verificada
-        if not cuenta_practice_verificada(getattr(estado, "Iq", None)):
-            print("BOOTSTRAP BLOQUEADO: cuenta PRACTICE no confirmada", flush=True)
-            return False
+    # Condicion absoluta del proyecto: NUNCA REAL.
+    # La conexion y la reconexion ya verifican PRACTICE, pero la cuenta
+    # puede cambiar entre esa verificacion y este envio. Comprobar
+    # todas las autoridades, no solo bootstrap; revalidar tiempo despues.
+    from bootstrap_practice import cuenta_practice_verificada
+    if not cuenta_practice_verificada(getattr(estado, "Iq", None)):
+        print("ORDEN BLOQUEADA: cuenta PRACTICE no confirmada", flush=True)
+        return False
 
     # F9: defensa final compartida por la entrada directa y la
     # pendiente. Las comprobaciones previas pueden quedar obsoletas
