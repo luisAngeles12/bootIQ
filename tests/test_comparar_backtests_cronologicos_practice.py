@@ -172,12 +172,12 @@ class ComparadorBacktestTest(unittest.TestCase):
         a = registros(2)
         columnas = list(a[0])
         buffer = io.StringIO()
-        writer = csv.DictWriter(buffer, fieldnames=columnas, lineterminator="\\n")
+        writer = csv.DictWriter(buffer, fieldnames=columnas, lineterminator="\n")
         writer.writeheader()
         writer.writerow(a[0])
         # Emular un registro CSV truncado: DictReader asigna None
         # a los campos del encabezado sin valor en esa fila.
-        buffer.write(",".join(str(a[1][k]) for k in columnas[:7]) + "\\n")
+        buffer.write(",".join(str(a[1][k]) for k in columnas[:7]) + "\n")
         buffer.seek(0)
         b = list(csv.DictReader(buffer))
         self.assertIsNone(b[1]["resultado"])
