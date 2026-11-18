@@ -118,16 +118,48 @@ def preparar_candidata(filas, carpeta="experimentos_fase5", minimo_train=20,
             raise ValueError("MEMORIA_GENERADA_ILEGIBLE")
         # OOS solo se evalua, nunca contribuye a entrenar ni seleccionar claves.
         disponibles = []
+        predicciones = []
         for item in test:
-            fuentes, _ = mah._buscar_fuentes_aprendizaje(item[3], memoria)
-            principal = mah._seleccionar_fuente_principal(fuentes)
+            # La memoria TRAIN queda congelada durante todo el holdout.
+            diagnostico = mah.evaluar_aprendizaje_historico(item[3], memoria=memoria)
+            principal = diagnostico.get("fuente_probabilidad_principal")
             if principal:
                 disponibles.append(item)
+                prob = diagnostico.get("probabilidad_estimada")
+                muestra = diagnostico.get("muestra_historica", 0)
+                if isinstance(prob, (int, float)) and math.isfinite(prob):
+                    predicciones.append((item, float(prob), int(muestra)))
         reporte["cobertura_test_oos"] = {
             "con_fuente_n": len(disponibles),
             "cobertura_pct": round(100*len(disponibles)/len(test), 2),
             "pnl_observado_con_fuente": _resumen(disponibles),
             "sin_fuente_n": len(test)-len(disponibles),
+        }
+        # Brier menor es mejor; comparacion justa sobre el mismo holdout.
+        # Solo evalua operaciones ejecutadas, nunca las descartadas.
+        reporte["calibracion_oos_solo_ejecutadas"] = {
+            "n": len(predicciones),
+            "brier_v3": round(sum(
+                ((prob / 100) - (1 if item[2] > 0 else 0))**2
+                for item, prob, _ in predicciones
+            ) / len(predicciones), 6) if predicciones else None,
+            "brier_prior": round(sum(
+                ((mah.PRIOR_WINRATE / 100) - (1 if item[2] > 0 else 0))**2
+                for item, _, _ in predicciones
+            ) / len(predicciones), 6) if predicciones else None,
+            "mejora_brier_contra_prior": None,
+        }
+        cal = reporte["calibracion_oos_solo_ejecutadas"]
+        if cal["brier_v3"] is not None:
+            cal["mejora_brier_contra_prior"] = cal["brier_v3"] < cal["brier_prior"]
+        reporte["hipotesis_probabilidad_oos"] = {
+            "umbral_solo_diagnostico_pct": 55.0,
+            "muestra_minima_solo_diagnostico": 12,
+            "operaciones_que_superan_ambos": _resumen([
+                item for item, prob, n in predicciones if prob >= 55 and n >= 12
+            ]),
+            "no_equivale_a_decision_del_cerebro": True,
+            "no_autoriza_operaciones": True,
         }
         # No declarar validacion de trading por disponer de una fuente.
         os.link(str(temporal), str(destino))
