@@ -7,6 +7,7 @@ on:
       - 'bootstrap_practice.py'
       - 'decision_bootiq.py'
       - 'comparar_bloques_20_practice.py'
+      - 'auditar_entradas_bloque20_practice.py'
       - 'bot.py'
       - 'operaciones.py'
       - 'config.py'
@@ -14,6 +15,7 @@ on:
       - 'tests/test_bootstrap_practice.py'
       - 'tests/test_integracion_bootstrap_memoria_fase8.py'
       - 'tests/test_comparar_bloques_20_practice.py'
+      - 'tests/test_auditar_entradas_bloque20_practice.py'
       - '.github/workflows/bloques-20-practice.yml'
   workflow_dispatch:
 permissions:
@@ -28,7 +30,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Validar sintaxis de codigo operativo
-        run: python -m py_compile control_bloques_20_practice.py comparar_bloques_20_practice.py bootstrap_practice.py decision_bootiq.py bot.py operaciones.py config.py
+        run: python -m py_compile control_bloques_20_practice.py comparar_bloques_20_practice.py auditar_entradas_bloque20_practice.py bootstrap_practice.py decision_bootiq.py bot.py operaciones.py config.py
       - name: Crear stub local de configuracion sin credenciales reales
         run: |
           echo 'EMAIL = "CI_NO_LOGIN"' > credenciales_local.py
@@ -39,3 +41,4 @@ jobs:
           python -m unittest discover -s tests -p 'test_bootstrap_practice.py' -v
           python -m unittest discover -s tests -p 'test_integracion_bootstrap_memoria_fase8.py' -v
           python -m unittest discover -s tests -p 'test_comparar_bloques_20_practice.py' -v
+          python -m unittest discover -s tests -p 'test_auditar_entradas_bloque20_practice.py' -v
