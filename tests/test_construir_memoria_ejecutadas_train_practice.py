@@ -1,0 +1,91 @@
+"""Regresiones de memoria candidata basada en cierres PRACTICE."""
+import csv
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+import construir_memoria_ejecutadas_train_practice as c
+
+
+def row(i, day, pnl, modo="PRACTICE", estado="CERRADA"):
+    return {
+        "order_id": str(i),
+        "fecha": f"2026-11-{day:02d} 12:00:00",
+        "estado": estado, "modo_cuenta_configurado": modo,
+        "estado_operacion": "OPERADA_DIRECTA",
+        "resultado": str(pnl), "direccion": "call",
+        "patron": "CHOCH alcista", "tipo_mercado": "TENDENCIA_ALCISTA",
+        "familia_setup": "REVERSIÓN_ESTRUCTURAL",
+    }
+
+
+class MemoriaCandidataTest(unittest.TestCase):
+    def test_no_genera_si_no_hay_dias_independientes(self):
+        r = c.preparar_candidata([row(i, 15, 20) for i in range(50)])
+        self.assertEqual(r["estado"], "SIN_DIAS_INDEPENDIENTES")
+
+    def test_excluye_real_abiertas_empates_y_duplicados(self):
+        rows = [row(1, 12, 20), row(2, 12, 20, modo="REAL"),
+                row(3, 12, -25, estado="ABIERTA"), row(1, 12, 20),
+                row(4, 12, 0)]
+        v, descartes = c._limpiar(rows)
+        self.assertEqual(len(v), 1)
+        self.assertEqual(descartes["NO_PRACTICE"], 1)
+        self.assertEqual(descartes["NO_CERRADA"], 1)
+        self.assertEqual(descartes["ID_INVALIDO_O_DUPLICADO"], 1)
+        self.assertEqual(descartes["EMPATE"], 1)
+
+    def test_entrenamiento_solo_anterior_y_resultados_convertidos(self):
+        rows = []
+        for day in range(10, 20):
+            for k in range(10):
+                rows.append(row(day*100+k, day, 20.75 if k%2 else -25))
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.object(c.mah, "_buscar_fuentes_aprendizaje",
+                              return_value=([], [])), patch.object(
+                              c.mah, "_seleccionar_fuente_principal",
+                              return_value=None):
+                r = c.preparar_candidata(rows, carpeta=tmp)
+            self.assertEqual(r["estado"], "CANDIDATA_AISLADA_CREADA")
+            self.assertEqual(r["train"]["n"], 70)
+            self.assertEqual(r["test_oos"]["n"], 30)
+            self.assertEqual(r["cobertura_test_oos"]["con_fuente_n"], 0)
+            path = Path(r["destino"])
+            self.assertTrue(path.is_file())
+            with path.open(encoding="utf-8-sig", newline="") as f:
+                keys = list(csv.DictReader(f))
+            self.assertGreater(len(keys), 0)
+            self.assertEqual(
+                next(x for x in keys if x["nivel"] == "FAMILIA")["total"], "70"
+            )
+            self.assertFalse(r["memoria_productiva_modificada"])
+            self.assertFalse(r["autoriza_operaciones"])
+
+    def test_no_sobrescribe_candidata(self):
+        rows = [row(day*100+k, day, 20.75) for day in range(10,20)
+                for k in range(10)]
+        with tempfile.TemporaryDirectory() as tmp:
+            existing = Path(tmp) / "memoria_ejecutadas_train_candidata.csv"
+            existing.write_bytes(b"no sobrescribir")
+            with self.assertRaisesRegex(FileExistsError, "CANDIDATA_EXISTENTE"):
+                c.preparar_candidata(rows, carpeta=tmp)
+            self.assertEqual(existing.read_bytes(), b"no sobrescribir")
+
+    def test_no_entrena_con_holdout_si_cambia_su_resultado(self):
+        rows = [row(day*100+k, day, 20.75 if k%2 else -25)
+                for day in range(10, 20) for k in range(10)]
+        changed = [dict(x) for x in rows]
+        for item in changed:
+            if int(item["fecha"][8:10]) >= 17:
+                item["resultado"] = "-25"
+        with tempfile.TemporaryDirectory() as tmp1, tempfile.TemporaryDirectory() as tmp2:
+            a = c.preparar_candidata(rows, carpeta=tmp1)
+            b = c.preparar_candidata(changed, carpeta=tmp2)
+            self.assertEqual(Path(a["destino"]).read_bytes(),
+                             Path(b["destino"]).read_bytes())
+            self.assertNotEqual(a["test_oos"], b["test_oos"])
+
+
+if __name__ == "__main__":
+    unittest.main()
