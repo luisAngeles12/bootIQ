@@ -40,6 +40,12 @@ def habilitable_sin_memoria(evidencia, decision):
         return False
     if evidencia.get("accion_precio_requiere_pendiente") is True:
         return False
+    # El detector legado puede marcar permite=True aun sin velas, con
+    # OHLC invalido o en excepcion. No convertir esa ausencia en DIRECTA.
+    if str(evidencia.get("accion_precio") or "").strip().upper() in {
+        "", "SIN_DATOS", "RANGO_INVALIDO", "ERROR", "DIRECCION_INVALIDA",
+    }:
+        return False
     # Fase 5.5: en un bloque PRACTICE fallido se observaron entradas PUT
     # con soporte cercano sin ruptura, autorizadas exclusivamente por
     # bootstrap sin muestra V3. La excepcion no puede anular este riesgo
