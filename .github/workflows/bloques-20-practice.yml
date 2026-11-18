@@ -23,6 +23,7 @@ on:
       - 'tests/test_paridad_pre_buy_practice.py'
       - 'tests/test_price_action_fallo_cerrado_practice.py'
       - 'tests/test_auditoria_precio_iq_practice.py'
+      - 'tests/test_persistencia_precio_iq_practice.py'
       - 'auditoria_precio_iq_practice.py'
       - 'auditar_entradas_bloque20_practice.py'
       - 'historial.py'
@@ -57,5 +58,6 @@ jobs:
           python -m unittest discover -s tests -p 'test_paridad_pre_buy_practice.py' -v
           python -m unittest discover -s tests -p 'test_price_action_fallo_cerrado_practice.py' -v
           python -m unittest discover -s tests -p 'test_auditoria_precio_iq_practice.py' -v
+          python -m unittest discover -s tests -p 'test_persistencia_precio_iq_practice.py' -v
           python -m unittest discover -s tests -p 'test_comparar_bloques_20_practice.py' -v
           python -m unittest discover -s tests -p 'test_auditar_entradas_bloque20_practice.py' -v
