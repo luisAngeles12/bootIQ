@@ -1612,9 +1612,16 @@ def revisar_operaciones_abiertas():
         if resultado is not None:
             op["resultado_pendiente_csv"] = resultado
 
+            # El cierre ya esta confirmado. Leer solamente la cache
+            # local del websocket: no hacer ninguna solicitud al broker.
+            from auditoria_precio_iq_practice import leer_cache_orden
+            precio_iq_auditado = leer_cache_orden(
+                getattr(estado, "Iq", None), op["order_id"]
+            )
             cierre_persistido = actualizar_historial_cierre(
                 op["order_id"],
-                resultado
+                resultado,
+                auditoria_orden_iq_json=precio_iq_auditado,
             )
 
             if not cierre_persistido:
