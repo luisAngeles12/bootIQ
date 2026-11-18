@@ -21,6 +21,59 @@ def rows():
 
 
 class WalkForwardV3Test(unittest.TestCase):
+    def test_legacy_practice_431_y_modernas_101_particion_sin_fuga(self):
+        # Recrea las cantidades auditadas, sin usar CSV personal en CI.
+        # 431 antiguas (cuatro empates) + 101 con PRACTICE explicito.
+        distribucion = {10: 127, 11: 108, 12: 89, 13: 42, 14: 65,
+                        16: 29, 17: 52, 18: 20}
+        registros = []
+        indice = 0
+        for dia, cantidad in distribucion.items():
+            for k in range(cantidad):
+                indice += 1
+                r = row(dia, k, 20.75 if k % 2 else -25)
+                r["order_id"] = str(14400000000 + indice)
+                if dia <= 14:
+                    r["modo_cuenta_configurado"] = ""
+                    r["origen_autoridad"] = "BOOTSTRAP_PRACTICE_SIN_HISTORIAL"
+                    if dia == 10 and k < 4:
+                        r["resultado"] = "0"
+                registros.append(r)
+        registros.append({
+            **row(18, 999, -25),
+            "order_id": "14500000001",
+            "modo_cuenta_configurado": "REAL",
+        })
+        previo = [dict(fila) for fila in registros]
+        r = wf.evaluar_walk_forward(registros)
+        self.assertEqual(registros, previo)
+        self.assertEqual(r["dias_disponibles"], 8)
+        self.assertEqual(r["dias_test_evaluados"], 7)
+        self.assertEqual(r["baseline_dias_test"]["n"], 405)
+        self.assertEqual(r["descartes"]["LEGADO_PRACTICE_DECLARADO_INCLUIDO"], 427)
+        self.assertEqual(r["descartes"]["EMPATE"], 4)
+        self.assertEqual(r["descartes"]["NO_PRACTICE"], 1)
+        self.assertEqual(r["cortes"][0]["dia_test"], "2026-11-11")
+        self.assertEqual(
+            r["cortes"][0]["train_por_procedencia"],
+            {"USUARIO_DECLARADO_LEGADO_SIN_MODO": 123}
+        )
+        self.assertEqual(
+            r["cortes"][-1]["test_por_procedencia"],
+            {"CSV_MODO_PRACTICE": 20}
+        )
+        for corte in r["cortes"]:
+            self.assertEqual(
+                sum(corte["train_por_procedencia"].values()),
+                corte["train_n"]
+            )
+            self.assertEqual(
+                sum(corte["test_por_procedencia"].values()),
+                corte["test"]["n"]
+            )
+        self.assertFalse(r["autoriza_operaciones"])
+        self.assertFalse(r["memoria_productiva_modificada"])
+
     def test_dias_futuros_jamas_entrenan_al_dia_actual(self):
         registros = rows()
         llamados = []
