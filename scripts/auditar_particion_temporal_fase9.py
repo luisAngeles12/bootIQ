@@ -79,6 +79,9 @@ def auditar_particion(
             continue
         dt = datetime.fromisoformat(iso)
         if dt.tzinfo is None or dt.utcoffset() is None:
+            if marca_utc:
+                excluidas["APERTURA_UTC_SIN_ZONA"] += 1
+                continue
             if offset_origen_minutos is None:
                 excluidas["FECHA_SIN_ZONA"] += 1
                 continue
