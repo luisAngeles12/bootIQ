@@ -12,7 +12,7 @@ from pathlib import Path
 from scripts.auditar_historial_fase9 import (
     _txt, _cierre_explicito, _fecha_iso, _resultado_monetario,
 )
-from scripts.auditar_particion_temporal_fase9 import auditar_particion
+from scripts.conciliar_exportacion_iq_fase9 import _monto
 
 
 def _identidad(row, frecuencia):
