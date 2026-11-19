@@ -121,5 +121,67 @@ class AuditarHistorialFase9Tests(unittest.TestCase):
             self.assertEqual(datos["ids_practice_cierre_con_pnl_finito"], 0)
 
 
+    def test_train_oos_requiere_fecha_con_zona_cierre_practice_y_pnl(self):
+        with tempfile.TemporaryDirectory() as carpeta:
+            ruta = Path(carpeta) / "historial_bot.csv"
+            with ruta.open("w", newline="", encoding="utf-8") as archivo:
+                w = csv.DictWriter(archivo, fieldnames=[
+                    "order_id", "estado", "estado_operacion", "resultado",
+                    "modo_cuenta_configurado", "fecha", "origen_autoridad",
+                ])
+                w.writeheader()
+                w.writerows([
+                    {"order_id": "001", "estado": "CERRADA",
+                     "estado_operacion": "OPERADA_DIRECTA",
+                     "resultado": "20.75", "modo_cuenta_configurado": "PRACTICE",
+                     "fecha": "2026-11-19T14:30:00-04:00"},
+                    {"order_id": "002", "estado": "CERRADA",
+                     "estado_operacion": "OPERADA_DIRECTA",
+                     "resultado": "-25.0", "modo_cuenta_configurado": "PRACTICE",
+                     "fecha": "2026-11-19T19:31:00Z"},
+                    {"order_id": "003", "estado": "CERRADA",
+                     "estado_operacion": "OPERADA_DIRECTA",
+                     "resultado": "20.75", "modo_cuenta_configurado": "PRACTICE",
+                     "fecha": "2026-11-19T14:32:00"},
+                    {"order_id": "004", "estado": "ABIERTA",
+                     "estado_operacion": "OPERADA_DIRECTA",
+                     "resultado": "20.75", "modo_cuenta_configurado": "PRACTICE",
+                     "fecha": "2026-11-19T14:33:00-04:00"},
+                    {"order_id": "005", "estado": "CERRADA",
+                     "estado_operacion": "OPERADA_DIRECTA",
+                     "resultado": "0", "modo_cuenta_configurado": "PRACTICE",
+                     "fecha": "2026-11-19T14:34:00-04:00"},
+                    {"order_id": "006", "estado": "CERRADA",
+                     "estado_operacion": "OPERADA_DIRECTA",
+                     "resultado": "20.75", "modo_cuenta_configurado": "",
+                     "fecha": "2026-11-19T14:35:00-04:00"},
+                ])
+            previo = ruta.read_bytes()
+            datos = analizar_historial(ruta)
+            self.assertEqual(datos["candidatas_temporales_practice_preliminares"], 2)
+            self.assertEqual(datos["exclusiones_practice_para_train_oos"], {
+                "FECHA_SIN_ZONA_HORARIA": 1,
+                "PNL_SIN_WIN_LOSS": 1,
+                "SIN_CIERRE_EXPLICITO": 1,
+            })
+            self.assertEqual(datos["primera_fecha_utc_preliminar"],
+                             "2026-11-19T18:30:00+00:00")
+            self.assertEqual(datos["ultima_fecha_utc_preliminar"],
+                             "2026-11-19T19:31:00+00:00")
+            self.assertEqual(previo, ruta.read_bytes())
+
+    def test_sin_zona_y_sin_estado_no_fabrica_candidatos_temporales(self):
+        with tempfile.TemporaryDirectory() as carpeta:
+            ruta = self.crear_csv(carpeta, [
+                {"order_id": "1", "estado_operacion": "OPERADA_DIRECTA",
+                 "resultado": "21.25", "fecha": "2026-11-19T14:30:00",
+                 "modo_cuenta_configurado": "PRACTICE"},
+            ])
+            datos = analizar_historial(ruta)
+            self.assertEqual(datos["candidatas_temporales_practice_preliminares"], 0)
+            self.assertEqual(datos["exclusiones_practice_para_train_oos"],
+                             {"SIN_CIERRE_EXPLICITO": 1})
+
+
 if __name__ == "__main__":
     unittest.main()
