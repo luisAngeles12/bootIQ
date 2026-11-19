@@ -45,6 +45,15 @@ def senal_con_zona(direccion, diagnostico):
 
 
 class DetectorContratoZonaTest(unittest.TestCase):
+    def setUp(self):
+        # Ejercitar el contrato estructural legado con opt-in experimental.
+        # R9-05 mantiene desactivado bootstrap en configuracion oficial.
+        habilitacion = patch.object(
+            b, "PERMITIR_BOOTSTRAP_SIN_MEMORIA", True
+        )
+        habilitacion.start()
+        self.addCleanup(habilitacion.stop)
+
     def probar_conflicto(self, direccion, soporte, resistencia, esperado):
         o, c, h, l = velas(100)
         with patch.object(pa, "lectura_avanzada_price_action",
