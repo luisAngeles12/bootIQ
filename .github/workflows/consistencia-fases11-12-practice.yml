@@ -1,0 +1,27 @@
+name: BootIQ - Fases 11-12 consistencia PRACTICE aislada
+
+on:
+  push:
+    branches: [bootiq-v3-auditoria]
+    paths:
+      - 'validar_consistencia_fases_11_12_practice.py'
+      - 'tests/test_validar_consistencia_fases_11_12_practice.py'
+      - '.github/workflows/consistencia-fases11-12-practice.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  consistencia-practice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compilar sin broker
+        run: python -m py_compile validar_consistencia_fases_11_12_practice.py tests/test_validar_consistencia_fases_11_12_practice.py
+      - name: Regresiones de 20 operaciones, solo sinteticas
+        run: python -m unittest discover -s tests -p 'test_validar_consistencia_fases_11_12_practice.py' -v
