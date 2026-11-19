@@ -155,3 +155,11 @@ Salida local: `python scripts/diagnostico_fuentes_fase9.py reportes_bloques_20_p
 - Añadidas seis pruebas sintéticas sobre ventanas positivas, 60% con neto negativo, leakage de TRAIN, ausencia de cierre OOS, tamaño insuficiente y ventanas móviles.
 - Evidencia GitHub Actions https://github.com/luisAngeles12/bootIQ/actions/runs/44587219365, commit de código `91d00575d70f54f7e7ba300b3a2afc1bafb9e10e`: **655/655 pruebas generales OK (9.314 s)**, 3/3 pruebas de régimen OK (0.011 s), 337 archivos Python con sintaxis correcta. Sin conexión al broker.
 - El historial local todavía no fue aportado y no está versionado; la herramienta no se ha corrido sobre las 580 filas reales. El 60% consistente con neto positivo sigue **NO DEMOSTRADO**. Bootstrap sin memoria sigue suspendido y REAL prohibido.
+
+## R9-14 — timestamp UTC del registro de apertura, sin cambios de trading
+
+- `operaciones.py` ahora escribe `fecha_apertura_registro_local_utc = datetime.now(timezone.utc).isoformat()` junto al registro original `fecha` de apertura; la nueva marca se toma en el momento de persistencia, no es fill del broker. El campo se añadió a `historial.COLUMNAS_HISTORIAL`. La fecha antigua se conserva sin convertirla ni reescribir registros previos.
+- `scripts/auditar_particion_temporal_fase9.py` prioriza la marca nueva cuando existe, contabiliza aperturas UTC explícitas versus `fecha` legacy, y falla cerrada si la marca explícita resulta inválida o carece de huso horario. `--offset-origen-minutos` solo afecta fechas legacy sin zona, nunca marcas UTC explícitas.
+- Tres pruebas nuevas verifican prioridad, prohibición de fallback silencioso y que la marca está en la telemetría del registro de apertura.
+- **GitHub Actions verificado**: https://github.com/luisAngeles12/bootIQ/actions/runs/44587290025 en commit `54ad1cb7598ecb33fbb27ecf9f4ca8ba98379032`, suite **658/658 OK** (9.280 s), 3/3 regresiones de régimen OK, sintaxis de 337 fuentes Python OK. No conecta al broker.
+- Se mantiene `apto_para_memoria_productiva=false`, no se confirma cierre real del broker ni la rentabilidad del 60%. Cuenta PRACTICE únicamente, bootstrap sin memoria bloqueado.
