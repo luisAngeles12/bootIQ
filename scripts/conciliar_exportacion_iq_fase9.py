@@ -151,6 +151,21 @@ def conciliar_exportacion(historial, exportacion, ids_objetivo=None):
             # localmente el resultado, salvo reloj/fuente inconsistente.
             motivos["CIERRE_BROKER_POSTERIOR_CONCILIACION_BOT"] += 1
             continue
+        # R9-25.16: si existe el instante original de apertura registrado
+        # por BootIQ, IQ no puede reportar un cierre anterior a esa apertura.
+        # Nunca se interpreta la fecha legacy sin zona como UTC.
+        marca_apertura = str(f.get("fecha_apertura_registro_local_utc") or "").strip()
+        if marca_apertura:
+            apertura = _momento_utc(marca_apertura)
+            if apertura is None:
+                motivos["BOT_APERTURA_UTC_INVALIDA"] += 1
+                continue
+            if cuando < apertura:
+                motivos["CIERRE_BROKER_ANTERIOR_APERTURA_BOT"] += 1
+                continue
+            if observado < apertura:
+                motivos["CONCILIACION_BOT_ANTERIOR_APERTURA"] += 1
+                continue
         conciliadas += 1
         pnl_conciliado += monto
 
