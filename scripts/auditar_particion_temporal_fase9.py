@@ -67,8 +67,8 @@ def auditar_particion(
         if not _cierre_explicito(_txt(f.get("estado"))):
             excluidas["SIN_CIERRE_EXPLICITO"] += 1
             continue
-        pnl_tipo = _resultado_monetario(f.get("resultado"))
-        if pnl_tipo not in {"GANANCIA", "PERDIDA"}:
+        pnl = _monto(f.get("resultado"))
+        if pnl is None or pnl == 0:
             excluidas["RESULTADO_NO_VALIDO_TRAIN"] += 1
             continue
         # Un registro nuevo con marca UTC explícita tiene prioridad.
