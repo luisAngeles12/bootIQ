@@ -36,6 +36,6 @@ Ninguna alcanza 60% en estos datos; seleccionar la mejor entre diez familias int
 
 Se exige histórico original sin duplicados/leakage, baseline congelada, validación OOS posterior independiente, operaciones PRACTICE conciliadas con monto/payout/fill, todas las ventanas de 20 (y bloques no solapados) con por lo menos 12 WIN y neto positivo, familias con muestra suficiente, intervalos de incertidumbre, frecuencia y pérdida máxima. Una muestra favorable no garantiza resultados futuros.
 
-Un evaluador aislado de consistencia PRACTICE por ventanas y familia fue ejecutado localmente con **10/10 pruebas sintéticas OK**; estas pruebas NO son una ejecución con datos locales del usuario, NO son pruebas del broker y NO certifican las fases. Sus archivos se entregaron como artefacto de esta conversación y no se asume que formen parte del repositorio.
+Un evaluador aislado de consistencia PRACTICE por ventanas y familia fue ejecutado localmente con **11/11 pruebas sintéticas OK**; estas pruebas NO son una ejecución con datos locales del usuario, NO son pruebas del broker y NO certifican las fases. Sus archivos se entregaron como artefacto de esta conversación y no se asume que formen parte del repositorio.
 
 **Limitación actual:** los CSV originales y el ledger conciliado no se encuentran en GitHub. No declarar éxito sin ellos.
