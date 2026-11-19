@@ -53,3 +53,10 @@ Salida local: `python scripts/diagnostico_fuentes_fase9.py reportes_bloques_20_p
 - En `tests/test_bootstrap_practice.py`, la matriz estructural previa sigue probándose solo con habilitación explícita de bootstrap, y se añade regresión para confirmar veto del modo suspendido.
 - **Pruebas de este nuevo cambio pendientes**. La suite confirmada de 619 pruebas es anterior a R9-05. El objetivo no es crear artificialmente un 60% reduciendo entradas a cero; para volver a operar con evidencia, hace falta construir/validar la memoria TRAIN y su rendimiento OOS independiente, luego correr PRACTICE nuevo.
 - No activar bootstrap simplemente para obtener frecuencia; tampoco entrenar y evaluar sobre los mismos 20 resultados, ni declarar el 60% estable por un bloque favorable.
+
+## R9-05 regresión posterior a suspensión
+
+- Salida local reportada: 11/11 pruebas de `tests.test_bootstrap_practice` OK; la suite general corrió 620 casos y **falló 3**, todos en fixtures legados de `test_bootstrap_price_action_context` y `test_integracion_bootstrap_memoria_fase8` que esperaban la excepción sin activarla.
+- Corrección limitada a tests: ambas clases habilitan el modo bootstrap explícitamente en `setUp` para conservar la cobertura de reglas estructurales y la integración histórica; el valor productivo `PERMITIR_BOOTSTRAP_SIN_MEMORIA=False` **no se cambia**.
+- Regresión nueva: `test_r9_suspension_default_no_autoriza_a_traves_de_cerebro`, que demuestra el veto con el Cerebro unificado cuando el permiso se desactiva.
+- **La nueva suite estimada es de 621 pruebas; ejecución local pendiente.** No declarar reparación confirmada antes de la salida completa.
