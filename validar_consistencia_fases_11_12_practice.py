@@ -3,7 +3,7 @@ import argparse
 import csv
 import json
 from datetime import datetime, timezone
-from math import isfinite
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 RESULTADOS = {"WIN", "LOSS", "EMPATE"}
@@ -38,11 +38,15 @@ def evaluar(filas, min_winrate=60, tamano=20):
         if resultado not in RESULTADOS:
             raise ValueError("RESULTADO_NO_CERRADO")
         try:
-            neto = float(fila["neto"])
-        except (ValueError, TypeError) as e:
+            neto = Decimal(str(fila["neto"]).strip())
+        except (InvalidOperation, ValueError, TypeError) as e:
             raise ValueError("NETO_INVALIDO") from e
-        if not isfinite(neto):
+        if not neto.is_finite():
             raise ValueError("NETO_INVALIDO")
+        # El ledger liquida importes monetarios a centavos. Rechazar
+        # subcentavos evita aprobar una ventana cuyo neto visible es 0.00.
+        if neto * 100 != (neto * 100).to_integral_value():
+            raise ValueError("NETO_FRACCION_DE_CENTAVO")
         if ((resultado == "WIN" and neto <= 0)
                 or (resultado == "LOSS" and neto >= 0)
                 or (resultado == "EMPATE" and neto != 0)):
@@ -58,12 +62,12 @@ def evaluar(filas, min_winrate=60, tamano=20):
     def medida(bloque):
         w = sum(o["resultado"] == "WIN" for o in bloque)
         l = sum(o["resultado"] == "LOSS" for o in bloque)
-        n = sum(o["neto"] for o in bloque)
+        n = sum((o["neto"] for o in bloque), Decimal("0"))
         return {"operaciones": len(bloque), "wins": w, "losses": l,
                 "empates": len(bloque) - w - l,
                 "acierto_pct": round(100 * w / len(bloque), 2) if bloque else None,
-                "neto": round(n, 2),
-                "cumple": bool(len(bloque) == tamano and w >= 12 and n > 0)}
+                "neto": float(n),
+                "cumple": bool(len(bloque) == tamano and w >= 12 and n >= Decimal("0.01"))}
 
     ventanas = [medida(ordenes[i:i+tamano])
                 for i in range(max(0, len(ordenes)-tamano+1))]
