@@ -32,11 +32,31 @@ def diagnosticar(ruta):
         return {"estado": "FILAS_CON_COLUMNAS_EXTRA", "apto_para_evaluar": False,
                 "ruta": str(ruta)}
     faltantes = [c for c in CAMPOS_LEDGER if c not in campos]
-    cerradas = sum(str(f.get("estado") or "").upper() == "CERRADA" for f in filas)
+    incompletas = sum(
+        any(not str(f.get(c) or "").strip() for c in CAMPOS_LEDGER)
+        for f in filas
+    ) if not faltantes else 0
+    no_cerradas = sum(
+        str(f.get("estado") or "").strip().upper() != "CERRADA"
+        for f in filas
+    ) if "estado" in campos else 0
+    cerradas = sum(
+        str(f.get("estado") or "").strip().upper() == "CERRADA"
+        for f in filas
+    )
+    if faltantes:
+        estado = "EVIDENCIA_LEDGER_INSUFICIENTE"
+    elif incompletas:
+        estado = "FILAS_LEDGER_INCOMPLETAS"
+    elif no_cerradas:
+        estado = "OPERACIONES_NO_CERRADAS"
+    else:
+        estado = "COMPATIBLE_ESTRUCTURALMENTE"
     return {
-        "estado": "COMPATIBLE_ESTRUCTURALMENTE" if not faltantes
-                  else "EVIDENCIA_LEDGER_INSUFICIENTE",
-        "apto_para_evaluar": not faltantes and bool(filas),
+        "estado": estado,
+        "apto_para_evaluar": not faltantes and bool(filas) and not incompletas and not no_cerradas,
+        "filas_incompletas": incompletas,
+        "filas_no_cerradas": no_cerradas,
         "ruta": str(ruta),
         "filas": len(filas),
         "cerradas_marcadas": cerradas,
