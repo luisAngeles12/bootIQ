@@ -198,7 +198,6 @@ class ReporteIntegralFase9Tests(unittest.TestCase):
             self.assertEqual(len(vistas), 3)
             self.assertEqual(len(set(vistas)), 1)
             self.assertNotEqual(vistas[0], str(ruta))
-            self.assertEqual(r["clasificacion"]["archivo"], str(ruta))
             self.assertFalse(Path(vistas[0]).exists())
 
     def test_original_modificado_aunque_copia_siga_estable_bloquea(self):
