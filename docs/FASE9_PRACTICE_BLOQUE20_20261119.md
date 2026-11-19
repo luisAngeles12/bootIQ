@@ -75,3 +75,12 @@ Salida local: `python scripts/diagnostico_fuentes_fase9.py reportes_bloques_20_p
 - Reporta además si existe la ruta efectiva de memoria según `BOOTIQ_RUTA_APRENDIZAJE` / valor por defecto. **No construye memoria nueva** ni hace TRAIN/OOS con datos no verificados.
 - Tres pruebas adicionales en `tests/test_inventario_insumos_memoria_fase9.py` comprueban invariancia de archivos, omisión de `venv` y detección de memoria por ruta configurada.
 - **Pendiente ejecutar** las tres pruebas y la suite general (se esperan 624 casos); la única suite confirmada hasta ahora es 621 OK. Después, revisar inventario local y seleccionar fuente temporal validada.
+
+## R9-06 confirmado y R9-07 en preparación (19-11-2026)
+
+- Pull confirmado hasta `50958dd`; 3/3 regresiones de inventario y **624/624 pruebas generales OK (22.184 s)**.
+- Inventario local efectivo: **solo un CSV coincidente con los patrones**, `historial_bot.csv`, de **1,046,685 bytes**. Posee `fecha`, `estado_operacion`, `order_id`, `resultado`, `modo_cuenta_configurado`, `origen_autoridad` y más columnas útiles para auditar procedencia.
+- `aprendizaje_historico_bootiq_F4_CC2.csv` no existe en la ruta configurada al ejecutar el inventario. Los archivos en carpetas temporales generados por tests no representan una memoria productiva aprobada.
+- Se incorpora `scripts/auditar_historial_fase9.py` para contar el universo por modo, estado, etiqueta, autoridad, repetición de `order_id` y disponibilidad de fechas. Las candidatas preliminares exigen `PRACTICE`, `order_id`, estado no pendiente y etiqueta `WIN/LOSS` sin transformar PNL numérico en resultado.
+- El diagnóstico **no es generación automática de memoria** y no promete que los IDs pertenezcan a ejecuciones verificadas del broker. Duplicaciones (por ejemplo apertura+cierre de una misma orden) serán examinadas antes de deduplicar y separar TRAIN/OOS.
+- Se agregaron 3 pruebas unitarias; suite estimada **627**. Aún sin nueva ejecución local. Bootstrap sigue desactivado; REAL no se habilita.
