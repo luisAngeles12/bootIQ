@@ -5,6 +5,8 @@ on:
     branches: [bootiq-v3-auditoria]
     paths:
       - 'validar_consistencia_fases_11_12_practice.py'
+      - 'analizar_robustez_fase11_practice.py'
+      - 'tests/test_analizar_robustez_fase11_practice.py'
       - 'diagnosticar_ledger_fases11_12_practice.py'
       - 'tests/test_diagnosticar_ledger_fases11_12_practice.py'
       - 'tests/test_validar_consistencia_fases_11_12_practice.py'
@@ -24,8 +26,10 @@ jobs:
         with:
           python-version: '3.11'
       - name: Compilar sin broker
-        run: python -m py_compile validar_consistencia_fases_11_12_practice.py tests/test_validar_consistencia_fases_11_12_practice.py diagnosticar_ledger_fases11_12_practice.py tests/test_diagnosticar_ledger_fases11_12_practice.py
+        run: python -m py_compile validar_consistencia_fases_11_12_practice.py tests/test_validar_consistencia_fases_11_12_practice.py diagnosticar_ledger_fases11_12_practice.py tests/test_diagnosticar_ledger_fases11_12_practice.py analizar_robustez_fase11_practice.py tests/test_analizar_robustez_fase11_practice.py
       - name: Regresiones de 20 operaciones, solo sinteticas
         run: python -m unittest discover -s tests -p 'test_validar_consistencia_fases_11_12_practice.py' -v
       - name: No inventar conciliacion del historial oficial
         run: python -m unittest discover -s tests -p 'test_diagnosticar_ledger_fases11_12_practice.py' -v
+      - name: Incertidumbre estadistica de operaciones PRACTICE
+        run: python -m unittest discover -s tests -p 'test_analizar_robustez_fase11_practice.py' -v
