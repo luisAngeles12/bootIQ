@@ -36,7 +36,8 @@ class PersistenciaPrecioTest(unittest.TestCase):
         with ruta.open("w", encoding="utf-8-sig", newline="") as f:
             w = csv.DictWriter(f, fieldnames=[
                 "order_id", "estado", "resultado",
-                "auditoria_orden_iq_json", "modo_cuenta_configurado"
+                "auditoria_orden_iq_json", "modo_cuenta_configurado",
+                "fecha_conciliacion_local_utc",
             ])
             w.writeheader()
             w.writerows([
@@ -88,6 +89,52 @@ class PersistenciaPrecioTest(unittest.TestCase):
             cierre = cargar_cierre(ruta)
             self.assertFalse(cierre("100", math.nan))
             self.assertEqual(ruta.read_bytes(), antes)
+
+
+    def test_marca_utc_se_persiste_solo_en_order_id_cerrada(self):
+        from datetime import datetime, timezone
+        with tempfile.TemporaryDirectory() as tmp:
+            ruta = Path(tmp) / "historial.csv"
+            self.crear(ruta)
+            cierre = cargar_cierre(ruta)
+            self.assertTrue(cierre("100", -25))
+            filas = self.leer(ruta)
+            marca = filas[0]["fecha_conciliacion_local_utc"]
+            fecha = datetime.fromisoformat(marca)
+            self.assertIsNotNone(fecha.utcoffset())
+            self.assertEqual(fecha.utcoffset().total_seconds(), 0)
+            self.assertEqual(filas[1]["fecha_conciliacion_local_utc"], "")
+            self.assertEqual(filas[1]["estado"], "ABIERTA")
+            # Una segunda persistencia no reescribe la marca original.
+            self.assertTrue(cierre("100", -25))
+            self.assertEqual(self.leer(ruta)[0]["fecha_conciliacion_local_utc"], marca)
+
+    def test_fallo_reemplazo_no_publica_marca_utc(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as tmp:
+            ruta = Path(tmp) / "historial.csv"
+            self.crear(ruta)
+            antes = ruta.read_bytes()
+            cierre = cargar_cierre(ruta)
+            with patch("os.replace", side_effect=OSError("interrumpido")):
+                self.assertFalse(cierre("100", 20.75))
+            self.assertEqual(ruta.read_bytes(), antes)
+            self.assertEqual(self.leer(ruta)[0]["fecha_conciliacion_local_utc"], "")
+
+    def test_historico_sin_nueva_columna_conserva_compatibilidad(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ruta = Path(tmp) / "historial_legacy.csv"
+            with ruta.open("w", encoding="utf-8-sig", newline="") as archivo:
+                writer = csv.DictWriter(archivo, fieldnames=[
+                    "order_id", "estado", "resultado",
+                ])
+                writer.writeheader()
+                writer.writerow({"order_id": "001", "estado": "ABIERTA", "resultado": ""})
+            cierre = cargar_cierre(ruta)
+            self.assertTrue(cierre("001", 21.25))
+            self.assertEqual(self.leer(ruta)[0]["estado"], "CERRADA")
+            self.assertEqual(self.leer(ruta)[0]["resultado"], "21.25")
+            self.assertNotIn("fecha_conciliacion_local_utc", self.leer(ruta)[0])
 
 
 if __name__ == "__main__":
