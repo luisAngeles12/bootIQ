@@ -168,5 +168,64 @@ class ReporteIntegralFase9Tests(unittest.TestCase):
             self.assertFalse(r["memoria_generada"])
 
 
+    def test_todas_etapas_usan_copia_privada_no_csv_activo(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ruta = self.crear(tmp, datos_validos())
+            vistas = []
+            clasificar = modulo_reporte.clasificar_historial
+            particionar = modulo_reporte.auditar_particion
+            evaluar = modulo_reporte.evaluar_oos
+
+            def leer_clasificacion(p):
+                vistas.append(str(p))
+                return clasificar(p)
+
+            def leer_particion(p):
+                vistas.append(str(p))
+                return particionar(p)
+
+            def leer_oos(p, exportacion_iq=None):
+                vistas.append(str(p))
+                return evaluar(p, exportacion_iq=exportacion_iq)
+
+            with patch.object(modulo_reporte, "clasificar_historial",
+                              side_effect=leer_clasificacion), patch.object(
+                modulo_reporte, "auditar_particion", side_effect=leer_particion
+            ), patch.object(modulo_reporte, "evaluar_oos",
+                            side_effect=leer_oos):
+                r = reporte_integral(ruta)
+            self.assertEqual(r["estado"], "DIAGNOSTICO_COMPLETO_SIN_CERTIFICACION")
+            self.assertEqual(len(vistas), 3)
+            self.assertEqual(len(set(vistas)), 1)
+            self.assertNotEqual(vistas[0], str(ruta))
+            self.assertEqual(r["clasificacion"]["archivo"], str(ruta))
+            self.assertFalse(Path(vistas[0]).exists())
+
+    def test_original_modificado_aunque_copia_siga_estable_bloquea(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ruta = self.crear(tmp, datos_validos())
+            original = modulo_reporte.clasificar_historial
+
+            def alterar_original_tras_clasificar(copia):
+                resultado = original(copia)
+                with ruta.open("a", encoding="utf-8") as archivo:
+                    archivo.write("CAMBIO_EXTERNO\\n")
+                return resultado
+
+            with patch.object(modulo_reporte, "clasificar_historial",
+                              side_effect=alterar_original_tras_clasificar):
+                r = reporte_integral(ruta)
+            self.assertEqual(r["causa"], "FUENTE_MODIFICADA_DURANTE_AUDITORIA")
+            self.assertNotIn("evaluacion_descriptiva", r)
+
+    def test_no_permita_mismo_csv_como_exportacion_broker(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ruta = self.crear(tmp, datos_validos())
+            r = reporte_integral(ruta, ruta)
+            self.assertEqual(r["causa"], "MISMO_ARCHIVO_NO_ES_EXPORTACION_INDEPENDIENTE")
+            self.assertFalse(r["habilita_trading"])
+            self.assertNotIn("evaluacion_descriptiva", r)
+
+
 if __name__ == "__main__":
     unittest.main()
