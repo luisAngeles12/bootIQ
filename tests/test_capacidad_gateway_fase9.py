@@ -46,6 +46,19 @@ class CapacidadGatewayFase9Tests(unittest.TestCase):
     def _ocupada(self, activo):
         return {"activo": activo, "expiracion_iq": self.timestamp + 60}
 
+    def test_barrera_historica_fuerte_bloquea_orden_directa(self):
+        senal = self._senal()
+        senal["bloqueo_barrera_historica_fuerte"] = True
+        self.assertFalse(abrir_operacion(senal))
+        self.iq.buy.assert_not_called()
+
+    def test_barrera_historica_fuerte_bloquea_protocolo_confirmado(self):
+        senal = self._senal(decision="OPERAR_CON_PROTOCOLO")
+        senal["protocolo_live_vela_entrada_from"] = senal["vela_senal_from"]
+        senal["bloqueo_barrera_historica_fuerte"] = True
+        self.assertFalse(abrir_operacion(senal))
+        self.iq.buy.assert_not_called()
+
     def test_cinco_posiciones_vivas_bloquean_envio_directo(self):
         estado.operaciones_abiertas = [
             self._ocupada("ASSET_" + str(i)) for i in range(5)
