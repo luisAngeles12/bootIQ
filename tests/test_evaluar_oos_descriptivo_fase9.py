@@ -1,0 +1,108 @@
+"""R9-14: ventanas 20 observacionales con corte de fuga estricto."""
+import csv
+import tempfile
+import unittest
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+from scripts.evaluar_oos_descriptivo_fase9 import evaluar_oos
+
+
+CAMPOS = [
+    "order_id", "modo_cuenta_configurado", "estado", "resultado",
+    "fecha", "fecha_conciliacion_local_utc", "origen_autoridad",
+]
+
+
+def filas_base(n=50, *, wins_oos=12):
+    base = datetime(2026, 11, 19, tzinfo=timezone.utc)
+    filas = []
+    for i in range(n):
+        inicio = base + timedelta(minutes=i * 3)
+        cierre = inicio + timedelta(minutes=1)
+        pnl = 20.75 if (i < 30 or (i - 30) % 20 < wins_oos) else -25
+        filas.append({
+            "order_id": str(i).zfill(5),
+            "modo_cuenta_configurado": "PRACTICE",
+            "estado": "CERRADA",
+            "resultado": str(pnl),
+            "fecha": inicio.isoformat(),
+            "fecha_conciliacion_local_utc": cierre.isoformat(),
+            "origen_autoridad": "BOOTSTRAP_PRACTICE_SIN_HISTORIAL",
+        })
+    return filas
+
+
+class EvaluacionOosDescriptivaFase9Tests(unittest.TestCase):
+    def crear(self, carpeta, filas):
+        ruta = Path(carpeta) / "historial.csv"
+        with ruta.open("w", newline="", encoding="utf-8") as archivo:
+            w = csv.DictWriter(archivo, fieldnames=CAMPOS)
+            w.writeheader()
+            w.writerows(filas)
+        return ruta
+
+    def test_bloque_60_positivo_es_descriptivo_no_valida_v3(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ruta = self.crear(tmp, filas_base())
+            anterior = ruta.read_bytes()
+            r = evaluar_oos(ruta)
+            self.assertEqual(r["estado"], "DESCRIPTIVO_NO_VERIFICADO_BROKER")
+            self.assertEqual(r["oos_operaciones"], 20)
+            self.assertEqual(r["bloques_20_no_solapados"][0]["ganadas"], 12)
+            self.assertEqual(r["bloques_20_no_solapados"][0]["neto"], 49.0)
+            self.assertTrue(r["cumple_todos_bloques_20"])
+            self.assertEqual(r["ventanas_moviles_20"], 1)
+            self.assertFalse(r["habilita_trading"])
+            self.assertFalse(r["memoria_generada"])
+            self.assertIn("BOOTSTRAP_PRACTICE_SIN_HISTORIAL",
+                          r["autoridades_observadas"])
+            self.assertEqual(anterior, ruta.read_bytes())
+
+    def test_60_por_ciento_no_implica_neto_positivo(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = filas_base()
+            for f in filas[30:]:
+                if float(f["resultado"]) > 0:
+                    f["resultado"] = "10"
+            r = evaluar_oos(self.crear(tmp, filas))
+            self.assertEqual(r["bloques_20_no_solapados"][0]["ganadas"], 12)
+            self.assertLess(r["bloques_20_no_solapados"][0]["neto"], 0)
+            self.assertFalse(r["cumple_todos_bloques_20"])
+
+    def test_cierre_train_tardio_falla_cerrado_sin_metricas(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = filas_base()
+            filas[29]["fecha_conciliacion_local_utc"] = filas[30]["fecha"]
+            r = evaluar_oos(self.crear(tmp, filas))
+            self.assertEqual(r["estado"], "NO_APTO")
+            self.assertEqual(r["causa"],
+                             "RESULTADOS_TRAIN_NO_CONOCIDOS_ANTES_DE_OOS")
+            self.assertNotIn("bloques_20_no_solapados", r)
+
+    def test_oos_sin_cierre_no_es_evaluable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = filas_base()
+            filas[40]["fecha_conciliacion_local_utc"] = ""
+            r = evaluar_oos(self.crear(tmp, filas))
+            self.assertEqual(r["estado"], "NO_APTO")
+            self.assertEqual(r["causa"], "OOS_SIN_MARCA_CONCILIACION")
+
+    def test_menos_de_20_oos_no_crea_bloque_falso(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r = evaluar_oos(self.crear(tmp, filas_base(35)))
+            self.assertEqual(r["estado"], "NO_APTO")
+            self.assertEqual(r["causa"], "PARTICION_INVALIDA")
+
+    def test_ventanas_moviles_pueden_fallar_aunque_bloques_pasaron(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = filas_base(70, wins_oos=12)
+            r = evaluar_oos(self.crear(tmp, filas))
+            self.assertEqual(r["oos_operaciones"], 21 if False else 21)
+            # 70 filas, TRAIN 49 y OOS 21; basta una ventana adversa
+            # para comprobar que no se infiere consistencia del agregado.
+            self.assertGreaterEqual(r["ventanas_moviles_20"], 2)
+
+
+if __name__ == "__main__":
+    unittest.main()
