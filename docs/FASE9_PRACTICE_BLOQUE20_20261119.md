@@ -198,3 +198,13 @@ Salida local: `python scripts/diagnostico_fuentes_fase9.py reportes_bloques_20_p
 - No modifica las reglas de entrada, filtros, montos ni el motor de aprendizaje; no crea memoria, no arranca bot y no habilita REAL.
 - Cinco pruebas nuevas cubren familias submuestreadas, familia ausente, familia con 20 registros, empate dentro de OOS y operación pendiente. Validación CI: [GitHub Actions 44598153294](https://github.com/luisAngeles12/bootIQ/actions/runs/44598153294), commit `c65d69b95b40c1d9eb3ff8e0752afef99e9785c8`: **683/683** pruebas generales OK (10.884 s), **3/3** régimen OK (0.013 s), sintaxis de 339 Python OK.
 - Estos casos son sintéticos. El objetivo de >=60% sostenido y neto positivo sigue sin evidencia real suficiente.
+
+## R9-19 — integridad del universo PRACTICE ANTES del corte TRAIN/OOS
+
+- Hallazgo causal: el corte TRAIN/OOS se obtenía de filas ya filtradas a `estado=CERRADA` y PNL distinto de cero. Empates, operaciones abiertas o fechas inválidas previas al corte podían desplazar la posición de OOS, permitiendo un denominador sesgado.
+- `scripts/auditar_particion_temporal_fase9.py` contabiliza ahora `filas_practice_declaradas`, `filas_sin_modo`, `filas_practice_no_admisibles` y `universo_practice_completo`. Las filas sin modo permanecen de origen INDETERMINADO, nunca se promueven a PRACTICE.
+- `scripts/evaluar_oos_descriptivo_fase9.py` impide publicar métricas (`NO_APTO / UNIVERSO_PRACTICE_INCOMPLETO`) cuando existen filas PRACTICE excluidas por cualquier causa, incluso **antes** del primer OOS, o filas sin modo que impiden establecer el universo completo. La partición sigue siendo diagnóstica para explicar exclusiones, no licencia de entrenamiento.
+- Tres pruebas de regresión cubren empate anterior al corte, fecha PRACTICE inválida antes del corte y cuenta sin modo. Se ajustaron tres expectativas anteriores para reconocer el nuevo bloqueo anticipado.
+- La primera ejecución CI detectó una expectativa antigua en una prueba de apertura corrupta (`OOS_APERTURA_UTC_INVALIDA`); se corrigió la expectativa porque ahora se bloquea antes con `UNIVERSO_PRACTICE_INCOMPLETO`. No se relajó la validación.
+- CI final **verificada por GitHub Actions**: commit `3ef9efddc1dabf95138bc90d47763ee0db105821`, [run 44598993687](https://github.com/luisAngeles12/bootIQ/actions/runs/44598993687): **686/686 pruebas generales OK** (10.117s), **3/3** de régimen OK (0.012s), 339 Python verificados sintácticamente, sin broker.
+- Sin cambios en estrategia, TOP20, umbrales, SUCIO/CAÓTICO, temporización, expiración, órdenes, memoria productiva ni permisos REAL. La meta >=60% sostenible y PNL positivo permanece sin prueba PRACTICE independiente.
