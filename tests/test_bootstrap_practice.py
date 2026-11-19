@@ -36,6 +36,23 @@ def evidencia():
 
 
 class BootstrapPracticeTest(unittest.TestCase):
+    def setUp(self):
+        # Las pruebas históricas ejercitan los filtros de la excepción
+        # con autorización experimental explícita, no el valor de producción.
+        self.bootstrap_habilitado = patch.object(
+            b, "PERMITIR_BOOTSTRAP_SIN_MEMORIA", True
+        )
+        self.bootstrap_habilitado.start()
+        self.addCleanup(self.bootstrap_habilitado.stop)
+
+    def test_suspension_por_defecto_bloquea_incluso_setup_valido(self):
+        with patch.object(b, "MODO_CUENTA", "PRACTICE"), patch.object(
+            b, "PERMITIR_BOOTSTRAP_SIN_MEMORIA", False
+        ):
+            self.assertFalse(
+                b.habilitable_sin_memoria(evidencia(), decision_sin_datos())
+            )
+
     def test_autoriza_solo_si_es_unicamente_falta_de_memoria(self):
         with patch.object(b, "MODO_CUENTA", "PRACTICE"):
             self.assertTrue(b.habilitable_sin_memoria(evidencia(), decision_sin_datos()))
