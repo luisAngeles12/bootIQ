@@ -24,6 +24,19 @@ def _metricas(bloque):
     positivos = sum(x for x in pnl if x > 0)
     negativos = -sum(x for x in pnl if x < 0)
     neto = sum(pnl)
+    # Drawdown de PNL acumulado, con capital inicial abstracto 0.
+    # No confundir con drawdown porcentual de la cuenta PRACTICE.
+    acumulado = 0.0
+    maximo = 0.0
+    drawdown = 0.0
+    racha_perdidas = 0
+    peor_racha = 0
+    for x in pnl:
+        acumulado += x
+        maximo = max(maximo, acumulado)
+        drawdown = max(drawdown, maximo - acumulado)
+        racha_perdidas = racha_perdidas + 1 if x < 0 else 0
+        peor_racha = max(peor_racha, racha_perdidas)
     return {
         "operaciones": n,
         "ganadas": wins,
@@ -32,6 +45,8 @@ def _metricas(bloque):
         "neto": round(neto, 2),
         "expectativa_por_operacion": round(neto / n, 4) if n else None,
         "profit_factor": round(positivos / negativos, 4) if negativos else None,
+        "drawdown_maximo_unidades": round(drawdown, 2),
+        "racha_maxima_perdidas": peor_racha,
         "cumple_60_y_neto_positivo": n == 20 and wins >= 12 and neto > 0,
     }
 
@@ -115,16 +130,31 @@ def evaluar_oos(ruta, minimo_train=20, minimo_oos=20, exportacion_iq=None):
     cumple = all(b["cumple_60_y_neto_positivo"] for b in bloques)
     cumple_movil = all(b["cumple_60_y_neto_positivo"] for b in ventanas)
     autoridades = sorted({x[3] for x in oos})
+    resumen = _metricas(oos)
+    restantes = len(oos) % 20
+    peores_bloques = [
+        {"desde": b["desde"], "hasta": b["hasta"],
+         "ganadas": b["ganadas"], "neto": b["neto"]}
+        for b in bloques if not b["cumple_60_y_neto_positivo"]
+    ]
     return {
         **base, "estado": "DESCRIPTIVO_NO_VERIFICADO_BROKER",
         "oos_operaciones": len(oos),
+        "resumen_oos_descriptivo": resumen,
+        "bloques_20_completos": len(bloques),
+        "operaciones_restantes_sin_bloque_completo": restantes,
         "bloques_20_no_solapados": bloques,
+        "bloques_20_que_incumplen": peores_bloques,
+        "peor_winrate_ventana_20": min(v["winrate_pct"] for v in ventanas),
+        "peor_neto_ventana_20": min(v["neto"] for v in ventanas),
         "ventanas_moviles_20": len(ventanas),
         "ventanas_moviles_20_que_cumplen": sum(
             b["cumple_60_y_neto_positivo"] for b in ventanas
         ),
         "cumple_todos_bloques_20": cumple,
         "cumple_todas_ventanas_moviles_20": cumple_movil,
+        "evidencia_sostenida_60_pct": False,
+        "calidad_evidencia": "DESCRIPTIVO_HISTORICO_NO_INDEPENDIENTE",
         "autoridades_observadas": autoridades,
         "cotejo_offline": cotejo,
         "origen_broker_independiente_certificado": False,
