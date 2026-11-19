@@ -109,3 +109,12 @@ Salida local: `python scripts/diagnostico_fuentes_fase9.py reportes_bloques_20_p
 - Commit de pruebas `f799d03e08bd7da831c712a838d94e009a662776`; GitHub Actions `44579835641`: **632/632 OK** (6.997 s), más 3/3 de auditoría de régimen, sintaxis OK, sin broker.
 - El historial local de 580 filas no está en GitHub ni disponible para GitHub Actions: no afirmar cantidad de candidatas R9-09 para ese historial hasta evaluarlo directamente. Tampoco confundir candidatas preliminares con órdenes broker-verificadas ni con memoria lista para producción.
 - Bootstrap desactivado por defecto, PRACTICE exclusivamente, no se modifica estrategia, timing, TOP20, stops ni expiración.
+
+## R9-10 — corte temporal TRAIN/OOS de solo lectura (CI validado)
+
+- Se añadió `scripts/auditar_particion_temporal_fase9.py` para auditar el posible corte TRAIN/OOS sobre cierres PRACTICE con modo explícito, estado de cierre, `order_id` único globalmente, PNL finito no cero y fecha ISO con offset. El diagnóstico rechaza por completo los IDs duplicados, cualquiera que sea su modo, y cuenta exclusiones.
+- No divide órdenes con el mismo instante UTC. Exige por defecto al menos 20 registros para TRAIN y 20 OOS, y aproxima 70%/30% solo cuando respeta esos mínimos. La evaluación aún **no** se ejecuta y los resultados de la partición no constituyen validación prospectiva.
+- `tests/test_auditar_particion_temporal_fase9.py` incorpora seis pruebas sintéticas sobre orden temporal, simultaneidad, duplicados, modos/estados/resultados excluidos, columnas faltantes y ausencia de corte.
+- **Validación automática completada:** GitHub Actions `44581371569`, commit `36e8d47a596e434fb875a1a422efcfd921f766f1`: 638/638 pruebas generales OK (9.226 s), 3/3 pruebas de régimen OK (0.011 s), sintaxis correcta; sin iniciar `bot.py` ni conectar broker.
+- `historial_bot.csv` real continúa siendo exclusivamente local. No afirmar conteos de partición real antes de inspeccionarlo. El historial previamente auditado contiene 580 filas, de las cuales 431 no tienen modo de cuenta explícito. No imputar esas filas a PRACTICE ni derivar de ellas un winrate operativo verificado.
+- Bootstrap sigue desactivado por defecto. Sin cambios a estrategia, límites, TOP20, temporalidad crítica o modo REAL.
