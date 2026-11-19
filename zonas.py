@@ -678,6 +678,8 @@ def validar_interaccion_soporte_resistencia(
     tipo_ruptura="SIN_DATOS",
     cerca_soporte=None,
     cerca_resistencia=None,
+    soporte_fuerte=False,
+    resistencia_fuerte=False,
 ):
     try:
         precio = closes[-1]
@@ -713,6 +715,10 @@ def validar_interaccion_soporte_resistencia(
         # CALL cerca de resistencia
         # =========================
         if direccion == "call" and cerca_resistencia:
+            # Un patron llamado "retest" o un puntaje alto no acredita
+            # por si solos la ruptura de una resistencia historica fuerte.
+            if resistencia_fuerte and not ruptura_confirmada:
+                return False, "CALL bloqueado: resistencia historica fuerte sin ruptura confirmada"
             if ruptura_confirmada or es_retest:
                 return True, "CALL permitido: resistencia rota/retest confirmado"
         
@@ -724,6 +730,8 @@ def validar_interaccion_soporte_resistencia(
         # PUT cerca de soporte
         # =========================
         if direccion == "put" and cerca_soporte:
+            if soporte_fuerte and not ruptura_confirmada:
+                return False, "PUT bloqueado: soporte historico fuerte sin ruptura confirmada"
             if ruptura_confirmada or es_retest:
                 return True, "PUT permitido: soporte roto/retest confirmado"
         
