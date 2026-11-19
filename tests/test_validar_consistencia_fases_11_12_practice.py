@@ -94,6 +94,13 @@ class ConsistenciaTest(unittest.TestCase):
         self.assertTrue(r["cumple_muestra_observada"])
         self.assertFalse(r["cumple_conjunto_y_familias"])
 
+    def test_familia_en_blanco_no_valida_consistencia(self):
+        a = filas(20, 8)
+        for f in a:
+            f["familia"] = "   "
+        with self.assertRaisesRegex(ValueError, "FAMILIA_VACIA"):
+            evaluar(a)
+
     def test_familia_pequena_no_certificada(self):
         a = filas(40, 8)
         for f in a[:19]:
