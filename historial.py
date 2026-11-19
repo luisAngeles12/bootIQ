@@ -194,6 +194,8 @@ COLUMNAS_HISTORIAL = [
     # R9-12: instante local UTC en que se confirma el resultado
     # y se prepara su persistencia atomica; NO es cierre timestamp IQ.
     "fecha_conciliacion_local_utc",
+    # R9-14: UTC del registro de apertura; no es el fill del broker.
+    "fecha_apertura_registro_local_utc",
 ]
 
 def guardar_historial(data):
