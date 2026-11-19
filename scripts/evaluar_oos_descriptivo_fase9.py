@@ -70,6 +70,9 @@ def evaluar_oos(ruta, minimo_train=20, minimo_oos=20, exportacion_iq=None):
         rows = list(csv.DictReader(archivo))
     inicio = datetime.fromisoformat(corte["inicio_oos_utc"])
     oos = []
+    # La selección de registros no debe borrar silenciosamente empates
+    # o cierres no resueltos del tramo posterior para fabricar bloques de 20.
+    excluidos_tramo = {}
     for f in rows:
         marca_utc = str(f.get("fecha_apertura_registro_local_utc") or "").strip()
         apertura_iso = _fecha_iso(marca_utc if marca_utc else f.get("fecha"))
@@ -88,12 +91,18 @@ def evaluar_oos(ruta, minimo_train=20, minimo_oos=20, exportacion_iq=None):
         if _txt(f.get("modo_cuenta_configurado")) != "PRACTICE":
             continue
         if not _cierre_explicito(_txt(f.get("estado"))):
+            excluidos_tramo["NO_CERRADA"] = excluidos_tramo.get("NO_CERRADA", 0) + 1
             continue
         try:
             pnl = float(f.get("resultado"))
         except (TypeError, ValueError, OverflowError):
+            excluidos_tramo["PNL_INVALIDO"] = excluidos_tramo.get("PNL_INVALIDO", 0) + 1
             continue
-        if not math.isfinite(pnl) or pnl == 0:
+        if not math.isfinite(pnl):
+            excluidos_tramo["PNL_NO_FINITO"] = excluidos_tramo.get("PNL_NO_FINITO", 0) + 1
+            continue
+        if pnl == 0:
+            excluidos_tramo["EMPATE_EXCLUIDO"] = excluidos_tramo.get("EMPATE_EXCLUIDO", 0) + 1
             continue
         cierre_iso = _fecha_iso(f.get("fecha_conciliacion_local_utc"))
         if cierre_iso is None:
@@ -103,9 +112,17 @@ def evaluar_oos(ruta, minimo_train=20, minimo_oos=20, exportacion_iq=None):
             return {**base, "causa": "OOS_CIERRE_SIN_ZONA"}
         if cierre.astimezone(timezone.utc) < apertura:
             return {**base, "causa": "OOS_CIERRE_ANTERIOR_APERTURA"}
+        familia = _txt(f.get("familia_setup")) or "SIN_FAMILIA"
         oos.append((apertura, str(f["order_id"]).strip(), pnl,
-                    _txt(f.get("origen_autoridad")) or "SIN_AUTORIDAD"))
+                    _txt(f.get("origen_autoridad")) or "SIN_AUTORIDAD",
+                    familia))
     oos.sort(key=lambda v: (v[0], v[1]))
+    if excluidos_tramo:
+        return {
+            **base, "causa": "OOS_CON_RESULTADOS_OMITIDOS",
+            "exclusiones_oos": dict(sorted(excluidos_tramo.items())),
+            "operaciones_oos_evaluadas": 0,
+        }
     if len(oos) != corte["oos"] or len({x[1] for x in oos}) != len(oos):
         return {**base, "causa": "OOS_INCONSISTENTE_CON_PARTICION"}
     if len(oos) < 20:
@@ -132,6 +149,40 @@ def evaluar_oos(ruta, minimo_train=20, minimo_oos=20, exportacion_iq=None):
     autoridades = sorted({x[3] for x in oos})
     resumen = _metricas(oos)
     restantes = len(oos) % 20
+    conteos_familias = {}
+    for op in oos:
+        conteos_familias.setdefault(op[4], []).append(op)
+    informe_familias = {}
+    for familia, registros in sorted(conteos_familias.items()):
+        ventanas_familia = [
+            _metricas(registros[i:i + 20])
+            for i in range(len(registros) - 19)
+        ]
+        bloques_familia = [
+            _metricas(registros[i:i + 20])
+            for i in range(0, len(registros) - 19, 20)
+        ]
+        informe_familias[familia] = {
+            "operaciones": len(registros),
+            "resumen": _metricas(registros),
+            "bloques_20_completos": len(bloques_familia),
+            "ventanas_moviles_20": len(ventanas_familia),
+            "estado": (
+                "SIN_MUESTRA_MINIMA_20"
+                if len(registros) < 20 else "DESCRIPTIVO_NO_VERIFICADO"
+            ),
+            "bloques_20_que_cumplen": sum(
+                b["cumple_60_y_neto_positivo"] for b in bloques_familia
+            ),
+            "ventanas_20_que_cumplen": sum(
+                b["cumple_60_y_neto_positivo"] for b in ventanas_familia
+            ),
+            "cumple_todas_ventanas_observadas": (
+                bool(ventanas_familia) and all(
+                    b["cumple_60_y_neto_positivo"] for b in ventanas_familia
+                )
+            ),
+        }
     peores_bloques = [
         {"desde": b["desde"], "hasta": b["hasta"],
          "ganadas": b["ganadas"], "neto": b["neto"]}
@@ -140,6 +191,12 @@ def evaluar_oos(ruta, minimo_train=20, minimo_oos=20, exportacion_iq=None):
     return {
         **base, "estado": "DESCRIPTIVO_NO_VERIFICADO_BROKER",
         "oos_operaciones": len(oos),
+        "familias": informe_familias,
+        "operaciones_sin_familia": len(conteos_familias.get("SIN_FAMILIA", [])),
+        "familias_con_muestra_minima_20": sum(
+            f["operaciones"] >= 20 for f in informe_familias.values()
+            if f is not informe_familias.get("SIN_FAMILIA")
+        ),
         "resumen_oos_descriptivo": resumen,
         "bloques_20_completos": len(bloques),
         "operaciones_restantes_sin_bloque_completo": restantes,
