@@ -4,17 +4,58 @@ No ejecuta bot.py, no conecta IQ, no escribe memoria y no certifica
 rentabilidad aun cuando los CSV proporcionados coincidan completamente.
 """
 import argparse
+import hashlib
 import json
+from pathlib import Path
 
 from scripts.clasificar_historial_fase9 import clasificar_historial
 from scripts.auditar_particion_temporal_fase9 import auditar_particion
 from scripts.evaluar_oos_descriptivo_fase9 import evaluar_oos
 
 
+def _huella(ruta):
+    """SHA256 del contenido; no modifica el archivo ni confia en mtime."""
+    if ruta is None:
+        return None
+    hash_ = hashlib.sha256()
+    with Path(ruta).open("rb") as archivo:
+        for bloque in iter(lambda: archivo.read(1024 * 1024), b""):
+            hash_.update(bloque)
+    return hash_.hexdigest()
+
+
 def reporte_integral(historial, exportacion_iq=None):
-    clasificacion = clasificar_historial(historial)
-    particion = auditar_particion(historial)
-    evaluacion = evaluar_oos(historial, exportacion_iq=exportacion_iq)
+    # El reporte hace varias lecturas independientes. Sin instantanea,
+    # mezclaria filas de distintas versiones si el bot escribe al mismo
+    # tiempo. Fallar cerrado ANTES de publicar estadisticas compuestas.
+    rutas = {"historial": historial}
+    if exportacion_iq is not None:
+        rutas["exportacion_iq"] = exportacion_iq
+    def huellas():
+        return {nombre: _huella(ruta) for nombre, ruta in rutas.items()}
+    def fallo(causa):
+        return {
+            "estado": "NO_APTO_PARA_VALIDACION",
+            "causa": causa,
+            "motivos_no_certificacion": [causa],
+            "evidencia_rentabilidad_sostenida": False,
+            "memoria_generada": False,
+            "habilita_trading": False,
+            "modo_operativo": "NINGUNO_SOLO_LECTURA",
+        }
+    try:
+        inicial = huellas()
+        clasificacion = clasificar_historial(historial)
+        if huellas() != inicial:
+            return fallo("FUENTE_MODIFICADA_DURANTE_AUDITORIA")
+        particion = auditar_particion(historial)
+        if huellas() != inicial:
+            return fallo("FUENTE_MODIFICADA_DURANTE_AUDITORIA")
+        evaluacion = evaluar_oos(historial, exportacion_iq=exportacion_iq)
+        if huellas() != inicial:
+            return fallo("FUENTE_MODIFICADA_DURANTE_AUDITORIA")
+    except OSError:
+        return fallo("FUENTE_NO_DISPONIBLE")
     integridad = (
         clasificacion.get("estado") == "DIAGNOSTICO_NO_CERTIFICADO"
         and clasificacion.get("integridad_conteo") is True
@@ -52,6 +93,8 @@ def reporte_integral(historial, exportacion_iq=None):
         "memoria_generada": False,
         "habilita_trading": False,
         "modo_operativo": "NINGUNO_SOLO_LECTURA",
+        "huellas_fuentes_sha256": inicial,
+        "integridad_fuentes_estable": True,
     }
 
 
