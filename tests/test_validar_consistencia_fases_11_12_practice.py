@@ -94,6 +94,18 @@ class ConsistenciaTest(unittest.TestCase):
         self.assertTrue(r["cumple_muestra_observada"])
         self.assertFalse(r["cumple_conjunto_y_familias"])
 
+    def test_no_acepta_importes_fraccionarios_de_centavo(self):
+        a = filas(20, 8)
+        a[8]["neto"] = "0.001"
+        with self.assertRaisesRegex(ValueError, "NETO_FRACCION_DE_CENTAVO"):
+            evaluar(a)
+
+    def test_suma_monetaria_exacta_para_12_de_20(self):
+        a = filas(20, 8)
+        r = evaluar(a)
+        self.assertEqual(r["total"]["neto"], 49.0)
+        self.assertTrue(r["cumple_muestra_observada"])
+
     def test_familia_en_blanco_no_valida_consistencia(self):
         a = filas(20, 8)
         for f in a:
