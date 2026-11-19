@@ -38,6 +38,21 @@ class CompatibilidadLedgerTest(unittest.TestCase):
 
     def test_ledger_esquematicamente_completo_no_certifica_broker(self):
         cols = ["order_id", "fecha_cierre", "resultado",
+                "neto", "familia", "tipo_cuenta", "estado"]
+        with tempfile.TemporaryDirectory() as d:
+            p = self.escribir(d, cols, [{
+                "order_id": "abc", "fecha_cierre": "2026-11-18T17:00:00+00:00",
+                "resultado": "WIN", "neto": "20.75",
+                "familia": "resistencia", "tipo_cuenta": "PRACTICE",
+                "estado": "CERRADA",
+            }])
+            r = diagnosticar(p)
+        self.assertTrue(r["apto_para_evaluar"])
+        self.assertFalse(r["validacion_prospectiva_confirmada"])
+        self.assertFalse(r["autoriza_real"])
+
+    def test_campos_completos_sin_estado_cerrada_no_acreditan_liquidacion(self):
+        cols = ["order_id", "fecha_cierre", "resultado",
                 "neto", "familia", "tipo_cuenta"]
         with tempfile.TemporaryDirectory() as d:
             p = self.escribir(d, cols, [{
@@ -46,9 +61,9 @@ class CompatibilidadLedgerTest(unittest.TestCase):
                 "familia": "resistencia", "tipo_cuenta": "PRACTICE",
             }])
             r = diagnosticar(p)
-        self.assertTrue(r["apto_para_evaluar"])
-        self.assertFalse(r["validacion_prospectiva_confirmada"])
-        self.assertFalse(r["autoriza_real"])
+        self.assertFalse(r["apto_para_evaluar"])
+        self.assertIn("estado", r["faltantes"])
+        self.assertEqual(r["estado"], "EVIDENCIA_LEDGER_INSUFICIENTE")
 
     def test_csv_vacio_no_certifica(self):
         with tempfile.TemporaryDirectory() as d:
@@ -59,12 +74,13 @@ class CompatibilidadLedgerTest(unittest.TestCase):
 
     def test_fila_con_neto_vacio_no_apta(self):
         cols = ["order_id", "fecha_cierre", "resultado",
-                "neto", "familia", "tipo_cuenta"]
+                "neto", "familia", "tipo_cuenta", "estado"]
         with tempfile.TemporaryDirectory() as d:
             p = self.escribir(d, cols, [{
                 "order_id": "1", "fecha_cierre": "2026-11-18T17:00:00+00:00",
                 "resultado": "WIN", "neto": "",
                 "familia": "resistencia", "tipo_cuenta": "PRACTICE",
+                "estado": "CERRADA",
             }])
             r = diagnosticar(p)
         self.assertFalse(r["apto_para_evaluar"])
