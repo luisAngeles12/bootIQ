@@ -58,7 +58,7 @@ class DiagnosticoBootstrapTests(unittest.TestCase):
             sin_cierre = fila("2")
             sin_cierre["estado"] = "ABIERTA"
             rutas = [
-                fila("001"), fila("001", modo="REAL"),
+                fila("001"), fila("001"), fila("009", modo="REAL"),
                 sin_cierre, fila("3", "0"),
                 fila("4", "0.001"), fila("5", "nan"),
                 fila("6", fecha="no_fecha"), fila("", "20.75"),
