@@ -3,7 +3,7 @@ import math
 import queue
 import threading
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 import estado
 from config import (
@@ -787,6 +787,11 @@ def abrir_operacion(senal):
         guardar_historial({
             "fecha": datetime.now().strftime(
                 "%Y-%m-%d %H:%M:%S"
+            ),
+            # R9-14: marca UTC del registro, solo telemetria.
+            # No representa el fill ni cambia la ventana de entrada.
+            "fecha_apertura_registro_local_utc": (
+                datetime.now(timezone.utc).isoformat()
             ),
             "estado": "ABIERTA",
             "order_id": order_id,
