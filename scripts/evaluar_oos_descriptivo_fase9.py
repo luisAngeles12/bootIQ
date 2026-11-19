@@ -55,11 +55,16 @@ def evaluar_oos(ruta, minimo_train=20, minimo_oos=20):
     inicio = datetime.fromisoformat(corte["inicio_oos_utc"])
     oos = []
     for f in rows:
-        apertura_iso = _fecha_iso(f.get("fecha"))
+        marca_utc = str(f.get("fecha_apertura_registro_local_utc") or "").strip()
+        apertura_iso = _fecha_iso(marca_utc if marca_utc else f.get("fecha"))
         if apertura_iso is None:
+            if marca_utc:
+                return {**base, "causa": "OOS_APERTURA_UTC_INVALIDA"}
             continue
         apertura = datetime.fromisoformat(apertura_iso)
         if apertura.tzinfo is None or apertura.utcoffset() is None:
+            if marca_utc:
+                return {**base, "causa": "OOS_APERTURA_UTC_SIN_ZONA"}
             continue
         apertura = apertura.astimezone(timezone.utc)
         if apertura < inicio:
