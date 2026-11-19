@@ -98,7 +98,7 @@ class EvaluacionOosDescriptivaFase9Tests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             filas = filas_base(70, wins_oos=12)
             r = evaluar_oos(self.crear(tmp, filas))
-            self.assertEqual(r["oos_operaciones"], 21 if False else 21)
+            self.assertEqual(r["oos_operaciones"], 21)
             # 70 filas, TRAIN 49 y OOS 21; basta una ventana adversa
             # para comprobar que no se infiere consistencia del agregado.
             self.assertGreaterEqual(r["ventanas_moviles_20"], 2)
