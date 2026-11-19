@@ -106,7 +106,20 @@ class ConciliacionOfflineIQFase9Tests(unittest.TestCase):
             ruta = _crear(tmp, "bot.csv", BOT, [_bot("1")])
             r = conciliar_exportacion(ruta, ruta)
             self.assertEqual(r["estado"], "NO_APTO")
-            self.assertEqual(r["causa"], "ESQUEMA_INVALIDO")
+            self.assertEqual(r["causa"], "MISMO_ARCHIVO")
+
+    def test_pnl_con_fracciones_de_centavo_no_se_redondea(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r = self.analizar(tmp, [_bot("1", "20.755")], [_iq("1", "20.76")])
+            self.assertEqual(r["conciliadas_preliminares"], 0)
+            self.assertEqual(r["exclusiones"]["BOT_PNL_INVALIDO"], 1)
+
+    def test_pnl_infinito_o_nan_nunca_se_concilia(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r = self.analizar(tmp, [_bot("1", "nan"), _bot("2", "inf")],
+                             [_iq("1", "nan"), _iq("2", "inf")])
+            self.assertEqual(r["conciliadas_preliminares"], 0)
+            self.assertEqual(r["exclusiones"]["BOT_PNL_INVALIDO"], 2)
 
     def test_exportacion_broker_malformada_no_se_repara(self):
         with tempfile.TemporaryDirectory() as tmp:
