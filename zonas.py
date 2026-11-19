@@ -69,32 +69,100 @@ def zonas_reales(highs, lows, minimo_toques=3, tolerancia_base=None):
     return zonas_filtradas
 
 
+
+def _zonas_historicas_independientes(precios, tolerancia, minimo_toques=3,
+                                     separacion_minima=3):
+    """Agrupa extremos históricos por precio y cuenta eventos separados.
+
+    Solo recibe extremos de velas ANTERIORES a la señal; el llamador
+    controla el corte causal. No cuenta varias velas del mismo contacto
+    como rechazos independientes.
+    """
+    import math
+    if tolerancia <= 0:
+        return []
+    eventos = []
+    for indice, raw in enumerate(precios):
+        try:
+            precio = float(raw)
+        except (ValueError, TypeError, OverflowError):
+            return []
+        if not math.isfinite(precio):
+            return []
+        eventos.append((precio, indice))
+
+    grupos = []
+    for precio, indice in sorted(eventos):
+        destino = next(
+            (g for g in grupos if abs(precio - g["precio"]) <= tolerancia),
+            None
+        )
+        if destino is None:
+            grupos.append({"precio": precio, "precios": [precio],
+                           "indices": [indice]})
+        else:
+            destino["precios"].append(precio)
+            destino["indices"].append(indice)
+            destino["precio"] = sum(destino["precios"]) / len(destino["precios"])
+
+    zonas = []
+    for grupo in grupos:
+        indices = sorted(set(grupo["indices"]))
+        independientes = []
+        for indice in indices:
+            if not independientes or indice - independientes[-1] >= separacion_minima:
+                independientes.append(indice)
+        amplitud = max(grupo["precios"]) - min(grupo["precios"])
+        if len(independientes) < minimo_toques or amplitud > tolerancia * 3:
+            continue
+        zonas.append({
+            "precio": grupo["precio"],
+            "toques": len(independientes),
+            "tolerancia": tolerancia,
+            "fuerza": len(independientes),
+            "amplitud": amplitud,
+            "velas_contacto": independientes,
+            "origen": "EXTREMOS_HISTORICOS_PREVIOS",
+        })
+    return sorted(zonas, key=lambda z: (-z["fuerza"], z["precio"]))
+
+
 def soporte_resistencia_zonas(price, highs, lows, vol):
     if vol <= 0:
         vol = abs(price) * 0.0001
 
     tolerancia = vol * 0.45
 
-    zonas = zonas_reales(
-        highs[-100:],
-        lows[-100:],
-        minimo_toques=3,
-        tolerancia_base=tolerancia
+    # Usar la ventana causal disponible SIN la vela de señal.
+    # La fuerza cuenta contactos temporalmente independientes, no
+    # tres velas consecutivas rozando el mismo extremo.
+    historico_highs = list(highs)[-181:-1]
+    historico_lows = list(lows)[-181:-1]
+    if not historico_highs or len(historico_highs) != len(historico_lows):
+        raise ValueError("HISTORICO_ZONAS_INSUFICIENTE")
+    soportes_hist = _zonas_historicas_independientes(
+        historico_lows, tolerancia
     )
+    resistencias_hist = _zonas_historicas_independientes(
+        historico_highs, tolerancia
+    )
+    zonas = [("soporte", z) for z in soportes_hist] + [
+        ("resistencia", z) for z in resistencias_hist
+    ]
 
     soportes = []
     resistencias = []
 
-    for zona in zonas:
+    for clase, zona in zonas:
         distancia = abs(price - zona["precio"])
 
-        # Soporte solo si está claramente debajo del precio.
-        if zona["precio"] < price - (tolerancia * 0.35):
+        # Mantener separado el origen high/low para no inventar fuerza.
+        if clase == "soporte" and zona["precio"] < price - (tolerancia * 0.35):
             zona["distancia"] = distancia
             soportes.append(zona)
 
         # Resistencia solo si está claramente encima del precio.
-        elif zona["precio"] > price + (tolerancia * 0.35):
+        elif clase == "resistencia" and zona["precio"] > price + (tolerancia * 0.35):
             zona["distancia"] = distancia
             resistencias.append(zona)
 
@@ -105,11 +173,11 @@ def soporte_resistencia_zonas(price, highs, lows, vol):
         )[0]
     else:
         soporte = {
-            "precio": min(lows[-80:]),
+            "precio": min(historico_lows[-80:]),
             "toques": 1,
             "tolerancia": tolerancia,
             "fuerza": 1,
-            "distancia": abs(price - min(lows[-80:])),
+            "distancia": abs(price - min(historico_lows[-80:])),
             "amplitud": 0
         }
 
@@ -120,11 +188,11 @@ def soporte_resistencia_zonas(price, highs, lows, vol):
         )[0]
     else:
         resistencia = {
-            "precio": max(highs[-80:]),
+            "precio": max(historico_highs[-80:]),
             "toques": 1,
             "tolerancia": tolerancia,
             "fuerza": 1,
-            "distancia": abs(max(highs[-80:]) - price),
+            "distancia": abs(max(historico_highs[-80:]) - price),
             "amplitud": 0
         }
 
