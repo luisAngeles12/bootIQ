@@ -311,8 +311,8 @@ class EvaluacionOosDescriptivaFase9Tests(unittest.TestCase):
             filas[42]["resultado"] = "0.0"
             resultado = evaluar_oos(self.crear(tmp, filas))
             self.assertEqual(resultado["estado"], "NO_APTO")
-            self.assertEqual(resultado["causa"], "OOS_CON_RESULTADOS_OMITIDOS")
-            self.assertEqual(resultado["exclusiones_oos"]["EMPATE_EXCLUIDO"], 1)
+            self.assertEqual(resultado["causa"], "UNIVERSO_PRACTICE_INCOMPLETO")
+            self.assertEqual(resultado["filas_practice_no_admisibles"], 1)
             self.assertNotIn("bloques_20_no_solapados", resultado)
 
     def test_cierre_pendiente_oos_tampoco_se_borra_del_universo(self):
@@ -321,8 +321,41 @@ class EvaluacionOosDescriptivaFase9Tests(unittest.TestCase):
             filas[42]["estado"] = "ABIERTA"
             resultado = evaluar_oos(self.crear(tmp, filas))
             self.assertEqual(resultado["estado"], "NO_APTO")
-            self.assertEqual(resultado["causa"], "OOS_CON_RESULTADOS_OMITIDOS")
-            self.assertEqual(resultado["exclusiones_oos"]["NO_CERRADA"], 1)
+            self.assertEqual(resultado["causa"], "UNIVERSO_PRACTICE_INCOMPLETO")
+            self.assertEqual(resultado["filas_practice_no_admisibles"], 1)
+
+
+    def test_empate_antes_del_corte_no_desplaza_oos_silenciosamente(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = filas_base(51)
+            filas[4]["resultado"] = "0"
+            ruta = self.crear(tmp, filas)
+            previo = ruta.read_bytes()
+            r = evaluar_oos(ruta)
+            self.assertEqual(r["estado"], "NO_APTO")
+            self.assertEqual(r["causa"], "UNIVERSO_PRACTICE_INCOMPLETO")
+            self.assertEqual(r["filas_practice_no_admisibles"], 1)
+            self.assertNotIn("bloques_20_no_solapados", r)
+            self.assertEqual(previo, ruta.read_bytes())
+
+    def test_fecha_invalida_practice_antes_del_corte_bloquea(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = filas_base(51)
+            filas[3]["fecha"] = "INVALIDA"
+            r = evaluar_oos(self.crear(tmp, filas))
+            self.assertEqual(r["estado"], "NO_APTO")
+            self.assertEqual(r["causa"], "UNIVERSO_PRACTICE_INCOMPLETO")
+            self.assertEqual(r["filas_practice_no_admisibles"], 1)
+
+    def test_modo_desconocido_no_se_promueve_a_practice_ni_se_oculta(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = filas_base(51)
+            filas[3]["modo_cuenta_configurado"] = ""
+            r = evaluar_oos(self.crear(tmp, filas))
+            self.assertEqual(r["estado"], "NO_APTO")
+            self.assertEqual(r["causa"], "UNIVERSO_PRACTICE_INCOMPLETO")
+            self.assertEqual(r["filas_sin_modo"], 1)
+            self.assertFalse(r["habilita_trading"])
 
 
 if __name__ == "__main__":
