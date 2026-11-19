@@ -9,17 +9,24 @@ import argparse
 import csv
 import json
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 from scripts.auditar_historial_fase9 import _cierre_explicito, _fecha_iso, _resultado_monetario, _txt
 
 
-def auditar_particion(ruta, proporcion_train=0.70, minimo_train=20, minimo_oos=20):
+def auditar_particion(
+    ruta, proporcion_train=0.70, minimo_train=20, minimo_oos=20,
+    offset_origen_minutos=None,
+):
     if not (0 < proporcion_train < 1):
         raise ValueError("proporcion_train debe estar entre 0 y 1")
     if minimo_train < 1 or minimo_oos < 1:
         raise ValueError("los minimos deben ser positivos")
+    if offset_origen_minutos is not None:
+        if (type(offset_origen_minutos) is not int or
+                not -1439 <= offset_origen_minutos <= 1439):
+            raise ValueError("offset_origen_minutos debe ser entero UTC válido")
 
     with Path(ruta).open(encoding="utf-8-sig", newline="") as archivo:
         reader = csv.DictReader(archivo)
@@ -39,6 +46,7 @@ def auditar_particion(ruta, proporcion_train=0.70, minimo_train=20, minimo_oos=2
     )
     excluidas = Counter()
     admisibles = []
+    marcas_con_offset_asumido = 0
     for f in filas:
         oid = str(f.get("order_id") or "").strip()
         if not oid:
@@ -63,8 +71,15 @@ def auditar_particion(ruta, proporcion_train=0.70, minimo_train=20, minimo_oos=2
             continue
         dt = datetime.fromisoformat(iso)
         if dt.tzinfo is None or dt.utcoffset() is None:
-            excluidas["FECHA_SIN_ZONA"] += 1
-            continue
+            if offset_origen_minutos is None:
+                excluidas["FECHA_SIN_ZONA"] += 1
+                continue
+            # Hipótesis de auditoría elegida EXPLÍCITAMENTE. Nunca se
+            # presenta como zona original confirmada ni como OOS válido.
+            dt = dt.replace(tzinfo=timezone(timedelta(
+                minutes=offset_origen_minutos
+            )))
+            marcas_con_offset_asumido += 1
         admisibles.append((dt.astimezone(timezone.utc), oid, pnl_tipo))
 
     admisibles.sort(key=lambda x: (x[0], x[1]))
@@ -75,7 +90,16 @@ def auditar_particion(ruta, proporcion_train=0.70, minimo_train=20, minimo_oos=2
         "fechas_utc_distintas": len(marcas),
         "exclusiones": dict(sorted(excluidas.items())),
         "train": 0, "oos": 0,
-        "nota": "Solo auditoría: ningún resultado se usa para entrenar, puntuar o autorizar órdenes.",
+        "fechas_con_offset_asumido": marcas_con_offset_asumido,
+        "offset_origen_supuesto_minutos": offset_origen_minutos,
+        "fecha_columna_semantica": "APERTURA_LOCAL_SIN_ZONA_SEGUN_OPERACIONES_PY",
+        "cierre_temporal_verificado": False,
+        "apto_para_memoria_productiva": False,
+        "nota": (
+            "Solo auditoría: fecha es apertura, no cierre conciliado; "
+            "el corte de aperturas NO prueba independencia de los resultados "
+            "cuando operaciones cruzan la frontera TRAIN/OOS."
+        ),
     }
     if len(admisibles) < minimo_train + minimo_oos:
         return {**base, "estado": "NO_APTO", "causa": "MUESTRA_INSUFICIENTE"}
@@ -102,15 +126,28 @@ def auditar_particion(ruta, proporcion_train=0.70, minimo_train=20, minimo_oos=2
         "inicio_oos_utc": primer_oos.isoformat(),
         "solapamiento_ids": 0,
         "corte_estricto": True,
-        "observacion": "Falta contrastar order_id y cierres con IQ y separar la ventana de diseño de la validación final.",
+        "observacion": (
+            "Corte de aperturas SOLAMENTE: no se ha demostrado que todas "
+            "las órdenes TRAIN hayan cerrado antes de la primera apertura "
+            "OOS. Falta horario real de cierre conciliado, cotejo con IQ "
+            "y partición prospectiva. Nunca usar directamente en producción."
+        ),
     }
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("historial", nargs="?", default="historial_bot.csv")
+    parser.add_argument(
+        "--offset-origen-minutos", type=int, default=None,
+        help=("Hipótesis explícita de offset de la máquina al registrar "
+              "aperturas sin zona; NO verifica la zona histórica ni autoriza OOS"),
+    )
     a = parser.parse_args()
-    print(json.dumps(auditar_particion(a.historial), ensure_ascii=False, indent=2))
+    print(json.dumps(
+        auditar_particion(a.historial, offset_origen_minutos=a.offset_origen_minutos),
+        ensure_ascii=False, indent=2
+    ))
 
 
 if __name__ == "__main__":
