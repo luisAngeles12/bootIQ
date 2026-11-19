@@ -146,5 +146,67 @@ class EvaluacionOosDescriptivaFase9Tests(unittest.TestCase):
             self.assertNotIn("bloques_20_no_solapados", r)
 
 
+    def _exportacion_iq(self, carpeta, filas, *, omitir=None, alterar=None):
+        ruta = Path(carpeta) / "iq_export.csv"
+        with ruta.open("w", newline="", encoding="utf-8") as archivo:
+            writer = csv.DictWriter(archivo, fieldnames=[
+                "order_id", "modo_cuenta", "estado", "pnl", "fecha_cierre_utc"
+            ])
+            writer.writeheader()
+            for f in filas:
+                if f["order_id"] == omitir:
+                    continue
+                cierre = datetime.fromisoformat(f["fecha_conciliacion_local_utc"])
+                pnl = f["resultado"]
+                if f["order_id"] == alterar:
+                    pnl = "-25" if float(pnl) > 0 else "20.75"
+                writer.writerow({
+                    "order_id": f["order_id"], "modo_cuenta": "PRACTICE",
+                    "estado": "CERRADA", "pnl": pnl,
+                    "fecha_cierre_utc": (
+                        cierre - timedelta(seconds=20)
+                    ).isoformat(),
+                })
+        return ruta
+
+    def test_cotejo_completo_oos_aun_no_certifica_procedencia_broker(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = filas_base()
+            ruta = self.crear(tmp, filas)
+            iq = self._exportacion_iq(tmp, filas)
+            previa = (ruta.read_bytes(), iq.read_bytes())
+            resultado = evaluar_oos(ruta, exportacion_iq=iq)
+            self.assertEqual(resultado["estado"],
+                             "DESCRIPTIVO_NO_VERIFICADO_BROKER")
+            self.assertEqual(resultado["cotejo_offline"]["objetivo_oos_total"], 20)
+            self.assertEqual(resultado["cotejo_offline"]["conciliadas_preliminares"], 20)
+            self.assertTrue(resultado["cotejo_offline"]["objetivo_oos_conciliado_completo"])
+            self.assertFalse(resultado["origen_broker_independiente_certificado"])
+            self.assertFalse(resultado["habilita_trading"])
+            self.assertEqual(previa, (ruta.read_bytes(), iq.read_bytes()))
+
+    def test_discrepancia_pnl_oos_bloquea_metricas(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = filas_base()
+            ruta = self.crear(tmp, filas)
+            iq = self._exportacion_iq(tmp, filas, alterar=filas[35]["order_id"])
+            resultado = evaluar_oos(ruta, exportacion_iq=iq)
+            self.assertEqual(resultado["estado"], "NO_APTO")
+            self.assertEqual(resultado["causa"], "OOS_DIFIERE_BROKER_OFFLINE")
+            self.assertNotIn("bloques_20_no_solapados", resultado)
+
+    def test_id_oos_ausente_en_exportacion_bloquea_metricas(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = filas_base()
+            ruta = self.crear(tmp, filas)
+            iq = self._exportacion_iq(tmp, filas, omitir=filas[45]["order_id"])
+            resultado = evaluar_oos(ruta, exportacion_iq=iq)
+            self.assertEqual(resultado["estado"], "NO_APTO")
+            self.assertEqual(resultado["causa"], "OOS_DIFIERE_BROKER_OFFLINE")
+            self.assertEqual(
+                resultado["cotejo_offline"]["exclusiones"]["SIN_ID_UNICO_BROKER"], 1
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
