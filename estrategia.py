@@ -1015,6 +1015,12 @@ def evaluar_senal_candidata(activo, ctx, senal):
         ),
     )
 
+    # Un rechazo por barrera historica fuerte es una guardia de
+    # ejecucion, no solo una advertencia que el Cerebro podria ponderar.
+    senal["bloqueo_barrera_historica_fuerte"] = (
+        not ok_zona_sr
+        and "historica fuerte sin ruptura confirmada" in razon_zona_sr
+    )
     if not ok_zona_sr:
         senal["validacion_zona_sr_ok"] = False
         senal["razon_zona_sr"] = razon_zona_sr
