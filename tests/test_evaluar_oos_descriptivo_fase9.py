@@ -104,5 +104,47 @@ class EvaluacionOosDescriptivaFase9Tests(unittest.TestCase):
             self.assertGreaterEqual(r["ventanas_moviles_20"], 2)
 
 
+    def test_apertura_utc_explicita_prevalece_sobre_fecha_legacy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = filas_base()
+            for f in filas:
+                f["fecha_apertura_registro_local_utc"] = f["fecha"]
+                f["fecha"] = "FECHA_LEGACY_NO_USAR"
+            ruta = Path(tmp) / "historial.csv"
+            with ruta.open("w", newline="", encoding="utf-8") as archivo:
+                writer = csv.DictWriter(
+                    archivo, fieldnames=CAMPOS +
+                    ["fecha_apertura_registro_local_utc"]
+                )
+                writer.writeheader()
+                writer.writerows(filas)
+            previo = ruta.read_bytes()
+            r = evaluar_oos(ruta)
+            self.assertEqual(r["estado"], "DESCRIPTIVO_NO_VERIFICADO_BROKER")
+            self.assertEqual(r["oos_operaciones"], 20)
+            self.assertTrue(r["corte"]["aperturas_utc_100pct"])
+            self.assertEqual(previo, ruta.read_bytes())
+
+    def test_marca_apertura_utc_invalida_no_fabrica_resultado_oos(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = filas_base(51)
+            for f in filas:
+                f["fecha_apertura_registro_local_utc"] = f["fecha"]
+                f["fecha"] = "FECHA_LEGACY_NO_USAR"
+            filas[-1]["fecha_apertura_registro_local_utc"] = "fecha_corrupta"
+            ruta = Path(tmp) / "historial.csv"
+            with ruta.open("w", newline="", encoding="utf-8") as archivo:
+                writer = csv.DictWriter(
+                    archivo, fieldnames=CAMPOS +
+                    ["fecha_apertura_registro_local_utc"]
+                )
+                writer.writeheader()
+                writer.writerows(filas)
+            r = evaluar_oos(ruta)
+            self.assertEqual(r["estado"], "NO_APTO")
+            self.assertEqual(r["causa"], "OOS_APERTURA_UTC_INVALIDA")
+            self.assertNotIn("bloques_20_no_solapados", r)
+
+
 if __name__ == "__main__":
     unittest.main()
