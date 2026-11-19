@@ -6,7 +6,7 @@ IDs y cronología antes de considerar entrenamiento TRAIN/OOS.
 import csv
 import json
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -80,6 +80,10 @@ def analizar_historial(ruta):
     fechas_iso = 0
     fechas_iso_cierre_practice = 0
     cierre_practice_numerico_ids = set()
+    fechas_cierre_practice = []
+    zonas_fecha_cierre = Counter()
+    motivos_exclusion = Counter()
+    candidatas_temporales = 0
 
     with ruta.open(encoding="utf-8-sig", newline="") as archivo:
         lector = csv.DictReader(archivo)
@@ -97,6 +101,27 @@ def analizar_historial(ruta):
             fechas_iso += fecha_iso is not None
             pnl_tipo = _resultado_monetario(registro.get("resultado"))
             resultados_numericos[pnl_tipo] += 1
+            # R9-09: candidato de auditoría estricta; no es entrenamiento.
+            # No aceptar modo vacío, estado de cierre inferido ni fechas
+            # sin huso horario: TRAIN/OOS exige orden cronológico inequívoco.
+            marca_cierre = _cierre_explicito(_txt(registro.get("estado")))
+            if modo == "PRACTICE":
+                if not orden:
+                    motivos_exclusion["SIN_ORDER_ID"] += 1
+                elif not marca_cierre:
+                    motivos_exclusion["SIN_CIERRE_EXPLICITO"] += 1
+                elif pnl_tipo not in {"GANANCIA", "PERDIDA"}:
+                    motivos_exclusion["PNL_SIN_WIN_LOSS"] += 1
+                elif fecha_iso is None:
+                    motivos_exclusion["SIN_FECHA_ISO"] += 1
+                else:
+                    dt = datetime.fromisoformat(fecha_iso)
+                    if dt.tzinfo is None or dt.utcoffset() is None:
+                        motivos_exclusion["FECHA_SIN_ZONA_HORARIA"] += 1
+                    else:
+                        candidatas_temporales += 1
+                        fechas_cierre_practice.append(dt.astimezone(timezone.utc))
+                        zonas_fecha_cierre["CON_OFFSET"] += 1
             if _cierre_explicito(_txt(registro.get("estado"))):
                 estados_cierre[modo] += 1
                 if pnl_tipo in {"GANANCIA", "PERDIDA", "EMPATE"}:
@@ -150,6 +175,15 @@ def analizar_historial(ruta):
         ),
         "ids_practice_cierre_con_pnl_finito": len(cierre_practice_numerico_ids),
         "cierre_practice_con_fecha_iso": fechas_iso_cierre_practice,
+        "candidatas_temporales_practice_preliminares": candidatas_temporales,
+        "exclusiones_practice_para_train_oos": dict(sorted(motivos_exclusion.items())),
+        "candidatas_train_oos_con_zona": dict(sorted(zonas_fecha_cierre.items())),
+        "primera_fecha_utc_preliminar": (
+            min(fechas_cierre_practice).isoformat() if fechas_cierre_practice else None
+        ),
+        "ultima_fecha_utc_preliminar": (
+            max(fechas_cierre_practice).isoformat() if fechas_cierre_practice else None
+        ),
         "filas_candidatas_preliminares_practice": posibles_candidatas,
         "ids_candidatos_distintos": len(marcas_candidatas),
         "candidatas_fechadas": len(fechas_candidatas),
