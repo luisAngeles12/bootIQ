@@ -56,7 +56,7 @@ def clasificar_historial(ruta):
         elif not _cierre_explicito(_txt(row.get("estado"))):
             grupo = "PRACTICE_NO_APTO"
             causa = "SIN_CIERRE_EXPLICITO"
-        elif _resultado_monetario(row.get("resultado")) not in ("GANANCIA", "PERDIDA"):
+        elif _monto(row.get("resultado")) is None or _monto(row.get("resultado")) == 0:
             grupo = "PRACTICE_NO_APTO"
             causa = "PNL_NO_SIGNIFICATIVO_O_INVALIDO"
         else:
