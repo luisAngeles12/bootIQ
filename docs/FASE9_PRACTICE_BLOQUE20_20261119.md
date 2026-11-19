@@ -32,3 +32,11 @@ Fuente: registro local proporcionado por usuario, `Texto pegado(20261119-164202)
 4. Solo ante causa identificada: corrección mínima, regresiones, OOS independiente y siguiente bloque PRACTICE; no optimizar a posteriori sobre este bloque sin validación externa.
 
 **Estado:** fase 9 abierta; 451/451 pruebas unitarias previas OK, pero bloque prospectivo 20 negativo. Sin cambios productivos por esta evidencia.
+
+## Herramienta de diagnóstico agregada (sin modificar trading)
+
+- `scripts/diagnostico_fuentes_fase9.py`: acepta el JSON del bloque como argumento y localiza una lista de operaciones identificadas por `order_id` (o equivalente); lista claves y cuenta autoridades/resultados solo cuando esos campos están presentes. No infiere causas si el formato no los contiene.
+- También inspecciona el CSV que `motor_aprendizaje_historico.py` usa por defecto (`BOOTIQ_RUTA_APRENDIZAJE` o `aprendizaje_historico_bootiq_F4_CC2.csv`) y cuenta filas con `total >= 5/12/20`, sin modificar la memoria ni sustituir la comprobación de claves generadas por cada señal.
+- `tests/test_diagnostico_fuentes_fase9.py`: cinco regresiones con datos sintéticos, incluida invariancia de bytes del CSV.
+- Esta herramienta **no autoriza operaciones**, no entra en `bot.py` y no altera aprendizaje, estrategias ni los filtros. Si el JSON contiene únicamente agregados, se reporta `ruta_registros: null`, no un desglose imaginario.
+- **Pruebas pendientes**: última suite 451/451. No afirmar 456/456 hasta tener salida local.
