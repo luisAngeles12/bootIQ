@@ -6,6 +6,7 @@ No lee credenciales ni imprime filas de operaciones; solo esquema y tamaño.
 import csv
 import json
 import os
+from fnmatch import fnmatch
 from pathlib import Path
 
 PATRONES = (
@@ -22,11 +23,18 @@ def inventariar_archivos(raiz):
     raiz = Path(raiz).resolve()
     vistos = set()
     resultado = []
-    for patron in PATRONES:
-        for ruta in raiz.rglob(patron):
+    # Podar directorios antes del recorrido: evita caminar el venv.
+    for carpeta, subdirectorios, archivos in os.walk(raiz):
+        subdirectorios[:] = sorted(
+            d for d in subdirectorios if d not in OMITIR
+        )
+        for nombre in sorted(archivos):
             if len(resultado) >= MAX_ARCHIVOS:
                 break
-            if not ruta.is_file() or any(parte in OMITIR for parte in ruta.relative_to(raiz).parts):
+            if not any(fnmatch(nombre, patron) for patron in PATRONES):
+                continue
+            ruta = Path(carpeta) / nombre
+            if not ruta.is_file():
                 continue
             ruta_relativa = str(ruta.relative_to(raiz)).replace("\\", "/")
             if ruta_relativa in vistos:
@@ -39,9 +47,11 @@ def inventariar_archivos(raiz):
             try:
                 with ruta.open(encoding="utf-8-sig", newline="") as archivo:
                     detalle["columnas"] = csv.DictReader(archivo).fieldnames or []
-            except (OSError, UnicodeError, csv.Error) as exc:
-                detalle["esquema_error"] = type(exc).__name__
+            except (OSError, UnicodeError, csv.Error):
+                detalle["esquema_error"] = "LECTURA_CSV_FALLIDA"
             resultado.append(detalle)
+        if len(resultado) >= MAX_ARCHIVOS:
+            break
     return sorted(resultado, key=lambda r: r["archivo"])
 
 
