@@ -98,6 +98,12 @@ def _paridad_causal_sigue_vigente(
 
 
 def abrir_operacion(senal):
+    # Prohibir el envio de una señal contra un nivel historico fuerte
+    # sin ruptura confirmada, aun si otra autoridad otorga puntuacion.
+    # La guardia solo actua cuando estrategia.py dejo evidencia causal.
+    if senal.get("bloqueo_barrera_historica_fuerte") is True:
+        print("ORDEN BLOQUEADA: barrera historica fuerte sin ruptura", flush=True)
+        return False
     # ==========================================
     # AUTORIZACIÓN FINAL DEL CEREBRO ÚNICO
     # ==========================================
