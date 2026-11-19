@@ -9,6 +9,11 @@ MODO_CUENTA = "PRACTICE"  # PRACTICE o REAL
 # Sesion PRACTICE: maximo 20 aperturas IQ confirmadas, luego conciliar
 # cierres, emitir informe y detener el proceso antes de otra orden.
 CONTROL_BLOQUES_20_PRACTICE = True
+# R9: suspensión del permiso de entrada sin memoria tras bloque PRACTICE
+# de 20/20 órdenes bootstrap, 50 % WR y neto -41.25.
+# Solo habilitar en un experimento separado con evidencia OOS y autorización
+# explícita; nunca confiere permisos REAL.
+PERMITIR_BOOTSTRAP_SIN_MEMORIA = False
 TIPOS_MERCADO = ["turbo"]  # Tipos de mercado a operar
 MONTO_BASE = 25
 TIEMPO_EXPIRACION = 1
