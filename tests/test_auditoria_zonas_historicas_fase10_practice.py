@@ -3,6 +3,7 @@ import unittest
 from zonas import (
     _zonas_historicas_independientes,
     soporte_resistencia_zonas,
+    validar_interaccion_soporte_resistencia,
 )
 
 
@@ -52,6 +53,34 @@ class AuditoriaZonasHistoricas(unittest.TestCase):
         )
         self.assertTrue(any(abs(z["precio"] - 110) < 0.45
                             and z["fuerza"] == 3 for z in zonas))
+
+    def test_puntaje_alto_no_supera_resistencia_fuerte_sin_ruptura(self):
+        ok, causa = validar_interaccion_soporte_resistencia(
+            "call", [100]*6, [104]*6, [105]*6, [99]*6,
+            99, 105, 1, 25, "continuacion", "TENDENCIA_ALCISTA",
+            "LIMPIO", False, "SIN_DATOS",
+            cerca_resistencia=True, resistencia_fuerte=True,
+        )
+        self.assertFalse(ok)
+        self.assertIn("historica fuerte", causa)
+
+    def test_nombre_retest_no_equivale_a_ruptura_confirmada(self):
+        ok, _ = validar_interaccion_soporte_resistencia(
+            "put", [100]*6, [100]*6, [105]*6, [99]*6,
+            99, 105, 1, 25, "breakout retest", "TENDENCIA_BAJISTA",
+            "LIMPIO", False, "SIN_DATOS",
+            cerca_soporte=True, soporte_fuerte=True,
+        )
+        self.assertFalse(ok)
+
+    def test_ruptura_confirmada_no_se_bloquea_por_ser_zona_fuerte(self):
+        ok, _ = validar_interaccion_soporte_resistencia(
+            "call", [100]*6, [106]*6, [107]*6, [99]*6,
+            99, 105, 1, 25, "breakout", "TENDENCIA_ALCISTA",
+            "LIMPIO", True, "RUPTURA_RESISTENCIA_CONFIRMADA",
+            cerca_resistencia=True, resistencia_fuerte=True,
+        )
+        self.assertTrue(ok)
 
     def test_datos_incompletos_no_permiten_inventar_zonas(self):
         with self.assertRaisesRegex(ValueError, "HISTORICO_ZONAS_INSUFICIENTE"):
