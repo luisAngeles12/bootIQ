@@ -7,6 +7,7 @@ from collections import Counter
 from unittest.mock import Mock, patch
 
 import estado
+import control_bloques_20_practice as bloque20
 from iqoptionapi import global_value
 from iqoptionapi.api import IQOptionAPI
 from iqoptionapi.stable_api import IQ_Option
@@ -19,12 +20,15 @@ from operaciones import (
 
 class EntryTimingTests(unittest.TestCase):
     def setUp(self):
+        self.bloque_anterior = bloque20._CUENTA
+        bloque20.iniciar("PRACTICE", True)
         self.original_iq = estado.Iq
         self.original_cooldowns = estado.cooldown_activos
         self.original_open_operations = estado.operaciones_abiertas
         estado.cooldown_activos = {}
 
     def tearDown(self):
+        bloque20._CUENTA = self.bloque_anterior
         estado.Iq = self.original_iq
         estado.cooldown_activos = self.original_cooldowns
         estado.operaciones_abiertas = self.original_open_operations
@@ -33,6 +37,7 @@ class EntryTimingTests(unittest.TestCase):
         current_candle = int(timestamp // 60) * 60
         iq = Mock()
         iq.get_server_timestamp.return_value = timestamp
+        iq.get_balance_mode.return_value = "PRACTICE"
         iq.buy.return_value = (False, "mock-rejected")
         estado.Iq = iq
 
