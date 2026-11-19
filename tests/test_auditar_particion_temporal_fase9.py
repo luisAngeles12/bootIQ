@@ -35,7 +35,7 @@ class ParticionTemporalFase9Tests(unittest.TestCase):
             antes = ruta.read_bytes()
             r = auditar_particion(ruta)
             self.assertEqual(r["estado"], "PRELIMINAR_NO_VERIFICADO_IQ")
-            self.assertEqual((r["train"], r["oos"]), (35, 15) if False else (30, 20))
+            self.assertEqual((r["train"], r["oos"]), (30, 20))
             self.assertLess(r["fin_train_utc"], r["inicio_oos_utc"])
             self.assertEqual(r["solapamiento_ids"], 0)
             self.assertEqual(antes, ruta.read_bytes())
