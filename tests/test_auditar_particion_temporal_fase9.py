@@ -127,5 +127,86 @@ class ParticionTemporalFase9Tests(unittest.TestCase):
             self.assertFalse(r["apto_para_memoria_productiva"])
 
 
+    def test_train_conciliado_antes_de_primera_apertura_oos(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = [fila(str(i), i * 3) for i in range(50)]
+            for f in filas:
+                inicio = datetime.fromisoformat(f["fecha"])
+                f["fecha_conciliacion_local_utc"] = (
+                    inicio + timedelta(minutes=1)
+                ).isoformat()
+            ruta = self.crear(tmp, filas, campos=CAMPOS + [
+                "fecha_conciliacion_local_utc"
+            ])
+            original = ruta.read_bytes()
+            resultado = auditar_particion(ruta)
+            self.assertTrue(resultado["separacion_local_sin_fuga"])
+            self.assertEqual(resultado["train_sin_conciliacion_utc"], 0)
+            self.assertEqual(resultado["train_con_resultado_conocido_tarde"], 0)
+            self.assertFalse(resultado["apto_para_memoria_productiva"])
+            self.assertEqual(ruta.read_bytes(), original)
+
+    def test_train_conciliado_en_apertura_oos_impide_validacion(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = [fila(str(i), i * 3) for i in range(50)]
+            for f in filas:
+                inicio = datetime.fromisoformat(f["fecha"])
+                f["fecha_conciliacion_local_utc"] = (
+                    inicio + timedelta(minutes=1)
+                ).isoformat()
+            filas[29]["fecha_conciliacion_local_utc"] = filas[30]["fecha"]
+            ruta = self.crear(tmp, filas, campos=CAMPOS + [
+                "fecha_conciliacion_local_utc"
+            ])
+            resultado = auditar_particion(ruta)
+            self.assertFalse(resultado["separacion_local_sin_fuga"])
+            self.assertEqual(resultado["train_con_resultado_conocido_tarde"], 1)
+
+    def test_falta_conciliacion_train_no_infiere_cierre_de_expiracion(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = [fila(str(i), i * 3) for i in range(50)]
+            ruta = self.crear(tmp, filas)
+            resultado = auditar_particion(ruta)
+            self.assertFalse(resultado["separacion_local_sin_fuga"])
+            self.assertEqual(resultado["train_sin_conciliacion_utc"], 30)
+            self.assertEqual(resultado["cierres_conciliacion_utc_faltantes"], 50)
+
+    def test_fecha_conciliacion_invalida_o_anterior_se_rechaza(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = [fila(str(i), i * 3) for i in range(50)]
+            for f in filas:
+                f["fecha_conciliacion_local_utc"] = f["fecha"]
+            filas[0]["fecha_conciliacion_local_utc"] = "sin_fecha"
+            filas[1]["fecha_conciliacion_local_utc"] = "2026-11-19T03:00:00"
+            filas[2]["fecha_conciliacion_local_utc"] = (
+                datetime.fromisoformat(filas[2]["fecha"]) -
+                timedelta(seconds=1)
+            ).isoformat()
+            ruta = self.crear(tmp, filas, campos=CAMPOS + [
+                "fecha_conciliacion_local_utc"
+            ])
+            resultado = auditar_particion(ruta)
+            self.assertFalse(resultado["separacion_local_sin_fuga"])
+            self.assertEqual(resultado["cierres_conciliacion_utc_faltantes"], 1)
+            self.assertEqual(resultado["cierres_conciliacion_utc_invalidos"], 1)
+            self.assertEqual(resultado["cierres_anteriores_a_apertura"], 1)
+
+    def test_offset_supuesto_nunca_certifica_separacion_local(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = [fila(str(i), i * 3) for i in range(50)]
+            for f in filas:
+                apertura = datetime.fromisoformat(f["fecha"])
+                f["fecha_conciliacion_local_utc"] = (
+                    apertura + timedelta(minutes=1)
+                ).isoformat()
+                f["fecha"] = apertura.replace(tzinfo=None).isoformat()
+            ruta = self.crear(tmp, filas, campos=CAMPOS + [
+                "fecha_conciliacion_local_utc"
+            ])
+            resultado = auditar_particion(ruta, offset_origen_minutos=0)
+            self.assertEqual(resultado["fechas_con_offset_asumido"], 50)
+            self.assertFalse(resultado["separacion_local_sin_fuga"])
+
+
 if __name__ == "__main__":
     unittest.main()
