@@ -3,9 +3,14 @@
 No declara evidencia estadistica, no cambia umbrales y nunca autoriza REAL.
 La conexion se verifica otra vez inmediatamente antes de enviar la orden.
 """
-from config import MODO_CUENTA, MIN_PRIORIDAD_OPERAR
+from config import MODO_CUENTA, MIN_PRIORIDAD_OPERAR, PERMITIR_BOOTSTRAP_SIN_MEMORIA
 
 def habilitable_sin_memoria(evidencia, decision):
+    # R9: el bloque oficial 20/20 bootstrap terminó con neto negativo.
+    # La excepción queda suspendida por defecto hasta validación externa.
+    # No afecta a las decisiones V3 con fuente estadística válida.
+    if not PERMITIR_BOOTSTRAP_SIN_MEMORIA:
+        return False
     if MODO_CUENTA != "PRACTICE" or not isinstance(evidencia, dict):
         return False
     if decision.get("decision") != "NO_OPERAR":
