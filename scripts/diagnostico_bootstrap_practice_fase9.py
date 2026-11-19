@@ -6,6 +6,8 @@ no modifica historial/estrategia/memoria ni identifica grupos como ganadores.
 import argparse
 import csv
 import json
+import math
+from decimal import Decimal
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -98,12 +100,59 @@ def diagnosticar(ruta):
     def metricas(valores):
         ganadas = sum(v > 0 for v in valores)
         perdidas = sum(v < 0 for v in valores)
-        neto = sum(valores)
+        n = len(valores)
+        neto = sum(valores, Decimal("0"))
+        beneficios = sum((v for v in valores if v > 0), Decimal("0"))
+        perdidas_abs = -sum((v for v in valores if v < 0), Decimal("0"))
+        # Wilson bilateral 95%; incertidumbre de la proporción observada.
+        # Supone ensayos independientes: en mercados correlacionados el
+        # intervalo puede ser demasiado optimista. No valida ventaja OOS.
+        if n:
+            z = 1.959963984540054
+            p = ganadas / n
+            d = 1 + z * z / n
+            centro = (p + z * z / (2 * n)) / d
+            radio = z * math.sqrt(
+                p * (1 - p) / n + z * z / (4 * n * n)
+            ) / d
+            intervalo = [
+                round(100 * max(0, centro - radio), 2),
+                round(100 * min(1, centro + radio), 2),
+            ]
+        else:
+            intervalo = None
+        # Punto de equilibrio usando PAGOS OBSERVADOS, no payout futuro.
+        # Solo definido con ganadoras y perdedoras presentes.
+        if ganadas and perdidas:
+            promedio_win = beneficios / ganadas
+            promedio_loss = perdidas_abs / perdidas
+            equilibrio = round(
+                100 * float(promedio_loss / (promedio_win + promedio_loss)), 2
+            )
+        else:
+            equilibrio = None
         return {
-            "n": len(valores), "wins": ganadas, "losses": perdidas,
-            "winrate_pct": round(100 * ganadas / len(valores), 2) if valores else None,
+            "n": n, "wins": ganadas, "losses": perdidas,
+            "winrate_pct": round(100 * ganadas / n, 2) if n else None,
+            "intervalo_wilson_95_pct_aprox": intervalo,
             "neto": str(neto),
-            "muestra_menor_20": len(valores) < 20,
+            "expectativa_observada_por_operacion": (
+                str((neto / n).quantize(Decimal("0.0001"))) if n else None
+            ),
+            "promedio_win_observado": (
+                str((beneficios / ganadas).quantize(Decimal("0.0001")))
+                if ganadas else None
+            ),
+            "promedio_loss_abs_observado": (
+                str((perdidas_abs / perdidas).quantize(Decimal("0.0001")))
+                if perdidas else None
+            ),
+            "punto_equilibrio_pct_pagos_observados": equilibrio,
+            "profit_factor_observado": (
+                round(float(beneficios / perdidas_abs), 4)
+                if perdidas_abs else None
+            ),
+            "muestra_menor_20": n < 20,
         }
 
     tablas = {}
@@ -127,7 +176,10 @@ def diagnosticar(ruta):
         "nota": (
             "Los dias son etiquetas del CSV sin zona confirmada. "
             "Los grupos fueron elegidos tras observar los resultados; "
-            "ningun subgrupo demuestra ventaja OOS ni acredita broker."
+            "ningun subgrupo demuestra ventaja OOS ni acredita broker. "
+            "El equilibrio utiliza promedios de pagos históricos; "
+            "Wilson 95% supone independencia y no corrige selección "
+            "retrospectiva ni dependencia de operaciones."
         ),
     }
 
