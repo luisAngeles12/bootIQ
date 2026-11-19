@@ -40,3 +40,16 @@ Fuente: registro local proporcionado por usuario, `Texto pegado(20261119-164202)
 - `tests/test_diagnostico_fuentes_fase9.py`: cinco regresiones con datos sintéticos, incluida invariancia de bytes del CSV.
 - Esta herramienta **no autoriza operaciones**, no entra en `bot.py` y no altera aprendizaje, estrategias ni los filtros. Si el JSON contiene únicamente agregados, se reporta `ruta_registros: null`, no un desglose imaginario.
 - **Pruebas pendientes**: última suite 451/451. No afirmar 456/456 hasta tener salida local.
+
+## R9-05 — diagnóstico del JSON oficial y suspensión de bootstrap (19-11-2026)
+
+Salida local: `python scripts/diagnostico_fuentes_fase9.py reportes_bloques_20_practice/bloque20_20261119T143229263020Z.json`.
+
+- **Suite previa confirmada: 619/619 OK (22.606 s)**. Cinco pruebas específicas del diagnóstico OK. Este número sustituye al último recuento documentado de 451, pero no representa un winrate.
+- El JSON contiene exactamente 20 órdenes bajo `raiz.operaciones`; las 20 tienen `origen_autoridad = BOOTSTRAP_PRACTICE_SIN_HISTORIAL`. Resultados crudos: diez `-25.0`, ocho `20.75`, un `21.25` y un `21.5`. Total -41.25, 50% de WIN. En particular, este bloque **no contiene autorizaciones V3 con fuente estadística válida**.
+- El diagnóstico encontró `aprendizaje_historico_bootiq_F4_CC2.csv` **inexistente** en el directorio y configuración efectivos de la ejecución del diagnóstico. No se puede atribuir a una memoria V3 válida el resultado del bloque ni asumir que exista alguna otra fuente aprobada hasta inspeccionar su procedencia.
+- Causa operacional comprobada: el permiso excepcional sin fuente V3 ejecutó todo el bloque, y **la muestra prospectiva de esta excepción fue no rentable**. Esto no demuestra por sí solo que cada subfamilia del bootstrap sea mala ni predice su rendimiento futuro.
+- Medida conservadora reversible: `config.PERMITIR_BOOTSTRAP_SIN_MEMORIA=False`; `bootstrap_practice.habilitable_sin_memoria()` retorna `False` sin evaluar ni autorizar una entrada cuando el permiso está desactivado. No afecta las decisiones con autorización V3 válida, stops, TOP20, expiraciones ni vetos SUCIO/CAOTICO.
+- En `tests/test_bootstrap_practice.py`, la matriz estructural previa sigue probándose solo con habilitación explícita de bootstrap, y se añade regresión para confirmar veto del modo suspendido.
+- **Pruebas de este nuevo cambio pendientes**. La suite confirmada de 619 pruebas es anterior a R9-05. El objetivo no es crear artificialmente un 60% reduciendo entradas a cero; para volver a operar con evidencia, hace falta construir/validar la memoria TRAIN y su rendimiento OOS independiente, luego correr PRACTICE nuevo.
+- No activar bootstrap simplemente para obtener frecuencia; tampoco entrenar y evaluar sobre los mismos 20 resultados, ni declarar el 60% estable por un bloque favorable.
