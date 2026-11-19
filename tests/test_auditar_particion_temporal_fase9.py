@@ -208,5 +208,60 @@ class ParticionTemporalFase9Tests(unittest.TestCase):
             self.assertFalse(resultado["separacion_local_sin_fuga"])
 
 
+    def test_apertura_utc_explicita_tiene_prioridad_sobre_fecha_legacy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = [fila(str(i), i * 3) for i in range(50)]
+            for f in filas:
+                f["fecha_apertura_registro_local_utc"] = f["fecha"]
+                f["fecha"] = "SIN_FECHA_LEGACY"
+                f["fecha_conciliacion_local_utc"] = (
+                    datetime.fromisoformat(f["fecha_apertura_registro_local_utc"])
+                    + timedelta(minutes=1)
+                ).isoformat()
+            ruta = self.crear(
+                tmp, filas, campos=CAMPOS + [
+                    "fecha_apertura_registro_local_utc",
+                    "fecha_conciliacion_local_utc",
+                ],
+            )
+            antes = ruta.read_bytes()
+            salida = auditar_particion(ruta)
+            self.assertEqual(salida["estado"], "PRELIMINAR_NO_VERIFICADO_IQ")
+            self.assertEqual(salida["aperturas_con_registro_utc_explicito"], 50)
+            self.assertEqual(salida["aperturas_con_fecha_legacy"], 0)
+            self.assertTrue(salida["aperturas_utc_100pct"])
+            self.assertTrue(salida["separacion_local_sin_fuga"])
+            self.assertFalse(salida["apto_para_memoria_productiva"])
+            self.assertEqual(ruta.read_bytes(), antes)
+
+    def test_marca_utc_invalida_no_admite_fallback_legacy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = [fila(str(i), i) for i in range(50)]
+            for f in filas:
+                f["fecha_apertura_registro_local_utc"] = f["fecha"]
+            filas[0]["fecha_apertura_registro_local_utc"] = "no_es_utc"
+            filas[1]["fecha_apertura_registro_local_utc"] = (
+                "2026-11-19T00:01:00"
+            )
+            ruta = self.crear(
+                tmp, filas, campos=CAMPOS + ["fecha_apertura_registro_local_utc"]
+            )
+            salida = auditar_particion(ruta)
+            self.assertEqual(salida["exclusiones"]["APERTURA_UTC_INVALIDA"], 1)
+            self.assertEqual(salida["exclusiones"]["APERTURA_UTC_SIN_ZONA"], 1)
+            self.assertEqual(salida["candidatas_tras_filtros"], 48)
+            self.assertEqual(salida["aperturas_con_fecha_legacy"], 0)
+
+    def test_codigo_productivo_solo_guarda_marca_utc_como_telemetria(self):
+        from pathlib import Path
+        fuente = (Path(__file__).resolve().parents[1] / "operaciones.py").read_text(
+            encoding="utf-8"
+        )
+        posicion_guardado = fuente.index("guardar_historial({")
+        inicio = fuente.index('"fecha_apertura_registro_local_utc"', posicion_guardado)
+        self.assertGreater(inicio, posicion_guardado)
+        self.assertIn("datetime.now(timezone.utc).isoformat()", fuente[inicio:inicio+135])
+
+
 if __name__ == "__main__":
     unittest.main()
