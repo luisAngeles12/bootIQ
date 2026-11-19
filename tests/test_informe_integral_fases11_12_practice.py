@@ -65,6 +65,28 @@ class InformeIntegralTest(unittest.TestCase):
         self.assertEqual(r["estado"], "EVIDENCIA_INSUFICIENTE")
         self.assertFalse(r["evaluacion_posible"])
 
+    def test_csv_sin_estado_cerrada_no_calcula_winrate(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "sin_cierre.csv"
+            with p.open("w", encoding="utf-8", newline="") as f:
+                w = csv.DictWriter(f, fieldnames=[
+                    "order_id", "fecha_cierre", "resultado", "neto",
+                    "familia", "tipo_cuenta"
+                ])
+                w.writeheader()
+                w.writerow({
+                    "order_id": "1",
+                    "fecha_cierre": "2026-11-18T17:00:00+00:00",
+                    "resultado": "WIN", "neto": "20.75",
+                    "familia": "resistencia", "tipo_cuenta": "PRACTICE"
+                })
+            r = informe(p)
+        self.assertEqual(r["estado"], "EVIDENCIA_INSUFICIENTE")
+        self.assertIn("estado", r["preflight"]["faltantes"])
+        self.assertIsNone(r["consistencia"])
+        self.assertIsNone(r["robustez"])
+        self.assertFalse(r["evaluacion_posible"])
+
     def test_resultado_invalido_no_genera_estadisticas_parciales(self):
         with tempfile.TemporaryDirectory() as d:
             ruta = crear(d)
