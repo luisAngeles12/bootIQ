@@ -263,5 +263,19 @@ class ParticionTemporalFase9Tests(unittest.TestCase):
         self.assertIn("datetime.now(timezone.utc).isoformat()", fuente[inicio:inicio+135])
 
 
+    def test_corte_lineal_con_timestamps_repetidos_conserva_resultado(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = [fila(str(i).zfill(5), i // 4) for i in range(1200)]
+            ruta = self.crear(tmp, list(reversed(filas)))
+            anterior = ruta.read_bytes()
+            resultado = auditar_particion(ruta, minimo_train=20, minimo_oos=20)
+            self.assertEqual(resultado["estado"], "PRELIMINAR_NO_VERIFICADO_IQ")
+            self.assertEqual(resultado["train"], 840)
+            self.assertEqual(resultado["oos"], 360)
+            self.assertLess(resultado["fin_train_utc"], resultado["inicio_oos_utc"])
+            self.assertEqual(resultado["solapamiento_ids"], 0)
+            self.assertEqual(anterior, ruta.read_bytes())
+
+
 if __name__ == "__main__":
     unittest.main()
