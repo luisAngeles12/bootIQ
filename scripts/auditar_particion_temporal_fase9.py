@@ -110,7 +110,7 @@ def auditar_particion(
                 if cierre_utc < apertura_utc:
                     cierres_anteriores_a_apertura += 1
                     cierre_utc = None
-        admisibles.append((apertura_utc, oid, pnl_tipo, cierre_utc))
+        admisibles.append((apertura_utc, oid, "GANANCIA" if pnl > 0 else "PERDIDA", cierre_utc))
 
     # Denominador independiente del estado/resultado: nunca definir la
     # muestra de 20 a partir de solo las operaciones que ganaron/perdieron.
