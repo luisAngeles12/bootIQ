@@ -6,6 +6,7 @@ IDs y cronología antes de considerar entrenamiento TRAIN/OOS.
 import csv
 import json
 import math
+from datetime import datetime
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -29,6 +30,37 @@ def _fecha_finita(valor):
     return numero if math.isfinite(numero) and numero > 0 else None
 
 
+
+def _fecha_iso(valor):
+    """Reconoce ISO 8601 solo como diagnóstico (sin inventar zona horaria)."""
+    texto = str(valor or "").strip()
+    if not texto:
+        return None
+    try:
+        fecha = datetime.fromisoformat(
+            texto[:-1] + "+00:00" if texto.endswith("Z") else texto
+        )
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return fecha.isoformat()
+
+
+def _resultado_monetario(valor):
+    """Clasifica PNL, sin convertirlo en una etiqueta de entrenamiento."""
+    try:
+        pnl = float(valor)
+    except (TypeError, ValueError, OverflowError):
+        return "NO_NUMERICO"
+    if not math.isfinite(pnl):
+        return "NO_FINITO"
+    return "GANANCIA" if pnl > 0 else ("PERDIDA" if pnl < 0 else "EMPATE")
+
+
+def _cierre_explicito(estado):
+    return estado in {"CERRADA", "CERRADO"}
+
+
+
 def analizar_historial(ruta):
     ruta = Path(ruta)
     modos = Counter()
@@ -42,6 +74,12 @@ def analizar_historial(ruta):
     fechas_candidatas = []
     filas = 0
     marcas_candidatas = set()
+    estados_cierre = Counter()
+    resultados_numericos = Counter()
+    modos_cierre_numerico = Counter()
+    fechas_iso = 0
+    fechas_iso_cierre_practice = 0
+    cierre_practice_numerico_ids = set()
 
     with ruta.open(encoding="utf-8-sig", newline="") as archivo:
         lector = csv.DictReader(archivo)
@@ -55,6 +93,17 @@ def analizar_historial(ruta):
             origen = _txt(registro.get("origen_autoridad")) or "SIN_AUTORIDAD"
             orden = str(registro.get("order_id") or "").strip()
             fecha = _fecha_finita(registro.get("fecha"))
+            fecha_iso = _fecha_iso(registro.get("fecha"))
+            fechas_iso += fecha_iso is not None
+            pnl_tipo = _resultado_monetario(registro.get("resultado"))
+            resultados_numericos[pnl_tipo] += 1
+            if _cierre_explicito(_txt(registro.get("estado"))):
+                estados_cierre[modo] += 1
+                if pnl_tipo in {"GANANCIA", "PERDIDA", "EMPATE"}:
+                    modos_cierre_numerico[modo] += 1
+                    if modo == "PRACTICE" and orden:
+                        cierre_practice_numerico_ids.add(orden)
+                        fechas_iso_cierre_practice += fecha_iso is not None
             modos[modo] += 1
             estados[estado] += 1
             etiquetas[etiqueta] += 1
@@ -93,6 +142,14 @@ def analizar_historial(ruta):
         "order_ids_repetidos": repetidos,
         "order_ids_con_metadatos_distintos": conflictivos,
         "filas_con_fecha_numerica": fechadas,
+        "filas_con_fecha_iso": fechas_iso,
+        "filas_cierre_explicito_por_modo": dict(sorted(estados_cierre.items())),
+        "tipos_resultado_monetario": dict(sorted(resultados_numericos.items())),
+        "filas_cierre_con_pnl_finito_por_modo": dict(
+            sorted(modos_cierre_numerico.items())
+        ),
+        "ids_practice_cierre_con_pnl_finito": len(cierre_practice_numerico_ids),
+        "cierre_practice_con_fecha_iso": fechas_iso_cierre_practice,
         "filas_candidatas_preliminares_practice": posibles_candidatas,
         "ids_candidatos_distintos": len(marcas_candidatas),
         "candidatas_fechadas": len(fechas_candidatas),
@@ -100,7 +157,8 @@ def analizar_historial(ruta):
         "max_fecha_candidata": max(fechas_candidatas) if fechas_candidatas else None,
         "advertencia": (
             "CANDIDATAS PRELIMINARES, NO MEMORIA: falta verificar contra IQ "
-            "las órdenes y resultados, duplicados y partición temporal TRAIN/OOS."
+            "las órdenes y resultados, duplicados y partición temporal TRAIN/OOS. "
+            "Los PNL numéricos no son etiquetas WIN/LOSS del motor."
         ),
     }
 
