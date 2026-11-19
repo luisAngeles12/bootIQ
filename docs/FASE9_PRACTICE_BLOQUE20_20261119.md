@@ -146,3 +146,12 @@ Salida local: `python scripts/diagnostico_fuentes_fase9.py reportes_bloques_20_p
 - Cinco pruebas nuevas: TRAIN anterior a OOS; cierre igual a primera apertura OOS; marcas de cierre ausentes; marcas inválidas o anteriores a apertura; offset supuesto que no puede certificar.
 - CI verificada directamente: GitHub Actions https://github.com/luisAngeles12/bootIQ/actions/runs/44586352076 con commit `576b78875a52d670c6767050ae5550cd9a42efa9`: **649/649 pruebas generales OK (10.180 s)**, 3/3 régimen OK, 335 archivos Python con sintaxis OK, sin broker.
 - Pendiente: validación de la fuente real `historial_bot.csv`, conciliación IQ por `order_id`, y medición de rentabilidad OOS con muestras independientes. No permitir REAL ni reactivar el bootstrap sin memoria.
+
+## R9-14 — métricas OOS descriptivas y consistencia por bloques de 20
+
+- Se creó `scripts/evaluar_oos_descriptivo_fase9.py`, de **solo lectura**. Reutiliza el corte de R9-13 y **no emite métricas** si falla `separacion_local_sin_fuga`. También rechaza los resultados OOS sin marca UTC de conciliación o cuya marca precede a la apertura.
+- Sobre filas PRACTICE cerradas con importe numérico finito no nulo, reporta bloques completos no solapados de 20 y ventanas móviles de 20: WIN/LOSS por signo del PNL, tasa de acierto, neto, expectativa y profit factor. Exige simultáneamente **al menos 12 WIN en 20 y neto positivo** por ventana. No convierte los resultados en memoria ni analiza señales hipotéticas como ejecuciones reales.
+- Distingue explícitamente `DESCRIPTIVO_HISTORICO_NO_VALIDA_POLITICA_V3`: las observaciones se produjeron con la política histórica (por ejemplo bootstrap), por lo que una evaluación descriptiva posterior al corte **no equivale a probar una estrategia V3 entrenada en TRAIN ni demuestra selección contrafactual de operaciones**.
+- Añadidas seis pruebas sintéticas sobre ventanas positivas, 60% con neto negativo, leakage de TRAIN, ausencia de cierre OOS, tamaño insuficiente y ventanas móviles.
+- Evidencia GitHub Actions https://github.com/luisAngeles12/bootIQ/actions/runs/44587219365, commit de código `91d00575d70f54f7e7ba300b3a2afc1bafb9e10e`: **655/655 pruebas generales OK (9.314 s)**, 3/3 pruebas de régimen OK (0.011 s), 337 archivos Python con sintaxis correcta. Sin conexión al broker.
+- El historial local todavía no fue aportado y no está versionado; la herramienta no se ha corrido sobre las 580 filas reales. El 60% consistente con neto positivo sigue **NO DEMOSTRADO**. Bootstrap sin memoria sigue suspendido y REAL prohibido.
