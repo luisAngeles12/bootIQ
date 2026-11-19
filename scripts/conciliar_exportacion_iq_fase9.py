@@ -45,8 +45,12 @@ def _monto(valor):
         return None
     if not monto.is_finite():
         return None
-    # No usar tolerancia: los PNL deben coincidir al centavo.
-    return monto.quantize(Decimal("0.01"))
+    # Un resultado con fracciones de centavo no se redondea sin prueba
+    # de la unidad de origen. Comparacion estricta de centavos.
+    centavos = monto * 100
+    if centavos != centavos.to_integral_value():
+        return None
+    return monto
 
 
 def _momento_utc(valor):
@@ -70,6 +74,13 @@ def _indices(filas):
 
 def conciliar_exportacion(historial, exportacion):
     """Cotejo estricto: evita declarar matches ante duplicados y datos ambiguos."""
+    if Path(historial).resolve() == Path(exportacion).resolve():
+        return {
+            "estado": "NO_APTO", "causa": "MISMO_ARCHIVO",
+            "memoria_generada": False, "habilita_trading": False,
+            "broker_verificado_en_linea": False,
+            "origen_exportacion_verificado": False,
+        }
     bot, error_bot = _leer(historial, CAMPOS_BOT)
     broker, error_broker = _leer(exportacion, CAMPOS_BROKER)
     base = {
@@ -86,15 +97,11 @@ def conciliar_exportacion(historial, exportacion):
     if error_bot or error_broker:
         return {**base, "causa": "ESQUEMA_INVALIDO",
                 "historial_error": error_bot, "broker_error": error_broker}
-    if Path(historial).resolve() == Path(exportacion).resolve():
-        return {**base, "causa": "MISMO_ARCHIVO"}
-
     por_id_bot, frec_bot = _indices(bot)
     por_id_broker, frec_broker = _indices(broker)
     duplicados_bot = sum(v > 1 for k, v in frec_bot.items() if k)
     duplicados_broker = sum(v > 1 for k, v in frec_broker.items() if k)
     motivos = Counter()
-    ejemplos_omitidos = 0
     conciliadas = 0
     pnl_conciliado = Decimal("0.00")
     for oid, f in por_id_bot.items():
