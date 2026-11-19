@@ -123,6 +123,41 @@ class ConsistenciaTest(unittest.TestCase):
         self.assertTrue(r["cronologia_inequivoca"])
         self.assertTrue(r["cumple_muestra_observada"])
 
+    def test_informa_primera_ventana_fallida_y_causa(self):
+        a = filas(40, 8)
+        a[8]["resultado"] = "LOSS"
+        a[8]["neto"] = "-25"
+        r = evaluar(a)
+        ventana = r["primera_ventana_fallida"]
+        self.assertIsNotNone(ventana)
+        self.assertEqual(ventana["inicio_indice"], 1)
+        self.assertEqual(ventana["fin_indice"], 20)
+        self.assertEqual(ventana["wins"], 11)
+        self.assertTrue(ventana["falla_acierto"])
+        self.assertEqual(ventana["faltan_wins_para_12"], 1)
+        self.assertEqual(ventana["primer_order_id"], "1")
+        self.assertEqual(ventana["ultimo_order_id"], "20")
+        self.assertEqual(r["peor_ventana_por_aciertos"]["wins"], 11)
+
+    def test_identifica_ventana_con_60_pero_neto_negativo(self):
+        a = filas(20, 8)
+        for fila in a:
+            if fila["resultado"] == "WIN":
+                fila["neto"] = "5"
+        r = evaluar(a)
+        ventana = r["primera_ventana_fallida"]
+        self.assertEqual(ventana["wins"], 12)
+        self.assertFalse(ventana["falla_acierto"])
+        self.assertTrue(ventana["falla_rentabilidad"])
+        self.assertEqual(ventana["faltan_wins_para_12"], 0)
+        self.assertEqual(ventana["neto"], -140.0)
+
+    def test_muestra_corta_no_inventa_ventana_fallida(self):
+        r = evaluar(filas(19))
+        self.assertIsNone(r["primera_ventana_fallida"])
+        self.assertIsNone(r["peor_ventana_por_aciertos"])
+        self.assertIsNone(r["peor_ventana_por_neto"])
+
     def test_familia_en_blanco_no_valida_consistencia(self):
         a = filas(20, 8)
         for f in a:
