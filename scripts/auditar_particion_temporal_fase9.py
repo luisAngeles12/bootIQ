@@ -47,6 +47,9 @@ def auditar_particion(
     excluidas = Counter()
     admisibles = []
     marcas_con_offset_asumido = 0
+    cierres_faltantes = 0
+    cierres_invalidos = 0
+    cierres_anteriores_a_apertura = 0
     for f in filas:
         oid = str(f.get("order_id") or "").strip()
         if not oid:
@@ -80,7 +83,21 @@ def auditar_particion(
                 minutes=offset_origen_minutos
             )))
             marcas_con_offset_asumido += 1
-        admisibles.append((dt.astimezone(timezone.utc), oid, pnl_tipo))
+        apertura_utc = dt.astimezone(timezone.utc)
+        cierre_iso = _fecha_iso(f.get("fecha_conciliacion_local_utc"))
+        cierre_utc = None
+        if cierre_iso is None:
+            cierres_faltantes += 1
+        else:
+            marca = datetime.fromisoformat(cierre_iso)
+            if marca.tzinfo is None or marca.utcoffset() is None:
+                cierres_invalidos += 1
+            else:
+                cierre_utc = marca.astimezone(timezone.utc)
+                if cierre_utc < apertura_utc:
+                    cierres_anteriores_a_apertura += 1
+                    cierre_utc = None
+        admisibles.append((apertura_utc, oid, pnl_tipo, cierre_utc))
 
     admisibles.sort(key=lambda x: (x[0], x[1]))
     marcas = sorted(set(f[0] for f in admisibles))
@@ -91,6 +108,11 @@ def auditar_particion(
         "exclusiones": dict(sorted(excluidas.items())),
         "train": 0, "oos": 0,
         "fechas_con_offset_asumido": marcas_con_offset_asumido,
+        "cierres_conciliacion_utc_faltantes": cierres_faltantes,
+        "cierres_conciliacion_utc_invalidos": cierres_invalidos,
+        "cierres_anteriores_a_apertura": cierres_anteriores_a_apertura,
+        "cierres_observados_localmente": sum(f[3] is not None for f in admisibles),
+        "cierre_columna_semantica": "RESULTADO_PERSISTIDO_LOCAL_NO_LIQUIDACION_IQ",
         "offset_origen_supuesto_minutos": offset_origen_minutos,
         "fecha_columna_semantica": "APERTURA_LOCAL_SIN_ZONA_SEGUN_OPERACIONES_PY",
         "cierre_temporal_verificado": False,
@@ -109,7 +131,7 @@ def auditar_particion(
     # Prohibido dividir dos órdenes del mismo instante UTC entre TRAIN y OOS.
     cortes = []
     for corte in marcas[:-1]:
-        n_train = sum(t <= corte for t, _, _ in admisibles)
+        n_train = sum(f[0] <= corte for f in admisibles)
         n_oos = len(admisibles) - n_train
         if n_train >= minimo_train and n_oos >= minimo_oos:
             cortes.append((abs(n_train / len(admisibles) - proporcion_train),
@@ -117,10 +139,31 @@ def auditar_particion(
     if not cortes:
         return {**base, "estado": "NO_APTO", "causa": "NO_HAY_CORTE_CON_MINIMOS"}
     _, corte, n_train, n_oos = min(cortes)
-    primer_oos = next(t for t, _, _ in admisibles if t > corte)
+    primer_oos = next(f[0] for f in admisibles if f[0] > corte)
     assert corte < primer_oos and n_train + n_oos == len(admisibles)
+    train_filas = [f for f in admisibles if f[0] <= corte]
+    train_sin_cierre = sum(f[3] is None for f in train_filas)
+    ultimo_cierre_train = max(
+        (f[3] for f in train_filas if f[3] is not None), default=None
+    )
+    cruces_train_oos = sum(
+        f[3] is not None and f[3] >= primer_oos for f in train_filas
+    )
+    # La etiqueta TRAIN solo era conocida antes de OOS si TODAS las
+    # conciliaciones TRAIN preceden estrictamente a la primera apertura OOS.
+    separacion_local = (
+        train_sin_cierre == 0 and ultimo_cierre_train is not None
+        and ultimo_cierre_train < primer_oos
+        and marcas_con_offset_asumido == 0
+    )
     return {
         **base, "estado": "PRELIMINAR_NO_VERIFICADO_IQ",
+        "separacion_local_sin_fuga": separacion_local,
+        "train_sin_conciliacion_utc": train_sin_cierre,
+        "train_con_resultado_conocido_tarde": cruces_train_oos,
+        "ultimo_cierre_train_local_utc": (
+            ultimo_cierre_train.isoformat() if ultimo_cierre_train else None
+        ),
         "train": n_train, "oos": n_oos,
         "fin_train_utc": corte.isoformat(),
         "inicio_oos_utc": primer_oos.isoformat(),
@@ -129,8 +172,9 @@ def auditar_particion(
         "observacion": (
             "Corte de aperturas SOLAMENTE: no se ha demostrado que todas "
             "las órdenes TRAIN hayan cerrado antes de la primera apertura "
-            "OOS. Falta horario real de cierre conciliado, cotejo con IQ "
-            "y partición prospectiva. Nunca usar directamente en producción."
+            "OOS. La comparación local de conciliación identifica resultados "
+            "que se conocieron tarde, pero no comprueba liquidación IQ. "
+            "Nunca usar directamente en producción."
         ),
     }
 
