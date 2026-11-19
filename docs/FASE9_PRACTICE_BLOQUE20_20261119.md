@@ -94,3 +94,10 @@ Salida local: `python scripts/diagnostico_fuentes_fase9.py reportes_bloques_20_p
 - Se introdujeron tres pruebas adicionales: fechas ISO y PNL, `estado=CERRADA` frente a apertura, y tratamiento de PNL no finito y modo sin verificar.
 - **Pendiente ejecución** de las nuevas pruebas (se esperan 630 generales), así como confirmación de la columna `estado` y las fechas reales. Solo después estudiar transformación de resultados **auditados** a etiquetas, desduplicación temporal y TRAIN/OOS.
 - No se cambió `historial.py`, `motor_aprendizaje_historico.py`, la estrategia ni el permiso de trading; bootstrap permanece desactivado por defecto y REAL prohibido.
+
+## R9-08 CI verificado directamente por GitHub Actions
+
+- Workflow `BootIQ - auditoria integral fases 5-12 SIN BROKER`: https://github.com/luisAngeles12/bootIQ/actions/runs/44578840527
+- Commit de código `b178647361e5000d2abdac4e161d7f268e768c6e`; job `full-unittest`: **success**, 630/630 pruebas de toda la suite (10.058 s), más 3/3 pruebas de régimen (0.014 s). Compilación sintáctica del árbol versionado correcta.
+- Último commit `d86a65a7c4507c8cdcee1cb998b8b5e96c08225c` cambió solo documentación; no modificó código probado.
+- Desde ahora, consultar GitHub Actions directamente y no pedir ejecuciones locales para la suite replicable en CI. Para archivos locales no versionados (p. ej. `historial_bot.csv`) aún se requiere evidencia local o archivo aportado, sin afirmar pruebas que CI no puede ejecutar con esos datos.
