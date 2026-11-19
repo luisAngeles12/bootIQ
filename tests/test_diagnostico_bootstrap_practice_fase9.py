@@ -84,6 +84,60 @@ class DiagnosticoBootstrapTests(unittest.TestCase):
             self.assertFalse(r["validacion_oos"])
             self.assertFalse(r["permite_reconfigurar_estrategia"])
 
+    def test_punto_equilibrio_y_expectativa_con_pagos_asimetricos(self):
+        with tempfile.TemporaryDirectory() as carpeta:
+            ruta = self.crear(carpeta, [
+                fila("001", "20.75"), fila("002", "-25.00"),
+                fila("003", "-25.00"),
+            ])
+            antes = ruta.read_bytes()
+            r = diagnosticar(ruta)
+            resumen = r["resumen"]
+            self.assertEqual(resumen["winrate_pct"], 33.33)
+            self.assertEqual(resumen["neto"], "-29.25")
+            self.assertEqual(resumen["expectativa_observada_por_operacion"], "-9.7500")
+            self.assertEqual(resumen["promedio_win_observado"], "20.7500")
+            self.assertEqual(resumen["promedio_loss_abs_observado"], "25.0000")
+            self.assertEqual(resumen["punto_equilibrio_pct_pagos_observados"], 54.64)
+            self.assertEqual(resumen["profit_factor_observado"], 0.415)
+            self.assertEqual(antes, ruta.read_bytes())
+
+    def test_wilson_no_equivale_a_certificacion_del_60(self):
+        with tempfile.TemporaryDirectory() as carpeta:
+            r = diagnosticar(self.crear(carpeta, [
+                fila(str(i), "20.75" if i < 12 else "-25.0")
+                for i in range(20)
+            ]))
+            resumen = r["resumen"]
+            self.assertEqual(resumen["winrate_pct"], 60.0)
+            self.assertLess(resumen["intervalo_wilson_95_pct_aprox"][0], 60)
+            self.assertGreater(resumen["intervalo_wilson_95_pct_aprox"][1], 60)
+            self.assertFalse(r["validacion_oos"])
+            self.assertFalse(r["procedencia_iq_verificada"])
+
+    def test_solo_wins_o_solo_losses_sin_punto_equilibrio(self):
+        with tempfile.TemporaryDirectory() as carpeta:
+            for valor in ("20.75", "-25"):
+                with self.subTest(valor=valor):
+                    r = diagnosticar(self.crear(carpeta, [
+                        fila(str(i), valor) for i in range(3)
+                    ]))
+                    self.assertIsNone(
+                        r["resumen"]["punto_equilibrio_pct_pagos_observados"]
+                    )
+                    self.assertIsNotNone(
+                        r["resumen"]["intervalo_wilson_95_pct_aprox"]
+                    )
+
+    def test_sin_muestra_no_fabrica_intervalo_ni_expectativa(self):
+        with tempfile.TemporaryDirectory() as carpeta:
+            r = diagnosticar(self.crear(carpeta, [fila("1", modo="")]))
+            resumen = r["resumen"]
+            self.assertIsNone(resumen["intervalo_wilson_95_pct_aprox"])
+            self.assertIsNone(resumen["expectativa_observada_por_operacion"])
+            self.assertIsNone(resumen["punto_equilibrio_pct_pagos_observados"])
+            self.assertFalse(r["permite_reconfigurar_estrategia"])
+
     def test_esquema_incompleto_falla_cerrado(self):
         with tempfile.TemporaryDirectory() as carpeta:
             r = diagnosticar(self.crear(carpeta, [{"order_id": "1"}],
