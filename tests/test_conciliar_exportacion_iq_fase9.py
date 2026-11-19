@@ -18,16 +18,17 @@ def _crear(carpeta, nombre, campos, filas):
 
 BOT = [
     "order_id", "modo_cuenta_configurado", "estado", "resultado",
-    "fecha_conciliacion_local_utc",
+    "fecha_conciliacion_local_utc", "fecha_apertura_registro_local_utc",
 ]
 IQ = ["order_id", "modo_cuenta", "estado", "pnl", "fecha_cierre_utc"]
 
 
 def _bot(oid, pnl="20.75", mode="PRACTICE", state="CERRADA",
-         timestamp="2026-11-19T18:05:00+00:00"):
+         timestamp="2026-11-19T18:05:00+00:00", apertura=""):
     return {"order_id": oid, "modo_cuenta_configurado": mode,
             "estado": state, "resultado": pnl,
-            "fecha_conciliacion_local_utc": timestamp}
+            "fecha_conciliacion_local_utc": timestamp,
+            "fecha_apertura_registro_local_utc": apertura}
 
 
 def _iq(oid, pnl="20.75", mode="PRACTICE", state="CERRADA",
@@ -100,6 +101,51 @@ class ConciliacionOfflineIQFase9Tests(unittest.TestCase):
             self.assertEqual(r["ids_sin_broker"], 1)
             self.assertEqual(r["ids_solo_broker"], 1)
             self.assertEqual(r["conciliadas_preliminares"], 0)
+
+    def test_rechaza_cierre_broker_antes_de_apertura_utc_del_bot(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r = self.analizar(
+                tmp, [_bot("001", apertura="2026-11-19T18:03:00Z")],
+                [_iq("001", timestamp="2026-11-19T18:02:00Z")],
+            )
+            self.assertEqual(r["conciliadas_preliminares"], 0)
+            self.assertEqual(r["exclusiones"][
+                "CIERRE_BROKER_ANTERIOR_APERTURA_BOT"], 1)
+
+    def test_acepta_cronologia_utc_con_zonas_distintas(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r = self.analizar(
+                tmp, [_bot("001", apertura="2026-11-19T14:02:00-04:00")],
+                [_iq("001", timestamp="2026-11-19T18:04:00Z")],
+            )
+            self.assertEqual(r["conciliadas_preliminares"], 1)
+            self.assertFalse(r["origen_exportacion_verificado"])
+
+    def test_bloquea_apertura_explicita_sin_zona(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r = self.analizar(
+                tmp, [_bot("001", apertura="2026-11-19T18:01:00")],
+                [_iq("001")],
+            )
+            self.assertEqual(r["conciliadas_preliminares"], 0)
+            self.assertEqual(r["exclusiones"]["BOT_APERTURA_UTC_INVALIDA"], 1)
+
+    def test_rechaza_conciliacion_local_anterior_a_apertura(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r = self.analizar(
+                tmp, [_bot("001", timestamp="2026-11-19T18:01:00Z",
+                           apertura="2026-11-19T18:02:00Z")],
+                [_iq("001", timestamp="2026-11-19T18:00:00Z")],
+            )
+            self.assertEqual(r["conciliadas_preliminares"], 0)
+            self.assertEqual(r["exclusiones"][
+                "CIERRE_BROKER_ANTERIOR_APERTURA_BOT"], 1)
+
+    def test_legacy_sin_apertura_utc_no_inventa_fecha(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r = self.analizar(tmp, [_bot("001", apertura="")], [_iq("001")])
+            self.assertEqual(r["conciliadas_preliminares"], 1)
+            self.assertFalse(r["origen_exportacion_verificado"])
 
     def test_mismo_archivo_no_equivale_a_broker_independiente(self):
         with tempfile.TemporaryDirectory() as tmp:
