@@ -12,7 +12,8 @@ from collections import Counter
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-from scripts.auditar_historial_fase9 import _cierre_explicito, _fecha_iso, _resultado_monetario, _txt
+from scripts.auditar_historial_fase9 import _cierre_explicito, _fecha_iso, _txt
+from scripts.conciliar_exportacion_iq_fase9 import _monto
 
 
 def auditar_particion(
