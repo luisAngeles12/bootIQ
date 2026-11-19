@@ -60,3 +60,11 @@ Salida local: `python scripts/diagnostico_fuentes_fase9.py reportes_bloques_20_p
 - Corrección limitada a tests: ambas clases habilitan el modo bootstrap explícitamente en `setUp` para conservar la cobertura de reglas estructurales y la integración histórica; el valor productivo `PERMITIR_BOOTSTRAP_SIN_MEMORIA=False` **no se cambia**.
 - Regresión nueva: `test_r9_suspension_default_no_autoriza_a_traves_de_cerebro`, que demuestra el veto con el Cerebro unificado cuando el permiso se desactiva.
 - **La nueva suite estimada es de 621 pruebas; ejecución local pendiente.** No declarar reparación confirmada antes de la salida completa.
+
+## Validación R9-05 completada — 19-11-2026
+
+- Fast-forward `0716a48..56e2274` confirmado por el usuario.
+- `python -m unittest discover -s tests -p 'test_*.py' -q`: **621 pruebas, OK, 21.478 segundos**, cero fallos.
+- Se confirma que las tres regresiones de fixtures anteriores se resolvieron con opt-in exclusivamente dentro de pruebas y que el modo productivo de bootstrap permanece desactivado por defecto.
+- Las líneas `BLOQUE20 RESULTADO` de 60% en la salida corresponden a **fixtures de test** ejecutados dentro de la suite y no constituyen un nuevo bloque prospectivo de IQ Option.
+- Próxima tarea: inventario local de insumos históricos y evaluación TRAIN/OOS; **no crear memoria de producción a partir de datos sin procedencia temporal validada**.
