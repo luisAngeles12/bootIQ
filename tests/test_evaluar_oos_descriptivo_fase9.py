@@ -5,7 +5,7 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from scripts.evaluar_oos_descriptivo_fase9 import evaluar_oos
+from scripts.evaluar_oos_descriptivo_fase9 import evaluar_oos, _metricas
 
 
 CAMPOS = [
@@ -206,6 +206,58 @@ class EvaluacionOosDescriptivaFase9Tests(unittest.TestCase):
             self.assertEqual(
                 resultado["cotejo_offline"]["exclusiones"]["SIN_ID_UNICO_BROKER"], 1
             )
+
+
+    def test_drawdown_y_racha_son_de_pnl_no_de_balance_porcentual(self):
+        bloque = [
+            (None, str(i), pnl, "TEST")
+            for i, pnl in enumerate([20.75, -25, -25, 20.75, -25])
+        ]
+        datos = _metricas(bloque)
+        self.assertEqual(datos["operaciones"], 5)
+        self.assertEqual(datos["ganadas"], 2)
+        self.assertEqual(datos["perdidas"], 3)
+        self.assertEqual(datos["neto"], -33.5)
+        self.assertEqual(datos["drawdown_maximo_unidades"], 54.25)
+        self.assertEqual(datos["racha_maxima_perdidas"], 2)
+        self.assertFalse(datos["cumple_60_y_neto_positivo"])
+
+    def test_oos_descriptivo_informa_peor_ventana_y_muestra_incompleta(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r = evaluar_oos(self.crear(tmp, filas_base(70, wins_oos=12)))
+            self.assertEqual(r["estado"], "DESCRIPTIVO_NO_VERIFICADO_BROKER")
+            self.assertEqual(r["oos_operaciones"], 21)
+            self.assertEqual(r["bloques_20_completos"], 1)
+            self.assertEqual(r["operaciones_restantes_sin_bloque_completo"], 1)
+            self.assertGreaterEqual(r["ventanas_moviles_20"], 2)
+            self.assertIn("peor_winrate_ventana_20", r)
+            self.assertIn("peor_neto_ventana_20", r)
+            self.assertIn("drawdown_maximo_unidades", r["resumen_oos_descriptivo"])
+            self.assertFalse(r["evidencia_sostenida_60_pct"])
+            self.assertFalse(r["habilita_trading"])
+
+    def test_un_bloque_60_no_demuestra_meta_sostenida(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r = evaluar_oos(self.crear(tmp, filas_base()))
+            self.assertTrue(r["cumple_todos_bloques_20"])
+            self.assertTrue(r["cumple_todas_ventanas_moviles_20"])
+            self.assertFalse(r["evidencia_sostenida_60_pct"])
+            self.assertEqual(
+                r["calidad_evidencia"], "DESCRIPTIVO_HISTORICO_NO_INDEPENDIENTE"
+            )
+
+    def test_oos_fallas_monetarias_son_reportadas_sin_ocultarse(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = filas_base()
+            for fila in filas[30:]:
+                if float(fila["resultado"]) > 0:
+                    fila["resultado"] = "10"
+            r = evaluar_oos(self.crear(tmp, filas))
+            self.assertFalse(r["cumple_todos_bloques_20"])
+            self.assertEqual(len(r["bloques_20_que_incumplen"]), 1)
+            self.assertEqual(r["bloques_20_que_incumplen"][0]["ganadas"], 12)
+            self.assertLess(r["bloques_20_que_incumplen"][0]["neto"], 0)
+            self.assertFalse(r["evidencia_sostenida_60_pct"])
 
 
 if __name__ == "__main__":
