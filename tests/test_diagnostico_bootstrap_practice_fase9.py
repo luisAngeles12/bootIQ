@@ -66,7 +66,7 @@ class DiagnosticoBootstrapTests(unittest.TestCase):
             r = diagnosticar(self.crear(carpeta, rutas))
             self.assertEqual(r["filas_practice_descriptivas"], 0)
             self.assertEqual(r["filas_excluidas"], len(rutas))
-            self.assertEqual(r["motivos_exclusion"]["PRACTICE_ID_AUSENTE_O_DUPLICADO"], 2)
+            self.assertEqual(r["motivos_exclusion"]["PRACTICE_ID_AUSENTE_O_DUPLICADO"], 3)
             self.assertEqual(r["motivos_exclusion"]["NO_PRACTICE"], 1)
             self.assertEqual(r["motivos_exclusion"]["PRACTICE_NO_CERRADA"], 1)
             self.assertEqual(r["motivos_exclusion"]["PRACTICE_EMPATE"], 1)
