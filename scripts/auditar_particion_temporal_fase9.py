@@ -111,10 +111,26 @@ def auditar_particion(
                     cierre_utc = None
         admisibles.append((apertura_utc, oid, pnl_tipo, cierre_utc))
 
+    # Denominador independiente del estado/resultado: nunca definir la
+    # muestra de 20 a partir de solo las operaciones que ganaron/perdieron.
+    # Cualquier exclusión PRACTICE altera potencialmente el corte temporal.
+    filas_practice = sum(
+        _txt(f.get("modo_cuenta_configurado")) == "PRACTICE" for f in filas
+    )
+    filas_sin_modo = sum(
+        not _txt(f.get("modo_cuenta_configurado")) for f in filas
+    )
+    practice_no_admisibles = filas_practice - len(admisibles)
     admisibles.sort(key=lambda x: (x[0], x[1]))
     marcas = sorted(set(f[0] for f in admisibles))
     base = {
         "filas_totales": len(filas),
+        "filas_practice_declaradas": filas_practice,
+        "filas_sin_modo": filas_sin_modo,
+        "filas_practice_no_admisibles": practice_no_admisibles,
+        "universo_practice_completo": (
+            practice_no_admisibles == 0 and filas_sin_modo == 0
+        ),
         "candidatas_tras_filtros": len(admisibles),
         "fechas_utc_distintas": len(marcas),
         "exclusiones": dict(sorted(excluidas.items())),
