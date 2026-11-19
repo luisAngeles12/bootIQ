@@ -64,6 +64,15 @@ def evaluar_oos(ruta, minimo_train=20, minimo_oos=20, exportacion_iq=None):
     }
     if corte["estado"] != "PRELIMINAR_NO_VERIFICADO_IQ":
         return {**base, "causa": "PARTICION_INVALIDA"}
+    # El denominador del corte debe incluir TODAS las aperturas PRACTICE;
+    # estados pendientes, empates e IDs inválidos no se pueden borrar de
+    # la cronología para desplazar el inicio de OOS.
+    if not corte["universo_practice_completo"]:
+        return {
+            **base, "causa": "UNIVERSO_PRACTICE_INCOMPLETO",
+            "filas_practice_no_admisibles": corte["filas_practice_no_admisibles"],
+            "filas_sin_modo": corte["filas_sin_modo"],
+        }
     if not corte["separacion_local_sin_fuga"]:
         return {**base, "causa": "RESULTADOS_TRAIN_NO_CONOCIDOS_ANTES_DE_OOS"}
     with Path(ruta).open(encoding="utf-8-sig", newline="") as archivo:
