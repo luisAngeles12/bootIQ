@@ -1005,6 +1005,14 @@ def evaluar_senal_candidata(activo, ctx, senal):
         senal.get("tipo_ruptura", "SIN_DATOS"),
         cerca_soporte=ctx.get("cerca_soporte", False),
         cerca_resistencia=ctx.get("cerca_resistencia", False),
+        soporte_fuerte=(
+            ctx.get("soporte_zona", {}).get("origen") == "EXTREMOS_HISTORICOS_PREVIOS"
+            and ctx.get("soporte_zona", {}).get("fuerza", 0) >= 3
+        ),
+        resistencia_fuerte=(
+            ctx.get("resistencia_zona", {}).get("origen") == "EXTREMOS_HISTORICOS_PREVIOS"
+            and ctx.get("resistencia_zona", {}).get("fuerza", 0) >= 3
+        ),
     )
 
     if not ok_zona_sr:
