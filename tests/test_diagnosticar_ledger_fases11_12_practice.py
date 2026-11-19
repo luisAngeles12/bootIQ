@@ -57,6 +57,61 @@ class CompatibilidadLedgerTest(unittest.TestCase):
             r = diagnosticar(p)
         self.assertFalse(r["apto_para_evaluar"])
 
+    def test_fila_con_neto_vacio_no_apta(self):
+        cols = ["order_id", "fecha_cierre", "resultado",
+                "neto", "familia", "tipo_cuenta"]
+        with tempfile.TemporaryDirectory() as d:
+            p = self.escribir(d, cols, [{
+                "order_id": "1", "fecha_cierre": "2026-11-18T17:00:00+00:00",
+                "resultado": "WIN", "neto": "",
+                "familia": "resistencia", "tipo_cuenta": "PRACTICE",
+            }])
+            r = diagnosticar(p)
+        self.assertFalse(r["apto_para_evaluar"])
+        self.assertEqual(r["estado"], "FILAS_LEDGER_INCOMPLETAS")
+        self.assertEqual(r["filas_incompletas"], 1)
+
+    def test_familia_en_blanco_no_apta(self):
+        cols = ["order_id", "fecha_cierre", "resultado",
+                "neto", "familia", "tipo_cuenta"]
+        with tempfile.TemporaryDirectory() as d:
+            p = self.escribir(d, cols, [{
+                "order_id": "1", "fecha_cierre": "2026-11-18T17:00:00+00:00",
+                "resultado": "WIN", "neto": "20.75",
+                "familia": "   ", "tipo_cuenta": "PRACTICE",
+            }])
+            r = diagnosticar(p)
+        self.assertFalse(r["apto_para_evaluar"])
+
+    def test_orden_abierta_no_apta_aunque_tenga_resultado(self):
+        cols = ["order_id", "fecha_cierre", "resultado",
+                "neto", "familia", "tipo_cuenta", "estado"]
+        with tempfile.TemporaryDirectory() as d:
+            p = self.escribir(d, cols, [{
+                "order_id": "1", "fecha_cierre": "2026-11-18T17:00:00+00:00",
+                "resultado": "WIN", "neto": "20.75",
+                "familia": "resistencia", "tipo_cuenta": "PRACTICE",
+                "estado": "ABIERTA",
+            }])
+            r = diagnosticar(p)
+        self.assertFalse(r["apto_para_evaluar"])
+        self.assertEqual(r["estado"], "OPERACIONES_NO_CERRADAS")
+        self.assertEqual(r["filas_no_cerradas"], 1)
+
+    def test_orden_cerrada_con_datos_completos_apta_estructuralmente(self):
+        cols = ["order_id", "fecha_cierre", "resultado",
+                "neto", "familia", "tipo_cuenta", "estado"]
+        with tempfile.TemporaryDirectory() as d:
+            p = self.escribir(d, cols, [{
+                "order_id": "1", "fecha_cierre": "2026-11-18T17:00:00+00:00",
+                "resultado": "WIN", "neto": "20.75",
+                "familia": "resistencia", "tipo_cuenta": "PRACTICE",
+                "estado": "CERRADA",
+            }])
+            r = diagnosticar(p)
+        self.assertTrue(r["apto_para_evaluar"])
+        self.assertFalse(r["validacion_prospectiva_confirmada"])
+
     def test_encabezado_duplicado_no_certifica(self):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "historial.csv"
