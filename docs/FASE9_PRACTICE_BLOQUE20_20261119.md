@@ -68,3 +68,10 @@ Salida local: `python scripts/diagnostico_fuentes_fase9.py reportes_bloques_20_p
 - Se confirma que las tres regresiones de fixtures anteriores se resolvieron con opt-in exclusivamente dentro de pruebas y que el modo productivo de bootstrap permanece desactivado por defecto.
 - Las líneas `BLOQUE20 RESULTADO` de 60% en la salida corresponden a **fixtures de test** ejecutados dentro de la suite y no constituyen un nuevo bloque prospectivo de IQ Option.
 - Próxima tarea: inventario local de insumos históricos y evaluación TRAIN/OOS; **no crear memoria de producción a partir de datos sin procedencia temporal validada**.
+
+## R9-06 — inventario de insumos históricos sin modificar datos
+
+- Tras las 621 regresiones aprobadas, se añadió `scripts/inventario_insumos_memoria_fase9.py` para inventariar únicamente nombre relativo, tamaño y columnas de CSV locales de historial, aprendizaje, resultados y ledger; omite `venv`, `.git` y dependencias, no importa `bot.py`, no modifica archivos ni consulta IQ.
+- Reporta además si existe la ruta efectiva de memoria según `BOOTIQ_RUTA_APRENDIZAJE` / valor por defecto. **No construye memoria nueva** ni hace TRAIN/OOS con datos no verificados.
+- Tres pruebas adicionales en `tests/test_inventario_insumos_memoria_fase9.py` comprueban invariancia de archivos, omisión de `venv` y detección de memoria por ruta configurada.
+- **Pendiente ejecutar** las tres pruebas y la suite general (se esperan 624 casos); la única suite confirmada hasta ahora es 621 OK. Después, revisar inventario local y seleccionar fuente temporal validada.
