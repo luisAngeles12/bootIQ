@@ -50,6 +50,15 @@ def decision_sin_memoria():
 
 
 class IntegracionBootstrapMemoriaFase8Tests(unittest.TestCase):
+    def setUp(self):
+        # Ejercitar el contrato estructural legado con opt-in experimental.
+        # R9-05 mantiene desactivado bootstrap en configuracion oficial.
+        habilitacion = patch.object(
+            bootstrap_practice, "PERMITIR_BOOTSTRAP_SIN_MEMORIA", True
+        )
+        habilitacion.start()
+        self.addCleanup(habilitacion.stop)
+
     def evaluar(self, evidencia):
         with patch("constructor_evidencia.construir_evidencia_operacion", return_value=evidencia), patch(
             "motor_decision.evaluar_decision_cerebro_unico", return_value=decision_sin_memoria()
