@@ -67,6 +67,17 @@ class IntegracionBootstrapMemoriaFase8Tests(unittest.TestCase):
         cerebro.assert_called_once()
         return resultado
 
+    def test_r9_suspension_default_no_autoriza_a_traves_de_cerebro(self):
+        # La integración completa debe conservar NO_OPERAR sin memoria
+        # cuando el permiso excepcional está desactivado.
+        with patch.object(bootstrap_practice, "MODO_CUENTA", "PRACTICE"), patch.object(
+            bootstrap_practice, "PERMITIR_BOOTSTRAP_SIN_MEMORIA", False
+        ):
+            r = self.evaluar(evidencia_valida())
+        self.assertFalse(r["permitida"])
+        self.assertEqual(r["senal"]["cerebro_unico_decision"], "NO_OPERAR")
+        self.assertFalse(r["senal"].get("bootstrap_practice_sin_historial", False))
+
     def test_bootstrap_practice_no_convierte_prior_en_muestra(self):
         with patch.object(bootstrap_practice, "MODO_CUENTA", "PRACTICE"):
             r = self.evaluar(evidencia_valida())
