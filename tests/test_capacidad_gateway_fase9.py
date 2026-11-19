@@ -6,17 +6,21 @@ import unittest
 from unittest.mock import Mock, patch
 
 import estado
+import control_bloques_20_practice as bloque20
 from operaciones import abrir_operacion
 
 
 class CapacidadGatewayFase9Tests(unittest.TestCase):
     def setUp(self):
+        self.bloque_anterior = bloque20._CUENTA
+        bloque20.iniciar("PRACTICE", True)
         self.iq_anterior = estado.Iq
         self.operaciones_anteriores = estado.operaciones_abiertas
         self.cooldown_anterior = estado.cooldown_activos
         self.timestamp = 1794950427.0
         iq = Mock()
         iq.get_server_timestamp.return_value = self.timestamp
+        iq.get_balance_mode.return_value = "PRACTICE"
         iq.buy.return_value = (False, "rechazada_mock")
         estado.Iq = iq
         estado.operaciones_abiertas = []
@@ -24,6 +28,7 @@ class CapacidadGatewayFase9Tests(unittest.TestCase):
         self.iq = iq
 
     def tearDown(self):
+        bloque20._CUENTA = self.bloque_anterior
         estado.Iq = self.iq_anterior
         estado.operaciones_abiertas = self.operaciones_anteriores
         estado.cooldown_activos = self.cooldown_anterior
