@@ -260,5 +260,70 @@ class EvaluacionOosDescriptivaFase9Tests(unittest.TestCase):
             self.assertFalse(r["evidencia_sostenida_60_pct"])
 
 
+    def test_familias_sin_muestra_no_se_declaran_consistentes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = filas_base()
+            for i, fila in enumerate(filas):
+                fila["familia_setup"] = "RUPTURA" if i % 2 else "REVERSAL"
+            ruta = Path(tmp) / "historial.csv"
+            with ruta.open("w", encoding="utf-8", newline="") as archivo:
+                w = csv.DictWriter(archivo, fieldnames=CAMPOS + ["familia_setup"])
+                w.writeheader()
+                w.writerows(filas)
+            resultado = evaluar_oos(ruta)
+            self.assertEqual(resultado["estado"], "DESCRIPTIVO_NO_VERIFICADO_BROKER")
+            self.assertEqual(resultado["operaciones_sin_familia"], 0)
+            self.assertEqual(resultado["familias_con_muestra_minima_20"], 0)
+            self.assertEqual(resultado["familias"]["RUPTURA"]["operaciones"], 10)
+            self.assertEqual(resultado["familias"]["REVERSAL"]["operaciones"], 10)
+            self.assertEqual(resultado["familias"]["RUPTURA"]["estado"],
+                             "SIN_MUESTRA_MINIMA_20")
+            self.assertFalse(resultado["familias"]["REVERSAL"][
+                "cumple_todas_ventanas_observadas"])
+
+    def test_familia_vacia_se_reporta_sin_imputar_una_estrategia(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            resultado = evaluar_oos(self.crear(tmp, filas_base()))
+            self.assertEqual(resultado["operaciones_sin_familia"], 20)
+            self.assertIn("SIN_FAMILIA", resultado["familias"])
+            self.assertEqual(resultado["familias_con_muestra_minima_20"], 0)
+
+    def test_una_familia_con_20_reporta_resultado_descriptivo_sin_certificar(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = filas_base()
+            for f in filas:
+                f["familia_setup"] = "RUPTURA"
+            ruta = Path(tmp) / "historial.csv"
+            with ruta.open("w", encoding="utf-8", newline="") as archivo:
+                w = csv.DictWriter(archivo, fieldnames=CAMPOS + ["familia_setup"])
+                w.writeheader()
+                w.writerows(filas)
+            resultado = evaluar_oos(ruta)
+            self.assertEqual(resultado["familias_con_muestra_minima_20"], 1)
+            self.assertEqual(resultado["familias"]["RUPTURA"]["ventanas_moviles_20"], 1)
+            self.assertEqual(resultado["familias"]["RUPTURA"]["estado"],
+                             "DESCRIPTIVO_NO_VERIFICADO")
+            self.assertFalse(resultado["evidencia_sostenida_60_pct"])
+
+    def test_empate_en_tramo_oos_no_desaparece_de_bloques_de_20(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = filas_base(51)
+            filas[42]["resultado"] = "0.0"
+            resultado = evaluar_oos(self.crear(tmp, filas))
+            self.assertEqual(resultado["estado"], "NO_APTO")
+            self.assertEqual(resultado["causa"], "OOS_CON_RESULTADOS_OMITIDOS")
+            self.assertEqual(resultado["exclusiones_oos"]["EMPATE_EXCLUIDO"], 1)
+            self.assertNotIn("bloques_20_no_solapados", resultado)
+
+    def test_cierre_pendiente_oos_tampoco_se_borra_del_universo(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = filas_base(51)
+            filas[42]["estado"] = "ABIERTA"
+            resultado = evaluar_oos(self.crear(tmp, filas))
+            self.assertEqual(resultado["estado"], "NO_APTO")
+            self.assertEqual(resultado["causa"], "OOS_CON_RESULTADOS_OMITIDOS")
+            self.assertEqual(resultado["exclusiones_oos"]["NO_CERRADA"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()
