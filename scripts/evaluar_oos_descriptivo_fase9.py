@@ -13,6 +13,7 @@ from pathlib import Path
 
 from scripts.auditar_historial_fase9 import _fecha_iso, _txt, _cierre_explicito
 from scripts.auditar_particion_temporal_fase9 import auditar_particion
+from scripts.conciliar_exportacion_iq_fase9 import conciliar_exportacion
 
 
 def _metricas(bloque):
@@ -35,7 +36,7 @@ def _metricas(bloque):
     }
 
 
-def evaluar_oos(ruta, minimo_train=20, minimo_oos=20):
+def evaluar_oos(ruta, minimo_train=20, minimo_oos=20, exportacion_iq=None):
     corte = auditar_particion(
         ruta, minimo_train=minimo_train, minimo_oos=minimo_oos
     )
@@ -94,6 +95,18 @@ def evaluar_oos(ruta, minimo_train=20, minimo_oos=20):
         return {**base, "causa": "OOS_INCONSISTENTE_CON_PARTICION"}
     if len(oos) < 20:
         return {**base, "causa": "SIN_BLOQUE_COMPLETO_20"}
+    cotejo = None
+    if exportacion_iq is not None:
+        # Un match offline no certifica el origen de un CSV supuesto IQ,
+        # pero una discrepancia impide publicar métricas como consistentes.
+        cotejo = conciliar_exportacion(
+            ruta, exportacion_iq, ids_objetivo={x[1] for x in oos}
+        )
+        if not cotejo.get("objetivo_oos_conciliado_completo", False):
+            return {
+                **base, "causa": "OOS_DIFIERE_BROKER_OFFLINE",
+                "cotejo_offline": cotejo,
+            }
     bloques = []
     for i in range(0, len(oos) - 19, 20):
         bloques.append({"desde": i + 1, "hasta": i + 20,
@@ -113,6 +126,8 @@ def evaluar_oos(ruta, minimo_train=20, minimo_oos=20):
         "cumple_todos_bloques_20": cumple,
         "cumple_todas_ventanas_moviles_20": cumple_movil,
         "autoridades_observadas": autoridades,
+        "cotejo_offline": cotejo,
+        "origen_broker_independiente_certificado": False,
         "conclusion": (
             "Metricas descriptivas sobre autorizaciones historicas, "
             "NO validacion OOS de una politica entrenada o de V3."
@@ -123,8 +138,10 @@ def evaluar_oos(ruta, minimo_train=20, minimo_oos=20):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("historial", nargs="?", default="historial_bot.csv")
+    parser.add_argument("--exportacion-iq", default=None,
+                        help="CSV de broker normalizado, opcional, para cotejo offline")
     args = parser.parse_args()
-    print(json.dumps(evaluar_oos(args.historial), indent=2,
+    print(json.dumps(evaluar_oos(args.historial, exportacion_iq=args.exportacion_iq), indent=2,
                      ensure_ascii=False))
 
 
