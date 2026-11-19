@@ -191,6 +191,9 @@ COLUMNAS_HISTORIAL = [
     "precio_confirmacion_low",
 
     "auditoria_orden_iq_json",
+    # R9-12: instante local UTC en que se confirma el resultado
+    # y se prepara su persistencia atomica; NO es cierre timestamp IQ.
+    "fecha_conciliacion_local_utc",
 ]
 
 def guardar_historial(data):
@@ -275,6 +278,8 @@ def asegurar_historial_csv():
 
 
 def actualizar_historial_cierre(order_id, resultado, auditoria_orden_iq_json=""):
+    # Import dentro de la funcion para conservar pruebas AST aisladas.
+    from datetime import datetime, timezone
     if (
         not os.path.exists(HISTORIAL_CSV)
         or os.path.getsize(HISTORIAL_CSV) == 0
@@ -305,11 +310,18 @@ def actualizar_historial_cierre(order_id, resultado, auditoria_orden_iq_json="")
             if any(None in fila for fila in filas):
                 raise ValueError("FILA_HISTORIAL_CON_COLUMNAS_EXTRA")
 
+        # Capturar una sola marca UTC justo antes de la escritura.
+        # Solo aparece en el CSV si el reemplazo atomico culmina.
+        fecha_conciliacion = datetime.now(timezone.utc).isoformat()
         encontradas = 0
         for fila in filas:
             if fila["order_id"] == order_id:
                 fila["estado"] = "CERRADA"
                 fila["resultado"] = resultado_num
+                if "fecha_conciliacion_local_utc" in columnas:
+                    # En reintentos no sobreescribir una marca ya persistida.
+                    if not str(fila.get("fecha_conciliacion_local_utc") or "").strip():
+                        fila["fecha_conciliacion_local_utc"] = fecha_conciliacion
                 # Telemetria de precio SOLO si la cache devolvio evidencia
                 # validada y la columna ya existe. Sin datos no se inventa.
                 if (
