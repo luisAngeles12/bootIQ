@@ -77,14 +77,30 @@ def evaluar(filas, min_winrate=60, tamano=20):
                 "neto": float(n),
                 "cumple": bool(len(bloque) == tamano and w >= 12 and n >= Decimal("0.01"))}
 
-    ventanas = [medida(ordenes[i:i+tamano])
+    def diagnostico_ventana(bloque, inicio):
+        r = medida(bloque)
+        r.update({
+            "inicio_indice": inicio + 1,
+            "fin_indice": inicio + len(bloque),
+            "primera_fecha_cierre": bloque[0]["fecha"].isoformat(),
+            "ultima_fecha_cierre": bloque[-1]["fecha"].isoformat(),
+            "primer_order_id": bloque[0]["id"],
+            "ultimo_order_id": bloque[-1]["id"],
+            "faltan_wins_para_12": max(0, 12 - r["wins"]),
+            "falla_acierto": r["wins"] < 12,
+            "falla_rentabilidad": r["neto"] <= 0,
+        })
+        return r
+
+    ventanas = [diagnostico_ventana(ordenes[i:i+tamano], i)
                 for i in range(max(0, len(ordenes)-tamano+1))]
-    bloques = [medida(ordenes[i:i+tamano]) for i in range(0, len(ordenes), tamano)
+    bloques = [diagnostico_ventana(ordenes[i:i+tamano], i)
+               for i in range(0, len(ordenes), tamano)
                if len(ordenes[i:i+tamano]) == tamano]
     familias = {}
     for nombre in sorted({o["familia"] for o in ordenes}):
         grupo = [o for o in ordenes if o["familia"] == nombre]
-        fventanas = [medida(grupo[i:i+tamano])
+        fventanas = [diagnostico_ventana(grupo[i:i+tamano], i)
                     for i in range(max(0, len(grupo)-tamano+1))]
         ambiguedad_familia = sum(
             actual["fecha"] == anterior["fecha"]
@@ -93,6 +109,8 @@ def evaluar(filas, min_winrate=60, tamano=20):
         familias[nombre] = {
             "operaciones": len(grupo), "total": medida(grupo),
             "ventanas_20": len(fventanas),
+            "ventanas_bajo_objetivo": sum(not v["cumple"] for v in fventanas),
+            "primera_ventana_fallida": next((v for v in fventanas if not v["cumple"]), None),
             "cierres_simultaneos_ambiguos": ambiguedad_familia,
             "todas_ventanas_cumplen": bool(fventanas)
             and ambiguedad_familia == 0
@@ -110,6 +128,9 @@ def evaluar(filas, min_winrate=60, tamano=20):
         "cronologia_inequivoca": cronologia_inequivoca,
         "ventanas_moviles_20": len(ventanas),
         "ventanas_bajo_objetivo": sum(not v["cumple"] for v in ventanas),
+        "primera_ventana_fallida": next((v for v in ventanas if not v["cumple"]), None),
+        "peor_ventana_por_aciertos": min(ventanas, key=lambda v: (v["wins"], v["neto"])) if ventanas else None,
+        "peor_ventana_por_neto": min(ventanas, key=lambda v: v["neto"]) if ventanas else None,
         "bloques_no_solapados_20": len(bloques),
         "bloques_bajo_objetivo": sum(not b["cumple"] for b in bloques),
         "familias": familias, "cumple_muestra_observada": cumple,
