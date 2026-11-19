@@ -1,0 +1,48 @@
+name: BootIQ - auditoria integral fases 5-12 SIN BROKER
+
+on:
+  push:
+    branches: [bootiq-v3-auditoria]
+    paths:
+      - '.github/workflows/auditoria-integral-fases5-12-practice.yml'
+      - 'tests/**'
+      - '**.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-unittest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      EMAIL: 'CI_NO_LOGIN'
+      PASSWORD: 'CI_NO_LOGIN'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Dependencias de pruebas sin broker
+        run: |
+          python -m pip install --disable-pip-version-check 'numpy==1.26.4' 'pandas==2.2.3' 'requests>=2.31' 'websocket-client==0.56'
+      - name: Stub de credenciales para impedir login
+        run: |
+          printf 'EMAIL = "CI_NO_LOGIN"\nPASSWORD = "CI_NO_LOGIN"\n' > credenciales_local.py
+      - name: Verificar sintaxis del arbol versionado
+        run: |
+          python - <<'PY'
+          import pathlib
+          import subprocess
+          import py_compile
+          files = subprocess.check_output(['git','ls-files','*.py'],text=True).splitlines()
+          for f in files:
+              py_compile.compile(f,doraise=True)
+          print(f'Sintaxis OK: {len(files)} archivos Python')
+          PY
+      - name: Suite completa de tests (sin bot.py ni operaciones)
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Suite de auditoria de regimen de mercado
+        run: python -m unittest test_auditoria_regimen_mercado -v
