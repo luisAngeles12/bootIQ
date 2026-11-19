@@ -164,13 +164,21 @@ def auditar_particion(
     if len(marcas) < 2:
         return {**base, "estado": "NO_APTO", "causa": "SIN_CORTE_TEMPORAL"}
 
-    # Prohibido dividir dos órdenes del mismo instante UTC entre TRAIN y OOS.
+    # R9-22: agrupar una vez por timestamp para evitar O(n^2).
+    # Minimizamos la misma tupla que antes (distancia, timestamp UTC)
+    # y nunca dividimos órdenes abiertas en el mismo instante.
     cortes = []
+    conteo_acumulado = 0
+    indice = 0
+    total = len(admisibles)
     for corte in marcas[:-1]:
-        n_train = sum(f[0] <= corte for f in admisibles)
-        n_oos = len(admisibles) - n_train
+        while indice < total and admisibles[indice][0] == corte:
+            indice += 1
+            conteo_acumulado += 1
+        n_train = conteo_acumulado
+        n_oos = total - n_train
         if n_train >= minimo_train and n_oos >= minimo_oos:
-            cortes.append((abs(n_train / len(admisibles) - proporcion_train),
+            cortes.append((abs(n_train / total - proporcion_train),
                            corte, n_train, n_oos))
     if not cortes:
         return {**base, "estado": "NO_APTO", "causa": "NO_HAY_CORTE_CON_MINIMOS"}
