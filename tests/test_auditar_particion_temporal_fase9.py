@@ -92,5 +92,40 @@ class ParticionTemporalFase9Tests(unittest.TestCase):
             self.assertEqual(r["causa"], "SIN_CORTE_TEMPORAL")
 
 
+    def test_fecha_apertura_sin_zona_solo_con_hipotesis_explicita(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filas = [fila(str(i), i) for i in range(50)]
+            for f in filas:
+                f["fecha"] = f["fecha"].replace("+00:00", "")
+            ruta = self.crear(tmp, filas)
+            antes = ruta.read_bytes()
+            estricto = auditar_particion(ruta)
+            self.assertEqual(estricto["estado"], "NO_APTO")
+            self.assertEqual(estricto["exclusiones"]["FECHA_SIN_ZONA"], 50)
+            supuesto = auditar_particion(ruta, offset_origen_minutos=-240)
+            self.assertEqual(supuesto["estado"], "PRELIMINAR_NO_VERIFICADO_IQ")
+            self.assertEqual(supuesto["fechas_con_offset_asumido"], 50)
+            self.assertFalse(supuesto["apto_para_memoria_productiva"])
+            self.assertFalse(supuesto["cierre_temporal_verificado"])
+            self.assertEqual(supuesto["fin_train_utc"], "2026-11-19T04:29:00+00:00")
+            self.assertEqual(ruta.read_bytes(), antes)
+
+    def test_offset_invalido_falla_sin_leer_datos(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ruta = self.crear(tmp, [fila("1", 1)])
+            for valor in (1440, -1440, "0", True):
+                with self.subTest(valor=valor):
+                    with self.assertRaises(ValueError):
+                        auditar_particion(ruta, offset_origen_minutos=valor)
+
+    def test_fecha_con_offset_original_no_se_sustituye_por_hipotesis(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ruta = self.crear(tmp, [fila(str(i), i) for i in range(50)])
+            r = auditar_particion(ruta, offset_origen_minutos=-240)
+            self.assertEqual(r["fechas_con_offset_asumido"], 0)
+            self.assertFalse(r["cierre_temporal_verificado"])
+            self.assertFalse(r["apto_para_memoria_productiva"])
+
+
 if __name__ == "__main__":
     unittest.main()
