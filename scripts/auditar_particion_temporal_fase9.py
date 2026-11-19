@@ -47,6 +47,8 @@ def auditar_particion(
     excluidas = Counter()
     admisibles = []
     marcas_con_offset_asumido = 0
+    aperturas_utc_explicitas = 0
+    aperturas_legacy = 0
     cierres_faltantes = 0
     cierres_invalidos = 0
     cierres_anteriores_a_apertura = 0
@@ -68,9 +70,12 @@ def auditar_particion(
         if pnl_tipo not in {"GANANCIA", "PERDIDA"}:
             excluidas["RESULTADO_NO_VALIDO_TRAIN"] += 1
             continue
-        iso = _fecha_iso(f.get("fecha"))
+        # Un registro nuevo con marca UTC explícita tiene prioridad.
+        # Si está presente pero es inválida, NO recuperar con fecha legacy.
+        marca_utc = str(f.get("fecha_apertura_registro_local_utc") or "").strip()
+        iso = _fecha_iso(marca_utc if marca_utc else f.get("fecha"))
         if iso is None:
-            excluidas["SIN_FECHA_ISO"] += 1
+            excluidas["APERTURA_UTC_INVALIDA" if marca_utc else "SIN_FECHA_ISO"] += 1
             continue
         dt = datetime.fromisoformat(iso)
         if dt.tzinfo is None or dt.utcoffset() is None:
@@ -83,6 +88,10 @@ def auditar_particion(
                 minutes=offset_origen_minutos
             )))
             marcas_con_offset_asumido += 1
+        if marca_utc:
+            aperturas_utc_explicitas += 1
+        else:
+            aperturas_legacy += 1
         apertura_utc = dt.astimezone(timezone.utc)
         cierre_iso = _fecha_iso(f.get("fecha_conciliacion_local_utc"))
         cierre_utc = None
@@ -108,13 +117,21 @@ def auditar_particion(
         "exclusiones": dict(sorted(excluidas.items())),
         "train": 0, "oos": 0,
         "fechas_con_offset_asumido": marcas_con_offset_asumido,
+        "aperturas_con_registro_utc_explicito": aperturas_utc_explicitas,
+        "aperturas_con_fecha_legacy": aperturas_legacy,
+        "aperturas_utc_100pct": (
+            aperturas_utc_explicitas == len(admisibles) and bool(admisibles)
+        ),
         "cierres_conciliacion_utc_faltantes": cierres_faltantes,
         "cierres_conciliacion_utc_invalidos": cierres_invalidos,
         "cierres_anteriores_a_apertura": cierres_anteriores_a_apertura,
         "cierres_observados_localmente": sum(f[3] is not None for f in admisibles),
         "cierre_columna_semantica": "RESULTADO_PERSISTIDO_LOCAL_NO_LIQUIDACION_IQ",
         "offset_origen_supuesto_minutos": offset_origen_minutos,
-        "fecha_columna_semantica": "APERTURA_LOCAL_SIN_ZONA_SEGUN_OPERACIONES_PY",
+        "fecha_columna_semantica": (
+            "UTC_REGISTRO_APERTURA_SI_PRESENTE; "
+            "LEGACY_FECHA_LOCAL_SIN_ZONA_SI_AUSENTE"
+        ),
         "cierre_temporal_verificado": False,
         "apto_para_memoria_productiva": False,
         "nota": (
