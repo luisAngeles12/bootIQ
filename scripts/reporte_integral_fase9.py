@@ -6,6 +6,8 @@ rentabilidad aun cuando los CSV proporcionados coincidan completamente.
 import argparse
 import hashlib
 import json
+import shutil
+import tempfile
 from pathlib import Path
 
 from scripts.clasificar_historial_fase9 import clasificar_historial
@@ -43,17 +45,51 @@ def reporte_integral(historial, exportacion_iq=None):
             "habilita_trading": False,
             "modo_operativo": "NINGUNO_SOLO_LECTURA",
         }
+    if (
+        exportacion_iq is not None
+        and Path(historial).resolve() == Path(exportacion_iq).resolve()
+    ):
+        return fallo("MISMO_ARCHIVO_NO_ES_EXPORTACION_INDEPENDIENTE")
     try:
         inicial = huellas()
-        clasificacion = clasificar_historial(historial)
-        if huellas() != inicial:
-            return fallo("FUENTE_MODIFICADA_DURANTE_AUDITORIA")
-        particion = auditar_particion(historial)
-        if huellas() != inicial:
-            return fallo("FUENTE_MODIFICADA_DURANTE_AUDITORIA")
-        evaluacion = evaluar_oos(historial, exportacion_iq=exportacion_iq)
-        if huellas() != inicial:
-            return fallo("FUENTE_MODIFICADA_DURANTE_AUDITORIA")
+        # R9-24: analizar instantaneas privadas, no CSV activos. La copia
+        # solo se utiliza si coincide en bytes con la huella original y
+        # este sigue inalterado. Evita mezclar filas entre etapas.
+        with tempfile.TemporaryDirectory(prefix="bootiq_f9_audit_") as tmp:
+            copias = {}
+            for nombre, ruta in rutas.items():
+                destino = Path(tmp) / (nombre + ".csv")
+                with Path(ruta).open("rb") as fuente, destino.open("wb") as salida:
+                    shutil.copyfileobj(fuente, salida, 1024 * 1024)
+                copias[nombre] = destino
+
+            def fuentes_estables():
+                return (
+                    huellas() == inicial
+                    and {
+                        nombre: _huella(copia)
+                        for nombre, copia in copias.items()
+                    } == inicial
+                )
+            if not fuentes_estables():
+                return fallo("FUENTE_MODIFICADA_DURANTE_AUDITORIA")
+            fijo_historial = copias["historial"]
+            fijo_broker = copias.get("exportacion_iq")
+            clasificacion = clasificar_historial(fijo_historial)
+            if not fuentes_estables():
+                return fallo("FUENTE_MODIFICADA_DURANTE_AUDITORIA")
+            particion = auditar_particion(fijo_historial)
+            if not fuentes_estables():
+                return fallo("FUENTE_MODIFICADA_DURANTE_AUDITORIA")
+            evaluacion = evaluar_oos(
+                fijo_historial, exportacion_iq=fijo_broker
+            )
+            if not fuentes_estables():
+                return fallo("FUENTE_MODIFICADA_DURANTE_AUDITORIA")
+        # El nombre temporal ya no existe tras salir del contexto.
+        # La procedencia del reporte se refiere al archivo original.
+        if "archivo" in clasificacion:
+            clasificacion["archivo"] = str(historial)
     except OSError:
         return fallo("FUENTE_NO_DISPONIBLE")
     integridad = (
