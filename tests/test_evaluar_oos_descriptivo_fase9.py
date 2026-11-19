@@ -142,7 +142,8 @@ class EvaluacionOosDescriptivaFase9Tests(unittest.TestCase):
                 writer.writerows(filas)
             r = evaluar_oos(ruta)
             self.assertEqual(r["estado"], "NO_APTO")
-            self.assertEqual(r["causa"], "OOS_APERTURA_UTC_INVALIDA")
+            self.assertEqual(r["causa"], "UNIVERSO_PRACTICE_INCOMPLETO")
+            self.assertEqual(r["filas_practice_no_admisibles"], 1)
             self.assertNotIn("bloques_20_no_solapados", r)
 
 
