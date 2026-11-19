@@ -106,6 +106,23 @@ class ConsistenciaTest(unittest.TestCase):
         self.assertEqual(r["total"]["neto"], 49.0)
         self.assertTrue(r["cumple_muestra_observada"])
 
+    def test_cierres_simultaneos_no_certifican_60_por_orden_id(self):
+        a = filas(40, 8)
+        # El orden lexicografico del ID no demuestra orden de liquidacion.
+        a[19]["fecha_cierre"] = a[20]["fecha_cierre"]
+        r = evaluar(a)
+        self.assertEqual(r["cierres_simultaneos_ambiguos"], 1)
+        self.assertFalse(r["cronologia_inequivoca"])
+        self.assertFalse(r["cumple_muestra_observada"])
+        self.assertFalse(r["cumple_conjunto_y_familias"])
+        self.assertEqual(r["ventanas_moviles_20"], 21)
+
+    def test_cronologia_sin_empates_conserva_resultado_positivo(self):
+        r = evaluar(filas(40, 8))
+        self.assertEqual(r["cierres_simultaneos_ambiguos"], 0)
+        self.assertTrue(r["cronologia_inequivoca"])
+        self.assertTrue(r["cumple_muestra_observada"])
+
     def test_familia_en_blanco_no_valida_consistencia(self):
         a = filas(20, 8)
         for f in a:
