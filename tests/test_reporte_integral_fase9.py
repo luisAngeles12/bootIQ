@@ -4,6 +4,9 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
+
+import scripts.reporte_integral_fase9 as modulo_reporte
 
 from scripts.reporte_integral_fase9 import reporte_integral
 
@@ -87,6 +90,81 @@ class ReporteIntegralFase9Tests(unittest.TestCase):
             r = reporte_integral(ruta)
             self.assertEqual(r["estado"], "NO_APTO_PARA_VALIDACION")
             self.assertFalse(r["habilita_trading"])
+            self.assertFalse(r["memoria_generada"])
+
+
+    def test_reporta_sha256_estable_sin_modificar_original(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ruta = self.crear(tmp, datos_validos())
+            antes = ruta.read_bytes()
+            r = reporte_integral(ruta)
+            self.assertTrue(r["integridad_fuentes_estable"])
+            self.assertEqual(len(r["huellas_fuentes_sha256"]["historial"]), 64)
+            self.assertEqual(antes, ruta.read_bytes())
+
+    def test_mutacion_del_historial_durante_clasificacion_bloquea(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ruta = self.crear(tmp, datos_validos())
+            original = modulo_reporte.clasificar_historial
+
+            def clasificar_y_simular_apertura(ruta_local):
+                result = original(ruta_local)
+                with Path(ruta_local).open("a", encoding="utf-8") as out:
+                    out.write("FILA_INCOMPLETA\\n")
+                return result
+
+            with patch.object(modulo_reporte, "clasificar_historial",
+                              side_effect=clasificar_y_simular_apertura):
+                r = reporte_integral(ruta)
+            self.assertEqual(r["estado"], "NO_APTO_PARA_VALIDACION")
+            self.assertEqual(r["causa"], "FUENTE_MODIFICADA_DURANTE_AUDITORIA")
+            self.assertNotIn("evaluacion_descriptiva", r)
+            self.assertFalse(r["habilita_trading"])
+
+    def test_mutacion_tras_particion_bloquea_antes_de_oos(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ruta = self.crear(tmp, datos_validos())
+            original = modulo_reporte.auditar_particion
+
+            def particionar_y_mutar(ruta_local):
+                result = original(ruta_local)
+                with Path(ruta_local).open("a", encoding="utf-8") as out:
+                    out.write("CAMBIO_AL_FINAL\\n")
+                return result
+
+            with patch.object(modulo_reporte, "auditar_particion",
+                              side_effect=particionar_y_mutar):
+                r = reporte_integral(ruta)
+            self.assertEqual(r["causa"], "FUENTE_MODIFICADA_DURANTE_AUDITORIA")
+            self.assertNotIn("evaluacion_descriptiva", r)
+
+    def test_exportacion_cambia_durante_cotejo_y_bloquea(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            historial = self.crear(tmp, datos_validos())
+            exportacion = Path(tmp) / "iq.csv"
+            exportacion.write_text(
+                "order_id,modo_cuenta,estado,pnl,fecha_cierre_utc\\n",
+                encoding="utf-8"
+            )
+            original = modulo_reporte.evaluar_oos
+
+            def evaluar_y_mutar(ruta_local, exportacion_iq=None):
+                resultado = original(ruta_local, exportacion_iq=exportacion_iq)
+                with Path(exportacion_iq).open("a", encoding="utf-8") as out:
+                    out.write("CAMBIO\\n")
+                return resultado
+
+            with patch.object(modulo_reporte, "evaluar_oos",
+                              side_effect=evaluar_y_mutar):
+                r = reporte_integral(historial, exportacion)
+            self.assertEqual(r["causa"], "FUENTE_MODIFICADA_DURANTE_AUDITORIA")
+            self.assertNotIn("evaluacion_descriptiva", r)
+
+    def test_archivo_inexistente_falla_cerrado(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r = reporte_integral(Path(tmp) / "no_existe.csv")
+            self.assertEqual(r["estado"], "NO_APTO_PARA_VALIDACION")
+            self.assertEqual(r["causa"], "FUENTE_NO_DISPONIBLE")
             self.assertFalse(r["memoria_generada"])
 
 
