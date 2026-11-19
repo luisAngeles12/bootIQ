@@ -72,7 +72,7 @@ def _indices(filas):
     }, ids
 
 
-def conciliar_exportacion(historial, exportacion):
+def conciliar_exportacion(historial, exportacion, ids_objetivo=None):
     """Cotejo estricto: evita declarar matches ante duplicados y datos ambiguos."""
     if Path(historial).resolve() == Path(exportacion).resolve():
         return {
@@ -98,6 +98,10 @@ def conciliar_exportacion(historial, exportacion):
         return {**base, "causa": "ESQUEMA_INVALIDO",
                 "historial_error": error_bot, "broker_error": error_broker}
     por_id_bot, frec_bot = _indices(bot)
+    if ids_objetivo is not None:
+        ids_objetivo = {str(oid).strip() for oid in ids_objetivo}
+        if not ids_objetivo or "" in ids_objetivo:
+            return {**base, "causa": "IDS_OBJETIVO_INVALIDOS"}
     por_id_broker, frec_broker = _indices(broker)
     duplicados_bot = sum(v > 1 for k, v in frec_bot.items() if k)
     duplicados_broker = sum(v > 1 for k, v in frec_broker.items() if k)
@@ -105,6 +109,8 @@ def conciliar_exportacion(historial, exportacion):
     conciliadas = 0
     pnl_conciliado = Decimal("0.00")
     for oid, f in por_id_bot.items():
+        if ids_objetivo is not None and oid not in ids_objetivo:
+            continue
         if _txt(f.get("modo_cuenta_configurado")) != "PRACTICE":
             motivos["BOT_MODO_NO_PRACTICE"] += 1
             continue
@@ -158,6 +164,17 @@ def conciliar_exportacion(historial, exportacion):
         "conciliadas_preliminares": conciliadas,
         "pnl_conciliado_preliminar": str(pnl_conciliado),
         "exclusiones": dict(sorted(motivos.items())),
+        "objetivo_oos_total": (
+            len(ids_objetivo) if ids_objetivo is not None else None
+        ),
+        "objetivo_oos_sin_bot_unico": (
+            len(ids_objetivo - set(por_id_bot))
+            if ids_objetivo is not None else None
+        ),
+        "objetivo_oos_conciliado_completo": (
+            conciliadas == len(ids_objetivo)
+            if ids_objetivo is not None else False
+        ),
     })
     # Incluso un 100 % de matches no acredita origen externo ni edge OOS.
     return {**base,
