@@ -84,3 +84,13 @@ Salida local: `python scripts/diagnostico_fuentes_fase9.py reportes_bloques_20_p
 - Se incorpora `scripts/auditar_historial_fase9.py` para contar el universo por modo, estado, etiqueta, autoridad, repetición de `order_id` y disponibilidad de fechas. Las candidatas preliminares exigen `PRACTICE`, `order_id`, estado no pendiente y etiqueta `WIN/LOSS` sin transformar PNL numérico en resultado.
 - El diagnóstico **no es generación automática de memoria** y no promete que los IDs pertenezcan a ejecuciones verificadas del broker. Duplicaciones (por ejemplo apertura+cierre de una misma orden) serán examinadas antes de deduplicar y separar TRAIN/OOS.
 - Se agregaron 3 pruebas unitarias; suite estimada **627**. Aún sin nueva ejecución local. Bootstrap sigue desactivado; REAL no se habilita.
+
+## R9-07 — auditoría local ejecutada y ampliación R9-08
+
+- `git pull --ff-only` alcanzó `899bced`. Las 3 pruebas de auditoría y la suite completa dieron **627/627 OK, 22.059 s**.
+- El `historial_bot.csv` contiene **580 filas**, 580 `order_id` distintos (0 duplicados), y todas tienen `estado_operacion=OPERADA_DIRECTA` y `origen_autoridad=BOOTSTRAP_PRACTICE_SIN_HISTORIAL`. **149** tienen modo `PRACTICE` explícito; **431** tienen modo ausente y no deben etiquetarse como PRACTICE por suposición.
+- La columna `resultado` contiene **PNL monetario**, no etiquetas `WIN/LOSS`: -25.0 (291), 0.0 (4), 20.5 (5), 20.75 (240), 21.0 (2), 21.25 (1), 21.5 (11), 21.75 (26). Los 580 registros no son por sí mismos una muestra validada; en particular, las filas sin modo siguen sin procedencia suficiente.
+- El diagnóstico anterior devolvió 0 candidatas porque evaluaba solo `WIN/LOSS` y fechas numéricas. `historial.actualizar_historial_cierre()` escribe `estado=CERRADA` y resultado numérico finito. Por ello, el diagnóstico ahora informa **por separado** estado de cierre explícito, PNL finito y formato ISO de la fecha, sin reinterpretar datos ni entrenar.
+- Se introdujeron tres pruebas adicionales: fechas ISO y PNL, `estado=CERRADA` frente a apertura, y tratamiento de PNL no finito y modo sin verificar.
+- **Pendiente ejecución** de las nuevas pruebas (se esperan 630 generales), así como confirmación de la columna `estado` y las fechas reales. Solo después estudiar transformación de resultados **auditados** a etiquetas, desduplicación temporal y TRAIN/OOS.
+- No se cambió `historial.py`, `motor_aprendizaje_historico.py`, la estrategia ni el permiso de trading; bootstrap permanece desactivado por defecto y REAL prohibido.
