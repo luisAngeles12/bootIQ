@@ -47,9 +47,12 @@ def evaluar(filas, min_winrate=60, tamano=20):
                 or (resultado == "LOSS" and neto >= 0)
                 or (resultado == "EMPATE" and neto != 0)):
             raise ValueError("RESULTADO_NETO_CONTRADICTORIO")
+        familia = str(fila["familia"]).strip()
+        if not familia:
+            raise ValueError("FAMILIA_VACIA")
         ordenes.append({"id": identificador, "fecha": _tiempo(fila["fecha_cierre"]),
                         "resultado": resultado, "neto": neto,
-                        "familia": str(fila["familia"]).strip()})
+                        "familia": familia})
     ordenes.sort(key=lambda r: (r["fecha"], r["id"]))
 
     def medida(bloque):
