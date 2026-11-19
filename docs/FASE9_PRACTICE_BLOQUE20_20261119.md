@@ -101,3 +101,11 @@ Salida local: `python scripts/diagnostico_fuentes_fase9.py reportes_bloques_20_p
 - Commit de código `b178647361e5000d2abdac4e161d7f268e768c6e`; job `full-unittest`: **success**, 630/630 pruebas de toda la suite (10.058 s), más 3/3 pruebas de régimen (0.014 s). Compilación sintáctica del árbol versionado correcta.
 - Último commit `d86a65a7c4507c8cdcee1cb998b8b5e96c08225c` cambió solo documentación; no modificó código probado.
 - Desde ahora, consultar GitHub Actions directamente y no pedir ejecuciones locales para la suite replicable en CI. Para archivos locales no versionados (p. ej. `historial_bot.csv`) aún se requiere evidencia local o archivo aportado, sin afirmar pruebas que CI no puede ejecutar con esos datos.
+
+## R9-09 — filtro estrictamente diagnóstico para secuencia TRAIN/OOS
+
+- Se implementó clasificación en `scripts/auditar_historial_fase9.py` que reporta candidatas **preliminares** solo con modo PRACTICE explícito, `order_id`, `estado=CERRADA/CERRADO`, PNL finito de signo no cero y `fecha` ISO 8601 con offset. Se cuentan motivos de exclusión por separado; fechas sin offset **no se convierten silenciosamente** a UTC.
+- Dos pruebas nuevas cubren offset `-04:00` / `Z`, empate, apertura, ausencia de modo y fecha sin zona.
+- Commit de pruebas `f799d03e08bd7da831c712a838d94e009a662776`; GitHub Actions `44579835641`: **632/632 OK** (6.997 s), más 3/3 de auditoría de régimen, sintaxis OK, sin broker.
+- El historial local de 580 filas no está en GitHub ni disponible para GitHub Actions: no afirmar cantidad de candidatas R9-09 para ese historial hasta evaluarlo directamente. Tampoco confundir candidatas preliminares con órdenes broker-verificadas ni con memoria lista para producción.
+- Bootstrap desactivado por defecto, PRACTICE exclusivamente, no se modifica estrategia, timing, TOP20, stops ni expiración.
