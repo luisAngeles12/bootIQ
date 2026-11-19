@@ -32,6 +32,10 @@ def diagnosticar(ruta):
         return {"estado": "FILAS_CON_COLUMNAS_EXTRA", "apto_para_evaluar": False,
                 "ruta": str(ruta)}
     faltantes = [c for c in CAMPOS_LEDGER if c not in campos]
+    # Sin estado de cierre explicito, un CSV hipotetico o de ordenes
+    # pendientes podria pasar por ledger de operaciones liquidadas.
+    if "estado" not in campos:
+        faltantes.append("estado")
     incompletas = sum(
         any(not str(f.get(c) or "").strip() for c in CAMPOS_LEDGER)
         for f in filas
@@ -60,7 +64,7 @@ def diagnosticar(ruta):
         "ruta": str(ruta),
         "filas": len(filas),
         "cerradas_marcadas": cerradas,
-        "campos_presentes": [c for c in CAMPOS_LEDGER if c in campos],
+        "campos_presentes": [c for c in (*CAMPOS_LEDGER, "estado") if c in campos],
         "faltantes": faltantes,
         "campos_historial_oficial_presentes": [
             c for c in CAMPOS_HISTORIAL if c in campos
