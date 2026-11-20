@@ -30,6 +30,8 @@ class AuditorParidadDecisionesTests(unittest.TestCase):
         self.assertEqual(datos["decisiones_iguales_sobre_flujo"], 26)
         self.assertEqual(datos["decisiones_diferentes_sobre_flujo"], 0)
         self.assertTrue(datos["coincidencia_cierres_elegibles"])
+        self.assertIs(datos["cobertura"]["paridad"], True)
+        self.assertEqual(datos["cobertura"]["cierres_flujo"], 26)
         self.assertFalse(datos["operaciones_autorizadas"])
 
     def test_cierre_tardio_se_excluye_y_contexto_no_se_inventa(self):
@@ -42,6 +44,8 @@ class AuditorParidadDecisionesTests(unittest.TestCase):
         self.assertEqual(datos["cierres_flujo"], 25)
         self.assertTrue(datos["coincidencia_cierres_elegibles"])
         self.assertGreater(datos["contextos_diferentes"], 0)
+        self.assertIs(datos["cobertura"]["paridad"], False)
+        self.assertEqual(datos["cobertura"]["cierres_replay_con_recepcion_tardia"], 1)
         self.assertFalse(datos["operaciones_autorizadas"])
 
     def test_contexto_temporal_exige_24_minutos_contiguos(self):
