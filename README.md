@@ -44,3 +44,19 @@ El backtest toma los datos de `BOOTIQ_DATASET_DIR` si está definido,
 o de `data_backtest_actual/` por defecto. Esa carpeta empieza vacía:
 hasta disponer de velas nuevas válidas, un backtest carece de muestra
 y no debe interpretarse como prueba de estrategia.
+
+## Investigación de interacciones PRACTICE
+
+Para analizar combinaciones de estrategia, mercado, Price Action y otras
+características sin alterar las reglas del bot:
+
+```powershell
+.\venv\Scripts\python.exe analizar_interacciones_ejecutadas_practice.py .\historial_bot.zip
+```
+
+También acepta un CSV. Selecciona reglas solo con días de entrenamiento,
+reporta por separado los días posteriores y nunca promueve una estrategia ni
+autoriza operaciones. Los hallazgos que aparecen solo en el holdout se marcan
+como post hoc y requieren una nueva validación prospectiva. Los cierres
+PRACTICE antiguos sin modo explícito se identifican como declarados por el
+usuario, no como verificados por el bróker.
