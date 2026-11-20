@@ -5,6 +5,7 @@ Replay historico y flujo causal NO son intercambiables si hubo recepciones tardi
 """
 import argparse
 import csv
+import math
 from pathlib import Path
 
 from paridad_sombra_practice import (
@@ -38,13 +39,19 @@ def cargar_captura(ruta):
             demora = int(fila["latencia_primera_recepcion_s"])
             if demora < 0:
                 raise ValueError("LATENCIA_INVALIDA")
-            velas[t] = {
-                "from": t,
+            precios = {
                 "open": float(fila["open"]),
                 "max": float(fila["high"]),
                 "min": float(fila["low"]),
                 "close": float(fila["close"]),
             }
+            if not all(math.isfinite(precio) for precio in precios.values()):
+                raise ValueError("PRECIO_NO_FINITO")
+            if (precios["min"] > precios["max"]
+                    or not precios["min"] <= precios["open"] <= precios["max"]
+                    or not precios["min"] <= precios["close"] <= precios["max"]):
+                raise ValueError("OHLC_INCOHERENTE")
+            velas[t] = {"from": t, **precios}
             latencias[t] = demora
     if not velas:
         raise ValueError("CAPTURA_VACIA")
