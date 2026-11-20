@@ -27,3 +27,23 @@ En el escenario `A_FAVOR_Y_NO_CALL_RESISTENCIA_SIN_RUPTURA`, día UTC epoch 2076
 **NO_PROMOVER_NINGUN_FILTRO A PRODUCCION**. Ninguna de las cuatro hipótesis ofrece soporte para un 60% constante, y no se debe alterar TOP20, thresholds, restricciones de SUCIO/CAOTICO, capacidad, expiración o momentos de entrada con estos resultados.
 
 Próxima investigación útil: examinar el CSV original por interacciones *pre-entrada* (tipo_mercado × accion_precio × patrón) usando partición cronológica previa y validación posterior retenida. Reportar todos los segmentos, tamaños, días distintos, simultaneidad, mejores/peores resultados; registrar por adelantado cualquier nueva regla y evaluar su rendimiento sin fills como hipótesis exclusivamente. No habilitar órdenes. Para la certificación del 60% son indispensables operaciones ejecutadas PRACTICE nuevas y conciliación de resultados, no proxies.
+
+## Comprobación posterior de hipótesis congeladas — 2026-11-20
+
+Se ejecutó `validacion_prospectiva_alineacion.py` sobre el CSV completo de 9.561 registros. El corte congelado fue `1793732820` (inclusive): 64 registros anteriores quedaron excluidos del tramo posterior y 9.497 posteriores fueron evaluados. Esta separación es temporal dentro de un archivo histórico; **no equivale a una captura nueva en vivo ni a una operación ejecutada**.
+
+| Hipótesis congelada | Desarrollo | Posterior al corte | Cambio |
+|---|---:|---:|---:|
+| BASE_SIN_FILTRO_NUEVO | 51.11% | 49.22% | -1.89 pp |
+| SOLO_A_FAVOR_TENDENCIA | 64.52% | 48.94% | -15.58 pp |
+| A_FAVOR_Y_NO_CALL_RESISTENCIA_SIN_RUPTURA | 70.83% | 49.65% | -21.18 pp |
+
+El tramo posterior cubre 13 días y 1.774 minutos UTC distintos. En el escenario base hubo 6.863 oportunidades hipotéticas y 5.089 oportunidades simultáneas en otros activos. No hay fills, payout ni PnL del bróker. La variante que pareció superar 70% durante desarrollo perdió su aparente ventaja al aplicar la regla congelada al tramo posterior.
+
+La investigación por interacciones encontró 21 grupos con tamaño mínimo exploratorio, pero **ninguno alcanzó 60% tanto en desarrollo como en validación retenida**. Los grupos que superaron 60% solo en uno de los segmentos no se promueven: se inspeccionaron múltiples combinaciones y sus porcentajes son hipotéticos.
+
+## Decisión actual
+
+**No cambiar ni habilitar estrategias de producción con esta evidencia.** En particular, no activar el filtro de tendencia ni la exclusión de resistencia evaluada: ambos regresaron aproximadamente al 49% en el tramo posterior. Mantener deshabilitado el permiso bootstrap sin memoria y conservar PRACTICE exclusivamente.
+
+La siguiente mejora debe evaluarse con señales y resultados PRACTICE nuevos, con timestamps, fills y payouts conciliados. Congelar por adelantado una sola hipótesis y comparar cada bloque completo de 20 operaciones; no cambiar filtros durante la evaluación ni excluir sesiones perdedoras. El resultado sombra actual sirve para descartar una hipótesis retrospectiva, no para afirmar rentabilidad ni garantizar que futuras sesiones superen 60%.
