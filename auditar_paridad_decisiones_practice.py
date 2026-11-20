@@ -269,6 +269,7 @@ def auditar_decisiones(velas, latencias):
         "estado": ("PARIDAD_DECISIONES_COMPLETA"
                    if cobertura["paridad"] is True else "PARIDAD_DECISIONES_NO_DEMOSTRADA"),
         "velas": len(velas),
+        "cobertura": cobertura,
         "cierres_replay": len(historico),
         "cierres_flujo": len(flujo),
         "contexto_temporal": resumir_contexto_temporal(velas, latencias),
