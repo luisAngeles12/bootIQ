@@ -111,6 +111,29 @@ class Consistencia20PracticeTests(unittest.TestCase):
         self.assertEqual(r["total_filas_validas_win_loss"], 19)
         self.assertFalse(r["consistencia_20_observada"])
 
+    def test_bootstrap_no_se_confunde_con_rentabilidad_cerebro_v3(self):
+        filas = [fila(i, "20.75") for i in range(20)]
+        for registro in filas:
+            registro["origen_autoridad"] = "BOOTSTRAP_PRACTICE_SIN_HISTORIAL"
+        r = evaluar_filas(filas)
+        self.assertTrue(r["consistencia_20_observada"])
+        self.assertEqual(r["operaciones_bootstrap"], 20)
+        self.assertEqual(r["operaciones_no_bootstrap"], 0)
+        self.assertFalse(r["valida_rentabilidad_cerebro_v3"])
+        self.assertFalse(r["procedencia_broker_certificada"])
+
+    def test_autoridades_ausentes_y_mixtas_se_reportan_sin_inferir_v3(self):
+        filas = [fila(1, "20.75"), fila(2, "-25"), fila(3, "20.75")]
+        filas[0]["origen_autoridad"] = "BOOTSTRAP_PRACTICE_SIN_HISTORIAL"
+        filas[1]["origen_autoridad"] = "V3_AUTORIDAD_EXPERIMENTAL"
+        r = evaluar_filas(filas)
+        self.assertEqual(r["operaciones_bootstrap"], 1)
+        self.assertEqual(r["operaciones_no_bootstrap"], 1)
+        self.assertEqual(
+            r["operaciones_por_origen_autoridad"]["SIN_AUTORIDAD_DECLARADA"], 1
+        )
+        self.assertFalse(r["valida_rentabilidad_cerebro_v3"])
+
     def test_orden_temporal_y_estrategias_sin_autorizacion(self):
         filas = [
             fila(2, -25, "2026-11-11 10:00:00", "sweep"),
