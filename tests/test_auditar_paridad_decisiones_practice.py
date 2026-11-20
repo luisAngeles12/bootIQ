@@ -131,6 +131,31 @@ class AuditorParidadDecisionesTests(unittest.TestCase):
         self.assertEqual(r["outcomes_hipoteticos_evaluables"], 0)
         self.assertIsNone(r["wr_hipotetico_pct"])
 
+    def test_csv_rechaza_precios_no_finitos_y_ohlc_incoherente(self):
+        ejemplos = (
+            ("nan", "101", "99", "100", "PRECIO_NO_FINITO"),
+            ("100", "inf", "99", "100", "PRECIO_NO_FINITO"),
+            ("100", "101", "99", "-inf", "PRECIO_NO_FINITO"),
+            ("102", "101", "99", "100", "OHLC_INCOHERENTE"),
+            ("100", "101", "99", "98", "OHLC_INCOHERENTE"),
+            ("100", "99", "101", "100", "OHLC_INCOHERENTE"),
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            archivo = Path(temp) / "practice.csv"
+            for apertura, maximo, minimo, cierre, error in ejemplos:
+                with self.subTest(precios=(apertura, maximo, minimo, cierre)):
+                    with archivo.open("w", encoding="utf-8", newline="") as out:
+                        writer = csv.DictWriter(out, fieldnames=COLUMNAS)
+                        writer.writeheader()
+                        writer.writerow({
+                            "activo": "USDINR-OTC", "timestamp_utc": 0,
+                            "open": apertura, "high": maximo,
+                            "low": minimo, "close": cierre,
+                            "latencia_primera_recepcion_s": 0,
+                        })
+                    with self.assertRaisesRegex(ValueError, error):
+                        cargar_captura(archivo)
+
     def test_csv_valida_campos_y_rechaza_duplicados(self):
         with tempfile.TemporaryDirectory() as temp:
             archivo = Path(temp) / "practice.csv"
