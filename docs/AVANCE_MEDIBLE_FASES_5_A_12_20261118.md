@@ -45,3 +45,16 @@ Baseline histórico disponible y consolidado en `docs/FASE5_AUDITORIA_ESTRATEGIA
 6. Solo cerrar las fases cuando la evidencia concreta de cada una supere sus requisitos. Ningún histórico puede garantizar 60 % de aciertos futuros.
 
 Estado: **NO CERTIFICADO. PRACTICE exclusivamente; REAL prohibido.**
+
+## Actualización de inspección directa (19/20-11-2026) — corrección de gates PRACTICE y límites del 60%
+
+**Hallazgo corregido y probado**: `auditar_consistencia_20_practice.py` admitía filas REAL/sin `modo_cuenta_configurado` y confundía `>= 60%` de aciertos con consistencia económica aun cuando el PNL de la ventana fuese negativo. Ahora la auditoría exige modo declarado PRACTICE y centavos válidos; conserva `cumple_60` como información separada, pero la consistencia global, por familia, bloques y ventanas móviles exige también **PNL estrictamente positivo**. Los descartes quedan explícitos y nunca se certifica procedencia broker u OOS por este cálculo.
+
+La incorporación reveló dependencias de transporte de modo en `comparar_filtros_sombra_fase5_practice.py`, corregidas para preservar el modo en cada serie de 20, y en `validar_choch_bajista_prospectivo_practice.py`, donde la cohorte prospectiva ahora excluye REAL y modo no confirmado. Los tests sintéticos correspondientes declaran PRACTICE explícitamente y verifican que REAL, vacío y 12 WIN/20 con PNL negativo **no pasan**. Los cambios no alteran el Cerebro, señales, órdenes ni reglas de entrada.
+
+Evidencia de CI sobre `81389d0fc1d31a813503ba04f461d7185c9d888d`:
+- [Suite integral GitHub Actions #44643577858](https://github.com/luisAngeles12/bootIQ/actions/runs/44643577858): **729/729** tests generales, **3/3** tests de régimen, sintaxis de **347** archivos Python, verde.
+- [Suite Fase 5 #44643578086](https://github.com/luisAngeles12/bootIQ/actions/runs/44643578086): verde.
+- Comprobación directa del árbol completo de la rama: **no hay** blobs versionados `.csv`, `.jsonl`, `.parquet`, `.zip`, `.sqlite`, `.db` o `.xlsx` para acreditar un backtest con datasets de mercado originales ni un ledger exportado por IQ. Esto no dice que no existan archivos locales fuera de GitHub; solo delimita lo disponible para pruebas conectadas.
+
+**Resultado económico histórico confirmado solo por salida local del operador**: 149 operaciones marcadas PRACTICE, 71 WIN / 78 LOSS = **47,65%**, PNL **−464,75**, expectativa observada **−3,1191** por operación, profit factor **0,7617**. Se atribuyen a `BOOTSTRAP_PRACTICE_SIN_HISTORIAL`, no prueban desempeño del Cerebro V3 con memoria validada. Falta certificado independiente del broker, aperturas/cierres UTC prospectivos y cohortes multi-jornada realmente OOS. **No declarar cierre de las fases 5–12 ni ventaja >=60% hasta adquirir esa evidencia.** Bootstrap sigue desactivado y no se permite REAL.
