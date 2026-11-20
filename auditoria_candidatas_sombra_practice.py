@@ -4,18 +4,63 @@ Los resultados se calculan con la apertura y el cierre de la vela POSTERIOR
 a la señal. No son fills del broker, ni generan autoridad de aprendizaje.
 """
 import csv
+import math
 import os
 from pathlib import Path
 from datetime import datetime, timezone
 
+from utils import vela_ohlc_valida
+
 RUTA_EVENTOS = "auditoria_candidatas_sombra_practice.csv"
-COLUMNAS = (
+COLUMNAS_BASE = (
     "id", "activo", "patron", "direccion", "vela_senal_from",
     "decision", "motivo", "tipo_mercado", "calidad_mercado",
     "accion_precio", "estado_tendencia", "vela_entrada_from",
     "precio_entrada_hipotetico", "precio_cierre_hipotetico",
     "resultado_hipotetico", "calidad_tiempo",
 )
+COLUMNAS = COLUMNAS_BASE + (
+    "patron_vela", "fuerza_patron_vela",
+    "pa_tipo", "pa_direccion", "pa_fuerza",
+    "cuerpo_relativo", "mecha_superior_relativa",
+    "mecha_inferior_relativa", "cierre_posicion",
+    "posicion_rango", "direccion_tendencia", "fuerza_tendencia",
+)
+
+
+def _valor_finito(valor):
+    try:
+        numero = float(valor)
+    except (TypeError, ValueError, OverflowError):
+        return ""
+    return round(numero, 6) if math.isfinite(numero) else ""
+
+
+def _metricas_vela_actual(ctx):
+    try:
+        apertura = float(ctx["opens"][-1])
+        cierre = float(ctx["closes"][-1])
+        maximo = float(ctx["highs"][-1])
+        minimo = float(ctx["lows"][-1])
+    except (KeyError, IndexError, TypeError, ValueError, OverflowError):
+        return {}
+
+    if not vela_ohlc_valida(apertura, cierre, maximo, minimo):
+        return {}
+    rango = maximo - minimo
+    if rango <= 0:
+        return {}
+
+    return {
+        "cuerpo_relativo": round(abs(cierre - apertura) / rango, 6),
+        "mecha_superior_relativa": round(
+            (maximo - max(apertura, cierre)) / rango, 6
+        ),
+        "mecha_inferior_relativa": round(
+            (min(apertura, cierre) - minimo) / rango, 6
+        ),
+        "cierre_posicion": round((cierre - minimo) / rango, 6),
+    }
 
 def _id(activo, patron, direccion, ts):
     import hashlib
@@ -28,9 +73,12 @@ def _leer(ruta):
         return []
     with p.open("r", newline="", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
-        if not set(COLUMNAS).issubset(reader.fieldnames or []):
+        if not set(COLUMNAS_BASE).issubset(reader.fieldnames or []):
             raise ValueError("ESQUEMA_SOMBRA_INCOMPATIBLE")
-        return list(reader)
+        return [
+            {campo: fila.get(campo, "") for campo in COLUMNAS}
+            for fila in reader
+        ]
 
 def _guardar(ruta, registros):
     p = Path(ruta)
@@ -87,7 +135,26 @@ def registrar_candidata(senal, ctx, ruta=RUTA_EVENTOS):
         "accion_precio": str(senal.get("accion_precio") or ""),
         "estado_tendencia": str(ctx.get("estado_tendencia") or ""),
         "calidad_tiempo": "PENDIENTE_VELA_POSTERIOR",
+        "patron_vela": str(ctx.get("nombre_patron") or ""),
+        "fuerza_patron_vela": _valor_finito(
+            ctx.get("fuerza_patron")
+        ),
+        "pa_tipo": str(senal.get("pa_tipo") or ctx.get("pa_tipo") or ""),
+        "pa_direccion": str(
+            senal.get("pa_direccion") or ctx.get("pa_direccion") or ""
+        ),
+        "pa_fuerza": _valor_finito(
+            senal.get("pa_fuerza", ctx.get("pa_fuerza"))
+        ),
+        "posicion_rango": _valor_finito(ctx.get("posicion_rango")),
+        "direccion_tendencia": str(
+            ctx.get("direccion_tendencia") or ""
+        ),
+        "fuerza_tendencia": _valor_finito(
+            ctx.get("fuerza_tendencia")
+        ),
     })
+    fila.update(_metricas_vela_actual(ctx))
     registros.append(fila)
     _guardar(ruta, registros)
     registrar_pertenencia()

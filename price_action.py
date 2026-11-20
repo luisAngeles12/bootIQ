@@ -167,8 +167,10 @@ def patron_price_action_avanzado(opens, closes, highs, lows):
         patrones.append((p, n, 4))
     if not patrones:
         return 0, "sin patrón", 0
-    patrones = sorted(patrones, key=lambda x: x[2], reverse=True)
-    return patrones[0]
+    direcciones = {1 if direccion > 0 else -1 for direccion, _, _ in patrones}
+    if len(direcciones) > 1:
+        return 0, "patrones en conflicto", 0
+    return max(patrones, key=lambda patron: patron[2])
 
 def diagnostico_accion_precio_zona(
     direccion,

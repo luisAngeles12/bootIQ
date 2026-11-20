@@ -32,6 +32,24 @@ def segundo_actual():
     )
 
 
+def vela_ohlc_valida(open_, close, high, low):
+    try:
+        apertura, cierre, maximo, minimo = map(
+            float, (open_, close, high, low)
+        )
+    except (TypeError, ValueError, OverflowError):
+        return False
+
+    return (
+        all(math.isfinite(valor) for valor in (
+            apertura, cierre, maximo, minimo
+        ))
+        and maximo >= minimo
+        and maximo >= max(apertura, cierre)
+        and minimo <= min(apertura, cierre)
+    )
+
+
 def esperar_inicio_vela():
     while True:
         s = segundo_actual()

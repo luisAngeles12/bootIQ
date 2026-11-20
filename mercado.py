@@ -2,7 +2,7 @@ import time
 
 import estado
 from config import CANDLE_TIME, TIPOS_MERCADO
-from utils import activo_en_cooldown
+from utils import activo_en_cooldown, vela_ohlc_valida
 from conexion import reconectar_iq
 from contexto_mercado import detectar_tipo_mercado, diagnostico_calidad_mercado, diagnostico_tendencia_avanzada
 
@@ -211,6 +211,18 @@ def _datos_desde_velas(candles):
         ):
             return None
     except (KeyError, TypeError, ValueError, OverflowError):
+        return None
+
+    if any(
+        not isinstance(c, dict)
+        or not vela_ohlc_valida(
+            c.get("open"),
+            c.get("close"),
+            c.get("max"),
+            c.get("min"),
+        )
+        for c in candles
+    ):
         return None
 
     return {

@@ -41,6 +41,7 @@ from config import (
     TIEMPO_EXPIRACION,
     CANDLE_TIME,
 )
+from utils import vela_ohlc_valida
 CARPETA_DATA = os.getenv("BOOTIQ_DATASET_DIR", "data_backtest_actual")
 
 MAX_ACTIVOS_ANALIZAR = 20
@@ -149,15 +150,23 @@ def leer_csv_velas(ruta):
     with open(ruta, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
 
-        for row in reader:
+        for numero_fila, row in enumerate(reader, start=2):
+            apertura = float(row["open"])
+            cierre = float(row["close"])
+            maximo = float(row["max"])
+            minimo = float(row["min"])
+            if not vela_ohlc_valida(apertura, cierre, maximo, minimo):
+                raise ValueError(
+                    "CSV_VELA_OHLC_INVALIDA: fila {}".format(numero_fila)
+                )
             velas.append({
                 "tipo": row.get("tipo", ""),
                 "activo": row.get("activo", ""),
                 "from": int(float(row["from"])),
-                "open": float(row["open"]),
-                "close": float(row["close"]),
-                "max": float(row["max"]),
-                "min": float(row["min"]),
+                "open": apertura,
+                "close": cierre,
+                "max": maximo,
+                "min": minimo,
                 "volume": float(row.get("volume", 0) or 0),
             })
 

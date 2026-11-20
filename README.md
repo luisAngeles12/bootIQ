@@ -13,6 +13,10 @@ logs y documentación generada.
 - La limpieza **no certifica rentabilidad**, ni autoriza operaciones.
 - Deben verificarse importaciones, pruebas y arranque en un entorno local
   controlado antes de usar esta rama como operativa.
+- El flujo live y el backtest rechazan velas OHLC no finitas o cuyos
+  máximos/mínimos no contienen apertura y cierre. Si los detectores de
+  velas discrepan de dirección, Price Action devuelve neutral; estos
+  controles mejoran integridad, no prueban una ventaja ni un 60 %.
 
 ## Archivos esenciales
 
@@ -60,3 +64,7 @@ autoriza operaciones. Los hallazgos que aparecen solo en el holdout se marcan
 como post hoc y requieren una nueva validación prospectiva. Los cierres
 PRACTICE antiguos sin modo explícito se identifican como declarados por el
 usuario, no como verificados por el bróker.
+
+La auditoría sombra prospectiva registra además el patrón de vela, fuerza y
+dirección de Price Action, ratios de cuerpo/mechas y posición del cierre.
+Estos datos son diagnósticos; no cambian la decisión ni autorizan entradas.

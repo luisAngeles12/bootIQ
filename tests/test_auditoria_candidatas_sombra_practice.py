@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 from auditoria_candidatas_sombra_practice import (
-    registrar_candidata, resolver_candidatas,
+    COLUMNAS, COLUMNAS_BASE, registrar_candidata, resolver_candidatas,
 )
 
 
@@ -119,6 +119,70 @@ class AuditoriaCandidatasSombra(unittest.TestCase):
         s["decision_unificada_accion"] = "OPERAR"
         self.assertFalse(registrar_candidata(s, ctx(), self.p))
         self.assertFalse(self.p.exists())
+
+    def test_persiste_contexto_detallado_de_price_action(self):
+        s = senal()
+        s.update({
+            "pa_tipo": "RECHAZO_COMPRADOR_CONFIRMADO",
+            "pa_direccion": "CALL",
+            "pa_fuerza": 0.8,
+        })
+        contexto = ctx()
+        contexto.update({
+            "opens": [100.0],
+            "closes": [100.8],
+            "highs": [101.0],
+            "lows": [99.0],
+            "nombre_patron": "envolvente alcista",
+            "fuerza_patron": 3,
+            "posicion_rango": 0.25,
+            "direccion_tendencia": "ALCISTA",
+            "fuerza_tendencia": 0.7,
+        })
+
+        self.assertTrue(registrar_candidata(s, contexto, self.p))
+        fila = self.leer()[0]
+        self.assertEqual(fila["patron_vela"], "envolvente alcista")
+        self.assertEqual(fila["fuerza_patron_vela"], "3.0")
+        self.assertEqual(fila["pa_tipo"], "RECHAZO_COMPRADOR_CONFIRMADO")
+        self.assertEqual(fila["pa_direccion"], "CALL")
+        self.assertEqual(fila["pa_fuerza"], "0.8")
+        self.assertEqual(fila["cuerpo_relativo"], "0.4")
+        self.assertEqual(fila["mecha_superior_relativa"], "0.1")
+        self.assertEqual(fila["mecha_inferior_relativa"], "0.5")
+        self.assertEqual(fila["cierre_posicion"], "0.9")
+        self.assertEqual(fila["posicion_rango"], "0.25")
+        self.assertEqual(fila["direccion_tendencia"], "ALCISTA")
+        self.assertEqual(fila["fuerza_tendencia"], "0.7")
+
+    def test_legacy_shadow_schema_is_preserved_and_upgraded_on_append(self):
+        fila_legacy = {campo: "" for campo in COLUMNAS_BASE}
+        fila_legacy.update({
+            "id": "registro-legacy",
+            "activo": "USDINR-OTC",
+            "patron": "PULLBACK",
+            "direccion": "put",
+            "vela_senal_from": "540",
+            "decision": "NO_OPERAR",
+            "resultado_hipotetico": "",
+            "calidad_tiempo": "PENDIENTE_VELA_POSTERIOR",
+        })
+        with self.p.open("w", encoding="utf-8", newline="") as archivo:
+            writer = csv.DictWriter(archivo, fieldnames=COLUMNAS_BASE)
+            writer.writeheader()
+            writer.writerow(fila_legacy)
+
+        self.assertTrue(registrar_candidata(senal(), ctx(), self.p))
+        filas = self.leer()
+        self.assertEqual(len(filas), 2)
+        self.assertEqual(filas[0]["id"], "registro-legacy")
+        self.assertEqual(filas[0]["pa_tipo"], "")
+        self.assertEqual(filas[1]["pa_tipo"], "")
+        with self.p.open(encoding="utf-8", newline="") as archivo:
+            self.assertEqual(
+                next(csv.reader(archivo)),
+                list(COLUMNAS),
+            )
 
     def test_hueco_no_se_resuelve(self):
         registrar_candidata(senal(), ctx(), self.p)
