@@ -57,6 +57,28 @@ class ExperimentoAlineacion(unittest.TestCase):
             self.assertEqual(escenario["validacion_60"], "NO_VALIDADA")
             self.assertFalse(escenario["ordenes_autorizadas"])
 
+    def test_robustez_diaria_conserva_jornada_perdedora_y_simultaneidad(self):
+        # Una jornada ganadora no tapa otra perdedora; activos simultaneos
+        # no se contabilizan como minutos independientes.
+        from experimento_alineacion_sombra_practice import robustez_diaria
+        eventos = [
+            {"minuto": 86400 + 120, "resultado": "WIN"},
+            {"minuto": 86400 + 120, "resultado": "LOSS"},
+            {"minuto": 2 * 86400 + 120, "resultado": "LOSS"},
+        ]
+        r = robustez_diaria(eventos)
+        self.assertEqual(r["jornadas_totales"], 2)
+        self.assertEqual(r["jornadas_con_menos_60_pct"], 2)
+        self.assertEqual(r["jornadas_con_60_pct_o_mas"], 0)
+        self.assertEqual(r["jornadas"][0]["simultaneas_otro_activo"], 1)
+        self.assertEqual(r["jornadas"][0]["minutos_distintos"], 1)
+
+    def test_robustez_diaria_no_imputa_resultados_ausentes(self):
+        from experimento_alineacion_sombra_practice import robustez_diaria
+        r = robustez_diaria([])
+        self.assertEqual(r["jornadas_totales"], 0)
+        self.assertEqual(r["jornadas_con_60_pct_o_mas"], 0)
+
     def test_filtro_post_hoc_no_modifica_entrada(self):
         original = fila(accion="CALL_RESISTENCIA_CERCA_SIN_RUPTURA")
         otro = fila(ts=180, direccion="put", tendencia="BAJISTA_NORMAL", resultado="LOSS")
