@@ -34,3 +34,7 @@ jobs:
         run: |
           python -m py_compile investigar_patrones_practice.py tests/test_investigar_patrones_practice.py
           python -m unittest discover -s tests -p 'test_investigar_patrones_practice.py' -v
+      - name: Shadow day robustness and correlation (offline)
+        run: |
+          python -m py_compile experimento_alineacion_sombra_practice.py tests/test_experimento_alineacion_sombra_practice.py
+          python -m unittest discover -s tests -p 'test_experimento_alineacion_sombra_practice.py' -v
