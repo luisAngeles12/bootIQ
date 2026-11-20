@@ -37,6 +37,11 @@ def evaluar_choch_prospectivo(filas):
     ids = set()
     fechas_naive = set()
     for f in filas:
+        if str(f.get("modo_cuenta_configurado") or "").strip().upper() != "PRACTICE":
+            descartes["MODO_NO_VERIFICADO_PRACTICE"] = (
+                descartes.get("MODO_NO_VERIFICADO_PRACTICE", 0) + 1
+            )
+            continue
         try:
             fecha = datetime.fromisoformat(str(f.get("fecha") or "").strip().replace("Z", "+00:00"))
         except ValueError:
