@@ -9,6 +9,7 @@ def fila(oid, dia, pnl, patron="CHOCH bajista", pa="PUT"):
         "fecha": f"{dia}T12:{oid % 60:02d}:00",
         "order_id": str(oid),
         "estado": "CERRADA",
+        "modo_cuenta_configurado": "PRACTICE",
         "patron": patron,
         "direccion": "PUT",
         "pa_direccion": pa,
@@ -100,6 +101,20 @@ class ProspectivaChochTests(unittest.TestCase):
         r = evaluar_choch_prospectivo(datos)
         self.assertGreater(r["ventanas_20_choch"]["bajo_objetivo"], 0)
         self.assertFalse(r["criterio_de_constancia_observado"])
+
+    def test_real_y_modo_ausente_no_inflan_choch_prospectivo(self):
+        datos = [
+            fila(1, "2026-11-12", 20.75),
+            fila(2, "2026-11-12", -25),
+            fila(3, "2026-11-12", 20.75),
+        ]
+        datos[1]["modo_cuenta_configurado"] = "REAL"
+        datos[2]["modo_cuenta_configurado"] = ""
+        r = evaluar_choch_prospectivo(datos)
+        self.assertEqual(r["operaciones_nuevas_todas_familias"], 1)
+        self.assertEqual(r["descartes"]["MODO_NO_VERIFICADO_PRACTICE"], 2)
+        self.assertFalse(r["criterio_de_constancia_observado"])
+        self.assertFalse(r["ordenes_autorizadas"])
 
     def test_duplicados_y_empates_no_inflan_muestra(self):
         datos = [
