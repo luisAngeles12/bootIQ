@@ -8,6 +8,7 @@ import csv
 import json
 from collections import defaultdict
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 TAMANO_VENTANA = 20
@@ -31,6 +32,9 @@ def evaluar_filas(filas, tamano=TAMANO_VENTANA, objetivo=OBJETIVO):
     rechazadas = defaultdict(int)
     ids = set()
     for fila in filas:
+        if str(fila.get("modo_cuenta_configurado") or "").strip().upper() != "PRACTICE":
+            rechazadas["MODO_NO_VERIFICADO_PRACTICE"] += 1
+            continue
         if str(fila.get("estado", "")).strip().upper() != "CERRADA":
             rechazadas["NO_CERRADA"] += 1
             continue
@@ -47,11 +51,11 @@ def evaluar_filas(filas, tamano=TAMANO_VENTANA, objetivo=OBJETIVO):
             rechazadas[str(exc)] += 1
             continue
         try:
-            pnl = float(str(fila.get("resultado", "")).strip())
-        except ValueError:
+            pnl = Decimal(str(fila.get("resultado", "")).strip())
+        except (InvalidOperation, ValueError, TypeError):
             rechazadas["RESULTADO_INVALIDO"] += 1
             continue
-        if not (-float("inf") < pnl < float("inf")):
+        if not pnl.is_finite() or pnl * 100 != (pnl * 100).to_integral_value():
             rechazadas["RESULTADO_INVALIDO"] += 1
             continue
         # El empate no equivale ni a WIN ni a LOSS y no completa ventanas.
@@ -79,13 +83,17 @@ def evaluar_filas(filas, tamano=TAMANO_VENTANA, objetivo=OBJETIVO):
     def resumen(bloque):
         n = len(bloque)
         wins = sum(r["win"] for r in bloque)
+        neto = sum((r["pnl"] for r in bloque), Decimal("0"))
+        cumple_60 = wins / n >= objetivo if n == tamano else None
+        cumple_economico = bool(cumple_60) and neto > 0 if n == tamano else None
         return {
             "n": n,
             "wins": wins,
             "losses": n - wins,
             "winrate_pct": round(100 * wins / n, 2) if n else None,
-            "neto": round(sum(r["pnl"] for r in bloque), 2),
-            "cumple_60": wins / n >= objetivo if n == tamano else None,
+            "neto": float(neto),
+            "cumple_60": cumple_60,
+            "cumple_objetivo_economico": cumple_economico,
         }
 
     bloques = [resumen(aceptadas[i:i + tamano])
@@ -108,7 +116,7 @@ def evaluar_filas(filas, tamano=TAMANO_VENTANA, objetivo=OBJETIVO):
             for i in range(max(0, len(registros) - tamano + 1))
         ]
         bajo_objetivo = sum(
-            ventana["cumple_60"] is False for ventana in ventanas_patron
+            ventana["cumple_objetivo_economico"] is False for ventana in ventanas_patron
         )
         por_estrategia_20[patron] = {
             "total_evaluables": len(registros),
@@ -118,7 +126,10 @@ def evaluar_filas(filas, tamano=TAMANO_VENTANA, objetivo=OBJETIVO):
             "evidencia_prospectiva_suficiente": False,
         }
     return {
-        "modo": "AUDITORIA_SOLO_LECTURA",
+        "modo": "AUDITORIA_SOLO_LECTURA_PRACTICE_DECLARADO",
+        "procedencia_broker_certificada": False,
+        "validacion_oos": False,
+        "criterio_economico": "WINRATE_MINIMO_Y_NETO_ESTRICTAMENTE_POSITIVO",
         "objetivo_pct": round(objetivo * 100, 2),
         "ventana": tamano,
         "total_filas_validas_win_loss": len(aceptadas),
@@ -130,14 +141,14 @@ def evaluar_filas(filas, tamano=TAMANO_VENTANA, objetivo=OBJETIVO):
         "bloques_no_solapados": bloques,
         "bloques_completos": len(completos),
         "bloques_completos_bajo_objetivo": sum(
-            x["cumple_60"] is False for x in completos
+            x["cumple_objetivo_economico"] is False for x in completos
         ),
         "ventanas_moviles": len(moviles),
         "ventanas_moviles_bajo_objetivo": sum(
-            x["cumple_60"] is False for x in moviles
+            x["cumple_objetivo_economico"] is False for x in moviles
         ),
         "consistencia_20_observada": bool(moviles) and all(
-            x["cumple_60"] for x in moviles
+            x["cumple_objetivo_economico"] for x in moviles
         ),
         "evidencia_prospectiva_suficiente": False,
         "operaciones_autorizadas": False,
