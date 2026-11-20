@@ -108,6 +108,48 @@ def estadistica(eventos):
     }
 
 
+def robustez_diaria(eventos):
+    """Diagnostico por jornada UTC; NO estima retornos ni observaciones independientes.
+
+    Cada minuto UTC puede contener varios activos correlacionados. Nunca se
+    selecciona un activo por resultado, ni se omiten jornadas negativas.
+    """
+    dias = defaultdict(list)
+    for evento in eventos:
+        dias[evento["minuto"] // 86400].append(evento)
+    resumen = []
+    for dia in sorted(dias):
+        registros = dias[dia]
+        estad = estadistica(registros)
+        resumen.append({
+            "dia_utc_epoch": dia,
+            "oportunidades": estad["oportunidades"],
+            "wins": estad["wins"],
+            "losses": estad["losses"],
+            "empates": estad["empates"],
+            "winrate_proxy_pct": estad["winrate_proxy_pct"],
+            "minutos_distintos": estad["minutos_distintos"],
+            "simultaneas_otro_activo": estad["simultaneas_otro_activo"],
+        })
+    return {
+        "jornadas": resumen,
+        "jornadas_totales": len(resumen),
+        "jornadas_con_minimo_20_oportunidades": sum(
+            d["oportunidades"] >= 20 for d in resumen
+        ),
+        "jornadas_con_60_pct_o_mas": sum(
+            d["winrate_proxy_pct"] is not None and d["winrate_proxy_pct"] >= 60
+            for d in resumen
+        ),
+        "jornadas_con_menos_60_pct": sum(
+            d["winrate_proxy_pct"] is not None and d["winrate_proxy_pct"] < 60
+            for d in resumen
+        ),
+        "limite": "Proxy hipotetico por dia; correlacion entre activos/minutos. "
+                  "No prueba payout, fill, ni operabilidad V3.",
+    }
+
+
 def comparar(filas):
     oportunidades, descartes = depurar(filas)
     escenarios = {
@@ -133,6 +175,9 @@ def comparar(filas):
         "datos_entrada": len(filas),
         "descartes": descartes,
         "escenarios": {k: estadistica(v) for k, v in escenarios.items()},
+        "robustez_diaria_por_escenario": {
+            nombre: robustez_diaria(eventos) for nombre, eventos in escenarios.items()
+        },
         "por_alineacion": {
             k: estadistica([e for e in oportunidades if e["alineacion"] == k])
             for k in ("A_FAVOR", "EN_CONTRA", "INDEFINIDA")
