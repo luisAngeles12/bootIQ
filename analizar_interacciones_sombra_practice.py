@@ -14,7 +14,7 @@ MIN_DIAS_ENTRENAMIENTO = 3
 MIN_DIAS_VALIDACION = 2
 
 
-def _resumen(eventos):
+def _resumen(eventos): 
     n = len(eventos)
     w = sum(e["resultado"] == "WIN" for e in eventos)
     l = sum(e["resultado"] == "LOSS" for e in eventos)
