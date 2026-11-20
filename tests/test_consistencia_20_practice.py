@@ -9,6 +9,7 @@ def fila(i, pnl, fecha="2026-11-10 10:00:00", patron="CHOCH bajista"):
         "fecha": fecha,
         "order_id": str(i),
         "estado": "CERRADA",
+        "modo_cuenta_configurado": "PRACTICE",
         "resultado": str(pnl),
         "patron": patron,
     }
@@ -80,6 +81,35 @@ class Consistencia20PracticeTests(unittest.TestCase):
         self.assertEqual(d["ventanas_moviles"], 0)
         self.assertFalse(d["consistencia_observada"])
         self.assertFalse(d["evidencia_prospectiva_suficiente"])
+
+    def test_rechaza_real_y_modo_ausente_sin_inflar_60(self):
+        filas = [fila(i, 20.75) for i in range(20)]
+        filas[0]["modo_cuenta_configurado"] = "REAL"
+        filas[1]["modo_cuenta_configurado"] = ""
+        r = evaluar_filas(filas)
+        self.assertEqual(r["total_filas_validas_win_loss"], 18)
+        self.assertEqual(r["descartes"]["MODO_NO_VERIFICADO_PRACTICE"], 2)
+        self.assertFalse(r["consistencia_20_observada"])
+        self.assertFalse(r["procedencia_broker_certificada"])
+
+    def test_docek_wins_con_neto_negativo_no_es_consistencia_economica(self):
+        # 12x +0.01 y 8x -25: 60% de acierto pero perdida enorme.
+        filas = [fila(i, "0.01" if i < 12 else "-25.00")
+                 for i in range(20)]
+        r = evaluar_filas(filas)
+        self.assertTrue(r["bloques_no_solapados"][0]["cumple_60"])
+        self.assertFalse(
+            r["bloques_no_solapados"][0]["cumple_objetivo_economico"])
+        self.assertEqual(r["bloques_completos_bajo_objetivo"], 1)
+        self.assertFalse(r["consistencia_20_observada"])
+
+    def test_subcentavos_no_se_admiten_para_certificacion(self):
+        filas = [fila(i, 20.75) for i in range(20)]
+        filas[0]["resultado"] = "20.755"
+        r = evaluar_filas(filas)
+        self.assertEqual(r["descartes"]["RESULTADO_INVALIDO"], 1)
+        self.assertEqual(r["total_filas_validas_win_loss"], 19)
+        self.assertFalse(r["consistencia_20_observada"])
 
     def test_orden_temporal_y_estrategias_sin_autorizacion(self):
         filas = [
