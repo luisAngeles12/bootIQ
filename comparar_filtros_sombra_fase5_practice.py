@@ -16,6 +16,8 @@ from auditar_consistencia_20_practice import evaluar_filas
 
 
 def _normalizar(row):
+    if str(row.get("modo_cuenta_configurado") or "").strip().upper() != "PRACTICE":
+        return None
     if str(row.get("estado") or "").strip().upper() != "CERRADA":
         return None
     identificador = str(row.get("order_id") or "").strip()
@@ -51,6 +53,7 @@ def _normalizar(row):
         "fecha": fecha,
         "order_id": identificador,
         "estado": "CERRADA",
+        "modo_cuenta_configurado": "PRACTICE",
         "resultado": pnl,
         "pnl": pnl,
         "alineacion": alineacion,
