@@ -31,6 +31,8 @@ def evaluar_filas(filas, tamano=TAMANO_VENTANA, objetivo=OBJETIVO):
     aceptadas = []
     rechazadas = defaultdict(int)
     ids = set()
+    # La cohorte bootstrap es legado: medirla no certifica el Cerebro V3.
+    autoridades = defaultdict(int)
     for fila in filas:
         if str(fila.get("modo_cuenta_configurado") or "").strip().upper() != "PRACTICE":
             rechazadas["MODO_NO_VERIFICADO_PRACTICE"] += 1
@@ -63,7 +65,10 @@ def evaluar_filas(filas, tamano=TAMANO_VENTANA, objetivo=OBJETIVO):
         if pnl == 0:
             rechazadas["EMPATE"] += 1
             continue
+        autoridad = str(fila.get("origen_autoridad") or "").strip().upper()
+        autoridades[autoridad or "SIN_AUTORIDAD_DECLARADA"] += 1
         aceptadas.append({
+            "origen_autoridad": autoridad,
             "order_id": identificador,
             "fecha": instante,
             "dia": instante.date().isoformat(),
@@ -133,6 +138,18 @@ def evaluar_filas(filas, tamano=TAMANO_VENTANA, objetivo=OBJETIVO):
         "objetivo_pct": round(objetivo * 100, 2),
         "ventana": tamano,
         "total_filas_validas_win_loss": len(aceptadas),
+        "operaciones_por_origen_autoridad": dict(sorted(autoridades.items())),
+        "operaciones_bootstrap": autoridades["BOOTSTRAP_PRACTICE_SIN_HISTORIAL"],
+        "operaciones_no_bootstrap": sum(
+            cantidad for origen, cantidad in autoridades.items()
+            if origen not in ("BOOTSTRAP_PRACTICE_SIN_HISTORIAL",
+                              "SIN_AUTORIDAD_DECLARADA")
+        ),
+        "valida_rentabilidad_cerebro_v3": False,
+        "advertencia_origen": (
+            "BOOTSTRAP_O_AUTORIDAD_DECLARADA_NO_DEMUESTRA_DESEMPENO_V3; "
+            "SIN_CONCILIACION_BROKER_NI_OOS"
+        ),
         "descartes": dict(sorted(rechazadas.items())),
         "global": resumen(aceptadas),
         "dias": {k: resumen(v) for k, v in sorted(dias.items())},
