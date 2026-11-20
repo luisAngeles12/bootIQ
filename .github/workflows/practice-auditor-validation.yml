@@ -1,0 +1,25 @@
+name: Practice auditor validation
+
+on:
+  push:
+    branches: [bootiq-v3-auditoria]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  auditor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - name: Syntax check (offline)
+        run: |
+          python -m py_compile auditar_paridad_decisiones_practice.py tests/test_auditar_paridad_decisiones_practice.py
+      - name: Causal auditor regression (offline, no broker)
+        run: |
+          python -m unittest discover -s tests -p 'test_auditar_paridad_decisiones_practice.py' -v
