@@ -7,6 +7,7 @@ def fila(i, dia, resultado, patron="CHOCH", pa="CALL"):
     return {
         "order_id": str(i),
         "estado": "CERRADA",
+        "modo_cuenta_configurado": "PRACTICE",
         "fecha": dia + " 10:00:00",
         "resultado": str(resultado),
         "patron": patron,
