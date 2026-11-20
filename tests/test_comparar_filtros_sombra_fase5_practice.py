@@ -8,6 +8,7 @@ from comparar_filtros_sombra_fase5_practice import evaluar_filtros_sombra
 def fila(i, dia, pnl, direccion="CALL", pa="CALL", riesgo="BAJO"):
     return {
         "estado": "CERRADA",
+        "modo_cuenta_configurado": "PRACTICE",
         "order_id": str(i),
         "fecha": f"{dia}T12:{i % 60:02d}:00",
         "resultado": str(pnl),
@@ -126,6 +127,21 @@ class CompararFiltrosSombraTests(unittest.TestCase):
         self.assertEqual(alineada["ultimo_dia_no_usado_para_ajustar_regla"]["n"], 12)
         self.assertFalse(alineada["evaluacion_con_muestra_suficiente"])
         self.assertFalse(r["cambios_operativos_autorizados"])
+
+    def test_no_admite_real_ni_modo_ausente_en_comparaciones(self):
+        filas = [
+            fila(1, "2026-11-10", 20.75),
+            fila(2, "2026-11-10", -25),
+            fila(3, "2026-11-10", 20.75),
+        ]
+        filas[1]["modo_cuenta_configurado"] = "REAL"
+        filas[2]["modo_cuenta_configurado"] = ""
+        resultado = evaluar_filtros_sombra(filas, minimo_validacion=1)
+        self.assertEqual(
+            resultado["hipotesis_predefinidas"][0]["total"]["n"], 1
+        )
+        self.assertEqual(resultado["descartes"]["NO_EVALUABLE"], 2)
+        self.assertFalse(resultado["cambios_operativos_autorizados"])
 
     def test_duplicados_y_empates_excluidos(self):
         rows = [fila(1, "2026-11-10", 20.75),
