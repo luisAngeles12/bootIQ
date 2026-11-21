@@ -110,6 +110,7 @@ def analizar(filas, min_train=20, min_test=20, proporcion_dias_train=0.7):
             **respuesta_base,
             "estado": "JORNADAS_INSUFICIENTES",
             "baseline": _resumen(eventos),
+            "baseline_por_dia": _resumen_diario(eventos),
             "interacciones": [],
         }
 
