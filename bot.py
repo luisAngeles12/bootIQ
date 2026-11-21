@@ -124,6 +124,8 @@ def main():
 
     ronda_estadisticas = 0
     operaciones_desde_resumen_mercado = 0
+    # Tiempo de inactividad medido desde inicio de proceso, no desde broker.
+    ultima_apertura_confirmada_practice = time.monotonic()
 
     # D7.6A — precarga del universo fuera de la ventana
     # operativa. Evita consumir los segundos 0-30 haciendo
@@ -1961,6 +1963,26 @@ def main():
                 "en esta ronda:",
                 abiertas_ahora
             )
+
+            ultima_apertura_confirmada_practice = time.monotonic()
+
+        # Reporte observacional: muestra la causa visible de no abrir
+        # ordenes en esta ronda. Nunca altera el permiso del Cerebro.
+        if abiertas_ahora == 0:
+            from diagnostico_inactividad_practice import (
+                resumen_inactividad,
+                texto_inactividad,
+            )
+            resumen_no_trade = resumen_inactividad(
+                estado.metricas_ronda,
+                len(senales),
+                abiertas_ahora,
+                memoria_oficial_estado=diagnostico_memoria["estado"],
+                segundos_sin_apertura=int(
+                    time.monotonic() - ultima_apertura_confirmada_practice
+                ),
+            )
+            print(texto_inactividad(resumen_no_trade), flush=True)
 
         # ==========================================
         # RESUMEN DE MERCADO CADA 5 OPERACIONES
