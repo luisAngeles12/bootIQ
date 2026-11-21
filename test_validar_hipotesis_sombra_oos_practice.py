@@ -34,6 +34,26 @@ class ShadowOOSTests(unittest.TestCase):
         self.assertFalse(reporte["autoriza_operaciones"])
         self.assertIsNone(reporte["pnl_broker"])
 
+    def test_test_no_puede_cambiar_la_seleccion_train(self):
+        base, variante = [], []
+        for dia in range(10):
+            for n in range(20):
+                for patron in ("A", "B"):
+                    # Entrenamiento idéntico en ambos universos.
+                    train_gana = patron == "A" or n < 6
+                    # TEST cambia por completo pero no puede seleccionar.
+                    win_base = train_gana if dia < 7 else patron == "B"
+                    win_variante = train_gana if dia < 7 else patron == "A"
+                    base.append(self.fila(dia, n + (100 if patron == "B" else 0),
+                                          patron, win_base))
+                    variante.append(self.fila(dia, n + (100 if patron == "B" else 0),
+                                              patron, win_variante))
+        a = validar(base)["candidato"]
+        b = validar(variante)["candidato"]
+        self.assertEqual((a["campo"], a["valor"]), (b["campo"], b["valor"]))
+        self.assertEqual((a["campo"], a["valor"]), ("patron", "A"))
+        self.assertNotEqual(a["test"]["wr_pct"], b["test"]["wr_pct"])
+
     def test_duplicados_y_real_no_se_convierten_en_datos(self):
         rows = [self.fila(0, 1, "A", True, "DUP"),
                 self.fila(0, 2, "A", False, "DUP")]
