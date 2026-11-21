@@ -61,6 +61,46 @@ class EvaluacionSombraTests(unittest.TestCase):
         self.assertEqual(r["resueltas_validas"], 0)
         self.assertEqual(r["descartes"]["DIRECCION_INVALIDA"], 1)
 
+    def test_no_confunde_bloques_de_dias_distintos(self):
+        # 5 jornadas; 20 senales por dia; cuatro jornadas con 60% y
+        # una con 55%. El total cumple 60% si se mira solo la primera
+        # parte, pero no puede declararse constancia multijornada.
+        filas = []
+        for dia in range(5):
+            for i in range(20):
+                n = dia * 20 + i
+                registro = fila(n, "WIN" if i < (12 if dia < 4 else 11) else "LOSS")
+                registro["vela_entrada_from"] = str(
+                    1700000000 + dia * 86400 + i * 60
+                )
+                filas.append(registro)
+        r = evaluar(filas)
+        self.assertEqual(r["jornadas_utc"], 5)
+        self.assertEqual(r["jornadas_con_bloque_20"], 5)
+        self.assertEqual(len(r["bloques_completos_20_por_dia_utc"]), 5)
+        self.assertTrue(r["evidencia_minima_constancia"])
+        self.assertFalse(r["constancia_sombra_60_observada"])
+        self.assertEqual(
+            sum(g["cumple_60_pct"] for g in r["bloques_completos_20_por_dia_utc"]),
+            4,
+        )
+        self.assertFalse(r["autoriza_operaciones"])
+
+    def test_60_en_cada_jornada_sigue_siendo_solo_hipotetico(self):
+        filas = []
+        for dia in range(5):
+            for i in range(20):
+                registro = fila(dia * 20 + i, "WIN" if i < 12 else "LOSS")
+                registro["vela_entrada_from"] = str(
+                    1700000000 + dia * 86400 + i * 60
+                )
+                filas.append(registro)
+        r = evaluar(filas)
+        self.assertTrue(r["constancia_sombra_60_observada"])
+        self.assertFalse(r["rentabilidad_demostrada"])
+        self.assertFalse(r["autoriza_operaciones"])
+        self.assertIsNone(r["pnl_broker"])
+
     def test_sin_datos_no_declara_60_constante(self):
         r = evaluar([])
         self.assertIsNone(r["global"]["winrate_pct"])
