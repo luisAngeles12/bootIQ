@@ -294,8 +294,6 @@ def abrir_operacion(senal):
         )
         return False
     from utils import segundo_actual
-    segundo_antes = segundo_actual()
-    tiempo_antes = time.time()
 
     # No consultar balance en la ruta crítica de envío.
     # Esta lectura no participa en autorización, monto ni riesgo
@@ -343,6 +341,10 @@ def abrir_operacion(senal):
         )
         return False
 
+    # Medir desde el inicio del envío al broker, después de las
+    # verificaciones PRACTICE/cupo/paridad. No cambiar el permiso de entrada.
+    segundo_antes = segundo_actual()
+    tiempo_antes = time.time()
     try:
         if tipo in ["turbo", "binary"]:
             check, order_id = estado.Iq.buy(
