@@ -4,10 +4,10 @@ from datetime import datetime, timedelta
 from analizar_oportunidades_integrales_practice import analizar, _features
 
 
-def fila(i, day, pnl, patron="CHOCH bajista", modo="PRACTICE", estado="CERRADA"):
+def fila(i, day, pnl, patron="CHOCH bajista", modo="PRACTICE", estado="CERRADA", minuto=0):
     return {
         "order_id": str(i),
-        "fecha": f"2026-11-{day:02d} 12:00:00",
+        "fecha": f"2026-11-{day:02d} 12:{minuto:02d}:00",
         "estado": estado,
         "estado_operacion": "OPERADA_DIRECTA",
         "modo_cuenta_configurado": modo,
@@ -55,9 +55,12 @@ class OportunidadesIntegralesTest(unittest.TestCase):
                 a = k < 5
                 train = day <= 15
                 pnl = (20 if (a == train) else -25)
-                rows.append(fila(i, day, pnl, "A" if a else "B"))
+                rows.append(fila(i, day, pnl, "A" if a else "B", minuto=k))
         r = analizar(rows, 15, 10)
         self.assertEqual(r["estado"], "ANALISIS_NO_OPERABLE")
+        # Cada trade representa un minuto distinto; la prueba anterior
+        # concentraba 10 trades en 12:00 y no cumplia el minimo OOS.
+        self.assertGreaterEqual(r["train"]["minutos_distintos"], 15)
         self.assertEqual(r["candidato"]["variable"], "patron")
         self.assertEqual(r["candidato"]["valor"], "A")
         self.assertLess(r["candidato"]["test_oos"]["neto"], 0)
