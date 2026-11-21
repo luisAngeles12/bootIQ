@@ -1,7 +1,7 @@
 """Pruebas del informe PRACTICE; sin broker ni archivos de produccion."""
 import unittest
 
-from auditar_calidad_setup_practice import analizar, _rama_reaccion, _rama_reaccion_literal_live
+from auditar_calidad_setup_practice import analizar, _rama_reaccion, _rama_reaccion_literal_legacy
 
 
 class CalidadSetupPracticeTests(unittest.TestCase):
@@ -90,7 +90,7 @@ class CalidadSetupPracticeTests(unittest.TestCase):
         }
         salida = analizar([fila])
         self.assertEqual(
-            salida["reacciones_con_tilde_no_reconocidas_por_condicion_literal"]
+            salida["reacciones_omitidas_por_condicion_legacy_antes_de_fix"]
                   ["PREMIUM"]["TEST"]["n"], 1,
         )
 
@@ -98,8 +98,8 @@ class CalidadSetupPracticeTests(unittest.TestCase):
         self.assertTrue(_rama_reaccion({"patron": "reaccion vendedora"}))
         self.assertTrue(_rama_reaccion({"patron": "reacción vendedora en resistencia"}))
         self.assertTrue(_rama_reaccion({"patron": "REACCIÓN COMPRADORA EN SOPORTE"}))
-        self.assertFalse(_rama_reaccion_literal_live({"patron": "reacción compradora"}))
-        self.assertTrue(_rama_reaccion_literal_live({"patron": "reaccion compradora"}))
+        self.assertFalse(_rama_reaccion_literal_legacy({"patron": "reacción compradora"}))
+        self.assertTrue(_rama_reaccion_literal_legacy({"patron": "reaccion compradora"}))
         self.assertTrue(_rama_reaccion({"tipo_setup": "RECHAZO_ALCISTA"}))
         self.assertFalse(_rama_reaccion({"patron": "CHOCH bajista"}))
 
