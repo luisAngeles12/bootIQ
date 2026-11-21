@@ -149,6 +149,17 @@ def analizar(rows, minimo_train=20, minimo_oos=20):
         # no fingir independencia al seleccionar una regla en TRAIN.
         if m["minutos_distintos"] < minimo_train:
             continue
+        # Un patron perdedor en TRAIN no se promociona porque luego
+        # tuvo suerte en TEST. TEST evalua una hipotesis ya justificable.
+        dias_train = len({r["fecha"].date().isoformat() for r in group})
+        if (
+            dias_train < 3
+            or m["neto"] <= 0
+            or m["winrate_pct"] < 60
+            or m["winrate_por_minuto_pct"] < 60
+            or m["wilson_minutos_95_pct"] <= 50
+        ):
+            continue
         candidates.append((m["expectativa_por_operacion"], len(group), key, value, m))
     candidates.sort(key=lambda t: (-t[0], -t[1], t[2], t[3]))
     baseline_oos = _metrics(oos)
