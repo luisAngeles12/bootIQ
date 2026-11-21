@@ -19,6 +19,7 @@ MODULOS_F12 = (
     "test_validar_hipotesis_sombra_oos_practice",
     "test_preparacion_practice_v3",
     "test_evaluar_evidencia_inicio_practice",
+    "test_sombra_contexto_rechazadas_practice",
 )
 
 
