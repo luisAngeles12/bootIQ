@@ -25,6 +25,10 @@ COLUMNAS = COLUMNAS_BASE + (
     "cuerpo_relativo", "mecha_superior_relativa",
     "mecha_inferior_relativa", "cierre_posicion",
     "posicion_rango", "direccion_tendencia", "fuerza_tendencia",
+    # F12: contexto necesario para comparar rechazos con autorizaciones.
+    # Las filas legacy se leen con estos campos vacios, sin alterar ids.
+    "regimen_mercado", "calidad_setup", "tipo_setup",
+    "modo_entrada_setup", "protocolo_sugerido", "origen_autoridad",
 )
 
 
@@ -134,6 +138,12 @@ def registrar_candidata(senal, ctx, ruta=RUTA_EVENTOS):
         "calidad_mercado": str(ctx.get("calidad_mercado") or ""),
         "accion_precio": str(senal.get("accion_precio") or ""),
         "estado_tendencia": str(ctx.get("estado_tendencia") or ""),
+        "regimen_mercado": str(ctx.get("regimen_mercado") or ""),
+        "calidad_setup": str(senal.get("calidad_setup") or ""),
+        "tipo_setup": str(senal.get("tipo_setup") or ""),
+        "modo_entrada_setup": str(senal.get("modo_entrada_setup") or ""),
+        "protocolo_sugerido": str(senal.get("protocolo_sugerido") or ""),
+        "origen_autoridad": str(senal.get("origen_autoridad") or ""),
         "calidad_tiempo": "PENDIENTE_VELA_POSTERIOR",
         "patron_vela": str(ctx.get("nombre_patron") or ""),
         "fuerza_patron_vela": _valor_finito(
