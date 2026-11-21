@@ -56,7 +56,8 @@ class TradesSimultaneosTests(unittest.TestCase):
         self.assertEqual(salida["operaciones_validas"], 600)
         self.assertEqual(salida["train"]["minutos_distintos"], 420)
         self.assertEqual(salida["train"]["n"], 420)
-        self.assertFalse(salida["candidato"]["autoriza_operaciones"])
+        # 50% en TRAIN no es una hipotesis rentable ni promotable.
+        self.assertIsNone(salida["candidato"])
 
 
 if __name__ == "__main__":
