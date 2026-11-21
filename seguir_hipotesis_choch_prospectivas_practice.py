@@ -37,10 +37,18 @@ def evaluar(rows):
     for fila in filas:
         if _normalizar(fila, "decision") != "NO_OPERAR":
             continue
-        # Para clasificar temporalmente una fila NO_RESUELTA se usa la
-        # fecha ORIGINAL de la vela de entrada, nunca la fecha del analisis.
+        # La clasificacion temporal no calcula resultados de mercado.
+        # Preferir timestamp de entrada si existe; si falta en pendientes,
+        # derivar inicio teorico desde el timestamp de la senal.
         try:
-            ts = int(str(fila.get("vela_entrada_from") or ""))
+            entrada_cruda = str(fila.get("vela_entrada_from") or "").strip()
+            if entrada_cruda:
+                ts = int(entrada_cruda)
+            else:
+                # La columna vela_entrada_from permanece vacia HASTA que
+                # se resuelve. Para clasificar el dia de una pendiente
+                # usamos la vela de senal + 60, no un fill inventado.
+                ts = int(str(fila.get("vela_senal_from") or "")) + 60
             if ts <= 0:
                 raise ValueError("FECHA_INVALIDA")
             dia = datetime.fromtimestamp(ts, timezone.utc).date().isoformat()
