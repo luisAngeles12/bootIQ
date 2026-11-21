@@ -52,6 +52,7 @@ def evaluar_preflight(raiz=".", *, ruta_memoria=None, config=None):
         "MODO_CUENTA_NO_PRACTICE",
         "CONTROL_BLOQUES_20_INACTIVO",
         "BOOTSTRAP_SIN_MEMORIA_ACTIVO",
+        "MEMORIA_EXPERIMENTAL_COMO_OFICIAL",
     ))
     return {
         "tipo": "PREFLIGHT_INFORMATIVO_BOOTIQ_V3",
