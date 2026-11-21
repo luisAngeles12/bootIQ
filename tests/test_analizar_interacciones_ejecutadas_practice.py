@@ -120,6 +120,9 @@ class InteraccionesEjecutadasTests(unittest.TestCase):
         self.assertEqual(resultado["estado"], "JORNADAS_INSUFICIENTES")
         self.assertEqual(resultado["interacciones"], [])
         self.assertFalse(resultado["promueve_estrategia"])
+        self.assertEqual(len(resultado["baseline_por_dia"]), 4)
+        self.assertEqual(sum(x["n"] for x in resultado["baseline_por_dia"]), 12)
+        self.assertTrue(all("neto" in x for x in resultado["baseline_por_dia"]))
 
     def test_rechaza_parametros_invalidos(self):
         with self.assertRaisesRegex(ValueError, "MIN_TRAIN"):
