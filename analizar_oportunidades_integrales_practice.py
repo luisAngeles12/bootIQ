@@ -73,10 +73,26 @@ def _metrics(rows):
     n = len(rows)
     wins = sum(r["pnl"] > 0 for r in rows)
     pnl = sum(r["pnl"] for r in rows)
-    minutos_distintos = len({
-        r["fecha"].replace(second=0, microsecond=0)
-        for r in rows
-    })
+    # Una muestra efectiva por minuto, elegida por orden temporal/ID
+    # ANTES de ver el resultado; no escoger al ganador del minuto.
+    minutos = {}
+    for item in sorted(rows, key=lambda r: (r["fecha"], r["order_id"])):
+        clave_minuto = item["fecha"].replace(second=0, microsecond=0)
+        minutos.setdefault(clave_minuto, item)
+    muestra_independiente = list(minutos.values())
+    minutos_distintos = len(muestra_independiente)
+    wins_independientes = sum(r["pnl"] > 0 for r in muestra_independiente)
+    if minutos_distintos:
+        p_ind = wins_independientes / minutos_distintos
+        z_ind = 1.96
+        den_ind = 1 + z_ind*z_ind/minutos_distintos
+        limite_ind = (
+            p_ind + z_ind*z_ind/(2*minutos_distintos) -
+            z_ind*math.sqrt(p_ind*(1-p_ind)/minutos_distintos +
+                            z_ind*z_ind/(4*minutos_distintos**2))
+        ) / den_ind
+    else:
+        p_ind, limite_ind = None, None
     if n:
         z = 1.96
         p = wins / n
@@ -87,6 +103,8 @@ def _metrics(rows):
     return {"n": n, "wins": wins, "losses": n-wins,
             "minutos_distintos": minutos_distintos,
             "simultaneas_mismo_minuto": n - minutos_distintos,
+            "winrate_por_minuto_pct": round(100*p_ind, 2) if p_ind is not None else None,
+            "wilson_minutos_95_pct": round(100*limite_ind, 2) if limite_ind is not None else None,
             "winrate_pct": round(100*wins/n, 2) if n else None,
             "wilson_inferior_95_pct": round(100*lower, 2) if lower is not None else None,
             "neto": round(pnl, 2),
@@ -156,7 +174,10 @@ def analizar(rows, minimo_train=20, minimo_oos=20):
                 and test_metrics["minutos_distintos"] >= minimo_oos
                 and
                 test_metrics["winrate_pct"] is not None and
-                test_metrics["winrate_pct"] >= 60 and test_metrics["neto"] > 0),
+                test_metrics["winrate_pct"] >= 60
+                and test_metrics["winrate_por_minuto_pct"] is not None
+                and test_metrics["winrate_por_minuto_pct"] >= 60
+                and test_metrics["neto"] > 0),
             "autoriza_operaciones": False,
         }
     return {"estado": "ANALISIS_NO_OPERABLE", "operaciones_validas": len(valid),
