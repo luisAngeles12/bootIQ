@@ -10,6 +10,7 @@ import math
 from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
+from construir_memoria_ejecutadas_train_practice import _limpiar
 
 FEATURES = ("patron", "tipo_mercado", "calidad_mercado", "regimen_mercado",
             "accion_precio", "pa_tipo", "estado_tendencia", "origen_autoridad",
@@ -89,40 +90,21 @@ def _metrics(rows):
 def analizar(rows, minimo_train=20, minimo_oos=20):
     if minimo_train < 2 or minimo_oos < 2:
         raise ValueError("MINIMOS_INVALIDOS")
-    valid, seen, rejects = [], set(), Counter()
-    for row in rows:
-        if _norm(row.get("estado")) != "CERRADA":
-            rejects["NO_CERRADA"] += 1
-            continue
-        if _norm(row.get("modo_cuenta_configurado")) != "PRACTICE":
-            rejects["NO_PRACTICE"] += 1
-            continue
-        if _norm(row.get("estado_operacion")) not in ("OPERADA_DIRECTA", "OPERADA_PROTOCOLO"):
-            rejects["NO_OPERACION_IDENTIFICADA"] += 1
-            continue
-        oid = str(row.get("order_id") or "").strip()
-        if not oid or oid in seen:
-            rejects["ORDER_ID_INVALIDO_O_REPETIDO"] += 1
-            continue
-        pnl = _number(row.get("resultado"))
-        try:
-            stamp = datetime.fromisoformat(str(row.get("fecha") or "").replace("Z", "+00:00"))
-        except (TypeError, ValueError):
-            stamp = None
-        if pnl is None or stamp is None:
-            rejects["RESULTADO_O_FECHA_INVALIDOS"] += 1
-            continue
-        seen.add(oid)
-        if pnl == 0:
-            rejects["EMPATE_EXCLUIDO_WR"] += 1
-            continue
-        valid.append({"order_id": oid, "fecha": stamp, "pnl": pnl, "features": _features(row)})
-    if len({r["fecha"].tzinfo is None for r in valid}) > 1:
-        raise ValueError("ZONAS_HORARIAS_MIXTAS")
-    valid.sort(key=lambda r: (r["fecha"], r["order_id"]))
+    # Compartir el mismo contrato de procedencia y deduplicacion que
+    # los analizadores de memoria e interacciones. El legado declarado
+    # se mantiene diferenciado de la marca PRACTICE del CSV.
+    registros, rejects = _limpiar(rows)
+    valid = [
+        {"order_id": oid, "fecha": fecha, "pnl": pnl,
+         "features": _features(fila),
+         "procedencia": fila["_procedencia_practice_auditoria"]}
+        for fecha, oid, pnl, fila in registros
+    ]
+    procedencia = dict(Counter(r["procedencia"] for r in valid))
     dates = sorted({r["fecha"].date().isoformat() for r in valid})
     if len(dates) < 2:
         return {"estado": "SIN_DIAS_INDEPENDIENTES", "baseline": _metrics(valid),
+                "procedencia": procedencia,
                 "descartes": dict(rejects), "dias": len(dates), "operaciones_validas": len(valid),
                 "candidato": None, "aviso": "No afirmar mejora sin validacion temporal independiente"}
     cut = dates[max(0, int(len(dates) * 0.7) - 1)]
@@ -162,6 +144,7 @@ def analizar(rows, minimo_train=20, minimo_oos=20):
             "autoriza_operaciones": False,
         }
     return {"estado": "ANALISIS_NO_OPERABLE", "operaciones_validas": len(valid),
+            "procedencia": procedencia,
             "descartes": dict(sorted(rejects.items())), "dias": len(dates),
             "corte_train": cut, "train": _metrics(train), "test_oos": baseline_oos,
             "candidatos_train_comparados": len(candidates), "candidato": candidate,
