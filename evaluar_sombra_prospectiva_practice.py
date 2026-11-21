@@ -103,14 +103,20 @@ def evaluar(filas):
     # broker y NO validan ventaja OOS, aunque todos sean favorables.
     jornadas = len(dias)
     evidencia_minima = len(bloques) >= 3 and jornadas >= 5
-    cobertura_multijornada = len(dias_con_bloque) >= 3
+    # No declarar constancia si solo tres dias tienen un bloque completo:
+    # las jornadas cortas tambien son evidencia, no deben desaparecer.
+    cobertura_multijornada = len(dias_con_bloque) == jornadas and jornadas >= 5
+    resumen_jornadas = [
+        {"dia_utc": dia, **_resumen(x)}
+        for dia, x in sorted(dias.items())
+    ]
     return {
         "tipo": "AUDITORIA_HIPOTETICA_SOMBRA_PRACTICE",
         "filas": len(filas), "resueltas_validas": len(validos),
         "pendientes_sin_resultado": pendientes,
         "descartes": dict(sorted(descartes.items())),
         "global": _resumen(validos),
-        "por_dia_utc": [{"dia_utc": d, **_resumen(x)} for d, x in sorted(dias.items())],
+        "por_dia_utc": resumen_jornadas,
         "por_direccion": {d: _resumen(x) for d, x in sorted(direcciones.items())},
         "bloques_completos_20": bloques,
         "tipo_bloque": "HIPOTETICO_CRONOLOGICO_NO_SESION_BROKER",
@@ -123,6 +129,7 @@ def evaluar(filas):
             evidencia_minima and cobertura_multijornada
             and all(x["cumple_60_pct"] for x in bloques)
             and all(x["cumple_60_pct"] for x in bloques_por_dia)
+            and all(x["cumple_60_pct"] for x in resumen_jornadas)
         ),
         "bloques_20_cumplen_60": sum(x["cumple_60_pct"] for x in bloques),
         "todos_bloques_20_cumplen_60": bool(bloques) and all(x["cumple_60_pct"] for x in bloques),
