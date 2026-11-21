@@ -962,6 +962,9 @@ def clasificar_setup_estrategico(senal, ctx):
     # =========================
     # CALIDAD DEL MERCADO
     # =========================
+    # Normalizar antes de aplicar defensas; no depender de mayusculas
+    # de la fuente contextual.
+    calidad_mercado = str(calidad_mercado or "").strip().upper()
     if calidad_mercado == "LIMPIO":
         riesgo_extra += 1
         razones.append(
@@ -992,7 +995,15 @@ def clasificar_setup_estrategico(senal, ctx):
     else:
         calidad_setup = "DEBIL"
 
-    if riesgo_extra >= 6 and calidad_setup != "PREMIUM":
+    # Un mercado SUCIO/CAOTICO no puede recuperar categoria BUENA
+    # por tener puntaje alto. La clasificacion final anterior
+    # sobrescribia el DEBIL diagnosticado arriba.
+    # Defensa operativa redundante con validadores externos; no abre nada.
+    if calidad_mercado in {"SUCIO", "CAOTICO"}:
+        calidad_setup = "DEBIL"
+        modo_entrada = "NO_OPERAR"
+        razones.append("veto final de calidad de mercado sucio/caotico")
+    elif riesgo_extra >= 6 and calidad_setup != "PREMIUM":
         modo_entrada = "NO_OPERAR"
 
     requiere_ruptura = modo_entrada == "ESPERAR_RUPTURA"
