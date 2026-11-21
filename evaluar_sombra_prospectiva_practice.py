@@ -5,6 +5,8 @@ Los WIN/LOSS son hipoteticos: no contienen fill, payout ni PnL del broker.
 import argparse
 import csv
 import json
+import math
+from collections import Counter
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,7 +17,13 @@ ESTADO_VALIDO = "HIPOTETICO_VELA_COMPLETA_SIN_FILL"
 def _resumen(eventos):
     n = len(eventos)
     wins = sum(x["resultado"] == "WIN" for x in eventos)
+    # Wilson 95%: un 60% observado con poca muestra no implica 60% estable.
+    p = wins / n if n else 0.0
+    z = 1.96
+    den = 1 + z * z / n if n else 1
+    inferior = ((p + z*z/(2*n) - z*math.sqrt(p*(1-p)/n + z*z/(4*n*n))) / den) if n else None
     return {
+        "wilson_inferior_95_pct": round(100 * inferior, 2) if inferior is not None else None,
         "n": n,
         "wins": wins,
         "losses": n - wins,
@@ -27,7 +35,8 @@ def _resumen(eventos):
 def evaluar(filas):
     """Devuelve cobertura y metricas, sin promover reglas ni atribuir PnL."""
     filas = list(filas)
-    ids = set()
+    ocurrencias = Counter(str(f.get("id") or "").strip() for f in filas
+                          if str(f.get("decision") or "").strip().upper() == "NO_OPERAR")
     validos = []
     descartes = defaultdict(int)
     pendientes = 0
@@ -36,10 +45,9 @@ def evaluar(filas):
             descartes["NO_RECHAZADA"] += 1
             continue
         clave = str(fila.get("id") or "").strip()
-        if not clave or clave in ids:
+        if not clave or ocurrencias[clave] > 1:
             descartes["ID_DUPLICADO_O_VACIO"] += 1
             continue
-        ids.add(clave)
         resultado = str(fila.get("resultado_hipotetico") or "").strip().upper()
         if not resultado:
             pendientes += 1
@@ -58,9 +66,12 @@ def evaluar(filas):
         except (TypeError, ValueError, OverflowError, OSError):
             descartes["FECHA_INVALIDA"] += 1
             continue
+        direccion = str(fila.get("direccion") or "").strip().lower()
+        if direccion not in ("call", "put"):
+            descartes["DIRECCION_INVALIDA"] += 1
+            continue
         validos.append({"id": clave, "ts": ts, "dia_utc": fecha,
-                        "direccion": str(fila.get("direccion") or "").lower(),
-                        "resultado": resultado})
+                        "direccion": direccion, "resultado": resultado})
     validos.sort(key=lambda x: (x["ts"], x["id"]))
     dias = defaultdict(list)
     direcciones = defaultdict(list)
@@ -73,6 +84,10 @@ def evaluar(filas):
         if len(items) != 20:
             break
         bloques.append({"bloque": len(bloques) + 1, **_resumen(items)})
+    # Estos bloques son agrupaciones temporales de senales rechazadas, NO sesiones
+    # ejecutadas. Su 60% observado no constituye por si solo evidencia OOS.
+    jornadas = len(dias)
+    evidencia_minima = len(bloques) >= 3 and jornadas >= 5
     return {
         "tipo": "AUDITORIA_HIPOTETICA_SOMBRA_PRACTICE",
         "filas": len(filas), "resueltas_validas": len(validos),
@@ -82,12 +97,16 @@ def evaluar(filas):
         "por_dia_utc": [{"dia_utc": d, **_resumen(x)} for d, x in sorted(dias.items())],
         "por_direccion": {d: _resumen(x) for d, x in sorted(direcciones.items())},
         "bloques_completos_20": bloques,
+        "tipo_bloque": "HIPOTETICO_CRONOLOGICO_NO_SESION_BROKER",
+        "jornadas_utc": jornadas,
+        "evidencia_minima_constancia": evidencia_minima,
+        "constancia_sombra_60_observada": evidencia_minima and all(x["cumple_60_pct"] for x in bloques),
         "bloques_20_cumplen_60": sum(x["cumple_60_pct"] for x in bloques),
         "todos_bloques_20_cumplen_60": bool(bloques) and all(x["cumple_60_pct"] for x in bloques),
         "pnl_broker": None,
         "rentabilidad_demostrada": False,
         "autoriza_operaciones": False,
-        "nota": "Aciertos hipoteticos de vela completa, sin fill, payout ni validacion OOS independiente.",
+        "nota": "Aciertos hipoteticos de vela completa. Bloques no representan sesiones ni validacion OOS; sin fill, payout ni PnL.",
     }
 
 
