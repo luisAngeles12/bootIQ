@@ -1,0 +1,22 @@
+name: Auditoria PRACTICE - pruebas sin broker
+on:
+  push:
+    branches: [boot-iq-ci, bootiq-v3-auditoria]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compilar archivos de diagnostico
+        run: python -m py_compile diagnostico_memoria_practice.py analizar_interacciones_ejecutadas_practice.py tests/test_diagnostico_memoria_practice.py tests/test_analizar_interacciones_ejecutadas_practice.py
+      - name: Pruebas de diagnostico memoria y analisis PRACTICE
+        run: |
+          python -m unittest discover -s tests -p 'test_diagnostico_memoria_practice.py' -v
+          python -m unittest discover -s tests -p 'test_analizar_interacciones_ejecutadas_practice.py' -v
