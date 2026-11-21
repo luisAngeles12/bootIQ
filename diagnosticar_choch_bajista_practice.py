@@ -82,7 +82,25 @@ def diagnosticar(rows, corte="2026-11-16", minimo_subgrupo=10):
             destino = _metrics(filas_test_grupo)
         wr_train = origen["winrate_por_minuto_pct"]
         wr_test = destino["winrate_por_minuto_pct"]
+        # Reportar cobertura temporal por subgrupo. Una aparente ventaja
+        # OOS concentrada en un solo dia no acredita estabilidad.
+        dias_test_grupo = defaultdict(list)
+        for item in test:
+            if item["features"].get(campo) == valor:
+                dias_test_grupo[item["fecha"].date().isoformat()].append(item)
+        test_por_dia_grupo = {
+            dia: _metrics(items)
+            for dia, items in sorted(dias_test_grupo.items())
+        }
+        dias_test_suficientes = sum(
+            m["minutos_distintos"] >= 10
+            for m in test_por_dia_grupo.values()
+        )
         comparacion.append({
+            "dias_test_observados": len(test_por_dia_grupo),
+            "dias_test_con_10_minutos": dias_test_suficientes,
+            "test_por_dia": test_por_dia_grupo,
+            "evidencia_prospectiva_nueva": False,
             "campo": campo, "valor": valor,
             "n_train": origen["n"],
             "n_test": destino["n"],
