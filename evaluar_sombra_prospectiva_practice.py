@@ -84,11 +84,26 @@ def evaluar(filas):
         if len(items) != 20:
             break
         bloques.append({"bloque": len(bloques) + 1, **_resumen(items)})
-    # 12 de 20 (60% exacto) cumple el objetivo definido; no se exige 13.
-    # Estos bloques son agrupaciones temporales de senales rechazadas, NO sesiones
-    # ejecutadas. Su 60% observado no constituye por si solo evidencia OOS.
+    # Ademas del total cronologico, separar bloques por dia evita mezclar
+    # jornadas para crear una falsa apariencia de 60% consistente.
+    bloques_por_dia = []
+    dias_con_bloque = set()
+    for dia, registros in sorted(dias.items()):
+        for inicio in range(0, len(registros), 20):
+            grupo = registros[inicio:inicio + 20]
+            if len(grupo) < 20:
+                continue
+            dias_con_bloque.add(dia)
+            bloques_por_dia.append({
+                "dia_utc": dia,
+                "bloque_dia": inicio // 20 + 1,
+                **_resumen(grupo),
+            })
+    # 12/20 cumple. Los bloques siguen siendo simulaciones sin ejecucion
+    # broker y NO validan ventaja OOS, aunque todos sean favorables.
     jornadas = len(dias)
     evidencia_minima = len(bloques) >= 3 and jornadas >= 5
+    cobertura_multijornada = len(dias_con_bloque) >= 3
     return {
         "tipo": "AUDITORIA_HIPOTETICA_SOMBRA_PRACTICE",
         "filas": len(filas), "resueltas_validas": len(validos),
@@ -100,8 +115,15 @@ def evaluar(filas):
         "bloques_completos_20": bloques,
         "tipo_bloque": "HIPOTETICO_CRONOLOGICO_NO_SESION_BROKER",
         "jornadas_utc": jornadas,
-        "evidencia_minima_constancia": evidencia_minima,
-        "constancia_sombra_60_observada": evidencia_minima and all(x["cumple_60_pct"] for x in bloques),
+        "bloques_completos_20_por_dia_utc": bloques_por_dia,
+        "jornadas_con_bloque_20": len(dias_con_bloque),
+        "cobertura_multijornada": cobertura_multijornada,
+        "evidencia_minima_constancia": evidencia_minima and cobertura_multijornada,
+        "constancia_sombra_60_observada": (
+            evidencia_minima and cobertura_multijornada
+            and all(x["cumple_60_pct"] for x in bloques)
+            and all(x["cumple_60_pct"] for x in bloques_por_dia)
+        ),
         "bloques_20_cumplen_60": sum(x["cumple_60_pct"] for x in bloques),
         "todos_bloques_20_cumplen_60": bool(bloques) and all(x["cumple_60_pct"] for x in bloques),
         "pnl_broker": None,
