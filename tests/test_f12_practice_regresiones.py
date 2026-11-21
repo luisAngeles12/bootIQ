@@ -23,6 +23,7 @@ MODULOS_F12 = (
     "test_muestra_independiente_practice",
     "test_ventaja_oos_baseline_practice",
     "test_sombra_timestamp_corrupto_practice",
+    "test_cache_sombra_practice",
 )
 
 
