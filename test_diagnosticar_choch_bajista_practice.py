@@ -40,6 +40,46 @@ class DiagnosticoChochTest(unittest.TestCase):
         self.assertEqual(len(calidad), 1)
         self.assertEqual(calidad[0]["valor"], "NORMAL")
 
+    def test_compara_condiciones_train_y_test_sin_ocultar_caida(self):
+        filas = []
+        for dia in range(10, 20):
+            for minuto in range(12):
+                registro = fila(dia, minuto, 0, "CHOCH BAJISTA",
+                                dia <= 16, "NORMAL")
+                registro["accion_precio"] = "PUT_SOPORTE_CERCA_SIN_RUPTURA"
+                filas.append(registro)
+        salida = diagnosticar(filas, corte="2026-11-16")
+        comparados = [
+            x for x in salida["comparacion_condiciones_train_test"]
+            if x["campo"] == "accion_precio"
+            and x["valor"] == "PUT_SOPORTE_CERCA_SIN_RUPTURA"
+        ]
+        self.assertEqual(len(comparados), 1)
+        self.assertEqual(comparados[0]["n_train"], 84)
+        self.assertEqual(comparados[0]["n_test"], 36)
+        self.assertEqual(comparados[0]["winrate_train_pct"], 100)
+        self.assertEqual(comparados[0]["winrate_test_pct"], 0)
+        self.assertEqual(comparados[0]["delta_winrate_pp"], -100)
+        self.assertFalse(comparados[0]["no_autoriza_operaciones"] is False)
+        self.assertTrue(salida["seleccion_por_test_prohibida"])
+
+    def test_subgrupo_train_sin_muestra_test_no_se_declara_ganador(self):
+        filas = []
+        for dia in range(10, 20):
+            for minuto in range(12):
+                registro = fila(dia, minuto, 0, "CHOCH BAJISTA", True, "NORMAL")
+                registro["pa_tipo"] = "IMPULSO_BAJISTA_FUERTE" if dia <= 16 else "OTRO"
+                filas.append(registro)
+        salida = diagnosticar(filas, corte="2026-11-16")
+        grupo = next(x for x in salida["comparacion_condiciones_train_test"]
+                     if x["campo"] == "pa_tipo"
+                     and x["valor"] == "IMPULSO_BAJISTA_FUERTE")
+        self.assertEqual(grupo["n_test"], 0)
+        self.assertIsNone(grupo["winrate_test_pct"])
+        self.assertIsNone(grupo["delta_winrate_pp"])
+        self.assertTrue(grupo["muestra_test_limitada"])
+        self.assertFalse(salida["autoriza_operaciones"])
+
     def test_no_transforma_hipoteticas_en_operaciones(self):
         filas = [fila(17, 5, 0, "CHOCH BAJISTA", True, "LIMPIO")]
         filas[0]["modo_cuenta_configurado"] = "REAL"
