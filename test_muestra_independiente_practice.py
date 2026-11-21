@@ -2,7 +2,7 @@
 import unittest
 from datetime import datetime, timedelta
 
-from analizar_oportunidades_integrales_practice import analizar
+from analizar_oportunidades_integrales_practice import analizar, _metrics
 
 
 class TradesSimultaneosTests(unittest.TestCase):
@@ -18,6 +18,22 @@ class TradesSimultaneosTests(unittest.TestCase):
             "resultado": "20.75" if gana else "-25.0",
             "patron": patron,
         }
+
+    def test_wilson_no_se_infla_con_tres_wins_simultaneos(self):
+        base = datetime(2026, 11, 18)
+        filas = []
+        for minuto in range(60):
+            for idx, pnl in enumerate((-25.0, 20.75, 20.75, 20.75)):
+                filas.append({
+                    "fecha": base + timedelta(minutes=minuto),
+                    "order_id": f"M{minuto:03d}-{idx}",
+                    "pnl": pnl,
+                })
+        resultado = _metrics(filas)
+        self.assertEqual(resultado["winrate_pct"], 75.0)
+        self.assertEqual(resultado["minutos_distintos"], 60)
+        self.assertEqual(resultado["winrate_por_minuto_pct"], 0.0)
+        self.assertEqual(resultado["wilson_minutos_95_pct"], 0.0)
 
     def test_muchas_operaciones_mismo_minuto_no_son_muestra_independiente(self):
         filas = []
