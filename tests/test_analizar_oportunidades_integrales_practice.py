@@ -45,6 +45,24 @@ class OportunidadesIntegralesTest(unittest.TestCase):
         self.assertEqual(f["direccion_contra_tendencia"], "A_FAVOR")
         self.assertEqual(f["vela_senal_cuerpo"], "CUERPO_MEDIO")
 
+    def test_senal_simultanea_no_crea_muestra_independiente_falsa(self):
+        rows = []
+        i = 0
+        for day in range(10, 20):
+            for k in range(10):
+                i += 1
+                a = k < 5
+                train = day <= 15
+                pnl = 20 if (a == train) else -25
+                # Se conservaron fechas idénticas como en el fixture
+                # antiguo: 100 operaciones, solo 10 minutos únicos.
+                rows.append(fila(i, day, pnl, "A" if a else "B"))
+        r = analizar(rows, 15, 10)
+        self.assertEqual(r["estado"], "ANALISIS_NO_OPERABLE")
+        self.assertIsNone(r["candidato"])
+        self.assertLess(r["train"]["minutos_distintos"], 15)
+        self.assertFalse(r.get("operativa_autorizada", False))
+
     def test_holdout_no_se_utiliza_para_escoger_candidato(self):
         rows = []
         i = 0
