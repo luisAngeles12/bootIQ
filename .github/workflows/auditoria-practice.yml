@@ -14,6 +14,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Verificar sintaxis de todas las pruebas
+        run: python -m compileall -q tests
       - name: Compilar archivos de diagnostico
         run: python -m py_compile diagnostico_memoria_practice.py analizar_interacciones_ejecutadas_practice.py tests/test_diagnostico_memoria_practice.py tests/test_analizar_interacciones_ejecutadas_practice.py
       - name: Compilar preflight PRACTICE
