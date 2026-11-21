@@ -123,6 +123,14 @@ class InteraccionesEjecutadasTests(unittest.TestCase):
         self.assertEqual(len(resultado["baseline_por_dia"]), 4)
         self.assertEqual(sum(x["n"] for x in resultado["baseline_por_dia"]), 12)
         self.assertTrue(all("neto" in x for x in resultado["baseline_por_dia"]))
+        grupos = resultado["grupos_exploratorios"]
+        self.assertTrue(grupos)
+        patron_a = next(g for g in grupos if g["campo"] == "patron" and g["valor"] == "A")
+        self.assertEqual(patron_a["n"], 12)
+        self.assertEqual(patron_a["neto"], 249.0)
+        self.assertEqual(len(patron_a["por_dia"]), 4)
+        self.assertTrue(all(not g["autoriza_operaciones"] for g in grupos))
+        self.assertFalse(resultado["autoriza_operaciones"])
 
     def test_rechaza_parametros_invalidos(self):
         with self.assertRaisesRegex(ValueError, "MIN_TRAIN"):
