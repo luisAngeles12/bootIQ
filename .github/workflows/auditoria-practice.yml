@@ -16,6 +16,8 @@ jobs:
           python-version: '3.11'
       - name: Compilar archivos de diagnostico
         run: python -m py_compile diagnostico_memoria_practice.py analizar_interacciones_ejecutadas_practice.py tests/test_diagnostico_memoria_practice.py tests/test_analizar_interacciones_ejecutadas_practice.py
+      - name: Compilar preflight PRACTICE
+        run: python -m py_compile preflight_practice_v3.py tests/test_preflight_practice_v3.py
       - name: Compilar evaluador sombra
         run: python -m py_compile evaluar_sombra_prospectiva_practice.py tests/test_evaluar_sombra_prospectiva_practice.py
       - name: Pruebas de diagnostico memoria y analisis PRACTICE
@@ -23,3 +25,4 @@ jobs:
           python -m unittest discover -s tests -p 'test_diagnostico_memoria_practice.py' -v
           python -m unittest discover -s tests -p 'test_analizar_interacciones_ejecutadas_practice.py' -v
           python -m unittest discover -s tests -p 'test_evaluar_sombra_prospectiva_practice.py' -v
+          python -m unittest discover -s tests -p 'test_preflight_practice_v3.py' -v
