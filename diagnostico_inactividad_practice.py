@@ -19,6 +19,9 @@ def resumen_inactividad(metricas, senales_finales, aperturas, *,
 
     senales = max(0, int(senales_finales or 0))
     aperturas = max(0, int(aperturas or 0))
+    mercados = numero("mercados_analizados")
+    candidatas = numero("candidatas_generadas")
+    evaluadas = numero("candidatas_evaluadas_cerebro")
     rechazadas = numero("cerebro_no_operar")
     sin_permiso = numero("cerebro_sin_autorizacion")
     aptas = numero("senales_aprobadas")
@@ -27,7 +30,12 @@ def resumen_inactividad(metricas, senales_finales, aperturas, *,
     if aperturas:
         razon = "APERTURAS_CONFIRMADAS"
     elif senales == 0:
-        razon = "SIN_SENALES_FINALES"
+        if mercados == 0:
+            razon = "SIN_MERCADOS_ANALIZADOS"
+        elif candidatas == 0:
+            razon = "SIN_CANDIDATAS_GENERADAS"
+        else:
+            razon = "CANDIDATAS_DESCARTADAS_ANTES_DE_SENAL_FINAL"
     elif rechazadas + sin_permiso >= senales:
         razon = "CEREBRO_SIN_AUTORIZACION"
     elif fallidas:
@@ -40,6 +48,9 @@ def resumen_inactividad(metricas, senales_finales, aperturas, *,
         razon = "SIN_APERTURAS_CAUSA_NO_DETERMINADA"
     return {
         "estado": razon,
+        "mercados_analizados": mercados,
+        "candidatas_generadas": candidatas,
+        "evaluadas_cerebro": evaluadas,
         "senal_finales": senales,
         "aperturas_confirmadas_ronda": aperturas,
         "rechazos_cerebro": rechazadas,
@@ -57,7 +68,8 @@ def resumen_inactividad(metricas, senales_finales, aperturas, *,
 def texto_inactividad(datos):
     return (
         "BOOTIQ PRACTICE INACTIVIDAD | {estado} | "
-        "señales={senal_finales} | autorizadas={autorizadas} | "
+        "mercados={mercados_analizados} | candidatas={candidatas_generadas} | "
+        "evaluadas={evaluadas_cerebro} | señales={senal_finales} | autorizadas={autorizadas} | "
         "rechazadas={rechazos_cerebro} | sin_permiso={sin_autorizacion} | "
         "fallidas={envios_directos_no_ejecutados} | "
         "protocolo={autorizadas_protocolo} | "
