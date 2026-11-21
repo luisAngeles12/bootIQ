@@ -152,6 +152,10 @@ def validar(rows, minimo_train=40, minimo_test=30, minimo_dias_test=3):
         "corte_train": corte, "baseline_train": _metrica(train),
         "baseline_test": _metrica(test), "candidatos_train": len(candidatas),
         "candidato": None,
+        # Solo un shortlist congelado por TRAIN. No seleccionar la mejor
+        # fila retrospectiva de TEST: es el riesgo clásico de sobreajuste.
+        "tabla_candidatos_train_con_test": [],
+        "seleccion_por_test_prohibida": True,
     }
     if not candidatas:
         return salida
@@ -180,6 +184,26 @@ def validar(rows, minimo_train=40, minimo_test=30, minimo_dias_test=3):
         and all(b["wr_pct"] >= 60 for b in bloques)
         and all(m["wr_pct"] >= 60 for m in dias_test.values())
     )
+    # Transparencia: mostrar hasta 10 hipotesis distintas escogidas
+    # por TRAIN, con sus resultados TEST sin reordenarlas por TEST.
+    # Esto permite saber si hay realmente algun patron prometedor, en
+    # lugar de reportar únicamente la hipótesis mejor clasificada.
+    for _, _, k, v, train_m in candidatas[:10]:
+        evidencia_test = [x for x in test if x["feats"][k] == v]
+        test_m = _metrica(evidencia_test)
+        salida["tabla_candidatos_train_con_test"].append({
+            "campo": k, "valor": v,
+            "train": train_m, "test": test_m,
+            "diferencia_wr_test_vs_baseline_pct": (
+                round(test_m["winrate_por_minuto_pct"]
+                      - salida["baseline_test"]["winrate_por_minuto_pct"], 2)
+                if test_m["winrate_por_minuto_pct"] is not None
+                and salida["baseline_test"]["winrate_por_minuto_pct"] is not None
+                else None
+            ),
+            "evalua_ventaja_hipotetica_no_pnl": True,
+            "no_autoriza_operaciones": True,
+        })
     salida["candidato"] = {
         "campo": campo, "valor": valor, "train": metr_train, "test": metr_test,
         "test_por_dia": dias_test, "test_bloques_completos_20": bloques,
