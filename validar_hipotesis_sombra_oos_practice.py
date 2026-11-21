@@ -13,10 +13,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 CALIDAD = "HIPOTETICO_VELA_COMPLETA_SIN_FILL"
+# Campos categóricos realmente emitidos por COLUMNAS en
+# auditoria_candidatas_sombra_practice.py. Otros campos solo se
+# usarán si existen en un CSV ampliado, nunca se inventan.
 CAMPOS = (
-    "patron", "estrategia", "calidad_mercado", "regimen_mercado",
-    "calidad_setup", "tipo_setup", "pa_tipo", "direccion",
-    "estado_tendencia", "protocolo_sugerido",
+    "patron", "tipo_mercado", "calidad_mercado", "accion_precio",
+    "estado_tendencia", "patron_vela", "pa_tipo", "pa_direccion",
+    "direccion", "direccion_tendencia", "estrategia",
+    "regimen_mercado", "calidad_setup", "tipo_setup",
+    "protocolo_sugerido",
 )
 
 
