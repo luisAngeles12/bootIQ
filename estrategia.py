@@ -773,14 +773,11 @@ def preparar_contexto_mercado(activo, ctx):
 
 def validar_contexto_base(activo, ctx):
     """
-    Diagnostica el contexto base del activo.
+    Diagnostica el contexto base y valida elegibilidad del universo.
 
-    No bloquea.
-    No coloca cooldown.
-    No decide si se opera.
-
-    Convierte las condiciones desfavorables en evidencias
-    para que el Cerebro Único tome la decisión final.
+    Rechaza calidad no operable y regimen SUCIO antes de generar
+    señales; no coloca cooldown ni autoriza operaciones.
+    Otros riesgos se entregan como evidencias al Cerebro Único.
     """
 
     calidad = str(
