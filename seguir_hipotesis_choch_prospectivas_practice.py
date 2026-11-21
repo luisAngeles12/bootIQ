@@ -15,7 +15,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-from validar_hipotesis_sombra_oos_practice import _extraer, _metrica
+from validar_hipotesis_sombra_oos_practice import _extraer, _metrica, _normalizar, CALIDAD
 
 FECHA_CORTE_UTC = "2026-11-21"
 HIPOTESIS = (
@@ -25,8 +25,34 @@ HIPOTESIS = (
 
 
 def evaluar(rows):
-    registros, descartes = _extraer(rows)
+    # Conservar tambien el universo bruto para no confundir falta de
+    # observaciones futuras con senales pendientes de resolucion.
+    filas = list(rows)
+    registros, descartes = _extraer(filas)
     posteriores = [r for r in registros if r["dia"] > FECHA_CORTE_UTC]
+    anteriores = [r for r in registros if r["dia"] <= FECHA_CORTE_UTC]
+    pendientes_posteriores = 0
+    pendientes_fecha_no_verificable = 0
+    resolucion_posterior_no_confiable = 0
+    for fila in filas:
+        if _normalizar(fila, "decision") != "NO_OPERAR":
+            continue
+        # Para clasificar temporalmente una fila NO_RESUELTA se usa la
+        # fecha ORIGINAL de la vela de entrada, nunca la fecha del analisis.
+        try:
+            ts = int(str(fila.get("vela_entrada_from") or ""))
+            if ts <= 0:
+                raise ValueError("FECHA_INVALIDA")
+            dia = datetime.fromtimestamp(ts, timezone.utc).date().isoformat()
+        except (TypeError, ValueError, OverflowError, OSError):
+            pendientes_fecha_no_verificable += 1
+            continue
+        if dia <= FECHA_CORTE_UTC:
+            continue
+        if (_normalizar(fila, "resultado_hipotetico") not in ("WIN", "LOSS")
+                or fila.get("calidad_tiempo") != CALIDAD):
+            pendientes_posteriores += 1
+            resolucion_posterior_no_confiable += 1
     salida = []
     for nombre, patron, tendencia in HIPOTESIS:
         grupo = [
@@ -59,7 +85,18 @@ def evaluar(rows):
     return {
         "tipo": "REGISTRO_PROSPECTIVO_CHOCH_SOMBRA",
         "fecha_corte_exclusiva_utc": FECHA_CORTE_UTC,
+        "filas_elegibles_anteriores_excluidas": len(anteriores),
         "filas_elegibles_posteriores": len(posteriores),
+        "pendientes_o_no_confiables_posteriores": pendientes_posteriores,
+        "pendientes_con_fecha_no_verificable": pendientes_fecha_no_verificable,
+        "resoluciones_posteriores_no_confiables": resolucion_posterior_no_confiable,
+        "diagnostico_cobertura": (
+            "SIN_OBSERVACIONES_POSTERIORES"
+            if not posteriores and not pendientes_posteriores
+            else "PENDIENTES_SIN_RESOLUCION"
+            if not posteriores and pendientes_posteriores
+            else "OBSERVACIONES_POSTERIORES_DISPONIBLES"
+        ),
         "descartes": dict(descartes),
         "hipotesis_congeladas": salida,
         "autoriza_operaciones": False,
