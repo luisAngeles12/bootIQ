@@ -62,6 +62,24 @@ def analizar(filas, corte_train="2026-11-16"):
     def par(clave):
         return {p: _metricas(segmentos[(p, *clave)]) for p in ("TRAIN", "TEST")}
 
+    # Conservar la comparacion completa para detectar deriva de PREMIUM
+    # frente a BUENA, sin convertir el resultado en autoridad operativa.
+    premium_test = _metricas(segmentos[("TEST", "CALIDAD", "PREMIUM")])
+    buena_test = _metricas(segmentos[("TEST", "CALIDAD", "BUENA")])
+    brecha_pp = (
+        round(premium_test["winrate_pct"] - buena_test["winrate_pct"], 2)
+        if premium_test["winrate_pct"] is not None
+        and buena_test["winrate_pct"] is not None
+        else None
+    )
+    alerta_calibracion = (
+        "PREMIUM_INFERIOR_A_BUENA_EN_TEST"
+        if premium_test["n"] >= 20
+        and buena_test["n"] >= 20
+        and brecha_pp is not None and brecha_pp < 0
+        else "SIN_EVIDENCIA_SUFICIENTE_DE_INVERSION"
+    )
+
     calidades = sorted({_calidad(f) for _, _, _, f in registros})
     patrones = sorted({str(f.get("patron") or "SIN_DATO").strip().upper()
                       for _, _, _, f in registros if _calidad(f) == "PREMIUM"})
@@ -73,6 +91,13 @@ def analizar(filas, corte_train="2026-11-16"):
         "descartes": descartes,
         "baseline": {p: _metricas(segmentos[(p, "TOTAL")]) for p in ("TRAIN", "TEST")},
         "calidades": {c: par(("CALIDAD", c)) for c in calidades},
+        "alerta_calibracion_premium": {
+            "estado": alerta_calibracion,
+            "brecha_winrate_test_vs_buena_pp": brecha_pp,
+            "premium_test": premium_test,
+            "buena_test": buena_test,
+            "accion": "INVESTIGAR_SIN_AUTORIZAR_NI_BLOQUEAR_OPERACIONES",
+        },
         "premium_por_patron": {pat: par(("PREMIUM_PATRON", pat)) for pat in patrones},
         "rama_reaccion_por_calidad": {c: par(("RAMA_REACCION", c)) for c in calidades},
         "nota": (
