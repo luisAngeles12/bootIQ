@@ -121,6 +121,23 @@ def main():
     for linea in lineas_diagnostico_memoria(diagnostico_memoria):
         print(linea, flush=True)
 
+    # Utilizar los historiales locales para evaluar TRAIN/TEST antes
+    # de iniciar rondas. No concede autoridad, no toca memoria oficial.
+    try:
+        from evaluar_evidencia_inicio_practice import (
+            evaluar_fuentes,
+            lineas as lineas_evidencia,
+        )
+        for linea in lineas_evidencia(evaluar_fuentes()):
+            print(linea, flush=True)
+    except Exception as exc:
+        print(
+            "EVIDENCIA PRACTICE | analisis no disponible:",
+            type(exc).__name__,
+            "| SIN CAMBIO DE AUTORIZACION",
+            flush=True,
+        )
+
     # Reconstruccion SHADOW desde cierres oficiales, solo una vez
     # al iniciar y antes de las ventanas operativas.
     # Fallos de telemetria nunca autorizan ni bloquean trades.
