@@ -57,6 +57,26 @@ def _filtrar_activos_con_buffer(activos):
 
 def main():
 
+    # Fallar antes del login al detectar configuracion insegura.
+    # La memoria ausente no impide observacion sombra, pero nunca
+    # transforma una memoria TRAIN en autoridad operativa.
+    from preflight_practice_v3 import evaluar_preflight
+    preflight = evaluar_preflight()
+    print(
+        "BOOTIQ PREFLIGHT | PRACTICE SEGURO:",
+        preflight["seguridad_practice"],
+        "| SOMBRA:",
+        preflight["auditoria_sombra_posible"],
+        "| MOTIVOS:",
+        ",".join(preflight["motivos"]) or "NINGUNO",
+        flush=True,
+    )
+    if not preflight["seguridad_practice"]:
+        raise RuntimeError(
+            "ARRANQUE BLOQUEADO: preflight PRACTICE inseguro: "
+            + ",".join(preflight["motivos"])
+        )
+
     conectar()
     asegurar_historial_csv()
     cargar_operaciones_pendientes()
