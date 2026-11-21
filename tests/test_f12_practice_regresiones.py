@@ -21,6 +21,7 @@ MODULOS_F12 = (
     "test_evaluar_evidencia_inicio_practice",
     "test_sombra_contexto_rechazadas_practice",
     "test_muestra_independiente_practice",
+    "test_ventaja_oos_baseline_practice",
 )
 
 
