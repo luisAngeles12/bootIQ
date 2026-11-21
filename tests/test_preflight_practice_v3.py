@@ -1,4 +1,5 @@
 """Preflight offline sin credenciales, broker ni alteracion de operaciones."""
+import ast
 import tempfile
 import unittest
 from pathlib import Path
@@ -64,6 +65,23 @@ class PreflightPracticeV3Tests(unittest.TestCase):
             self.assertTrue(r["memoria_oficial_presente"])
             self.assertFalse(r["rentabilidad_validada"])
             self.assertFalse(r["operativa_autorizada"])
+
+    def test_bot_verifica_preflight_antes_de_conectar(self):
+        raiz = Path(__file__).resolve().parents[1]
+        arbol = ast.parse((raiz / "bot.py").read_text(encoding="utf-8"))
+        main = next(n for n in arbol.body
+                    if isinstance(n, ast.FunctionDef) and n.name == "main")
+        llamadas = [
+            (n.func.id, n.lineno)
+            for n in ast.walk(main)
+            if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
+            and n.func.id in ("evaluar_preflight", "conectar")
+        ]
+        self.assertEqual(len([x for x in llamadas if x[0] == "evaluar_preflight"]), 1)
+        self.assertEqual(len([x for x in llamadas if x[0] == "conectar"]), 1)
+        pre = next(l for f, l in llamadas if f == "evaluar_preflight")
+        conexion = next(l for f, l in llamadas if f == "conectar")
+        self.assertLess(pre, conexion)
 
     def test_bloques_20_deben_estar_activos(self):
         with tempfile.TemporaryDirectory() as tmp:
