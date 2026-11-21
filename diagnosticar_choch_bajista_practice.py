@@ -60,12 +60,52 @@ def diagnosticar(rows, corte="2026-11-16", minimo_subgrupo=10):
         return {"total": _metrics(items), "por_dia": por_dia,
                 "por_condicion": por_condicion}
 
+    resumen_train = agrupaciones(train)
+    resumen_test = agrupaciones(test)
+    mapa_train = {
+        (x["campo"], x["valor"]): x for x in resumen_train["por_condicion"]
+    }
+    mapa_test = {
+        (x["campo"], x["valor"]): x for x in resumen_test["por_condicion"]
+    }
+    # Este informe contiene exclusivamente condiciones definidas por TRAIN;
+    # la falta de muestra TEST es visible y nunca se interpreta como WIN.
+    comparacion = []
+    for (campo, valor), origen in sorted(mapa_train.items()):
+        destino = mapa_test.get((campo, valor))
+        # Incluir también grupos TEST por debajo del umbral mínimo para
+        # evitar sesgo de supervivencia al mostrar sólo los grandes.
+        if destino is None:
+            filas_test_grupo = [
+                x for x in test if x["features"].get(campo) == valor
+            ]
+            destino = _metrics(filas_test_grupo)
+        wr_train = origen["winrate_por_minuto_pct"]
+        wr_test = destino["winrate_por_minuto_pct"]
+        comparacion.append({
+            "campo": campo, "valor": valor,
+            "n_train": origen["n"],
+            "n_test": destino["n"],
+            "minutos_train": origen["minutos_distintos"],
+            "minutos_test": destino["minutos_distintos"],
+            "winrate_train_pct": wr_train,
+            "winrate_test_pct": wr_test,
+            "delta_winrate_pp": (
+                round(wr_test - wr_train, 2)
+                if wr_train is not None and wr_test is not None else None
+            ),
+            "pnl_train": origen["neto"], "pnl_test": destino["neto"],
+            "muestra_test_limitada": destino["minutos_distintos"] < minimo_subgrupo,
+            "no_autoriza_operaciones": True,
+        })
     return {
         "tipo": "DIAGNOSTICO_CHOCH_BAJISTA_SOLO_INVESTIGACION",
+        "comparacion_condiciones_train_test": comparacion,
+        "seleccion_por_test_prohibida": True,
         "corte": corte,
         "procedencia": sorted({r["procedencia"] for r in evaluados}),
-        "train": agrupaciones(train),
-        "test": agrupaciones(test),
+        "train": resumen_train,
+        "test": resumen_test,
         "descartes_procedencia": dict(descartes),
         "autoriza_operaciones": False,
         "puede_promover_patron": False,
