@@ -15,8 +15,8 @@ from construir_memoria_ejecutadas_train_practice import _limpiar
 
 
 CALIDADES = ("PREMIUM", "BUENA", "MEDIA", "DEBIL")
-# Coincide con la comprobacion literal de entrada.py (patron en minusculas).
-# El tipo_setup alternativo RECHAZO_ALCISTA/BAJISTA tambien activa esa rama.
+# Reportar tanto la reaccion semantica como la condicion literal de entrada.py.
+# La ruta LIVE compara "reaccion" sin tilde; no asumir que son iguales.
 TIPOS_REACCION = {"RECHAZO_ALCISTA", "RECHAZO_BAJISTA"}
 
 
@@ -43,6 +43,13 @@ def _rama_reaccion(fila):
     return "reaccion" in patron or tipo in TIPOS_REACCION
 
 
+def _rama_reaccion_literal_live(fila):
+    """Reproduce la comprobacion actual de entrada.py sin modificarla."""
+    patron = str(fila.get("patron") or "").lower()
+    tipo = str(fila.get("tipo_setup") or "").upper().strip()
+    return "reaccion" in patron or tipo in TIPOS_REACCION
+
+
 def analizar(filas, corte_train="2026-11-16"):
     registros, descartes = _limpiar(filas)
     procedencia = dict(Counter(
@@ -60,6 +67,8 @@ def analizar(filas, corte_train="2026-11-16"):
             segmentos[(periodo, "PREMIUM_PATRON", str(fila.get("patron") or "SIN_DATO").strip().upper())].append(registro)
         if _rama_reaccion(fila):
             segmentos[(periodo, "RAMA_REACCION", calidad)].append(registro)
+            if not _rama_reaccion_literal_live(fila):
+                segmentos[(periodo, "REACCION_NO_RECONOCIDA_LITERAL", calidad)].append(registro)
 
     def par(clave):
         return {p: _metricas(segmentos[(p, *clave)]) for p in ("TRAIN", "TEST")}
@@ -102,9 +111,13 @@ def analizar(filas, corte_train="2026-11-16"):
         },
         "premium_por_patron": {pat: par(("PREMIUM_PATRON", pat)) for pat in patrones},
         "rama_reaccion_por_calidad": {c: par(("RAMA_REACCION", c)) for c in calidades},
+        "reacciones_con_tilde_no_reconocidas_por_condicion_literal": {
+            c: par(("REACCION_NO_RECONOCIDA_LITERAL", c)) for c in calidades
+        },
         "nota": (
-            "RAMA_REACCION identifica la condicion de entrada.py, NO prueba "
-            "que esa condicion haya autorizado o ejecutado la orden. "
+            "RAMA_REACCION identifica patrones semanticamente; el campo "
+            "NO_RECONOCIDAS compara la condicion literal de entrada.py. "
+            "Ninguna cohorte prueba que la condicion haya autorizado una orden. "
             "TRAIN/TEST solo describe operaciones ejecutadas, no descartadas. "
             "Calidad PREMIUM no equivale a ventaja estadistica validada."
         ),
