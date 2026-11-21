@@ -37,7 +37,12 @@ def resumen_inactividad(metricas, senales_finales, aperturas, *,
         else:
             razon = "CANDIDATAS_DESCARTADAS_ANTES_DE_SENAL_FINAL"
     elif rechazadas + sin_permiso >= senales:
-        razon = "CEREBRO_SIN_AUTORIZACION"
+        # La ausencia de memoria explica la falta de fuente oficial,
+        # pero los contadores acreditan el veto; no atribuir fallos a IQ.
+        if str(memoria_oficial_estado).upper() in {"AUSENTE", "VACIA", "ERROR_CARGA", "ERROR_FORMATO"}:
+            razon = "CEREBRO_SIN_AUTORIZACION_MEMORIA_NO_UTILIZABLE"
+        else:
+            razon = "CEREBRO_SIN_AUTORIZACION"
     elif fallidas:
         razon = "AUTORIZADAS_PERO_ENVIO_NO_EJECUTADO"
     elif protocolos:
