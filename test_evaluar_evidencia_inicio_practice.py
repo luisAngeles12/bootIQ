@@ -32,6 +32,28 @@ class EvidenciaInicioPracticeTests(unittest.TestCase):
         self.assertFalse(r["cierres"].get("cumple_oos", False))
         self.assertFalse(r["rechazadas"].get("constancia_hipotetica", False))
 
+    def test_muestra_dias_perdedores_en_arranque(self):
+        informe = {
+            "cierres": {
+                "estado": "ANALISIS_NO_OPERABLE",
+                "operaciones_validas": 120,
+                "candidatos_train": 1,
+                "candidato_train": ["patron", "A"],
+                "test_n": 40,
+                "test_wr": 65.0,
+                "test_neto": 5.0,
+                "dias_oos": 3,
+                "jornadas_oos_estables": False,
+                "dias_oos_fallidos": ["2026-11-19"],
+                "cumple_oos": False,
+            },
+            "rechazadas": {"estado": "SIN_ARCHIVO"},
+        }
+        texto = lineas(informe)[0]
+        self.assertIn("constantes=False", texto)
+        self.assertIn("2026-11-19", texto)
+        self.assertIn("cumple OOS: False", texto)
+
     def test_errores_de_datos_no_habilitan_ordenes(self):
         with tempfile.TemporaryDirectory() as tmp:
             h = Path(tmp)/"historial.csv"
