@@ -44,6 +44,8 @@ def evaluar_preflight(raiz=".", *, ruta_memoria=None, config=None):
     candidata = raiz / "experimentos_fase5" / "memoria_ejecutadas_train_candidata.csv"
     if ruta.resolve() == candidata.resolve():
         motivos.append("MEMORIA_EXPERIMENTAL_COMO_OFICIAL")
+    # Para memorias oficiales presentes, verificar ademas la carga real.
+    # La mera presencia de bytes no garantiza fuentes interpretables.
     if not ruta.is_file():
         motivos.append("MEMORIA_OFICIAL_AUSENTE")
     elif ruta.stat().st_size == 0:
@@ -60,11 +62,12 @@ def evaluar_preflight(raiz=".", *, ruta_memoria=None, config=None):
         "seguridad_practice": modo_seguro,
         "auditoria_sombra_posible": modo_seguro,
         "memoria_oficial_presente": ruta.is_file() and ruta.stat().st_size > 0,
+        "memoria_oficial_validada": False,
         "memoria_experimental_promovida": "MEMORIA_EXPERIMENTAL_COMO_OFICIAL" in motivos,
         "operativa_autorizada": False,
         "rentabilidad_validada": False,
         "motivos": motivos,
-        "nota": "No evalua calidad estadistica, paridad del broker ni PnL. No autoriza trading.",
+        "nota": "Presencia de memoria no equivale a carga ni validacion. No evalua paridad, calidad estadistica, PnL ni autoriza trading.",
     }
 
 
