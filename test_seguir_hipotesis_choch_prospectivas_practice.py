@@ -55,6 +55,27 @@ class HipotesisChochProspectivasTests(unittest.TestCase):
             r["diagnostico_cobertura"], "OBSERVACIONES_POSTERIORES_DISPONIBLES")
         self.assertFalse(r["autoriza_operaciones"])
 
+    def test_pendiente_con_senal_valida_pero_entrada_vacia(self):
+        # Comportamiento real del CSV: entrada vacia hasta resolver.
+        anterior = fila(21, 4, "BAJISTA_NORMAL", True)
+        anterior["resultado_hipotetico"] = ""
+        anterior["vela_entrada_from"] = ""
+        anterior["vela_senal_from"] = str(
+            int(datetime(2026, 11, 21, 12, 3, tzinfo=timezone.utc).timestamp())
+        )
+        futura = fila(22, 4, "BAJISTA_NORMAL", True)
+        futura["resultado_hipotetico"] = ""
+        futura["vela_entrada_from"] = ""
+        futura["vela_senal_from"] = str(
+            int(datetime(2026, 11, 22, 12, 3, tzinfo=timezone.utc).timestamp())
+        )
+        r = evaluar([anterior, futura])
+        self.assertEqual(r["pendientes_con_fecha_no_verificable"], 0)
+        self.assertEqual(r["pendientes_o_no_confiables_posteriores"], 1)
+        self.assertEqual(r["filas_elegibles_posteriores"], 0)
+        self.assertFalse(r["autoriza_operaciones"])
+        self.assertIsNone(r["hipotesis_congeladas"][0]["pnl_broker"])
+
     def test_pendientes_futuros_no_son_cero_senales(self):
         pendiente = fila(22, 4, "INDEFINIDA", True)
         pendiente["resultado_hipotetico"] = ""
