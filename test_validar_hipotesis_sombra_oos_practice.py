@@ -50,6 +50,27 @@ class ShadowOOSTests(unittest.TestCase):
         self.assertFalse(reporte["autoriza_operaciones"])
         self.assertIsNone(reporte["pnl_broker"])
 
+    def test_top_diagnostico_no_reordena_por_test(self):
+        base, invertido = [], []
+        for dia in range(10):
+            for minuto in range(60):
+                patron = "A" if minuto < 30 else "B"
+                favorable_train = patron == "A" or minuto < 38
+                a = favorable_train if dia < 7 else patron == "B"
+                b = favorable_train if dia < 7 else patron == "A"
+                base.append(self.fila(dia, minuto, patron, a))
+                invertido.append(self.fila(dia, minuto, patron, b))
+        x = validar(base, minimo_train=40, minimo_test=30)
+        y = validar(invertido, minimo_train=40, minimo_test=30)
+        tabla_x = [(v["campo"], v["valor"]) for v in x["tabla_candidatos_train_con_test"]]
+        tabla_y = [(v["campo"], v["valor"]) for v in y["tabla_candidatos_train_con_test"]]
+        self.assertTrue(tabla_x)
+        self.assertEqual(tabla_x, tabla_y)
+        self.assertEqual(tabla_x[0], ("patron", "A"))
+        self.assertEqual((x["candidato"]["campo"], x["candidato"]["valor"]), tabla_x[0])
+        self.assertTrue(x["seleccion_por_test_prohibida"])
+        self.assertFalse(x["autoriza_operaciones"])
+
     def test_test_no_puede_cambiar_la_seleccion_train(self):
         base, variante = [], []
         for dia in range(10):
