@@ -449,7 +449,7 @@ def motivo_pendiente_por_accion_precio(senal):
     # RECHAZOS EN SOPORTE / RESISTENCIA
     # ========================================================
     if (
-        "reaccion" in patron
+        ("reaccion" in patron or "reacción" in patron)
         or tipo_setup in [
             "RECHAZO_ALCISTA",
             "RECHAZO_BAJISTA",
