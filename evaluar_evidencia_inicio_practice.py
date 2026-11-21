@@ -47,6 +47,16 @@ def evaluar_fuentes(ruta_cierres=RUTA_CIERRES, ruta_rechazadas=RUTA_RECHAZADAS):
                 "test_n": (candidato.get("test_oos") or {}).get("n", 0),
                 "test_wr": (candidato.get("test_oos") or {}).get("winrate_pct"),
                 "test_neto": (candidato.get("test_oos") or {}).get("neto"),
+                "dias_oos": candidato.get("dias_oos_candidato", 0),
+                "jornadas_oos_estables": candidato.get("jornadas_oos_estables", False),
+                "dias_oos_fallidos": [
+                    dia for dia, m in (candidato.get("test_por_dia") or {}).items()
+                    if (
+                        m.get("minutos_distintos", 0) < 10
+                        or (m.get("winrate_por_minuto_pct") or 0) < 60
+                        or m.get("neto", 0) <= 0
+                    )
+                ],
                 "cumple_oos": candidato.get("supera_objetivo_oos", False),
                 "autoriza_operaciones": False,
             }
@@ -82,13 +92,18 @@ def lineas(resumen):
     return [
         "EVIDENCIA PRACTICE | cierres: {estado} | validas: {operaciones_validas} | "
         "TRAIN candidatos: {candidatos_train} | candidato: {candidato_train} | "
-        "TEST: n={test_n}, WR={test_wr}, PnL={test_neto} | cumple OOS: {cumple_oos}".format(
+        "TEST: n={test_n}, WR={test_wr}, PnL={test_neto} | "
+        "dias={dias_oos}, constantes={jornadas_oos_estables}, "
+        "dias_fallidos={dias_oos_fallidos} | cumple OOS: {cumple_oos}".format(
             operaciones_validas=cierres.get("operaciones_validas", 0),
             candidatos_train=cierres.get("candidatos_train", 0),
             candidato_train=cierres.get("candidato_train"),
             test_n=cierres.get("test_n", 0),
             test_wr=cierres.get("test_wr"),
             test_neto=cierres.get("test_neto"),
+            dias_oos=cierres.get("dias_oos", 0),
+            jornadas_oos_estables=cierres.get("jornadas_oos_estables", False),
+            dias_oos_fallidos=cierres.get("dias_oos_fallidos", []),
             cumple_oos=cierres.get("cumple_oos", False),
             estado=cierres.get("estado"),
         ),
