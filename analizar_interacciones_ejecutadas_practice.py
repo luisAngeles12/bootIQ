@@ -73,11 +73,12 @@ def _desglose_exploratorio(eventos, minimo_grupo=5):
     """
     campos = ("patron", "tipo_mercado", "calidad_mercado",
               "regimen_mercado", "accion_precio", "origen_autoridad",
-              "direccion_contra_tendencia", "riesgo_nivel")
+              "direccion", "direccion_contra_tendencia", "riesgo_nivel")
     grupos = defaultdict(list)
     for evento in eventos:
         for campo in campos:
-            valor = evento["features"].get(campo, "SIN_DATO")
+            valor = (evento.get("direccion", "SIN_DATO") if campo == "direccion"
+                     else evento["features"].get(campo, "SIN_DATO"))
             if valor and valor != "SIN_DATO":
                 grupos[(campo, valor)].append(evento)
     salida = []
@@ -115,6 +116,7 @@ def analizar(filas, min_train=20, min_test=20, proporcion_dias_train=0.7):
             "pnl": pnl,
             "features": _features(fila),
             "procedencia": fila["_procedencia_practice_auditoria"],
+            "direccion": str(fila.get("direccion") or "").strip().upper(),
         }
         for fecha, _order_id, pnl, fila in registros
     ]
