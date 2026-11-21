@@ -1,0 +1,64 @@
+"""Pruebas del informe PRACTICE; sin broker ni archivos de produccion."""
+import unittest
+from datetime import date, timedelta
+
+from auditar_calidad_setup_practice import analizar, _rama_reaccion
+
+
+class CalidadSetupPracticeTests(unittest.TestCase):
+    def test_etiquetas_y_procedencia_sin_autoridad(self):
+        filas = [
+            {
+                "fecha": "2026-11-10 10:00:00",
+                "estado": "CERRADA",
+                "estado_operacion": "OPERADA_DIRECTA",
+                "modo_cuenta_configurado": "",
+                "origen_autoridad": "BOOTSTRAP_PRACTICE_SIN_HISTORIAL",
+                "order_id": "12345678901",
+                "direccion": "call",
+                "resultado": "20.75",
+                "calidad_setup": "PREMIUM",
+                "patron": "reaccion compradora",
+            },
+            {
+                "fecha": "2026-11-17 10:00:00",
+                "estado": "CERRADA",
+                "estado_operacion": "OPERADA_DIRECTA",
+                "modo_cuenta_configurado": "PRACTICE",
+                "order_id": "12345678902",
+                "direccion": "put",
+                "resultado": "-25",
+                "calidad_setup": "PREMIUM",
+                "patron": "CHOCH bajista",
+            },
+            {
+                "fecha": "2026-11-17 10:01:00",
+                "estado": "CERRADA",
+                "estado_operacion": "OPERADA_DIRECTA",
+                "modo_cuenta_configurado": "REAL",
+                "order_id": "12345678903",
+                "direccion": "put",
+                "resultado": "20.75",
+                "calidad_setup": "PREMIUM",
+            },
+        ]
+        salida = analizar(filas)
+        self.assertEqual(salida["total"], 2)
+        self.assertEqual(salida["descartes"]["NO_PRACTICE"], 1)
+        self.assertEqual(salida["procedencia"]["USUARIO_DECLARADO_LEGADO_SIN_MODO"], 1)
+        self.assertEqual(salida["procedencia"]["CSV_MODO_PRACTICE"], 1)
+        self.assertEqual(salida["calidades"]["PREMIUM"]["TRAIN"]["wins"], 1)
+        self.assertEqual(salida["calidades"]["PREMIUM"]["TEST"]["losses"], 1)
+        self.assertEqual(salida["rama_reaccion_por_calidad"]["PREMIUM"]["TRAIN"]["n"], 1)
+        self.assertEqual(salida["rama_reaccion_por_calidad"]["PREMIUM"]["TEST"]["n"], 0)
+        self.assertFalse(salida["autoriza_operaciones"])
+        self.assertFalse(salida["autoriza_real"])
+
+    def test_rama_reaccion_sigue_condicion_literal_de_entrada(self):
+        self.assertTrue(_rama_reaccion({"patron": "reaccion vendedora"}))
+        self.assertTrue(_rama_reaccion({"tipo_setup": "RECHAZO_ALCISTA"}))
+        self.assertFalse(_rama_reaccion({"patron": "CHOCH bajista"}))
+
+
+if __name__ == "__main__":
+    unittest.main()
