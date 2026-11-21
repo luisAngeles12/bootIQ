@@ -12,6 +12,11 @@ from datetime import datetime, timezone
 from utils import vela_ohlc_valida
 
 RUTA_EVENTOS = "auditoria_candidatas_sombra_practice.csv"
+# Cache por proceso para evitar releer miles de filas por cada activo.
+# Se invalida con mtime_ns/tamano: cambios externos nunca quedan ocultos.
+# Las pruebas AST que extraen IO sin importar el broker siguen funcionando
+# porque la cache es opcional para esas funciones aisladas.
+_CACHE_EVENTOS = {}
 COLUMNAS_BASE = (
     "id", "activo", "patron", "direccion", "vela_senal_from",
     "decision", "motivo", "tipo_mercado", "calidad_mercado",
@@ -73,16 +78,32 @@ def _id(activo, patron, direccion, ts):
 
 def _leer(ruta):
     p = Path(ruta)
-    if not p.exists() or not p.stat().st_size:
+    cache = globals().get("_CACHE_EVENTOS")
+    try:
+        st = p.stat()
+    except FileNotFoundError:
+        if cache is not None:
+            cache.pop(str(p.resolve()), None)
+        return []
+    clave = str(p.resolve())
+    firma = (st.st_mtime_ns, st.st_size)
+    if cache is not None:
+        anterior = cache.get(clave)
+        if anterior is not None and anterior[0] == firma:
+            return anterior[1]
+    if not st.st_size:
         return []
     with p.open("r", newline="", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         if not set(COLUMNAS_BASE).issubset(reader.fieldnames or []):
             raise ValueError("ESQUEMA_SOMBRA_INCOMPATIBLE")
-        return [
+        registros = [
             {campo: fila.get(campo, "") for campo in COLUMNAS}
             for fila in reader
         ]
+    if cache is not None:
+        cache[clave] = (firma, registros)
+    return registros
 
 def _guardar(ruta, registros):
     p = Path(ruta)
@@ -93,6 +114,10 @@ def _guardar(ruta, registros):
         writer.writeheader()
         writer.writerows(registros)
     os.replace(temporal, p)
+    cache = globals().get("_CACHE_EVENTOS")
+    if cache is not None:
+        st = p.stat()
+        cache[str(p.resolve())] = ((st.st_mtime_ns, st.st_size), registros)
 
 def registrar_candidata(senal, ctx, ruta=RUTA_EVENTOS):
     """Registrar TODAS las rechazadas una sola vez sin alterar su decisión."""
