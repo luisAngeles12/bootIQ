@@ -35,11 +35,32 @@ def _metrica(items):
         (p + z*z/(2*n) - z*math.sqrt(p*(1-p)/n + z*z/(4*n*n))) / den
         if n else None
     )
-    minutos_independientes = len({r["ts"] // 60 for r in items})
+    # Congelar UNA observacion por minuto antes de ver WIN/LOSS.
+    # Orden por timestamp y por ID, nunca por el resultado.
+    por_minuto = {}
+    for item in sorted(items, key=lambda x: (x["ts"], x["id"])):
+        por_minuto.setdefault(item["ts"] // 60, item)
+    muestra_minutos = list(por_minuto.values())
+    minutos_independientes = len(muestra_minutos)
+    wins_minutos = sum(x["win"] for x in muestra_minutos)
+    if minutos_independientes:
+        p_min = wins_minutos / minutos_independientes
+        den_min = 1 + z*z/minutos_independientes
+        wilson_min = (
+            p_min + z*z/(2*minutos_independientes) -
+            z*math.sqrt(p_min*(1-p_min)/minutos_independientes +
+                        z*z/(4*minutos_independientes**2))
+        ) / den_min
+    else:
+        p_min, wilson_min = None, None
     return {
         "n": n, "wins": w, "losses": n-w,
         "minutos_distintos": minutos_independientes,
         "solapamiento_mismo_minuto": n - minutos_independientes,
+        "winrate_por_minuto_pct": round(p_min*100, 2) if p_min is not None else None,
+        "wilson_minutos_inferior_95_pct": (
+            round(wilson_min*100, 2) if wilson_min is not None else None
+        ),
         "wr_pct": round(p*100, 2) if n else None,
         "wilson_inferior_95_pct": round(inferior*100, 2) if inferior is not None else None,
         "dias": len({r["dia"] for r in items}),
@@ -124,7 +145,7 @@ def validar(rows, minimo_train=40, minimo_test=30, minimo_dias_test=3):
         ):
             continue
         # Seleccion TRAIN: priorizar el intervalo inferior, no el máximo WR.
-        candidatas.append((m["wilson_inferior_95_pct"], m["n"], k, v, m))
+        candidatas.append((m["wilson_minutos_inferior_95_pct"], m["minutos_distintos"], k, v, m))
     candidatas.sort(key=lambda x: (-x[0], -x[1], x[2], x[3]))
     salida = {
         **base, "estado": "SIN_CANDIDATOS_TRAIN" if not candidatas else "HIPOTESIS_EVALUADA",
@@ -152,7 +173,9 @@ def validar(rows, minimo_train=40, minimo_test=30, minimo_dias_test=3):
         and metr_test["minutos_distintos"] >= minimo_test
         and metr_test["dias"] >= minimo_dias_test
         and metr_test["wr_pct"] >= 60
-        and metr_test["wilson_inferior_95_pct"] > 50
+        and metr_test["winrate_por_minuto_pct"] is not None
+        and metr_test["winrate_por_minuto_pct"] >= 60
+        and metr_test["wilson_minutos_inferior_95_pct"] > 50
         and len(bloques) >= 2
         and all(b["wr_pct"] >= 60 for b in bloques)
         and all(m["wr_pct"] >= 60 for m in dias_test.values())
