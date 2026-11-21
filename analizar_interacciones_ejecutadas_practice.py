@@ -65,6 +65,37 @@ def _resumen_diario(eventos):
     ]
 
 
+def _desglose_exploratorio(eventos, minimo_grupo=5):
+    """Diagnostico descriptivo, no seleccion de estrategia ni autoridad OOS.
+
+    Cada particion contiene eventos ejecutados; los grupos no constituyen
+    muestras independientes entre dimensiones y no prueban causalidad.
+    """
+    campos = ("patron", "tipo_mercado", "calidad_mercado",
+              "regimen_mercado", "accion_precio", "origen_autoridad",
+              "direccion_contra_tendencia", "riesgo_nivel")
+    grupos = defaultdict(list)
+    for evento in eventos:
+        for campo in campos:
+            valor = evento["features"].get(campo, "SIN_DATO")
+            if valor and valor != "SIN_DATO":
+                grupos[(campo, valor)].append(evento)
+    salida = []
+    for (campo, valor), subset in grupos.items():
+        if len(subset) < minimo_grupo:
+            continue
+        salida.append({
+            "campo": campo,
+            "valor": valor,
+            **_resumen(subset),
+            "por_dia": _resumen_diario(subset),
+            "autoriza_operaciones": False,
+        })
+    return sorted(salida, key=lambda x: (
+        x["neto"], -x["n"], x["campo"], x["valor"]
+    ))
+
+
 def analizar(filas, min_train=20, min_test=20, proporcion_dias_train=0.7):
     if type(min_train) is not int or min_train < 2:
         raise ValueError("MIN_TRAIN_INVALIDO")
@@ -111,6 +142,11 @@ def analizar(filas, min_train=20, min_test=20, proporcion_dias_train=0.7):
             "estado": "JORNADAS_INSUFICIENTES",
             "baseline": _resumen(eventos),
             "baseline_por_dia": _resumen_diario(eventos),
+            "grupos_exploratorios": _desglose_exploratorio(eventos),
+            "advertencia_grupos": (
+                "Agrupaciones descriptivas de operaciones ejecutadas; "
+                "no validan causalidad, no constituyen holdout y no autorizan trading."
+            ),
             "interacciones": [],
         }
 
