@@ -101,6 +101,44 @@ class EvaluacionSombraTests(unittest.TestCase):
         self.assertFalse(r["autoriza_operaciones"])
         self.assertIsNone(r["pnl_broker"])
 
+    def test_jornadas_cortas_no_desaparecen_del_criterio(self):
+        filas = []
+        for dia in range(5):
+            cantidad = 20 if dia < 3 else 1
+            for i in range(cantidad):
+                registro = fila(100 * dia + i,
+                                "WIN" if dia < 3 and i < 12 else "LOSS")
+                registro["vela_entrada_from"] = str(
+                    1700000000 + dia * 86400 + i * 60
+                )
+                filas.append(registro)
+        r = evaluar(filas)
+        self.assertEqual(r["jornadas_utc"], 5)
+        self.assertEqual(r["jornadas_con_bloque_20"], 3)
+        self.assertFalse(r["cobertura_multijornada"])
+        self.assertFalse(r["constancia_sombra_60_observada"])
+
+    def test_colas_perdedoras_de_una_jornada_cuentan(self):
+        filas = []
+        for dia in range(5):
+            for i in range(28):
+                registro = fila(dia * 100 + i,
+                                "WIN" if i < 12 else "LOSS")
+                registro["vela_entrada_from"] = str(
+                    1700000000 + dia * 86400 + i * 60
+                )
+                filas.append(registro)
+        r = evaluar(filas)
+        self.assertEqual(r["jornadas_con_bloque_20"], 5)
+        self.assertTrue(r["cobertura_multijornada"])
+        self.assertTrue(all(
+            b["cumple_60_pct"] for b in r["bloques_completos_20_por_dia_utc"]
+        ))
+        self.assertFalse(r["constancia_sombra_60_observada"])
+        self.assertTrue(all(
+            not d["cumple_60_pct"] for d in r["por_dia_utc"]
+        ))
+
     def test_sin_datos_no_declara_60_constante(self):
         r = evaluar([])
         self.assertIsNone(r["global"]["winrate_pct"])
