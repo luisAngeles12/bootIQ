@@ -63,6 +63,7 @@ class PreflightPracticeV3Tests(unittest.TestCase):
             p.write_text("clave,total\nA,20\n", encoding="utf-8")
             r = evaluar_preflight(tmp, ruta_memoria=p, config=CONFIG_SEGURO)
             self.assertTrue(r["memoria_oficial_presente"])
+            self.assertFalse(r["memoria_oficial_validada"])
             self.assertFalse(r["rentabilidad_validada"])
             self.assertFalse(r["operativa_autorizada"])
 
