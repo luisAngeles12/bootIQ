@@ -14,6 +14,8 @@ class EvaluacionSombraTests(unittest.TestCase):
     def test_12_de_20_es_60_pero_no_autoriza(self):
         r = evaluar([fila(i, "WIN" if i < 12 else "LOSS") for i in range(20)])
         self.assertEqual(r["global"]["winrate_pct"], 60.0)
+        self.assertFalse(r["global"]["supera_60_pct"])
+        self.assertEqual(r["bloques_20_superan_60"], 0)
         self.assertTrue(r["todos_bloques_20_cumplen_60"])
         self.assertFalse(r["constancia_sombra_60_observada"])
         self.assertFalse(r["evidencia_minima_constancia"])
@@ -21,6 +23,14 @@ class EvaluacionSombraTests(unittest.TestCase):
         self.assertFalse(r["autoriza_operaciones"])
         self.assertFalse(r["rentabilidad_demostrada"])
         self.assertIsNone(r["pnl_broker"])
+
+    def test_13_de_20_supera_60_sin_probar_constancia(self):
+        r = evaluar([fila(i, "WIN" if i < 13 else "LOSS") for i in range(20)])
+        self.assertEqual(r["global"]["winrate_pct"], 65.0)
+        self.assertTrue(r["global"]["supera_60_pct"])
+        self.assertEqual(r["bloques_20_superan_60"], 1)
+        self.assertFalse(r["constancia_sombra_mayor_60_observada"])
+        self.assertFalse(r["autoriza_operaciones"])
 
     def test_bloques_no_son_una_promesa_de_constancia(self):
         r = evaluar([fila(i, "WIN" if i % 20 < (12 if i < 20 else 11) else "LOSS")
