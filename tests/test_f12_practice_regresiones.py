@@ -26,6 +26,7 @@ MODULOS_F12 = (
     "test_cache_sombra_practice",
     "test_diagnosticar_choch_bajista_practice",
     "test_seguir_hipotesis_choch_prospectivas_practice",
+    "test_diagnosticar_pendientes_sombra_practice",
 )
 
 
