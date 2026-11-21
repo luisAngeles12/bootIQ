@@ -175,7 +175,13 @@ def resolver_candidatas(activo, ctx, ruta=RUTA_EVENTOS):
     registros = _leer(ruta)
     if not registros:
         return 0
-    froms = [int(x) for x in ctx.get("froms", [])]
+    try:
+        froms = [int(x) for x in ctx.get("froms", [])]
+        actual = int(ctx.get("vela_senal_from") or 0)
+    except (TypeError, ValueError, OverflowError):
+        # Un buffer de tiempos corrupto no debe romper el scanner
+        # ni convertir velas no verificadas en operaciones ganadas.
+        return 0
     opens = ctx.get("opens", [])
     closes = ctx.get("closes", [])
     if not (len(froms) == len(opens) == len(closes)):
@@ -184,12 +190,19 @@ def resolver_candidatas(activo, ctx, ruta=RUTA_EVENTOS):
         # Un contexto discontinuo no sirve para declarar un resultado.
         return 0
     indices = {t: i for i, t in enumerate(froms)}
-    actual = int(ctx.get("vela_senal_from") or 0)
     cambios = 0
     for fila in registros:
         if fila["activo"] != activo or fila["resultado_hipotetico"]:
             continue
-        entrada_from = int(fila["vela_senal_from"]) + 60
+        try:
+            entrada_from = int(fila["vela_senal_from"]) + 60
+        except (KeyError, TypeError, ValueError, OverflowError):
+            # CSV antiguo o fila corrupta: registrar la anomalía, no
+            # parar el análisis de los demás activos ni inventar resultado.
+            if fila.get("calidad_tiempo") != "TIMESTAMP_SENAL_INVALIDO":
+                fila["calidad_tiempo"] = "TIMESTAMP_SENAL_INVALIDO"
+                cambios += 1
+            continue
         # La vela posterior solo se puede evaluar DESPUES de cerrar.
         if entrada_from > actual:
             continue
