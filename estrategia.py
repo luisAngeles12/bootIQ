@@ -787,6 +787,15 @@ def validar_contexto_base(activo, ctx):
         ctx.get("calidad_mercado", "SIN_DATOS")
     ).upper()
 
+    # F12.21: la calidad LIMPIO/NORMAL no anula un régimen SUCIO.
+    # Ambos diagnósticos usan detectores distintos; el historial
+    # PRACTICE muestra pérdidas para TENDENCIA_SUCIA tanto en TRAIN
+    # (66 ops, -136.75) como en TEST (47 ops, -211.75).
+    regimen = str(
+        ctx.get("regimen_mercado", "SIN_DATOS")
+    ).strip().upper()
+    regimen_sucio = regimen in {"TENDENCIA_SUCIA", "RANGO_SUCIO"}
+
     score = float(
         ctx.get("score_mercado", 0) or 0
     )
@@ -808,6 +817,13 @@ def validar_contexto_base(activo, ctx):
             "razon": razon,
             "origen": "validar_contexto_base",
         })
+
+    if regimen_sucio:
+        riesgos_contexto.append("REGIMEN_SUCIO")
+        agregar_evidencia(
+            "regimen_sucio",
+            "Regimen estructural TENDENCIA_SUCIA o RANGO_SUCIO.",
+        )
 
     if calidad not in ["LIMPIO", "NORMAL"]:
         riesgos_contexto.append("MERCADO_SUCIO")
@@ -859,12 +875,14 @@ def validar_contexto_base(activo, ctx):
     #
     # El resto de riesgos (score, tendencia, SR, PA, etc.)
     # continúa como evidencia para el Cerebro Único.
-    if calidad not in ["LIMPIO", "NORMAL"]:
+    if calidad not in ["LIMPIO", "NORMAL"] or regimen_sucio:
         print(
-            "ACTIVO DESCARTADO POR CAMBIO DE CALIDAD:",
+            "ACTIVO DESCARTADO POR CALIDAD O REGIMEN SUCIO:",
             activo,
             "| calidad:",
             calidad,
+            "| regimen:",
+            regimen,
             "| score:",
             score,
         )
