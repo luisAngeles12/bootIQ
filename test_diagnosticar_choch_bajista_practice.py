@@ -60,6 +60,10 @@ class DiagnosticoChochTest(unittest.TestCase):
         self.assertEqual(comparados[0]["winrate_train_pct"], 100)
         self.assertEqual(comparados[0]["winrate_test_pct"], 0)
         self.assertEqual(comparados[0]["delta_winrate_pp"], -100)
+        self.assertEqual(comparados[0]["dias_test_observados"], 3)
+        self.assertEqual(comparados[0]["dias_test_con_10_minutos"], 3)
+        self.assertEqual(len(comparados[0]["test_por_dia"]), 3)
+        self.assertFalse(comparados[0]["evidencia_prospectiva_nueva"])
         self.assertFalse(comparados[0]["no_autoriza_operaciones"] is False)
         self.assertTrue(salida["seleccion_por_test_prohibida"])
 
@@ -78,6 +82,8 @@ class DiagnosticoChochTest(unittest.TestCase):
         self.assertIsNone(grupo["winrate_test_pct"])
         self.assertIsNone(grupo["delta_winrate_pp"])
         self.assertTrue(grupo["muestra_test_limitada"])
+        self.assertEqual(grupo["dias_test_observados"], 0)
+        self.assertEqual(grupo["test_por_dia"], {})
         self.assertFalse(salida["autoriza_operaciones"])
 
     def test_no_transforma_hipoteticas_en_operaciones(self):
