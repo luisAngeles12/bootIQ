@@ -455,10 +455,37 @@ def motivo_pendiente_por_accion_precio(senal):
             "RECHAZO_BAJISTA",
         ]
     ):
-        if calidad_setup in [
-            "PREMIUM",
-            "BUENA",
-        ]:
+        # F12.20: PREMIUM no significa probabilidad de acierto validada.
+        # En TEST historico fue 21W/30L (41.18%). No permitir que
+        # la etiqueta sola suprima la confirmacion de reaccion.
+        # Unicamente conservar entrada directa si el price action
+        # confirma explicitamente la direccion solicitada.
+        if calidad_setup == "PREMIUM":
+            confirma_call = (
+                direccion == "call"
+                and pa_direccion == "CALL"
+                and pa_tipo in {
+                    "RECHAZO_COMPRADOR_CONFIRMADO",
+                    "AGOTAMIENTO_BAJISTA_CONFIRMADO",
+                }
+            )
+            confirma_put = (
+                direccion == "put"
+                and pa_direccion == "PUT"
+                and pa_tipo in {
+                    "RECHAZO_VENDEDOR_CONFIRMADO",
+                    "AGOTAMIENTO_ALCISTA_CONFIRMADO",
+                }
+            )
+            if not (confirma_call or confirma_put):
+                senal["entrada_auditoria_motivo_veto"] = (
+                    "PREMIUM_REACCION_SIN_PA_CONFIRMADA"
+                )
+                return "ESPERANDO_CONFIRMACION_RECHAZO"
+            return None
+
+        # Conservar contrato de BUENA; no hay evidencia para cambiarlo.
+        if calidad_setup == "BUENA":
             return None
 
         return "ESPERANDO_CONFIRMACION_RECHAZO"
