@@ -24,6 +24,7 @@ MODULOS_F12 = (
     "test_ventaja_oos_baseline_practice",
     "test_sombra_timestamp_corrupto_practice",
     "test_cache_sombra_practice",
+    "test_diagnosticar_choch_bajista_practice",
 )
 
 
