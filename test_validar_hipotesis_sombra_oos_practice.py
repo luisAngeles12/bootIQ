@@ -1,7 +1,7 @@
 """Pruebas aisladas de selección temporal de rechazadas PRACTICE."""
 import unittest
 from datetime import datetime, timezone, timedelta
-from validar_hipotesis_sombra_oos_practice import validar, CALIDAD
+from validar_hipotesis_sombra_oos_practice import validar, CALIDAD, _metrica
 
 
 class ShadowOOSTests(unittest.TestCase):
@@ -15,6 +15,22 @@ class ShadowOOSTests(unittest.TestCase):
             "calidad_tiempo": CALIDAD,
             "direccion": "call", "patron": patron,
         }
+
+    def test_confianza_de_sombra_usa_minutos_no_operaciones(self):
+        items = []
+        for minuto in range(60):
+            for idx, win in enumerate((0, 1, 1, 1)):
+                items.append({
+                    "ts": 1800000000 + minuto*60,
+                    "id": f"{minuto:03d}-{idx}",
+                    "dia": "2026-11-18",
+                    "win": win,
+                })
+        salida = _metrica(items)
+        self.assertEqual(salida["wr_pct"], 75.0)
+        self.assertEqual(salida["minutos_distintos"], 60)
+        self.assertEqual(salida["winrate_por_minuto_pct"], 0.0)
+        self.assertEqual(salida["wilson_minutos_inferior_95_pct"], 0.0)
 
     def test_entrenamiento_favorable_no_cambia_resultado_test(self):
         rows = []
