@@ -25,6 +25,7 @@ MODULOS_F12 = (
     "test_sombra_timestamp_corrupto_practice",
     "test_cache_sombra_practice",
     "test_diagnosticar_choch_bajista_practice",
+    "test_seguir_hipotesis_choch_prospectivas_practice",
 )
 
 
