@@ -22,33 +22,47 @@ def resumen_inactividad(metricas, senales_finales, aperturas, *,
     mercados = numero("mercados_analizados")
     candidatas = numero("candidatas_generadas")
     evaluadas = numero("candidatas_evaluadas_cerebro")
+    continuadas = numero("candidatas_que_continuan")
     rechazadas = numero("cerebro_no_operar")
     sin_permiso = numero("cerebro_sin_autorizacion")
     aptas = numero("senales_aprobadas")
     fallidas = numero("directas_no_ejecutadas")
     protocolos = numero("autorizadas_protocolo")
+    memoria_no_utilizable = str(memoria_oficial_estado).upper() in {
+        "AUSENTE", "VACIA", "ERROR_CARGA", "ERROR_FORMATO"
+    }
+    # Estrategia descarta las candidatas NO_OPERAR antes de entregarlas
+    # a bot.py. Por eso len(senales) == 0 NO implica ausencia de candidatos.
+    veto_total = (
+        evaluadas > 0
+        and rechazadas >= evaluadas
+        and continuadas == 0
+        and senales == 0
+    )
     if aperturas:
         razon = "APERTURAS_CONFIRMADAS"
-    elif senales == 0:
-        if mercados == 0:
-            razon = "SIN_MERCADOS_ANALIZADOS"
-        elif candidatas == 0:
-            razon = "SIN_CANDIDATAS_GENERADAS"
-        else:
-            razon = "CANDIDATAS_DESCARTADAS_ANTES_DE_SENAL_FINAL"
-    elif rechazadas + sin_permiso >= senales:
-        # La ausencia de memoria explica la falta de fuente oficial,
-        # pero los contadores acreditan el veto; no atribuir fallos a IQ.
-        if str(memoria_oficial_estado).upper() in {"AUSENTE", "VACIA", "ERROR_CARGA", "ERROR_FORMATO"}:
-            razon = "CEREBRO_SIN_AUTORIZACION_MEMORIA_NO_UTILIZABLE"
-        else:
-            razon = "CEREBRO_SIN_AUTORIZACION"
     elif fallidas:
         razon = "AUTORIZADAS_PERO_ENVIO_NO_EJECUTADO"
     elif protocolos:
         razon = "AUTORIZADAS_A_PROTOCOLO_SIN_APERTURA_DIRECTA"
     elif aptas:
         razon = "SENALES_APROBADAS_SIN_APERTURA_CONFIRMADA"
+    elif veto_total:
+        razon = (
+            "CEREBRO_SIN_AUTORIZACION_MEMORIA_NO_UTILIZABLE"
+            if memoria_no_utilizable else "CEREBRO_SIN_AUTORIZACION"
+        )
+    elif senales == 0:
+        if mercados == 0:
+            razon = "SIN_MERCADOS_ANALIZADOS"
+        elif candidatas == 0 and evaluadas == 0:
+            razon = "SIN_CANDIDATAS_GENERADAS"
+        elif evaluadas > 0 and rechazadas > 0:
+            razon = "CEREBRO_RECHAZOS_Y_DESCARTES_ADICIONALES"
+        else:
+            razon = "CANDIDATAS_DESCARTADAS_ANTES_DE_SENAL_FINAL"
+    elif rechazadas + sin_permiso > 0:
+        razon = "CEREBRO_RECHAZOS_PARCIALES"
     else:
         razon = "SIN_APERTURAS_CAUSA_NO_DETERMINADA"
     return {
@@ -56,6 +70,7 @@ def resumen_inactividad(metricas, senales_finales, aperturas, *,
         "mercados_analizados": mercados,
         "candidatas_generadas": candidatas,
         "evaluadas_cerebro": evaluadas,
+        "candidatas_que_continuan": continuadas,
         "senal_finales": senales,
         "aperturas_confirmadas_ronda": aperturas,
         "rechazos_cerebro": rechazadas,
@@ -74,7 +89,8 @@ def texto_inactividad(datos):
     return (
         "BOOTIQ PRACTICE INACTIVIDAD | {estado} | "
         "mercados={mercados_analizados} | candidatas={candidatas_generadas} | "
-        "evaluadas={evaluadas_cerebro} | señales={senal_finales} | autorizadas={autorizadas} | "
+        "evaluadas={evaluadas_cerebro} | continuan={candidatas_que_continuan} | "
+        "señales={senal_finales} | autorizadas={autorizadas} | "
         "rechazadas={rechazos_cerebro} | sin_permiso={sin_autorizacion} | "
         "fallidas={envios_directos_no_ejecutados} | "
         "protocolo={autorizadas_protocolo} | "
