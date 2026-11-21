@@ -73,6 +73,10 @@ def _metrics(rows):
     n = len(rows)
     wins = sum(r["pnl"] > 0 for r in rows)
     pnl = sum(r["pnl"] for r in rows)
+    minutos_distintos = len({
+        r["fecha"].replace(second=0, microsecond=0)
+        for r in rows
+    })
     if n:
         z = 1.96
         p = wins / n
@@ -81,6 +85,8 @@ def _metrics(rows):
     else:
         lower = None
     return {"n": n, "wins": wins, "losses": n-wins,
+            "minutos_distintos": minutos_distintos,
+            "simultaneas_mismo_minuto": n - minutos_distintos,
             "winrate_pct": round(100*wins/n, 2) if n else None,
             "wilson_inferior_95_pct": round(100*lower, 2) if lower is not None else None,
             "neto": round(pnl, 2),
@@ -121,6 +127,10 @@ def analizar(rows, minimo_train=20, minimo_oos=20):
         if len(group) < minimo_train or len(group) == len(train):
             continue
         m = _metrics(group)
+        # Operaciones simultaneas comparten el mismo shock de mercado:
+        # no fingir independencia al seleccionar una regla en TRAIN.
+        if m["minutos_distintos"] < minimo_train:
+            continue
         candidates.append((m["expectativa_por_operacion"], len(group), key, value, m))
     candidates.sort(key=lambda t: (-t[0], -t[1], t[2], t[3]))
     baseline_oos = _metrics(oos)
@@ -134,11 +144,17 @@ def analizar(rows, minimo_train=20, minimo_oos=20):
         candidate = {
             "variable": key, "valor": value, "train": train_metrics, "test_oos": test_metrics,
             "retencion_oos_pct": round(100*len(picked)/len(oos), 2) if oos else None,
-            "evidencia_minima_oos": len(picked) >= minimo_oos,
+            "evidencia_minima_oos": (
+                len(picked) >= minimo_oos
+                and test_metrics["minutos_distintos"] >= minimo_oos
+            ),
             "diferencia_expectativa_oos_vs_baseline": (
                 round(test_metrics["expectativa_por_operacion"] - baseline_oos["expectativa_por_operacion"], 4)
                 if picked and oos else None),
-            "supera_objetivo_oos": (len(picked) >= minimo_oos and
+            "supera_objetivo_oos": (
+                len(picked) >= minimo_oos
+                and test_metrics["minutos_distintos"] >= minimo_oos
+                and
                 test_metrics["winrate_pct"] is not None and
                 test_metrics["winrate_pct"] >= 60 and test_metrics["neto"] > 0),
             "autoriza_operaciones": False,
