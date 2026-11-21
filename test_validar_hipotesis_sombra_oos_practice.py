@@ -6,7 +6,7 @@ from validar_hipotesis_sombra_oos_practice import validar, CALIDAD
 
 class ShadowOOSTests(unittest.TestCase):
     def fila(self, dia, n, patron, win, oid=None):
-        t = datetime(2026, 11, 1, tzinfo=timezone.utc) + timedelta(days=dia, seconds=n)
+        t = datetime(2026, 11, 1, tzinfo=timezone.utc) + timedelta(days=dia, minutes=n)
         return {
             "id": oid or f"{dia}-{n}-{patron}",
             "decision": "NO_OPERAR",
@@ -53,6 +53,20 @@ class ShadowOOSTests(unittest.TestCase):
         self.assertEqual((a["campo"], a["valor"]), (b["campo"], b["valor"]))
         self.assertEqual((a["campo"], a["valor"]), ("patron", "A"))
         self.assertNotEqual(a["test"]["wr_pct"], b["test"]["wr_pct"])
+
+    def test_simultaneas_no_inflan_muestra_independiente(self):
+        rows = []
+        for dia in range(10):
+            for minuto in range(3):
+                for k in range(50):
+                    # Mismo minuto, señales distintas con IDs diferentes.
+                    fila = self.fila(dia, minuto, "A", True,
+                                     oid=f"{dia}-{minuto}-{k}")
+                    rows.append(fila)
+        resultado = validar(rows, minimo_train=40, minimo_test=30)
+        self.assertEqual(resultado["estado"], "SIN_CANDIDATOS_TRAIN")
+        self.assertEqual(resultado["baseline_train"]["minutos_distintos"], 21)
+        self.assertFalse(resultado["autoriza_operaciones"])
 
     def test_duplicados_y_real_no_se_convierten_en_datos(self):
         rows = [self.fila(0, 1, "A", True, "DUP"),
