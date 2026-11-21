@@ -169,14 +169,22 @@ def analizar(rows, minimo_train=20, minimo_oos=20):
             "diferencia_expectativa_oos_vs_baseline": (
                 round(test_metrics["expectativa_por_operacion"] - baseline_oos["expectativa_por_operacion"], 4)
                 if picked and oos else None),
+            "dias_oos_candidato": len({r["fecha"].date().isoformat() for r in picked}),
+            # Comprobar varias jornadas y superar al sistema base OOS.
+            # Un WR observado de 60% sobre operaciones correlacionadas,
+            # o una expectativa inferior al baseline, NO valida ventaja.
             "supera_objetivo_oos": (
                 len(picked) >= minimo_oos
                 and test_metrics["minutos_distintos"] >= minimo_oos
-                and
-                test_metrics["winrate_pct"] is not None and
-                test_metrics["winrate_pct"] >= 60
+                and len({r["fecha"].date().isoformat() for r in picked}) >= 3
+                and test_metrics["winrate_pct"] is not None
+                and test_metrics["winrate_pct"] >= 60
                 and test_metrics["winrate_por_minuto_pct"] is not None
                 and test_metrics["winrate_por_minuto_pct"] >= 60
+                and test_metrics["wilson_minutos_95_pct"] is not None
+                and test_metrics["wilson_minutos_95_pct"] > 50
+                and baseline_oos["expectativa_por_operacion"] is not None
+                and test_metrics["expectativa_por_operacion"] > baseline_oos["expectativa_por_operacion"]
                 and test_metrics["neto"] > 0),
             "autoriza_operaciones": False,
         }
