@@ -20,9 +20,20 @@ class InactividadPracticeTests(unittest.TestCase):
         self.assertIn("CEREBRO_SIN_AUTORIZACION", texto_inactividad(x))
         self.assertTrue(x["no_autoriza_operaciones"])
 
-    def test_no_hay_senales(self):
+    def test_no_hay_mercados(self):
         x = self.diagnostico({}, senales=0)
-        self.assertEqual(x["estado"], "SIN_SENALES_FINALES")
+        self.assertEqual(x["estado"], "SIN_MERCADOS_ANALIZADOS")
+
+    def test_no_hay_candidatas(self):
+        x = self.diagnostico({"mercados_analizados": 20}, senales=0)
+        self.assertEqual(x["estado"], "SIN_CANDIDATAS_GENERADAS")
+
+    def test_candidatas_descartadas(self):
+        x = self.diagnostico({
+            "mercados_analizados": 20,
+            "candidatas_generadas": 9,
+        }, senales=0)
+        self.assertEqual(x["estado"], "CANDIDATAS_DESCARTADAS_ANTES_DE_SENAL_FINAL")
 
     def test_fallo_envio(self):
         x = self.diagnostico({"directas_no_ejecutadas": 1})
