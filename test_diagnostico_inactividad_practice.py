@@ -14,7 +14,7 @@ class InactividadPracticeTests(unittest.TestCase):
 
     def test_cerebro_rechaza_todo_y_memoria_ausente(self):
         x = self.diagnostico({"cerebro_no_operar": 5})
-        self.assertEqual(x["estado"], "CEREBRO_SIN_AUTORIZACION")
+        self.assertEqual(x["estado"], "CEREBRO_SIN_AUTORIZACION_MEMORIA_NO_UTILIZABLE")
         self.assertEqual(x["memoria_oficial_estado_inicio"], "AUSENTE")
         self.assertEqual(x["segundos_sin_apertura_confirmada"], 3900)
         self.assertIn("CEREBRO_SIN_AUTORIZACION", texto_inactividad(x))
