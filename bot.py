@@ -76,6 +76,20 @@ def main():
         )
     print("BLOQUE20 PRACTICE | sesión nueva: 0/20 confirmadas", flush=True)
 
+    # Diagnostico informativo: nunca reemplaza memoria TRAIN por memoria oficial
+    # ni modifica la decision del Cerebro.
+    from diagnostico_memoria_practice import (
+        diagnosticar_memoria,
+        lineas_diagnostico_memoria,
+    )
+    from motor_aprendizaje_historico import RUTA_APRENDIZAJE
+    diagnostico_memoria = diagnosticar_memoria(
+        RUTA_APRENDIZAJE,
+        "experimentos_fase5/memoria_ejecutadas_train_candidata.csv",
+    )
+    for linea in lineas_diagnostico_memoria(diagnostico_memoria):
+        print(linea, flush=True)
+
     # Reconstruccion SHADOW desde cierres oficiales, solo una vez
     # al iniciar y antes de las ventanas operativas.
     # Fallos de telemetria nunca autorizan ni bloquean trades.
