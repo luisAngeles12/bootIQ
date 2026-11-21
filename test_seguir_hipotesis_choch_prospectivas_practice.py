@@ -36,6 +36,33 @@ class HipotesisChochProspectivasTests(unittest.TestCase):
         self.assertFalse(result["puede_promover_memoria_oficial"])
         self.assertIsNone(a["pnl_broker"])
 
+    def test_distingue_historicas_de_futuras_sin_resolucion(self):
+        antigua = fila(21, 1, "BAJISTA_NORMAL", True)
+        futura = fila(22, 1, "BAJISTA_NORMAL", False)
+        futura_pendiente = fila(22, 2, "BAJISTA_NORMAL", True)
+        futura_pendiente["resultado_hipotetico"] = ""
+        futura_mala_calidad = fila(22, 3, "BAJISTA_NORMAL", True)
+        futura_mala_calidad["calidad_tiempo"] = "PENDIENTE"
+        sin_fecha = fila(22, 4, "BAJISTA_NORMAL", True)
+        sin_fecha["vela_entrada_from"] = ""
+        r = evaluar([antigua, futura, futura_pendiente,
+                     futura_mala_calidad, sin_fecha])
+        self.assertEqual(r["filas_elegibles_anteriores_excluidas"], 1)
+        self.assertEqual(r["filas_elegibles_posteriores"], 1)
+        self.assertEqual(r["pendientes_o_no_confiables_posteriores"], 2)
+        self.assertEqual(r["pendientes_con_fecha_no_verificable"], 1)
+        self.assertEqual(
+            r["diagnostico_cobertura"], "OBSERVACIONES_POSTERIORES_DISPONIBLES")
+        self.assertFalse(r["autoriza_operaciones"])
+
+    def test_pendientes_futuros_no_son_cero_senales(self):
+        pendiente = fila(22, 4, "INDEFINIDA", True)
+        pendiente["resultado_hipotetico"] = ""
+        r = evaluar([pendiente])
+        self.assertEqual(r["filas_elegibles_posteriores"], 0)
+        self.assertEqual(r["pendientes_o_no_confiables_posteriores"], 1)
+        self.assertEqual(r["diagnostico_cobertura"], "PENDIENTES_SIN_RESOLUCION")
+
     def test_otro_patron_no_entra_en_hipotesis(self):
         rows = [fila(22, 1, "BAJISTA_NORMAL", True)]
         rows[0]["patron"] = "LIQUIDITY SWEEP"
