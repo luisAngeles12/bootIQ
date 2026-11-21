@@ -29,6 +29,7 @@ def _resumen(eventos):
         "losses": n - wins,
         "winrate_pct": round(wins * 100 / n, 2) if n else None,
         "cumple_60_pct": n > 0 and wins * 5 >= n * 3,
+        "supera_60_pct": n > 0 and wins * 5 > n * 3,
     }
 
 
@@ -100,8 +101,10 @@ def evaluar(filas):
         "tipo_bloque": "HIPOTETICO_CRONOLOGICO_NO_SESION_BROKER",
         "jornadas_utc": jornadas,
         "evidencia_minima_constancia": evidencia_minima,
+        "constancia_sombra_mayor_60_observada": evidencia_minima and all(x["supera_60_pct"] for x in bloques),
         "constancia_sombra_60_observada": evidencia_minima and all(x["cumple_60_pct"] for x in bloques),
         "bloques_20_cumplen_60": sum(x["cumple_60_pct"] for x in bloques),
+        "bloques_20_superan_60": sum(x["supera_60_pct"] for x in bloques),
         "todos_bloques_20_cumplen_60": bool(bloques) and all(x["cumple_60_pct"] for x in bloques),
         "pnl_broker": None,
         "rentabilidad_demostrada": False,
