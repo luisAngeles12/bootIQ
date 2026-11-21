@@ -35,8 +35,11 @@ def _metrica(items):
         (p + z*z/(2*n) - z*math.sqrt(p*(1-p)/n + z*z/(4*n*n))) / den
         if n else None
     )
+    minutos_independientes = len({r["ts"] // 60 for r in items})
     return {
         "n": n, "wins": w, "losses": n-w,
+        "minutos_distintos": minutos_independientes,
+        "solapamiento_mismo_minuto": n - minutos_independientes,
         "wr_pct": round(p*100, 2) if n else None,
         "wilson_inferior_95_pct": round(inferior*100, 2) if inferior is not None else None,
         "dias": len({r["dia"] for r in items}),
@@ -113,7 +116,12 @@ def validar(rows, minimo_train=40, minimo_test=30, minimo_dias_test=3):
     candidatas = []
     for (k, v), grupo in sorted(grupos.items()):
         m = _metrica(grupo)
-        if m["n"] < minimo_train or m["dias"] < 3 or len(grupo) == len(train):
+        if (
+            m["n"] < minimo_train
+            or m["minutos_distintos"] < minimo_train
+            or m["dias"] < 3
+            or len(grupo) == len(train)
+        ):
             continue
         # Seleccion TRAIN: priorizar el intervalo inferior, no el máximo WR.
         candidatas.append((m["wilson_inferior_95_pct"], m["n"], k, v, m))
@@ -135,10 +143,13 @@ def validar(rows, minimo_train=40, minimo_test=30, minimo_dias_test=3):
     dias_test = {d: _metrica(g) for d, g in sorted(by_day.items())}
     bloques = [_metrica(elegido_test[i:i+20]) for i in range(0, len(elegido_test), 20)
                if len(elegido_test[i:i+20]) == 20]
+    # Señales simultáneas de distintos activos no constituyen muestras
+    # independientes. Exigir minutos distintos sin imputar falsos fills.
     # El OOS es una comprobacion; no permite promoción. Exigir estabilidad
     # por días, bloques de 20 y limite conservador, pero SIN PnL broker.
     consistente = (
         metr_test["n"] >= minimo_test
+        and metr_test["minutos_distintos"] >= minimo_test
         and metr_test["dias"] >= minimo_dias_test
         and metr_test["wr_pct"] >= 60
         and metr_test["wilson_inferior_95_pct"] > 50
