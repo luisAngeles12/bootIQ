@@ -17,7 +17,7 @@ class EvidenciaInicioPracticeTests(unittest.TestCase):
         self.assertFalse(r["bootstrap_modificado"])
         self.assertEqual(r["cierres"]["estado"], "SIN_ARCHIVO")
         self.assertEqual(r["rechazadas"]["estado"], "SIN_ARCHIVO")
-        self.assertEqual(len(lineas(r)), 3)
+        self.assertEqual(len(lineas(r)), 4)
 
     def test_archivos_vacios_no_inventan_evidencia(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -31,6 +31,24 @@ class EvidenciaInicioPracticeTests(unittest.TestCase):
         self.assertFalse(r["bootstrap_modificado"])
         self.assertFalse(r["cierres"].get("cumple_oos", False))
         self.assertFalse(r["rechazadas"].get("constancia_hipotetica", False))
+
+    def test_top_train_sin_promocion_test_en_arranque(self):
+        resumen = {
+            "cierres": {"estado": "SIN_ARCHIVO"},
+            "rechazadas": {
+                "estado": "HIPOTESIS_EVALUADA",
+                "tabla_candidatos_train_con_test": [{
+                    "campo": "patron", "valor": "RECHAZO_VENDEDOR",
+                    "train": {"winrate_por_minuto_pct": 66.0, "minutos_distintos": 100},
+                    "test": {"winrate_por_minuto_pct": 42.0, "minutos_distintos": 50},
+                    "diferencia_wr_test_vs_baseline_pct": -8.5,
+                }],
+            },
+        }
+        texto = lineas(resumen)[2]
+        self.assertIn("RECHAZO_VENDEDOR", texto)
+        self.assertIn("TEST 42.0%/50min", texto)
+        self.assertIn("no escoger mejor TEST", texto)
 
     def test_muestra_dias_perdedores_en_arranque(self):
         informe = {
