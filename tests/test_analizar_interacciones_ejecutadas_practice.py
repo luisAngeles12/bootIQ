@@ -112,7 +112,7 @@ class InteraccionesEjecutadasTests(unittest.TestCase):
 
     def test_pocas_jornadas_no_producen_candidato(self):
         resultado = analizar(
-            [fila(i, day, "A", 20.75)
+            [fila(day * 100 + i, day, "A", 20.75)
              for day in (10, 11, 12, 13) for i in range(3)],
             min_train=2,
             min_test=2,
