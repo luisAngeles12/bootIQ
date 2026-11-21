@@ -9,6 +9,7 @@ import csv
 import json
 from collections import Counter, defaultdict
 from pathlib import Path
+import unicodedata
 
 from construir_memoria_ejecutadas_train_practice import _limpiar
 
@@ -36,7 +37,8 @@ def _calidad(fila):
 
 
 def _rama_reaccion(fila):
-    patron = str(fila.get("patron") or "").lower()
+    patron = unicodedata.normalize("NFKD", str(fila.get("patron") or "").lower())
+    patron = "".join(c for c in patron if not unicodedata.combining(c))
     tipo = str(fila.get("tipo_setup") or "").upper().strip()
     return "reaccion" in patron or tipo in TIPOS_REACCION
 
