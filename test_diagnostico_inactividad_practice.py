@@ -18,7 +18,7 @@ class InactividadPracticeTests(unittest.TestCase):
         self.assertEqual(x["memoria_oficial_estado_inicio"], "AUSENTE")
         self.assertEqual(x["segundos_sin_apertura_confirmada"], 3900)
         self.assertIn("CEREBRO_SIN_AUTORIZACION", texto_inactividad(x))
-        self.assertFalse(x["no_autoriza_operaciones"])
+        self.assertTrue(x["no_autoriza_operaciones"])
 
     def test_no_hay_senales(self):
         x = self.diagnostico({}, senales=0)
