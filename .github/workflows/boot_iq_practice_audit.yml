@@ -18,4 +18,4 @@ jobs:
           python-version: '3.11'
       - name: Verify PRACTICE audit reports and timing invariants
         run: |
-          python -m unittest -v test_auditar_calidad_setup_practice test_latencia_practice test_entrada_reaccion_tilde_practice
+          python -m unittest -v test_auditar_calidad_setup_practice test_latencia_practice test_entrada_reaccion_tilde_practice test_setup_mercado_sucio_practice
