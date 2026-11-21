@@ -76,6 +76,17 @@ def main():
             "ARRANQUE BLOQUEADO: preflight PRACTICE inseguro: "
             + ",".join(preflight["motivos"])
         )
+    # Informar claramente: el inicio de observacion no significa
+    # que exista evidencia estadistica para abrir nuevas ordenes.
+    print(
+        "BOOTIQ ESTADO PRACTICE | observacion:",
+        "LISTA" if preflight["preparado_para_observacion_practice"] else "BLOQUEADA",
+        "| aperturas:",
+        "NO_CERTIFICADAS",
+        "| faltantes:",
+        ",".join(preflight["bloqueos_practica_operativa"]),
+        flush=True,
+    )
 
     conectar()
     asegurar_historial_csv()
