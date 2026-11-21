@@ -77,6 +77,8 @@ class CalidadSetupPracticeTests(unittest.TestCase):
 
     def test_rama_reaccion_sigue_condicion_literal_de_entrada(self):
         self.assertTrue(_rama_reaccion({"patron": "reaccion vendedora"}))
+        self.assertTrue(_rama_reaccion({"patron": "reacción vendedora en resistencia"}))
+        self.assertTrue(_rama_reaccion({"patron": "REACCIÓN COMPRADORA EN SOPORTE"}))
         self.assertTrue(_rama_reaccion({"tipo_setup": "RECHAZO_ALCISTA"}))
         self.assertFalse(_rama_reaccion({"patron": "CHOCH bajista"}))
 
