@@ -13,12 +13,44 @@ class InactividadPracticeTests(unittest.TestCase):
         )
 
     def test_cerebro_rechaza_todo_y_memoria_ausente(self):
-        x = self.diagnostico({"cerebro_no_operar": 5})
+        x = self.diagnostico({
+            "mercados_analizados": 10,
+            "candidatas_generadas": 5,
+            "candidatas_evaluadas_cerebro": 5,
+            "candidatas_que_continuan": 0,
+            "cerebro_no_operar": 5,
+        }, senales=0)
         self.assertEqual(x["estado"], "CEREBRO_SIN_AUTORIZACION_MEMORIA_NO_UTILIZABLE")
         self.assertEqual(x["memoria_oficial_estado_inicio"], "AUSENTE")
         self.assertEqual(x["segundos_sin_apertura_confirmada"], 3900)
         self.assertIn("CEREBRO_SIN_AUTORIZACION", texto_inactividad(x))
         self.assertTrue(x["no_autoriza_operaciones"])
+
+    def test_log_real_cero_senales_finales_y_dos_rechazos(self):
+        # En bot.py llegan cero señales, pero estrategia.py ya contó
+        # dos candidatas evaluadas y dos NO_OPERAR.
+        x = self.diagnostico({
+            "mercados_analizados": 8,
+            "candidatas_generadas": 2,
+            "candidatas_evaluadas_cerebro": 2,
+            "candidatas_que_continuan": 0,
+            "cerebro_no_operar": 2,
+        }, senales=0)
+        self.assertEqual(
+            x["estado"], "CEREBRO_SIN_AUTORIZACION_MEMORIA_NO_UTILIZABLE"
+        )
+        self.assertEqual(x["candidatas_que_continuan"], 0)
+        self.assertEqual(x["evaluadas_cerebro"], 2)
+
+    def test_rechazo_parcial_no_es_veto_total(self):
+        x = self.diagnostico({
+            "mercados_analizados": 8,
+            "candidatas_generadas": 5,
+            "candidatas_evaluadas_cerebro": 5,
+            "candidatas_que_continuan": 0,
+            "cerebro_no_operar": 3,
+        }, senales=0)
+        self.assertEqual(x["estado"], "CEREBRO_RECHAZOS_Y_DESCARTES_ADICIONALES")
 
     def test_no_hay_mercados(self):
         x = self.diagnostico({}, senales=0)
