@@ -56,12 +56,28 @@ def evaluar_preflight(raiz=".", *, ruta_memoria=None, config=None):
         "BOOTSTRAP_SIN_MEMORIA_ACTIVO",
         "MEMORIA_EXPERIMENTAL_COMO_OFICIAL",
     ))
+    # Distinguir observar en PRACTICE de abrir operaciones.
+    # No declarar que basta con tener un CSV: presencia !=
+    # capacidad estadistica, ni suficiencia OOS, ni beneficio neto.
+    memoria_presente = ruta.is_file() and ruta.stat().st_size > 0
+    puede_observar = modo_seguro
+    # No conceder readiness operativa con un preflight informativo.
+    bloqueos_practica_operativa = []
+    if not modo_seguro:
+        bloqueos_practica_operativa.append("CONFIGURACION_PRACTICE_INSEGURA")
+    if not memoria_presente:
+        bloqueos_practica_operativa.append("MEMORIA_ESTADISTICA_OFICIAL_NO_UTILIZABLE")
+    bloqueos_practica_operativa.append("VALIDACION_OOS_Y_PNL_NO_CERTIFICADA")
+
     return {
         "tipo": "PREFLIGHT_INFORMATIVO_BOOTIQ_V3",
         "modo_cuenta": cfg.get("MODO_CUENTA"),
         "seguridad_practice": modo_seguro,
         "auditoria_sombra_posible": modo_seguro,
-        "memoria_oficial_presente": ruta.is_file() and ruta.stat().st_size > 0,
+        "preparado_para_observacion_practice": puede_observar,
+        "preparado_para_aperturas_practice": False,
+        "bloqueos_practica_operativa": bloqueos_practica_operativa,
+        "memoria_oficial_presente": memoria_presente,
         "memoria_oficial_validada": False,
         "memoria_experimental_promovida": "MEMORIA_EXPERIMENTAL_COMO_OFICIAL" in motivos,
         "operativa_autorizada": False,
