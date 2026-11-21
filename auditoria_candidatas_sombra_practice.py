@@ -96,7 +96,12 @@ def _guardar(ruta, registros):
 
 def registrar_candidata(senal, ctx, ruta=RUTA_EVENTOS):
     """Registrar TODAS las rechazadas una sola vez sin alterar su decisión."""
-    ts = int(senal.get("vela_senal_from") or ctx.get("vela_senal_from") or 0)
+    try:
+        ts = int(senal.get("vela_senal_from") or ctx.get("vela_senal_from") or 0)
+    except (TypeError, ValueError, OverflowError):
+        # Telemetría opcional: un timestamp inválido no debe abortar
+        # el análisis ni afectar una decisión del Cerebro.
+        return False
     activo = str(senal.get("activo") or ctx.get("activo") or "")
     patron = str(senal.get("patron") or "")
     direccion = str(senal.get("direccion") or "").lower()
@@ -182,8 +187,8 @@ def resolver_candidatas(activo, ctx, ruta=RUTA_EVENTOS):
         # Un buffer de tiempos corrupto no debe romper el scanner
         # ni convertir velas no verificadas en operaciones ganadas.
         return 0
-    opens = ctx.get("opens", [])
-    closes = ctx.get("closes", [])
+    opens = ctx.get("opens") or []
+    closes = ctx.get("closes") or []
     if not (len(froms) == len(opens) == len(closes)):
         return 0
     if not froms or any(b - a != 60 for a, b in zip(froms, froms[1:])):
