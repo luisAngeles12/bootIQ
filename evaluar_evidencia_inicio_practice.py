@@ -79,6 +79,9 @@ def evaluar_fuentes(ruta_cierres=RUTA_CIERRES, ruta_rechazadas=RUTA_RECHAZADAS):
                 "test_n": (candidato.get("test") or {}).get("n", 0),
                 "test_wr": (candidato.get("test") or {}).get("wr_pct"),
                 "constancia_hipotetica": candidato.get("constancia_hipotetica", False),
+                "tabla_candidatos_train_con_test": resultado.get(
+                    "tabla_candidatos_train_con_test", []
+                ),
                 "autoriza_operaciones": False,
             }
     except (OSError, UnicodeError, ValueError, KeyError, TypeError) as exc:
@@ -117,6 +120,21 @@ def lineas(resumen):
             test_wr=sombra.get("test_wr"),
             constancia_hipotetica=sombra.get("constancia_hipotetica", False),
             estado=sombra.get("estado"),
+        ),
+        "EVIDENCIA PRACTICE | TOP TRAIN sombra (orden congelado; "
+        "no escoger mejor TEST): {}".format(
+            "; ".join(
+                "{campo}={valor}: TRAIN {train_wr}%/{train_n}min, "
+                "TEST {test_wr}%/{test_n}min, delta_base {delta}pp".format(
+                    campo=x["campo"], valor=x["valor"],
+                    train_wr=x["train"].get("winrate_por_minuto_pct"),
+                    train_n=x["train"].get("minutos_distintos"),
+                    test_wr=x["test"].get("winrate_por_minuto_pct"),
+                    test_n=x["test"].get("minutos_distintos"),
+                    delta=x.get("diferencia_wr_test_vs_baseline_pct"),
+                )
+                for x in sombra.get("tabla_candidatos_train_con_test", [])
+            ) or "SIN_CANDIDATOS_CON_MUESTRA_SUFICIENTE"
         ),
         "EVIDENCIA PRACTICE | SOLO DIAGNOSTICO; no concede permisos IQ "
         "ni copia datos TRAIN a la memoria oficial",
