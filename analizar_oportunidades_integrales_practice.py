@@ -170,7 +170,28 @@ def analizar(rows, minimo_train=20, minimo_oos=20):
         _, _, key, value, train_metrics = top
         picked = [r for r in oos if r["features"].get(key) == value]
         test_metrics = _metrics(picked)
+        # F12: el agregado puede ocultar jornadas perdedoras. Informar
+        # cada dia y exigir estabilidad por jornada con muestra minima
+        # antes de declarar alcanzado el objetivo de constancia.
+        por_dia_oos = defaultdict(list)
+        for trade in picked:
+            por_dia_oos[trade["fecha"].date().isoformat()].append(trade)
+        metricas_dias_oos = {
+            dia: _metrics(trades) for dia, trades in sorted(por_dia_oos.items())
+        }
+        jornadas_suficientes = (
+            len(metricas_dias_oos) >= 3
+            and all(
+                m["minutos_distintos"] >= 10
+                and m["winrate_por_minuto_pct"] is not None
+                and m["winrate_por_minuto_pct"] >= 60
+                and m["neto"] > 0
+                for m in metricas_dias_oos.values()
+            )
+        )
         candidate = {
+            "test_por_dia": metricas_dias_oos,
+            "jornadas_oos_estables": jornadas_suficientes,
             "variable": key, "valor": value, "train": train_metrics, "test_oos": test_metrics,
             "retencion_oos_pct": round(100*len(picked)/len(oos), 2) if oos else None,
             "evidencia_minima_oos": (
@@ -196,7 +217,8 @@ def analizar(rows, minimo_train=20, minimo_oos=20):
                 and test_metrics["wilson_minutos_95_pct"] > 50
                 and baseline_oos["expectativa_por_operacion"] is not None
                 and test_metrics["expectativa_por_operacion"] > baseline_oos["expectativa_por_operacion"]
-                and test_metrics["neto"] > 0),
+                and test_metrics["neto"] > 0
+                and jornadas_suficientes),
             "autoriza_operaciones": False,
         }
     return {"estado": "ANALISIS_NO_OPERABLE", "operaciones_validas": len(valid),
