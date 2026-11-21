@@ -45,8 +45,8 @@ class PreflightPracticeV3Tests(unittest.TestCase):
             r = evaluar_preflight(tmp, ruta_memoria=p, config=CONFIG_SEGURO)
             self.assertIn("MEMORIA_EXPERIMENTAL_COMO_OFICIAL", r["motivos"])
             self.assertTrue(r["memoria_experimental_promovida"])
-        self.assertFalse(r["seguridad_practice"])
-        self.assertFalse(r["auditoria_sombra_posible"])
+            self.assertFalse(r["seguridad_practice"])
+            self.assertFalse(r["auditoria_sombra_posible"])
             self.assertFalse(r["operativa_autorizada"])
 
     def test_preflight_memoria_ausente_permite_solo_sombra(self):
